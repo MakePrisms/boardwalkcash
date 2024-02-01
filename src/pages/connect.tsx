@@ -12,7 +12,7 @@ export default function Connect() {
   // Function to update balance
   const updateBalance = () => {
       const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-      const newBalance = proofs.map((proof: any) => proof.amount).reduce((a, b) => a + b, 0);
+      const newBalance = proofs.map((proof: any) => proof.amount).reduce((a: any, b: any) => a + b, 0);
       setBalance(newBalance);
   };
 
