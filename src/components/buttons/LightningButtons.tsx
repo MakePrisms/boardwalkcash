@@ -63,7 +63,7 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
     }
 
     const handleNwa = async () => {
-        let params = new URL(document.location).searchParams;
+        let params = new URL(document.location.href).searchParams;
 
         // Handle 'amount' parameter as before
         let amount = params.get("amount") || 0;
