@@ -5,7 +5,7 @@ import EcashButtons from "@/components/buttons/EcashButtons";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 
 
-export default function Home() {
+export default function Connect() {
   const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
   const [balance, setBalance] = useState(0);
 
