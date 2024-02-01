@@ -66,9 +66,10 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
         let params = new URL(document.location.href).searchParams;
 
         // Handle 'amount' parameter as before
-        let amount = params.get("amount") || 0;
+        let amount = Number(params.get("amount")) || 0;
 
-        if (amount > 0) {
+        if (Number(amount) > 0) {
+
             const { pr, hash } = await wallet.requestMint(amount);
 
             // Handle 'nwa' parameter
@@ -103,6 +104,11 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
 
                 if (!pr) {
                     console.log("No invoice found");
+                    return;
+                }
+
+                if (!appRelay) {
+                    console.log("No relay found");
                     return;
                 }
 
