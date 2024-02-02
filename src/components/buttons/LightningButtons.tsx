@@ -61,7 +61,7 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
             const selectedProofIdentifiers = selectedProofs.map(proof => proof.id + proof.secret);
 
             // Now remove the used proofs from local storage but leave the rest
-            const remainingProofs = proofs.filter(proof =>
+            const remainingProofs = proofs.filter((proof: any) =>
                 !selectedProofIdentifiers.includes(proof.id + proof.secret)
             );
             window.localStorage.setItem('proofs', JSON.stringify(remainingProofs));
