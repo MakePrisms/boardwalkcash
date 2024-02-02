@@ -8,3 +8,5 @@ interface WebLN {
 interface Window {
     webln: WebLN;
 }
+
+declare module 'light-bolt11-decoder';
