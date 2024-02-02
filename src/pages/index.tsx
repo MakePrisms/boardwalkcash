@@ -25,7 +25,7 @@ export default function Home() {
       <main className="w-full h-full p-4">
           <Balance balance={balance} />
           <div className="py-8">
-              <LightningButtons wallet={wallet} updateBalance={updateBalance} />
+              <LightningButtons wallet={wallet} updateBalance={updateBalance}/>
               <EcashButtons wallet={wallet} />
           </div>
       </main>
