@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Button } from "flowbite-react";
+import { Button, Modal } from "flowbite-react";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04, nip19 } from "nostr-tools";
 import bolt11Decoder from "light-bolt11-decoder";
 
 const LightningButtons = ({ wallet, updateBalance }: any) => {
     const [invoice, setInvoice] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const parseInvoiceToGetAmount = (invoice: string) => {
         // Decode the invoice
@@ -65,6 +66,10 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
                 !selectedProofIdentifiers.includes(proof.id + proof.secret)
             );
             window.localStorage.setItem('proofs', JSON.stringify(remainingProofs));
+
+            updateBalance();
+            setIsModalOpen(false);
+            setInvoice('');
 
         } catch (error) {
             console.error(error);
@@ -228,17 +233,32 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
             <div className="flex flex-row justify-between w-full mb-4">
                 <Button onClick={handleReceive} color="warning">Receive</Button>
                 <h3 className="text-center text-lg font-bold">Lightning</h3>
-                <Button onClick={handleSend} color="warning">Send</Button>
+                <Button onClick={() => setIsModalOpen(true)} color="warning">Send</Button>
             </div>
-            <input
-                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
-                type="text"
-                placeholder="Enter Lightning Invoice"
-                value={invoice}
-                onChange={(e) => setInvoice(e.target.value)}
-            />
+            <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <Modal.Header>Send Lightning Invoice</Modal.Header>
+                <Modal.Body>
+                    <div className="space-y-6">
+                        <input
+                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                            type="text"
+                            placeholder="Enter Lightning Invoice"
+                            value={invoice}
+                            onChange={(e) => setInvoice(e.target.value)}
+                        />
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button color="failure" onClick={() => setIsModalOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button color="success" onClick={handleSend}>
+                        Submit
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
-}
+};
 
 export default LightningButtons;
