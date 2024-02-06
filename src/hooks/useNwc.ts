@@ -15,8 +15,6 @@ export const useNwc = () => {
 
         console.log(`Connecting to ${relayUrl} with public key ${pk}`);
 
-
-
         const listenForEvents = async () => {
             const relay = await Relay.connect(relayUrl);
 

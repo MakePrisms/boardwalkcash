@@ -2,20 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Button, Modal } from "flowbite-react";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
-import bolt11Decoder from "light-bolt11-decoder";
+import { getAmountFromInvoice } from "@/utils/bolt11";
 
-const LightningButtons = ({ wallet, updateBalance }: any) => {
+const LightningButtons = ({ wallet }: any) => {
     const [invoice, setInvoice] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const parseInvoiceToGetAmount = (invoice: string) => {
-        // Decode the invoice
-        const decodedInvoice = bolt11Decoder.decode(invoice);
-
-        // Extract the amount from the decoded invoice
-        const amount = Number(decodedInvoice.sections[2].value / 1000);
-        return amount;
-    };
 
     const handleNwcSend = async () => {
         
@@ -28,7 +19,7 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
 
         // Assuming the function to parse the invoice and get the amount is implemented
         // For demonstration, let's assume we already have the amount needed to pay
-        const invoiceAmount = parseInvoiceToGetAmount(invoice); // You need to implement this
+        const invoiceAmount = getAmountFromInvoice(invoice); // You need to implement this
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
         console.log('invoiceAmount', invoiceAmount);
@@ -71,7 +62,6 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
             );
             window.localStorage.setItem('proofs', JSON.stringify(remainingProofs));
 
-            updateBalance();
             setIsModalOpen(false);
             setInvoice('');
 
@@ -127,9 +117,6 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
 
                         // Save the updated array back to localStorage
                         window.localStorage.setItem('tokens', JSON.stringify(tokens));
-
-                        // Call the updateBalance function to update the balance
-                        updateBalance();
                     }
                 }
 
