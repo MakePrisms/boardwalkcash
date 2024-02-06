@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, Modal } from "flowbite-react";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
-import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04, nip19 } from "nostr-tools";
+import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import bolt11Decoder from "light-bolt11-decoder";
 
 const LightningButtons = ({ wallet, updateBalance }: any) => {
@@ -16,6 +16,10 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
         const amount = Number(decodedInvoice.sections[2].value / 1000);
         return amount;
     };
+
+    const handleNwcSend = async () => {
+        
+    }
 
     const handleSend = async () => {
         if (!invoice) {
@@ -212,8 +216,6 @@ const LightningButtons = ({ wallet, updateBalance }: any) => {
 
                 // this assigns the pubkey, calculates the event id and signs the event in a single step
                 const signedEvent = finalizeEvent(eventTemplate, sk);
-                const noteId = await nip19.neventEncode(signedEvent);
-                console.log("Note ID:", noteId);
                 console.log("Signed event:", signedEvent);
                 await relay.publish(signedEvent);
 
