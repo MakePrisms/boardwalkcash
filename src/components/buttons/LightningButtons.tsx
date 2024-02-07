@@ -9,7 +9,7 @@ const LightningButtons = ({ wallet }: any) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleNwcSend = async () => {
-        
+
     }
 
     const handleSend = async () => {
@@ -130,84 +130,72 @@ const LightningButtons = ({ wallet }: any) => {
     const handleNwa = async () => {
         let params = new URL(document.location.href).searchParams;
 
-        // Handle 'amount' parameter as before
-        let amount = Number(params.get("amount")) || 0;
+        // Handle 'nwa' parameter
+        let nwa = params.get("nwa");
+        if (nwa) {
+            // Decode the nwa parameter
+            let decodedNwa = decodeURIComponent(nwa);
 
-        if (Number(amount) > 0) {
+            // remove the prefix nostr+walletauth://
+            decodedNwa = decodedNwa.replace("nostr+walletauth://", "");
 
-            const { pr, hash } = await wallet.requestMint(amount);
+            // Extract the appPublicKey from the decoded NWA string
+            const [appPublicKey, queryParams] = decodedNwa.split("?");
 
-            // Handle 'nwa' parameter
-            let nwa = params.get("nwa");
-            if (nwa) {
-                // Decode the nwa parameter
-                let decodedNwa = decodeURIComponent(nwa);
+            // Parse the query parameters
+            let queryParamsObj = new URLSearchParams(queryParams);
 
-                // remove the prefix nostr+walletauth://
-                decodedNwa = decodedNwa.replace("nostr+walletauth://", "");
+            // Extract each value
+            const appRelay = queryParamsObj.get("relay");
+            // encode secret as hex
+            const secret = queryParamsObj.get("secret")!;
+            const requiredCommands = queryParamsObj.get("required_commands");
+            const budget = queryParamsObj.get("budget");
+            const identity = queryParamsObj.get("identity");
 
-                // Extract the appPublicKey from the decoded NWA string
-                const [appPublicKey, queryParams] = decodedNwa.split("?");
+            // Log or process the extracted values as needed
+            console.log("App Public Key:", appPublicKey);
+            console.log("Relay:", appRelay);
+            console.log("Secret:", secret);
+            console.log("Required Commands:", requiredCommands);
+            console.log("Budget:", budget);
+            console.log("Identity:", identity);
 
-                // Parse the query parameters
-                let queryParamsObj = new URLSearchParams(queryParams);
-
-                // Extract each value
-                const appRelay = queryParamsObj.get("relay");
-                const secret = queryParamsObj.get("secret");
-                const requiredCommands = queryParamsObj.get("required_commands");
-                const budget = queryParamsObj.get("budget");
-                const identity = queryParamsObj.get("identity");
-
-                // Log or process the extracted values as needed
-                console.log("App Public Key:", appPublicKey);
-                console.log("Relay:", appRelay);
-                console.log("Secret:", secret);
-                console.log("Required Commands:", requiredCommands);
-                console.log("Budget:", budget);
-                console.log("Identity:", identity);
-
-                if (!pr) {
-                    console.log("No invoice found");
-                    return;
-                }
-
-                if (!appRelay) {
-                    console.log("No relay found");
-                    return;
-                }
-
-                const relay = await Relay.connect(appRelay);
-
-                // let's publish a new event while simultaneously monitoring the relay for it
-                let sk = generateSecretKey();
-                let pk = getPublicKey(sk);
-
-                console.log("Secret key:", typeof sk, sk);
-                console.log("Public key:", pk);
-
-                const encryptedContent = await nip04.encrypt(
-                    sk,
-                    appPublicKey,
-                    pr
-                );
-
-                console.log("Encrypted content:", encryptedContent);
-
-                let eventTemplate = {
-                    kind: 33194,
-                    created_at: Math.floor(Date.now() / 1000),
-                    tags: [["d", appPublicKey]],
-                    content: encryptedContent,
-                };
-
-                // this assigns the pubkey, calculates the event id and signs the event in a single step
-                const signedEvent = finalizeEvent(eventTemplate, sk);
-                console.log("Signed event:", signedEvent);
-                await relay.publish(signedEvent);
-
-                relay.close();
+            if (!appRelay) {
+                console.log("No relay found");
+                return;
             }
+
+            const relay = await Relay.connect(appRelay);
+
+            // let's publish a new event while simultaneously monitoring the relay for it
+            let sk = generateSecretKey();
+            let pk = getPublicKey(sk);
+
+            console.log("Secret key:", typeof sk, sk);
+            console.log("Public key:", pk);
+
+            const secretJson = JSON.stringify({secret: secret});
+
+            const encryptedContent = await nip04.encrypt(
+                sk,
+                appPublicKey,
+                secretJson
+            );
+
+            let eventTemplate = {
+                kind: 33194,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [["d", appPublicKey]],
+                content: encryptedContent,
+            };
+
+            // this assigns the pubkey, calculates the event id and signs the event in a single step
+            const signedEvent = finalizeEvent(eventTemplate, sk);
+            console.log("Signed event:", signedEvent);
+            await relay.publish(signedEvent);
+
+            relay.close();
         }
     }
 
