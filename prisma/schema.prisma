@@ -1,0 +1,24 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  pubkey    String   @unique
+  username  String?  @unique
+  proofs    Proof[] // Establishes a one-to-many relationship with the Proof model
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Proof {
+  id     String @id
+  amount Int
+  secret String
+  C      String
+  userId Int // Foreign key to associate proof with a user
+  user   User   @relation(fields: [userId], references: [id]) // Links back to the User model
+
+  @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
+}

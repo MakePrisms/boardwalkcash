@@ -1,0 +1,30 @@
+version: "3"
+services:
+  db:
+    container_name: quick-cashu-db
+    image: postgres:13.2
+    restart: always
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  app:
+    container_name: quickcashu
+    build: .
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    links:
+      - db
+
+volumes:
+  postgres_data:
