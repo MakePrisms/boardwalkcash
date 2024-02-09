@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 const Balance = ({ balance }: any) => {
-    const pubkey = window.localStorage.getItem('pubkey');
+    const [pubkey, setPubkey] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedPubkey = window.localStorage.getItem('pubkey');
+        setPubkey(storedPubkey);
+    }, []);
 
     return (
         <div className="flex flex-col items-center justify-center w-full h-full">
