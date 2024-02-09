@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ];
 
         res.status(200).json({ 
-            callback: `${BACKEND_URL}/api/callback/${user.pubkey}`,
+            callback: `https://quick-cashu.vercel.app/api/callback/${user.pubkey}`,
             maxSendable: 1000000,
             minSendable: 1000,
             metadata: JSON.stringify(metadata),
