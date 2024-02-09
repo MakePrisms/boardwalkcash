@@ -1,33 +1,58 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios"
 import Balance from "@/components/Balance";
 import LightningButtons from "@/components/buttons/LightningButtons";
 import EcashButtons from "@/components/buttons/EcashButtons";
-import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
+import CreateNwc from "@/components/CreateNwc";
+import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { generateSecretKey, getPublicKey } from 'nostr-tools'
+import { useNwc } from "@/hooks/useNwc";
+import { useCashu } from "@/hooks/useCashu";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 
 export default function Connect() {
-  const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
-  const [balance, setBalance] = useState(0);
 
-  // Function to update balance
-  const updateBalance = () => {
-      const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-      const newBalance = proofs.map((proof: any) => proof.amount).reduce((a: any, b: any) => a + b, 0);
-      setBalance(newBalance);
-  };
+    useEffect(() => {
+        // Check for pubkey in local storage
+        const storedPrivKey = localStorage.getItem('privkey');
 
-  // Initial balance load
-  useEffect(() => {
-      updateBalance();
-  }, []);
+        if (!storedPrivKey) {
+            // If no privkey is found, generate a new keypair
+            const newSecretKey = generateSecretKey();
+            const newPubKey = getPublicKey(newSecretKey)
 
-  return (
-      <main className="w-full h-full p-4">
-          <Balance balance={balance} />
-          <div className="py-8">
-              <LightningButtons wallet={wallet} updateBalance={updateBalance} />
-              <EcashButtons wallet={wallet} />
-          </div>
-      </main>
-  );
+            // turn the secret key into a hex string
+            const sec = new Uint8Array(newSecretKey);
+            const newSecretKeyHex = Buffer.from(sec).toString('hex');
+
+            localStorage.setItem('privkey', newSecretKeyHex);
+            localStorage.setItem('pubkey', newPubKey);
+            
+            // save pubkey to db
+            // If a new keypair is generated overwrite the old pubkey
+            axios.post(`https://quick-cashu.vercel.app/api/users`, {
+                pubkey: newPubKey,
+            });
+        }
+    }, []);
+
+    const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
+
+    const balance = useSelector((state: RootState) => state.cashu.balance);
+
+    useNwc();
+    useCashu();
+
+    return (
+        <main className="w-full h-full p-4">
+            <Balance balance={balance} />
+            <div className="py-8">
+                <LightningButtons wallet={wallet} />
+                {/* <EcashButtons wallet={wallet} /> */}
+                {/* <CreateNwc /> */}
+            </div>
+        </main>
+    );
 }
