@@ -33,8 +33,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     let paymentConfirmed = false;
-    const maxAttempts = 30;
+    const maxAttempts = 10;
     let attempts = 0;
+    let interval = 500;
 
     while (!paymentConfirmed && attempts < maxAttempts) {
       const status = await checkPaymentStatus(hash);
@@ -59,7 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       } else {
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for 3 seconds before next attempt
+        await new Promise(resolve => setTimeout(resolve, interval));
+        interval += 500;
       }
     }
 
