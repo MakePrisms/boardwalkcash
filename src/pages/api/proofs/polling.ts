@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     let paymentConfirmed = false;
-    const maxAttempts = 10;
+    const maxAttempts = 30;
     let attempts = 0;
 
     while (!paymentConfirmed && attempts < maxAttempts) {
