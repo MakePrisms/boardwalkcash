@@ -10,7 +10,7 @@ const CreateNwc = () => {
     const sk = generateSecretKey();
     const pk = getPublicKey(sk);
     const secretHex = Buffer.from(sk).toString('hex');
-    const relayUrl = encodeURIComponent('wss://nos.lol');
+    const relayUrl = encodeURIComponent('wss://nostr.mutinywallet.com');
     const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=example@lightning.address`;
 
     localStorage.setItem('nwc_secret', secretHex);
