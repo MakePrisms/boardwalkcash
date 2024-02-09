@@ -1,20 +1,28 @@
 import axios from 'axios';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { runMiddleware, corsMiddleware } from "@/utils/middleware"; // Import the CORS middleware
+import { runMiddleware, corsMiddleware } from "@/utils/middleware";
+import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
+import { createProof } from '@/lib/proofModels';
+import { findUserByPubkey } from '@/lib/userModels';
 
 interface PollingRequest {
   pubkey: string;
-  quote: string;
+  hash: string;
+  amount: number;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Here we use the CORS middleware
   await runMiddleware(req, res, corsMiddleware);
 
-  const { pubkey, quote }: PollingRequest = req.body;
+  const wallet = new CashuWallet(new CashuMint(process.env.CASHU_MINT_URL!));
 
-  const checkPaymentStatus = async (quote: string) => {
-    const response = await axios.get(`${process.env.CASHU_MINT_URL}/v1/mint/quote/bolt11/${quote}`);
+  const { pubkey, hash, amount }: PollingRequest = req.body;
+
+  console.log('Polling request:', { pubkey, hash, amount });
+
+  const checkPaymentStatus = async (hash: string) => {
+    const response = await axios.get(`https://8333.space:3338/v1/mint/quote/bolt11/${hash}`);
     console.log('Payment status response:', response.data);
     return response.data; // Adjust based on actual API response
   };
@@ -29,15 +37,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let attempts = 0;
 
     while (!paymentConfirmed && attempts < maxAttempts) {
-      const status = await checkPaymentStatus(quote);
-      if (status.isPaid) { // Adjust based on actual response property
+      const status = await checkPaymentStatus(hash);
+      console.log("polling", attempts);
+      if (status.paid) { // Adjust based on actual response property
+
         paymentConfirmed = true;
-        await notifyPaymentSuccess(pubkey, status);
-        res.status(200).send({ success: true, message: 'Payment confirmed and notified.' });
+
+        const { proofs } = await wallet.requestTokens(amount, hash);
+
+        const user = await findUserByPubkey(pubkey);
+
+        if (!user) {
+          res.status(404).send({ success: false, message: 'User not found.' });
+          return;
+        }
+
+        proofs.forEach(async (proof) => {
+            await createProof(proof.id, proof.amount, proof.secret, proof.C, user.id );
+        })
+
         break;
       } else {
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Wait for 10 seconds before next attempt
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for 3 seconds before next attempt
       }
     }
 

@@ -175,7 +175,15 @@ const LightningButtons = ({ wallet }: any) => {
             console.log("Secret key:", typeof sk, sk);
             console.log("Public key:", pk);
 
-            const secretJson = JSON.stringify({secret: secret});
+            let secretJson;
+
+            const pubkey = window.localStorage.getItem('pubkey');
+
+            if (pubkey) {
+                secretJson = JSON.stringify({secret: secret, lud16: `${pubkey}@quick-cashu.vercel.app`});
+            } else {
+                secretJson = JSON.stringify({secret: secret});
+            }
 
             const encryptedContent = await nip04.encrypt(
                 sk,

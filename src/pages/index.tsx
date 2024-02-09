@@ -23,17 +23,16 @@ export default function Home() {
             const newSecretKey = generateSecretKey();
             const newPubKey = getPublicKey(newSecretKey)
 
-            console.log('newPubKey', newPubKey);
-
             // turn the secret key into a hex string
             const sec = new Uint8Array(newSecretKey);
             const newSecretKeyHex = Buffer.from(sec).toString('hex');
 
             localStorage.setItem('privkey', newSecretKeyHex);
+            localStorage.setItem('pubkey', newPubKey);
             
             // save pubkey to db
             // If a new keypair is generated overwrite the old pubkey
-            axios.post(`/api/users`, {
+            axios.post(`https://quick-cashu.vercel.app/api/users`, {
                 pubkey: newPubKey,
             });
         }

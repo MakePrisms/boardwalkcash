@@ -51,16 +51,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             } else {
                 const invoice = await wallet.requestMint(value);
 
+                console.log('invoice object', invoice)
+
                 if (invoice) {
                     // start polling
-                    axios.post("http://localhost:3000/api/proofs/polling", {
+                    axios.post("https://quick-cashu.vercel.app/api/proofs/polling", {
                         pubkey: user.pubkey,
-                        quote: invoice.pr,
+                        hash: invoice.hash,
+                        amount: value
                       });
 
                     return res.status(200).json({
-                        pr: invoice.pr,
-                        other: invoice.hash
+                        pr: invoice.pr
                     })
                 } else {
                     res.status(500).json({ error: 'Error generating invoice' })
