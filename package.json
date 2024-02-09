@@ -11,7 +11,9 @@
   "dependencies": {
     "@cashu/cashu-ts": "^0.9.0",
     "@getalby/sdk": "^3.2.3",
+    "@prisma/client": "^5.9.1",
     "@reduxjs/toolkit": "^2.1.0",
+    "@vercel/node": "^3.0.17",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "flowbite-react": "^0.7.2",

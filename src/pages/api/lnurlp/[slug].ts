@@ -1,5 +1,6 @@
 import { runMiddleware, corsMiddleware } from "@/utils/middleware";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { findUserByPubkey } from "@/lib/userModels";
 
 const BACKEND_URL = process.env.BACKEND_URL
 
@@ -14,15 +15,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // need to get the pubkey from db
-    const pubkey = "0339f7c"
+    const user = await findUserByPubkey(slug.toString());
 
-    if (slug === pubkey) {
+    console.log('user in lnurlp', user)
+
+    if (!user) {
+        res.status(404).json({ error: 'User not found' })
+        return
+    }
+
+    if (slug === user.pubkey) {
         const metadata = [
-            ["text/plain", "Sample LN-ADDRESS endpoint"]
+            ["text/plain", "quickcashu lightning address endpoint"]
         ];
 
         res.status(200).json({ 
-            callback: `${BACKEND_URL}/api/callback/${pubkey}`,
+            callback: `${BACKEND_URL}/api/callback/${user.pubkey}`,
             maxSendable: 1000000,
             minSendable: 1000,
             metadata: JSON.stringify(metadata),

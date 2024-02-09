@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios"
 import Balance from "@/components/Balance";
 import LightningButtons from "@/components/buttons/LightningButtons";
 import EcashButtons from "@/components/buttons/EcashButtons";
@@ -22,6 +23,8 @@ export default function Home() {
             const newSecretKey = generateSecretKey();
             const newPubKey = getPublicKey(newSecretKey)
 
+            console.log('newPubKey', newPubKey);
+
             // turn the secret key into a hex string
             const sec = new Uint8Array(newSecretKey);
             const newSecretKeyHex = Buffer.from(sec).toString('hex');
@@ -30,6 +33,9 @@ export default function Home() {
             
             // save pubkey to db
             // If a new keypair is generated overwrite the old pubkey
+            axios.post(`/api/users`, {
+                pubkey: newPubKey,
+            });
         }
     }, []);
 
