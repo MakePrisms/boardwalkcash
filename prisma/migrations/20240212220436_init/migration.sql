@@ -11,7 +11,8 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "Proof" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "proofId" TEXT NOT NULL,
     "amount" INTEGER NOT NULL,
     "secret" TEXT NOT NULL,
     "C" TEXT NOT NULL,

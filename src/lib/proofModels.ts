@@ -2,20 +2,35 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function createProof(id: string, amount: number, secret: string, C: string, userId: number) {
+interface ProofData {
+    proofId: string; // Assuming proofId is necessary for your logic
+    amount: number;
+    secret: string;
+    C: string;
+    userId: number;
+}
+
+async function createProof(proofData: ProofData) {
     const proof = await prisma.proof.create({
         data: {
-            id,
-            amount,
-            secret,
-            C,
-            userId,
+            proofId: proofData.proofId,
+            amount: proofData.amount,
+            secret: proofData.secret,
+            C: proofData.C,
+            userId: proofData.userId,
         },
     });
     return proof;
 }
 
-async function findProofById(id: string) {
+async function createManyProofs(proofs: ProofData[]) {
+    const result = await prisma.proof.createMany({
+        data: proofs
+    });
+    return result;
+}
+
+async function findProofById(id: number) {
     const proof = await prisma.proof.findUnique({
         where: {
             id,
@@ -33,7 +48,7 @@ async function findProofsByUserId(userId: number) {
     return proofs;
 }
 
-async function updateProof(id: string, amount?: number, secret?: string, C?: string) {
+async function updateProof(id: number, amount?: number, secret?: string, C?: string) {
     const proof = await prisma.proof.update({
         where: {
             id,
@@ -47,7 +62,7 @@ async function updateProof(id: string, amount?: number, secret?: string, C?: str
     return proof;
 }
 
-async function deleteProof(id: string) {
+async function deleteProof(id: number) {
     const proof = await prisma.proof.delete({
         where: {
             id,
@@ -56,4 +71,4 @@ async function deleteProof(id: string) {
     return proof;
 }
 
-export { createProof, findProofById, findProofsByUserId, updateProof, deleteProof };
+export { createProof, createManyProofs, findProofById, findProofsByUserId, updateProof, deleteProof };

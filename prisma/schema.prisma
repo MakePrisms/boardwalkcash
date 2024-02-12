@@ -4,7 +4,7 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
@@ -18,12 +18,13 @@ model User {
 }
 
 model Proof {
-  id     String @id
-  amount Int
-  secret String
-  C      String
-  userId Int // Foreign key to associate proof with a user
-  user   User   @relation(fields: [userId], references: [id]) // Links back to the User model
+  id      Int    @id @default(autoincrement())
+  proofId String
+  amount  Int
+  secret  String
+  C       String
+  userId  Int // Foreign key to associate proof with a user
+  user    User   @relation(fields: [userId], references: [id]) // Links back to the User model
 
   @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
 }

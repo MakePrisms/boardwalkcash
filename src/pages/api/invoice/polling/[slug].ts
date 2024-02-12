@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
-import { createProof } from '@/lib/proofModels';
+import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
 
 interface PollingRequest {
@@ -41,16 +41,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const { proofs } = await wallet.requestTokens(amount, slug);
 
+                console.log('Proofs:', proofs);
+
                 const user = await findUserByPubkey(pubkey);
                 if (!user) {
                     res.status(404).send({ success: false, message: 'User not found.' });
                     return;
                 }
 
-                // Use Promise.all to wait for all createProof operations to complete
-                await Promise.all(proofs.map(proof =>
-                    createProof(proof.id, proof.amount, proof.secret, proof.C, user.id)
-                ));
+                // add user.id as userId to each proof
+                // rename proof.id to proof.proofId
+                // remove proof.id
+                let proofsPayload = proofs.map((proof) => {
+                    return {
+                        proofId: proof.id,
+                        secret: proof.secret,
+                        amount: proof.amount,
+                        C: proof.C,
+                        userId: user.id
+                    }
+                })
+
+                const created = await createManyProofs(proofsPayload);
+
+                console.log('Proofs created:', created);
+
+                if (!created) {
+                    res.status(500).send({ success: false, message: 'Failed to create proofs.' });
+                    return;
+                }
 
                 res.status(200).send({ success: true, message: 'Payment confirmed and proofs created.' });
                 return;
