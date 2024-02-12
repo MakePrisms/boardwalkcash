@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       // Create the proof
-      const newProof = await createProof(id, amount, secret, C, userId);
+      const newProof = await createProof({proofId: id, amount, secret, C, userId});
       
       // Respond with the created proof (or customize the response as needed)
       return res.status(201).json(newProof);
