@@ -2,7 +2,7 @@
     "functions": {
       "src/pages/api/invoice/*.js": {
         "memory": 1024,
-        "maxDuration": 60
+        "maxDuration": 300
       }
     }
   }

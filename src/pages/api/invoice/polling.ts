@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { runMiddleware, corsMiddleware } from "@/utils/middleware";
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createProof } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
@@ -32,8 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let attempts = 0;
     let interval = 2000;
 
-    console.time("PollingDuration"); // Start the timer
-
     while (!paymentConfirmed && attempts < maxAttempts) {
       const status = await checkPaymentStatus(hash);
       console.log("polling", attempts);
@@ -61,8 +58,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         interval += 500;
       }
     }
-
-    console.timeEnd("PollingDuration"); // End the timer and log the duration
 
     if (!paymentConfirmed) {
       res.status(408).send({ success: false, message: 'Payment confirmation timeout.' });
