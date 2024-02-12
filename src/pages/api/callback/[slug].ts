@@ -51,13 +51,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             } else {
                 const invoice = await wallet.requestMint(value);
 
-                console.log('invoice object', invoice)
-
-                if (invoice) {
+                if (invoice && invoice.pr && invoice.hash) {
                     // start polling
-                    axios.post("https://quick-cashu.vercel.app/api/invoice/polling", {
+                    axios.post(`https://quick-cashu.vercel.app/api/invoice/polling/${invoice.hash}`, {
                         pubkey: user.pubkey,
-                        hash: invoice.hash,
                         amount: value
                       });
 
