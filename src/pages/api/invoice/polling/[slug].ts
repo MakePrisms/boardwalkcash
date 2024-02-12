@@ -12,7 +12,6 @@ interface PollingRequest {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { slug } = req.query;
 
-    // Ensure hash is a string to satisfy TypeScript expectations and function logic
     if (typeof slug !== 'string') {
         res.status(400).send({ success: false, message: 'Invalid hash provided.' });
         return;
@@ -25,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const checkPaymentStatus = async (hash: string) => {
         const response = await axios.get(`https://8333.space:3338/v1/mint/quote/bolt11/${hash}`);
         console.log('Payment status response:', response.data);
-        return response.data; // Adjust based on actual API response
+        return response.data;
     };
 
     try {
@@ -37,24 +36,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         while (!paymentConfirmed && attempts < maxAttempts) {
             const status = await checkPaymentStatus(slug);
             console.log("polling", attempts);
-            if (status.paid) { // Adjust based on actual response property
-
+            if (status.paid) {
                 paymentConfirmed = true;
 
                 const { proofs } = await wallet.requestTokens(amount, slug);
 
                 const user = await findUserByPubkey(pubkey);
-
                 if (!user) {
                     res.status(404).send({ success: false, message: 'User not found.' });
                     return;
                 }
 
-                proofs.forEach(async (proof) => {
-                    await createProof(proof.id, proof.amount, proof.secret, proof.C, user.id);
-                })
+                // Use Promise.all to wait for all createProof operations to complete
+                await Promise.all(proofs.map(proof =>
+                    createProof(proof.id, proof.amount, proof.secret, proof.C, user.id)
+                ));
 
-                break;
+                res.status(200).send({ success: true, message: 'Payment confirmed and proofs created.' });
+                return;
+
             } else {
                 attempts++;
                 await new Promise(resolve => setTimeout(resolve, interval));
