@@ -1,6 +1,6 @@
 {
     "functions": {
-      "api/invoice/polling.ts": {
+      "api/invoice/polling.js": {
         "memory": 1024,
         "maxDuration": 60
       }
