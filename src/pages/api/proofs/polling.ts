@@ -19,8 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { pubkey, hash, amount }: PollingRequest = req.body;
 
-  console.log('Polling request:', { pubkey, hash, amount });
-
   const checkPaymentStatus = async (hash: string) => {
     const response = await axios.get(`https://8333.space:3338/v1/mint/quote/bolt11/${hash}`);
     console.log('Payment status response:', response.data);
@@ -33,9 +31,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     let paymentConfirmed = false;
-    const maxAttempts = 10;
+    const maxAttempts = 60;
     let attempts = 0;
-    let interval = 500;
+    let interval = 2000;
+
+    console.time("PollingDuration"); // Start the timer
 
     while (!paymentConfirmed && attempts < maxAttempts) {
       const status = await checkPaymentStatus(hash);
@@ -64,6 +64,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         interval += 500;
       }
     }
+
+    console.timeEnd("PollingDuration"); // End the timer and log the duration
 
     if (!paymentConfirmed) {
       res.status(408).send({ success: false, message: 'Payment confirmation timeout.' });
