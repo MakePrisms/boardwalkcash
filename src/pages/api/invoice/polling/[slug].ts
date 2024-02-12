@@ -10,10 +10,10 @@ interface PollingRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    const { hash } = req.query;
+    const { slug } = req.query;
 
     // Ensure hash is a string to satisfy TypeScript expectations and function logic
-    if (typeof hash !== 'string') {
+    if (typeof slug !== 'string') {
         res.status(400).send({ success: false, message: 'Invalid hash provided.' });
         return;
     }
@@ -35,13 +35,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let interval = 2000;
 
         while (!paymentConfirmed && attempts < maxAttempts) {
-            const status = await checkPaymentStatus(hash);
+            const status = await checkPaymentStatus(slug);
             console.log("polling", attempts);
             if (status.paid) { // Adjust based on actual response property
 
                 paymentConfirmed = true;
 
-                const { proofs } = await wallet.requestTokens(amount, hash);
+                const { proofs } = await wallet.requestTokens(amount, slug);
 
                 const user = await findUserByPubkey(pubkey);
 

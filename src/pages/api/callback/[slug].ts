@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                 if (invoice && invoice.pr && invoice.hash) {
                     // start polling
-                    axios.post(`https://quick-cashu.vercel.app/api/invoice/polling/${invoice.hash}`, {
+                    axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${invoice.hash}`, {
                         pubkey: user.pubkey,
                         amount: value
                       });

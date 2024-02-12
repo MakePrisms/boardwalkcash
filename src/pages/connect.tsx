@@ -32,7 +32,7 @@ export default function Connect() {
             
             // save pubkey to db
             // If a new keypair is generated overwrite the old pubkey
-            axios.post(`https://quick-cashu.vercel.app/api/users`, {
+            axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
                 pubkey: newPubKey,
             });
         }
