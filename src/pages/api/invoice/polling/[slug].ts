@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         let paymentConfirmed = false;
-        const maxAttempts = 60;
+        const maxAttempts = 90;
         let attempts = 0;
         let interval = 2000;
 
@@ -58,7 +58,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } else {
                 attempts++;
                 await new Promise(resolve => setTimeout(resolve, interval));
-                interval += 500;
             }
         }
 
