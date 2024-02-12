@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runMiddleware, corsMiddleware } from "@/utils/middleware";
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createProof } from '@/lib/proofModels';
@@ -11,10 +11,7 @@ interface PollingRequest {
   amount: number;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Here we use the CORS middleware
-  await runMiddleware(req, res, corsMiddleware);
-
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const wallet = new CashuWallet(new CashuMint(process.env.CASHU_MINT_URL!));
 
   const { pubkey, hash, amount }: PollingRequest = req.body;
