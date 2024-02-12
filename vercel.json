@@ -1,6 +1,6 @@
 {
     "functions": {
-      "src/pages/api/invoice/*.js": {
+      "src/pages/api/invoice/*": {
         "memory": 1024,
         "maxDuration": 300
       }
