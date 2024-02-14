@@ -1,76 +1,68 @@
 import React, { useEffect, useState } from "react";
-import { Button, Modal } from "flowbite-react";
+import { Button, Modal, Spinner } from "flowbite-react";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { getAmountFromInvoice } from "@/utils/bolt11";
 
-const LightningButtons = ({ wallet }: any) => {
+
+const LightningButtons = ({ wallet, mint }: any) => {
     const [invoice, setInvoice] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const handleNwcSend = async () => {
-
-    }
+    const [isSending, setIsSending] = useState(false);
 
     const handleSend = async () => {
+        setIsSending(true);
         if (!invoice) {
             return alert("Please enter a Lightning invoice.");
         }
 
-        // Assuming the function to parse the invoice and get the amount is implemented
-        // For demonstration, let's assume we already have the amount needed to pay
-        const invoiceAmount = getAmountFromInvoice(invoice); // You need to implement this
+        const invoiceAmount = getAmountFromInvoice(invoice);
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-
-        console.log('invoiceAmount', invoiceAmount);
-
-        // estimate fee
         const estimatedFee = await wallet.getFee(invoice);
-        console.log('estimatedFee', estimatedFee);
 
-        // Sort proofs in descending order of amount
         proofs.sort((a: any, b: any) => b.amount - a.amount);
 
         let amountToPay = invoiceAmount + estimatedFee;
-        let selectedProofs = [];
-        for (let proof of proofs) {
-            if (amountToPay >= proof.amount) {
-                selectedProofs.push(proof);
-                amountToPay -= proof.amount;
-            }
-            if (amountToPay === 0) break;
-        }
+        // Assuming `totalProofsAmount` is a utility function that sums up the amount in all proofs
+        let totalProofsAmount = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
 
-        // Check if we successfully matched the invoice amount
-        if (amountToPay > 0) {
-            alert('Unable to match the invoice amount with available proofs.');
+        if (totalProofsAmount < amountToPay) {
+            alert("Insufficient funds to cover the payment and fees.");
             return;
         }
 
         try {
-            console.log('Selected proofs', selectedProofs);
-            // Pay the invoice with selected proofs
-            // Replace this with the actual method to pay the invoice using selected proofs
-            const result = await wallet.payLnInvoice(invoice, selectedProofs);
-            console.log('Payment result', result);
+            const response = await wallet.payLnInvoice(invoice, proofs);
 
-            const selectedProofIdentifiers = selectedProofs.map(proof => proof.id + proof.secret);
+            console.log('response', response);
 
-            // Now remove the used proofs from local storage but leave the rest
-            const remainingProofs = proofs.filter((proof: any) =>
-                !selectedProofIdentifiers.includes(proof.id + proof.secret)
-            );
-            window.localStorage.setItem('proofs', JSON.stringify(remainingProofs));
+            let updatedProofs: any = []
+
+            if (!response || response.error) {
+                console.error(response);
+                return alert("An error occurred during the payment.");
+            }
+
+            if (response.change) {
+                console.log('change', response.change);
+                // map through the change array and save each proof to localStorage overwriting the old ones
+                response.change.forEach((proof: any) => {
+                    console.log('proof', proof);
+                    updatedProofs.push(proof);
+                });
+
+                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+            }
 
             setIsModalOpen(false);
             setInvoice('');
-
         } catch (error) {
             console.error(error);
             alert("An error occurred during the payment.");
+        } finally {
+            setIsSending(false);
         }
     };
-
 
 
     const handleReceive = async () => {
@@ -180,9 +172,9 @@ const LightningButtons = ({ wallet }: any) => {
             const pubkey = window.localStorage.getItem('pubkey');
 
             if (pubkey) {
-                secretJson = JSON.stringify({secret: secret, lud16: `${pubkey}@quick-cashu.vercel.app`});
+                secretJson = JSON.stringify({ secret: secret, lud16: `${pubkey}@quick-cashu.vercel.app` });
             } else {
-                secretJson = JSON.stringify({secret: secret});
+                secretJson = JSON.stringify({ secret: secret });
             }
 
             const encryptedContent = await nip04.encrypt(
@@ -222,25 +214,33 @@ const LightningButtons = ({ wallet }: any) => {
             </div>
             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <Modal.Header>Send Lightning Invoice</Modal.Header>
-                <Modal.Body>
-                    <div className="space-y-6">
-                        <input
-                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
-                            type="text"
-                            placeholder="Enter Lightning Invoice"
-                            value={invoice}
-                            onChange={(e) => setInvoice(e.target.value)}
-                        />
+                {isSending ? (
+                    <div className="flex justify-center items-center my-8">
+                        <Spinner size={"xl"} />
                     </div>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button color="failure" onClick={() => setIsModalOpen(false)}>
-                        Cancel
-                    </Button>
-                    <Button color="success" onClick={handleSend}>
-                        Submit
-                    </Button>
-                </Modal.Footer>
+                ) : (
+                    <>
+                        <Modal.Body>
+                            <div className="space-y-6">
+                                <input
+                                    className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                                    type="text"
+                                    placeholder="Enter Lightning Invoice"
+                                    value={invoice}
+                                    onChange={(e) => setInvoice(e.target.value)}
+                                />
+                            </div>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button color="failure" onClick={() => setIsModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button color="success" onClick={handleSend}>
+                                Submit
+                            </Button>
+                        </Modal.Footer>
+                    </>
+                )}
             </Modal>
         </div>
     );

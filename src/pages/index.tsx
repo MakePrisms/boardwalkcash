@@ -38,7 +38,9 @@ export default function Home() {
         }
     }, []);
 
-    const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+
+    const wallet = new CashuWallet(mint);
 
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
@@ -49,7 +51,7 @@ export default function Home() {
         <main className="w-full h-full p-4">
             <Balance balance={balance} />
             <div className="py-8">
-                <LightningButtons wallet={wallet} />
+                <LightningButtons wallet={wallet} mint={mint} />
                 {/* <EcashButtons wallet={wallet} /> */}
                 {/* <CreateNwc /> */}
             </div>
