@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios"
 import Balance from "@/components/Balance";
 import LightningButtons from "@/components/buttons/LightningButtons";
+import Receive from "@/components/buttons/lightning/Receive";
+import Send from "@/components/buttons/lightning/Send";
 import EcashButtons from "@/components/buttons/EcashButtons";
 import CreateNwc from "@/components/CreateNwc";
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
@@ -51,7 +53,11 @@ export default function Home() {
         <main className="w-full h-full p-4">
             <Balance balance={balance} />
             <div className="py-8">
-                <LightningButtons wallet={wallet} mint={mint} />
+            <div className="flex flex-row justify-between w-1/2 mb-4 mx-auto">
+                <Receive wallet={wallet} />
+                <Send wallet={wallet} />
+            </div>
+                {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
                 {/* <CreateNwc /> */}
             </div>

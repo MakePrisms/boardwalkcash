@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { Button, Modal, Spinner } from "flowbite-react";
 import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { getAmountFromInvoice } from "@/utils/bolt11";
 
-
 const LightningButtons = ({ wallet, mint }: any) => {
     const [invoice, setInvoice] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+    const [amount, setAmount] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [isReceiving, setIsReceiving] = useState(false);
+    const [invoiceToPay, setInvoiceToPay] = useState('');
+    const [paymentConfirmed, setPaymentConfirmed] = useState('' as any);
+    const [isPaymentConfirmedModalOpen, setIsPaymentConfirmedModalOpen] = useState(false);
 
     const handleSend = async () => {
         setIsSending(true);
@@ -54,7 +60,7 @@ const LightningButtons = ({ wallet, mint }: any) => {
                 window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
             }
 
-            setIsModalOpen(false);
+            setIsSendModalOpen(false);
             setInvoice('');
         } catch (error) {
             console.error(error);
@@ -64,60 +70,46 @@ const LightningButtons = ({ wallet, mint }: any) => {
         }
     };
 
-
     const handleReceive = async () => {
-        const { pr, hash } = await wallet.requestMint(21);
-        console.log('pr', pr);
-        console.log('hash', hash);
-
-        // pay this invoice
-        if (pr) {
-            if (typeof window.webln === "undefined") {
-                return alert("No WebLN available.");
-            }
-
-            try {
-                await window.webln.enable();
-                const result = await window.webln.sendPayment(pr);
-                console.log('res', result);
-
-                if (result) {
-                    const { proofs: newProofs } = await wallet.requestTokens(21, hash);
-
-                    if (newProofs) {
-                        // Retrieve the current proofs from localStorage
-                        const existingProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-
-                        // Add the new proofs to the array
-                        const updatedProofs = existingProofs.concat(newProofs);
-
-                        // Save the updated array back to localStorage
-                        window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
-                    }
-
-                    //Encoded proofs can be spent at the mint
-                    const encoded = getEncodedToken({
-                        token: [{ mint: process.env.NEXT_PUBLIC_CASHU_MINT_URL!, proofs: newProofs }],
-                    });
-
-                    if (encoded) {
-                        // Retrieve the current tokens from localStorage
-                        const tokens = JSON.parse(window.localStorage.getItem('tokens') || '[]');
-
-                        // Add the new token to the array
-                        tokens.push(encoded);
-
-                        // Save the updated array back to localStorage
-                        window.localStorage.setItem('tokens', JSON.stringify(tokens));
-                    }
-                }
-
-            } catch (error) {
-                console.error(error);
-                alert("An error occurred during the payment.");
-            }
+        setIsReceiving(true); // Start the receiving process
+        if (!amount) {
+            alert("Please enter an amount.");
+            setIsReceiving(false);
+            return;
         }
-    }
+
+        try {
+            const { pr, hash } = await wallet.requestMint(parseInt(amount)); // Convert amount to integer
+
+            if (!pr || !hash) {
+                alert("An error occurred while trying to receive.");
+                setIsReceiving(false);
+                return;
+            }
+
+            setInvoiceToPay(pr);
+
+            const pollingResponse = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${hash}`, {
+                pubkey: window.localStorage.getItem('pubkey'),
+                amount: amount,
+            });
+
+            console.log('pollingResponse', pollingResponse);
+
+            if (pollingResponse.status === 200 && pollingResponse.data.success) {
+                setTimeout(() => {
+                    setIsReceiving(false);
+                    setPaymentConfirmed(amount);
+                    setIsPaymentConfirmedModalOpen(true);
+                }, 3000);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred while trying to receive.");
+        } finally {
+            setIsReceiving(false); // End the receiving process
+        }
+    };
 
     const handleNwa = async () => {
         let params = new URL(document.location.href).searchParams;
@@ -205,14 +197,24 @@ const LightningButtons = ({ wallet, mint }: any) => {
         }
     }, []);
 
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            alert("Invoice copied to clipboard!"); // Provide feedback to the user (optional)
+        } catch (err) {
+            console.error("Failed to copy: ", err);
+            alert("Failed to copy the invoice to clipboard.");
+        }
+    };
+
     return (
         <div className="flex flex-col mx-auto w-1/2 mt-16">
             <div className="flex flex-row justify-between w-full mb-4">
-                <Button onClick={handleReceive} color="warning">Receive</Button>
+                <Button onClick={() => setIsReceiveModalOpen(true)} color="warning">Receive</Button>
                 <h3 className="text-center text-lg font-bold">Lightning</h3>
-                <Button onClick={() => setIsModalOpen(true)} color="warning">Send</Button>
+                <Button onClick={() => setIsSendModalOpen(true)} color="success">Send</Button>
             </div>
-            <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <Modal show={isSendModalOpen} onClose={() => setIsSendModalOpen(false)}>
                 <Modal.Header>Send Lightning Invoice</Modal.Header>
                 {isSending ? (
                     <div className="flex justify-center items-center my-8">
@@ -232,7 +234,7 @@ const LightningButtons = ({ wallet, mint }: any) => {
                             </div>
                         </Modal.Body>
                         <Modal.Footer>
-                            <Button color="failure" onClick={() => setIsModalOpen(false)}>
+                            <Button color="failure" onClick={() => setIsSendModalOpen(false)}>
                                 Cancel
                             </Button>
                             <Button color="success" onClick={handleSend}>
@@ -241,6 +243,67 @@ const LightningButtons = ({ wallet, mint }: any) => {
                         </Modal.Footer>
                     </>
                 )}
+            </Modal>
+            <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
+                <Modal.Header>Receive Lightning Payment</Modal.Header>
+                {isReceiving && !invoiceToPay ? (
+                    <div className="flex justify-center items-center my-8">
+                        <Spinner size="xl" />
+                    </div>
+                ) : (
+                    <>
+                        <Modal.Body>
+                            {invoiceToPay ? (
+                                <>
+                                    <div className="space-y-6">
+                                        <input
+                                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                                            type="text"
+                                            value={invoiceToPay}
+                                            readOnly
+                                        />
+                                    </div>
+                                    <Modal.Footer className="w-full flex flex-row justify-end">
+                                        <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
+                                            Copy
+                                        </Button>
+                                    </Modal.Footer>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-6">
+                                        <input
+                                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                                            type="number"
+                                            placeholder="Enter amount"
+                                            value={amount}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                        />
+                                    </div>
+                                    <Modal.Footer>
+                                        <Button color="failure" onClick={() => setIsReceiveModalOpen(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button color="success" onClick={handleReceive}>
+                                            Submit
+                                        </Button>
+                                    </Modal.Footer>
+                                </>
+                            )}
+                        </Modal.Body>
+                    </>
+                )}
+            </Modal>
+            <Modal show={isPaymentConfirmedModalOpen} onClose={() => setIsPaymentConfirmedModalOpen(false)}>
+                <Modal.Header>Payment Confirmed</Modal.Header>
+                <Modal.Body className="text-black">
+                    You have successfully received {paymentConfirmed} sats.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button color="success" onClick={() => setIsPaymentConfirmedModalOpen(false)}>
+                        OK
+                    </Button>
+                </Modal.Footer>
             </Modal>
         </div>
     );
