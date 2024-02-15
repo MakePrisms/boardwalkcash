@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
-import { Relay } from 'nostr-tools';
+import { Relay, nip04 } from 'nostr-tools';
+import { useToast } from './useToast';
 
 export const useNwc = () => {
+    const { addToast } = useToast();
+
     useEffect(() => {
         const connectionUri = localStorage.getItem('nwc_connectionUri');
         const secret = localStorage.getItem('nwc_secret');
@@ -24,8 +27,13 @@ export const useNwc = () => {
                         authors: [pk],
                     },
                 ], {
-                onevent: (event: any) => {
+                onevent: async (event: any) => {
                     console.log('Event received:', event);
+                    // decrypt the event with the secret using nip04
+                    const decrypted = await nip04.decrypt(secret, pk, event.content);
+                    console.log('Decrypted:', decrypted);
+                    addToast('NWC event received', 'success');
+                    addToast(decrypted, 'success');
                 },
                 onclose(reason) {
                     console.log('Subscription closed:', reason);

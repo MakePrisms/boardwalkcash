@@ -10,7 +10,7 @@ export const ToastProvider = ({ children }) => {
     const addToast = useCallback((message, type = 'info') => {
         const id = Math.random().toString(36).substring(2, 9);
         setToastList((prev) => [...prev, { id, message, type }]);
-        setTimeout(() => removeToast(id), 3000); // Auto-dismiss after 3 seconds
+        setTimeout(() => removeToast(id), 8000); // Auto-dismiss after 3 seconds
     }, []);
 
     const removeToast = useCallback((id) => {
@@ -25,7 +25,7 @@ export const ToastProvider = ({ children }) => {
             <div className="fixed bottom-5 right-5 space-y-2">
                 {toastList.map((toast) => (
                     <Toast key={toast.id} color={toast.type === 'error' ? 'failure' : toast.type}>
-                        <div className="text-sm">{toast.message}</div>
+                        <p className="text-sm break-all" style={{ whiteSpace: 'pre-line' }}>{toast.message}</p>
                     </Toast>
                 ))}
             </div>

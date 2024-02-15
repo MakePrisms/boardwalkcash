@@ -59,7 +59,7 @@ export default function Home() {
             </div>
                 {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
-                {/* <CreateNwc /> */}
+                <CreateNwc />
             </div>
         </main>
     );
