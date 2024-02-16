@@ -55,10 +55,8 @@ const Receive = ({ wallet }) => {
 
             // let's publish a new event while simultaneously monitoring the relay for it
             let nwaPubkey = generateSecretKey();
-            let nwaSecretKey = getPublicKey(sk);
+            let nwaSecretKey = getPublicKey(nwaPubkey);
 
-            console.log("Secret key:", typeof sk, sk);
-            console.log("Public key:", pk);
             console.log("req commands:", typeof requiredCommands, requiredCommands);
 
             let secretJson;
@@ -85,7 +83,7 @@ const Receive = ({ wallet }) => {
             }
 
             const encryptedContent = await nip04.encrypt(
-                sk,
+                nwaPubkey,
                 appPublicKey,
                 secretJson
             );
@@ -98,7 +96,7 @@ const Receive = ({ wallet }) => {
             };
 
             // this assigns the pubkey, calculates the event id and signs the event in a single step
-            const signedEvent = finalizeEvent(eventTemplate, sk);
+            const signedEvent = finalizeEvent(eventTemplate, nwaSecretKey);
             console.log("Signed event:", signedEvent);
             await relay.publish(signedEvent);
 
