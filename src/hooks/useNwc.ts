@@ -51,7 +51,7 @@ export const useNwc = () => {
 
         const signedEvent = await finalizeEvent(event, secretBuffer);
 
-        const sub = pool.publish(defaultRelays, signedEvent);
+        const sub = await pool.publish(defaultRelays, signedEvent);
 
         console.log('response from publish event', sub);
 
