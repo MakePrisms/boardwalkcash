@@ -22,7 +22,7 @@ export const useNwc = () => {
 
     const pool = new SimplePool()
 
-    const handleResponse = async (response: any, pubkey: string) => {
+    const handleResponse = async (response: any, pubkey: string, eventId: string) => {
         const secret = localStorage.getItem('nwc_secret');
 
         if (!secret) {
@@ -43,7 +43,7 @@ export const useNwc = () => {
         const event = {
             kind: 23195,
             content: encrypted,
-            tags: [],
+            tags: ["e", eventId],
             created_at: Math.floor(Date.now() / 1000),
         }
 
@@ -58,7 +58,7 @@ export const useNwc = () => {
         return published;
     }
 
-    const handlePayInvoice = async (invoice: string, pubkey: string) => {
+    const handlePayInvoice = async (invoice: string, pubkey: string, eventId: string) => {
         const invoiceAmount = getAmountFromInvoice(invoice);
         const fee = await wallet.getFee(invoice);
 
@@ -83,7 +83,7 @@ export const useNwc = () => {
                         window.localStorage.setItem('proofs', JSON.stringify(sendResponse.returnChange));
                     }
                     addToast("Payment successful", "success");
-                    const response = await handleResponse(invoiceResponse, pubkey);
+                    const response = await handleResponse(invoiceResponse, pubkey, eventId);
                 }
             }
         } catch (error) {
@@ -92,11 +92,11 @@ export const useNwc = () => {
         }
     }
 
-    const handleRequest = async (decrypted: any, pubkey: string) => {
+    const handleRequest = async (decrypted: any, pubkey: string, eventId: string) => {
         switch (decrypted.method) {
             case 'pay_invoice':
                 const invoice = decrypted.params.invoice;
-                await handlePayInvoice(invoice, pubkey);
+                await handlePayInvoice(invoice, pubkey, eventId);
 
             default:
                 return;
@@ -159,7 +159,7 @@ export const useNwc = () => {
                         const decrypted = await nip04.decrypt(secret, pk, event.content);
                         if (decrypted) {
                             const parsed = JSON.parse(decrypted);
-                            const response = await handleRequest(parsed, event.pubkey);
+                            const response = await handleRequest(parsed, event.pubkey, event.id);
                         }
                     },
                     onclose(reason) {
