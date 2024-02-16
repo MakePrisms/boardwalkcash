@@ -56,6 +56,10 @@ const Receive = ({ wallet }) => {
             // let's publish a new event while simultaneously monitoring the relay for it
             let nwaPubkey = generateSecretKey();
             let nwaSecretKey = getPublicKey(nwaPubkey);
+            // save appPublicKey to localStorage
+            window.localStorage.setItem('appPublicKey', appPublicKey);
+            // save nwa object wth appPublicKey pk and sk to localStorage
+            window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey }));
 
             console.log("req commands:", typeof requiredCommands, requiredCommands);
 
@@ -101,11 +105,6 @@ const Receive = ({ wallet }) => {
             const signedEvent = finalizeEvent(eventTemplate, nwaSecretKey);
             console.log("Signed event:", signedEvent);
             await relay.publish(signedEvent);
-
-            // save appPublicKey to localStorage
-            window.localStorage.setItem('appPublicKey', appPublicKey);
-            // save nwa object wth appPublicKey pk and sk to localStorage
-            window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey }));
 
             relay.close();
         }
