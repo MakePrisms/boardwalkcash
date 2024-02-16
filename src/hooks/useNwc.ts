@@ -24,7 +24,9 @@ export const useNwc = () => {
 
     const handleResponse = async (response: any, pubkey: string, eventId: string) => {
         const nwa = localStorage.getItem('nwa');
+        const appPublicKey = localStorage.getItem('appPublicKey')!;
         const nwaPrivKey = JSON.parse(nwa!).nwaSecretKey;
+        const nwaPubKey = JSON.parse(nwa!).nwaPubkey;
 
         if (!nwaPrivKey) {
             addToast("No NWA private key found", "error");
@@ -39,7 +41,7 @@ export const useNwc = () => {
             }
         })
 
-        const encrypted = await nip04.encrypt(nwaPrivKey, pubkey, content);
+        const encrypted = await nip04.encrypt(nwaPrivKey, appPublicKey, content);
 
         const event = {
             kind: 23195,
