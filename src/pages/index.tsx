@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios"
 import Balance from "@/components/Balance";
-import LightningButtons from "@/components/buttons/LightningButtons";
 import Receive from "@/components/buttons/lightning/Receive";
 import Send from "@/components/buttons/lightning/Send";
 import EcashButtons from "@/components/buttons/EcashButtons";
-import CreateNwc from "@/components/CreateNwc";
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { generateSecretKey, getPublicKey } from 'nostr-tools'
 import { useNwc } from "@/hooks/useNwc";
@@ -59,7 +57,6 @@ export default function Home() {
             </div>
                 {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
-                <CreateNwc />
             </div>
         </main>
     );

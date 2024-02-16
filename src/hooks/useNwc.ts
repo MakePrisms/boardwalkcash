@@ -1,49 +1,149 @@
 import { useEffect } from 'react';
-import { Relay, nip04 } from 'nostr-tools';
+import { SimplePool, nip04, generateSecretKey, getPublicKey } from 'nostr-tools';
 import { useToast } from './useToast';
+import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { getAmountFromInvoice } from '@/utils/bolt11';
+
+const defaultRelays = [
+    'wss://relay.getalby.com/v1',
+    'wss://nostr.mutinywallet.com/',
+    'wss://relay.mutinywallet.com',
+    'wss://relay.damus.io',
+    "wss://relay.snort.social",
+    "wss://relay.primal.net"
+]
 
 export const useNwc = () => {
     const { addToast } = useToast();
+
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+
+    const wallet = new CashuWallet(mint);
+
+    const pool = new SimplePool()
+
+    const handlePayInvoice = async (invoice: string) => {
+        const invoiceAmount = getAmountFromInvoice(invoice);
+        console.log('invoiceAmount', invoiceAmount);
+        const fee = await wallet.getFee(invoice);
+        console.log('fee', fee);
+
+        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+        console.log('proofs', proofs);
+        let amountToPay = invoiceAmount + fee;
+
+        if (proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0) < amountToPay) {
+            addToast("You don't have enough funds to pay this invoice + fees", "error");
+            return;
+        }
+
+        try {
+            const sendResponse = await wallet.send(amountToPay, proofs);
+            if (sendResponse && sendResponse.send) {
+                console.log('sendResponse', sendResponse);
+                const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+                console.log('invoiceResponse', invoiceResponse);
+                if (!invoiceResponse || !invoiceResponse.isPaid) {
+                    addToast("An error occurred during the payment.", "error");
+                } else {
+                    if (sendResponse.returnChange) {
+                        window.localStorage.setItem('proofs', JSON.stringify(sendResponse.returnChange));
+                    }
+                    addToast("Payment successful", "success");
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("An error occurred while trying to send.", "error");
+        }
+    }
+
+    const handleRequest = async (decrypted: any) => {
+        switch (decrypted.method) {
+            case 'pay_invoice':
+                const invoice = decrypted.params.invoice;
+                await handlePayInvoice(invoice);
+
+            default:
+                return;
+        }
+    }
+
+    const createConnection = () => {
+        const quickCashuPubkey = window.localStorage.getItem('pubkey');
+        const sk = generateSecretKey();
+        const pk = getPublicKey(sk);
+        const secretHex = Buffer.from(sk).toString('hex');
+        const relayUrl = encodeURIComponent('wss://relay.getalby.com/v1');
+        const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=${quickCashuPubkey}@quick-cashu.vercel.app`;
+
+        localStorage.setItem('nwc_secret', secretHex);
+        localStorage.setItem('nwc_connectionUri', uri);
+    };
 
     useEffect(() => {
         const connectionUri = localStorage.getItem('nwc_connectionUri');
         const secret = localStorage.getItem('nwc_secret');
 
+        // Call createConnection if either nwc_connectionUri or nwc_secret is missing
         if (!connectionUri || !secret) {
-            console.log('No NWC connection URI or secret found in local storage.');
-            return;
+            createConnection();
         }
 
-        const { pk, relayUrl } = parseConnectionUri(connectionUri);
+        if (connectionUri && secret) {
+            const { pk, relayUrl } = parseConnectionUri(connectionUri);
 
-        console.log(`Connecting to ${relayUrl} with public key ${pk}`);
+            let isMounted = true; // Flag to manage cleanup and avoid setting state on unmounted component
 
-        const listenForEvents = async () => {
-            const relay = await Relay.connect(relayUrl);
+            const attemptReconnect = (initialDelay = 1000, maxDelay = 30000) => {
+                let delay = initialDelay;
+                const reconnect = () => {
+                    if (!isMounted) return; // Stop if component has unmounted
+                    listenForEvents().catch(() => {
+                        // Wait for the current delay, then try to reconnect
+                        setTimeout(() => {
+                            if (!isMounted) return; // Check again before trying to reconnect
+                            reconnect();
+                            // Increase the delay for the next attempt, capped at maxDelay
+                            delay = Math.min(delay * 2, maxDelay);
+                        }, delay);
+                    });
+                };
+                reconnect();
+            };
 
-            const sub = await relay.subscribe(
-                [
-                    {
-                        authors: [pk],
+            const listenForEvents = async () => {
+                const sub = pool.subscribeMany(
+                    defaultRelays,
+                    [
+                        {
+                            authors: [pk], kinds: [13194, 23194]
+                        },
+                    ], {
+                    onevent: async (event: any) => {
+                        // decrypt the event with the secret using nip04
+                        const decrypted = await nip04.decrypt(secret, pk, event.content);
+                        if (decrypted) {
+                            const parsed = JSON.parse(decrypted);
+                            const response = await handleRequest(parsed);
+                        }
                     },
-                ], {
-                onevent: async (event: any) => {
-                    console.log('Event received:', event);
-                    // decrypt the event with the secret using nip04
-                    const decrypted = await nip04.decrypt(secret, pk, event.content);
-                    console.log('Decrypted:', decrypted);
-                    addToast('NWC event received', 'success');
-                    addToast(decrypted, 'success');
-                },
-                onclose(reason) {
-                    console.log('Subscription closed:', reason);
+                    onclose(reason) {
+                        console.log('Subscription closed:', reason);
+                    }
                 }
+                );
             }
-            );
-        }
 
-        listenForEvents();
-    }, []);
+            // Initial connection attempt
+            attemptReconnect();
+
+            return () => {
+                isMounted = false; // Set the flag to false when the component unmounts
+                // Cleanup logic here (e.g., unsubscribe from relays)
+            };
+        }
+    }, []); // Empty dependency array ensures this effect runs only once on mount
 
     function extractPublicKeyFromUri(uri: any) {
         // Remove the scheme part and split by "?" to isolate the public key

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios"
 import Balance from "@/components/Balance";
-import LightningButtons from "@/components/buttons/LightningButtons";
+import Receive from "@/components/buttons/lightning/Receive";
+import Send from "@/components/buttons/lightning/Send";
 import EcashButtons from "@/components/buttons/EcashButtons";
-import CreateNwc from "@/components/CreateNwc";
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { generateSecretKey, getPublicKey } from 'nostr-tools'
 import { useNwc } from "@/hooks/useNwc";
@@ -12,7 +12,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 
 
-export default function Connect() {
+export default function Home() {
 
     useEffect(() => {
         // Check for pubkey in local storage
@@ -38,7 +38,9 @@ export default function Connect() {
         }
     }, []);
 
-    const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+
+    const wallet = new CashuWallet(mint);
 
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
@@ -49,9 +51,12 @@ export default function Connect() {
         <main className="w-full h-full p-4">
             <Balance balance={balance} />
             <div className="py-8">
-                <LightningButtons wallet={wallet} />
+            <div className="flex flex-row justify-between w-1/2 mb-4 mx-auto">
+                <Receive wallet={wallet} />
+                <Send wallet={wallet} />
+            </div>
+                {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
-                {/* <CreateNwc /> */}
             </div>
         </main>
     );
