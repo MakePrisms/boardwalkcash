@@ -54,8 +54,8 @@ const Receive = ({ wallet }) => {
             const relay = await Relay.connect(appRelay);
 
             // let's publish a new event while simultaneously monitoring the relay for it
-            let sk = generateSecretKey();
-            let pk = getPublicKey(sk);
+            let nwaPubkey = generateSecretKey();
+            let nwaSecretKey = getPublicKey(sk);
 
             console.log("Secret key:", typeof sk, sk);
             console.log("Public key:", pk);
