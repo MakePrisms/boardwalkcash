@@ -82,8 +82,10 @@ const Receive = ({ wallet }) => {
                 });
             }
 
+            console.log("Secret JSON:", secretJson);
+
             const encryptedContent = await nip04.encrypt(
-                nwaPubkey,
+                nwaSecretKey,
                 appPublicKey,
                 secretJson
             );
