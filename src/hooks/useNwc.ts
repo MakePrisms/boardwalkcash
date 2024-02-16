@@ -154,6 +154,7 @@ export const useNwc = () => {
                         },
                     ], {
                     onevent: async (event: any) => {
+                        console.log('event', event);
                         // decrypt the event with the secret using nip04
                         const decrypted = await nip04.decrypt(nwa.nwaSecretKey, nwa.nwaPubkey, event.content);
                         console.log('decrypted', decrypted);
