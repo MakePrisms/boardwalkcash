@@ -116,6 +116,15 @@ export const useNwc = () => {
         localStorage.setItem('nwc_connectionUri', uri);
     };
 
+    const decryptEvent = async (event: any, nwa: any) => {
+        const decrypted = await nip04.decrypt(nwa.nwaSecretKey, nwa.nwaPubkey, event.content);
+        console.log('decrypted', decrypted);
+        if (decrypted) {
+            const parsed = JSON.parse(decrypted);
+            const response = await handleRequest(parsed, event.pubkey, event.id);
+        }
+    }
+
     useEffect(() => {
         const nwaAppPubkey = window.localStorage.getItem('appPublicKey');
         const nwa = JSON.parse(window.localStorage.getItem('nwa')!);
@@ -155,13 +164,7 @@ export const useNwc = () => {
                     ], {
                     onevent: async (event: any) => {
                         console.log('event', event);
-                        // decrypt the event with the secret using nip04
-                        const decrypted = await nip04.decrypt(nwa.nwaSecretKey, nwa.nwaPubkey, event.content);
-                        console.log('decrypted', decrypted);
-                        if (decrypted) {
-                            const parsed = JSON.parse(decrypted);
-                            const response = await handleRequest(parsed, event.pubkey, event.id);
-                        }
+                        await decryptEvent(event, nwa);
                     },
                     onclose(reason) {
                         console.log('Subscription closed:', reason);
