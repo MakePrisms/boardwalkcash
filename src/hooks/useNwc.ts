@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { SimplePool, nip04, generateSecretKey, getPublicKey } from 'nostr-tools';
+import { SimplePool, nip04, generateSecretKey, getPublicKey, finalizeEvent } from 'nostr-tools';
 import { useToast } from './useToast';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { getAmountFromInvoice } from '@/utils/bolt11';
@@ -22,14 +22,47 @@ export const useNwc = () => {
 
     const pool = new SimplePool()
 
-    const handlePayInvoice = async (invoice: string) => {
+    const handleResponse = async (response: any, pubkey: string) => {
+        const secret = localStorage.getItem('nwc_secret');
+
+        if (!secret) {
+            addToast("Secret not found", "error");
+            return;
+        }
+
+        const content = JSON.stringify({
+            method: 'pay_invoice',
+            error: null,
+            result: {
+                preimage: response.preimage,
+            }
+        })
+
+        const encrypted = await nip04.encrypt(secret, pubkey, content);
+
+        const event = {
+            kind: 23195,
+            content: encrypted,
+            tags: [],
+            created_at: Math.floor(Date.now() / 1000),
+        }
+
+        const secretBuffer = Buffer.from(secret, 'hex');
+
+        const signedEvent = await finalizeEvent(event, secretBuffer);
+
+        const sub = pool.publish(defaultRelays, signedEvent);
+
+        console.log('response from publish event', sub);
+
+        return sub;
+    }
+
+    const handlePayInvoice = async (invoice: string, pubkey: string) => {
         const invoiceAmount = getAmountFromInvoice(invoice);
-        console.log('invoiceAmount', invoiceAmount);
         const fee = await wallet.getFee(invoice);
-        console.log('fee', fee);
 
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-        console.log('proofs', proofs);
         let amountToPay = invoiceAmount + fee;
 
         if (proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0) < amountToPay) {
@@ -50,6 +83,7 @@ export const useNwc = () => {
                         window.localStorage.setItem('proofs', JSON.stringify(sendResponse.returnChange));
                     }
                     addToast("Payment successful", "success");
+                    const response = await handleResponse(invoiceResponse, pubkey);
                 }
             }
         } catch (error) {
@@ -58,11 +92,11 @@ export const useNwc = () => {
         }
     }
 
-    const handleRequest = async (decrypted: any) => {
+    const handleRequest = async (decrypted: any, pubkey: string) => {
         switch (decrypted.method) {
             case 'pay_invoice':
                 const invoice = decrypted.params.invoice;
-                await handlePayInvoice(invoice);
+                await handlePayInvoice(invoice, pubkey);
 
             default:
                 return;
@@ -125,7 +159,7 @@ export const useNwc = () => {
                         const decrypted = await nip04.decrypt(secret, pk, event.content);
                         if (decrypted) {
                             const parsed = JSON.parse(decrypted);
-                            const response = await handleRequest(parsed);
+                            const response = await handleRequest(parsed, event.pubkey);
                         }
                     },
                     onclose(reason) {
