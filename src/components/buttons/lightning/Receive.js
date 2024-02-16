@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Button, Modal, Spinner } from "flowbite-react";
 import { useToast } from "@/hooks/useToast";
+import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 
 const Receive = ({ wallet }) => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -58,15 +59,29 @@ const Receive = ({ wallet }) => {
 
             console.log("Secret key:", typeof sk, sk);
             console.log("Public key:", pk);
+            console.log("req commands:", typeof requiredCommands, requiredCommands);
 
             let secretJson;
 
             const pubkey = window.localStorage.getItem('pubkey');
 
             if (pubkey) {
-                secretJson = JSON.stringify({ secret: secret, lud16: `${pubkey}@quick-cashu.vercel.app` });
+                secretJson = JSON.stringify({
+                        secret: secret, 
+                        commands: [
+                            ...requiredCommands.split(","),
+                        ],
+                        relay: appRelay,
+                        lud16: `${pubkey}@quick-cashu.vercel.app` 
+                    });
             } else {
-                secretJson = JSON.stringify({ secret: secret });
+                secretJson = JSON.stringify({ 
+                    secret: secret,
+                    commands: [
+                        ...requiredCommands.split(","),
+                    ],
+                    relay: appRelay
+                });
             }
 
             const encryptedContent = await nip04.encrypt(
@@ -88,6 +103,11 @@ const Receive = ({ wallet }) => {
             await relay.publish(signedEvent);
 
             relay.close();
+
+            // save to local storage
+            const nwc = `nostr+walletconnect://${appPublicKey}?relay=${encodeURIComponent(appRelay)}&secret=${secret}`;
+            window.localStorage.setItem('nwc_connectionUri', nwc);
+            window.localStorage.setItem('nwc_secret', secret);
         }
     }
 

@@ -119,11 +119,6 @@ export const useNwc = () => {
         const connectionUri = localStorage.getItem('nwc_connectionUri');
         const secret = localStorage.getItem('nwc_secret');
 
-        // Call createConnection if either nwc_connectionUri or nwc_secret is missing
-        if (!connectionUri || !secret) {
-            createConnection();
-        }
-
         if (connectionUri && secret) {
             const { pk, relayUrl } = parseConnectionUri(connectionUri);
 
