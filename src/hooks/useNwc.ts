@@ -108,7 +108,7 @@ export const useNwc = () => {
         const sk = generateSecretKey();
         const pk = getPublicKey(sk);
         const secretHex = Buffer.from(sk).toString('hex');
-        const relayUrl = encodeURIComponent('wss://relay.getalby.com/v1');
+        const relayUrl = encodeURIComponent('wss://relay.mutinywallet.com');
         const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=${quickCashuPubkey}@quick-cashu.vercel.app`;
 
         localStorage.setItem('nwc_secret', secretHex);
