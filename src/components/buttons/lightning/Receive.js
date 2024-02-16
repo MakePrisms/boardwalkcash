@@ -56,11 +56,12 @@ const Receive = ({ wallet }) => {
             // let's publish a new event while simultaneously monitoring the relay for it
             let nwaSecretKey = generateSecretKey();
             let nwaPubkey = getPublicKey(nwaSecretKey);
-            const hexEncodedSecretKey = Buffer.from(nwaSecretKey, "hex");
+            // encode secret as hex
+            const hexEncodedSecretKey = Buffer.from(nwaSecretKey).toString('hex');
             // save appPublicKey to localStorage
             window.localStorage.setItem('appPublicKey', appPublicKey);
             // save nwa object wth appPublicKey pk and sk to localStorage
-            window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, hexEncodedSecretKey }));
+            window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey: hexEncodedSecretKey }));
 
             console.log("req commands:", typeof requiredCommands, requiredCommands);
 
