@@ -105,7 +105,7 @@ const Receive = ({ wallet }) => {
             relay.close();
 
             // save to local storage
-            const nwc = `nostr+walletconnect://${appPublicKey}?relay=${encodeURIComponent(appRelay)}&secret=${secret}`;
+            const nwc = `nostr+walletconnect://${appPublicKey}?relay=${appRelay}&secret=${secret}`;
             window.localStorage.setItem('nwc_connectionUri', nwc);
             window.localStorage.setItem('nwc_secret', secret);
         }
