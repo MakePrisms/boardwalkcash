@@ -43,7 +43,7 @@ export const useNwc = () => {
         const event = {
             kind: 23195,
             content: encrypted,
-            tags: ["e", eventId],
+            tags: [["e", eventId]],
             created_at: Math.floor(Date.now() / 1000),
         }
 
