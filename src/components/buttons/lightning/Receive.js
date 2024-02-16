@@ -102,12 +102,12 @@ const Receive = ({ wallet }) => {
             console.log("Signed event:", signedEvent);
             await relay.publish(signedEvent);
 
-            relay.close();
+            // save appPublicKey to localStorage
+            window.localStorage.setItem('appPublicKey', appPublicKey);
+            // save nwa object wth appPublicKey pk and sk to localStorage
+            window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey }));
 
-            // save to local storage
-            const nwc = `nostr+walletconnect://${appPublicKey}?relay=${appRelay}&secret=${secret}`;
-            window.localStorage.setItem('nwc_connectionUri', nwc);
-            window.localStorage.setItem('nwc_secret', secret);
+            relay.close();
         }
     }
 

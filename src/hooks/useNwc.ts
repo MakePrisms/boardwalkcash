@@ -23,10 +23,11 @@ export const useNwc = () => {
     const pool = new SimplePool()
 
     const handleResponse = async (response: any, pubkey: string, eventId: string) => {
-        const secret = localStorage.getItem('nwc_secret');
+        const nwa = localStorage.getItem('nwa');
+        const nwaPrivKey = JSON.parse(nwa!).nwaSecretKey;
 
-        if (!secret) {
-            addToast("Secret not found", "error");
+        if (!nwaPrivKey) {
+            addToast("No NWA private key found", "error");
             return;
         }
 
@@ -38,7 +39,7 @@ export const useNwc = () => {
             }
         })
 
-        const encrypted = await nip04.encrypt(secret, pubkey, content);
+        const encrypted = await nip04.encrypt(nwaPrivKey, pubkey, content);
 
         const event = {
             kind: 23195,
@@ -47,9 +48,7 @@ export const useNwc = () => {
             created_at: Math.floor(Date.now() / 1000),
         }
 
-        const secretBuffer = Buffer.from(secret, 'hex');
-
-        const signedEvent = await finalizeEvent(event, secretBuffer);
+        const signedEvent = await finalizeEvent(event, nwaPrivKey);
 
         const published = await Promise.any(pool.publish(defaultRelays, signedEvent))
 
@@ -116,12 +115,12 @@ export const useNwc = () => {
     };
 
     useEffect(() => {
-        const connectionUri = localStorage.getItem('nwc_connectionUri');
-        const secret = localStorage.getItem('nwc_secret');
+        const nwaAppPubkey = window.localStorage.getItem('appPublicKey');
+        const nwa = JSON.parse(window.localStorage.getItem('nwa')!);
+        console.log('nwaAppPubkey', nwaAppPubkey);
+        console.log('nwa', nwa);
 
-        if (connectionUri && secret) {
-            const { pk, relayUrl } = parseConnectionUri(connectionUri);
-
+        if (nwa && nwaAppPubkey) {
             let isMounted = true; // Flag to manage cleanup and avoid setting state on unmounted component
 
             const attemptReconnect = (initialDelay = 1000, maxDelay = 30000) => {
@@ -149,12 +148,13 @@ export const useNwc = () => {
                             // Add a since filter
                             // since the client was last opened?
                             // for now since 5 mins ago
-                            authors: [pk], kinds: [13194, 23194], since: Math.floor(Date.now() / 1000) - 300,
+                            authors: [nwaAppPubkey], kinds: [13194, 23194], since: Math.floor(Date.now() / 1000) - 300,
                         },
                     ], {
                     onevent: async (event: any) => {
                         // decrypt the event with the secret using nip04
-                        const decrypted = await nip04.decrypt(secret, pk, event.content);
+                        const decrypted = await nip04.decrypt(nwa.nwaSecretKey, nwa.nwaPubkey, event.content);
+                        console.log('decrypted', decrypted);
                         if (decrypted) {
                             const parsed = JSON.parse(decrypted);
                             const response = await handleRequest(parsed, event.pubkey, event.id);
