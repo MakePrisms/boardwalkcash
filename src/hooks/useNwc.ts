@@ -51,11 +51,11 @@ export const useNwc = () => {
 
         const signedEvent = await finalizeEvent(event, secretBuffer);
 
-        const sub = await pool.publish(defaultRelays, signedEvent);
+        const published = await Promise.any(pool.publish(defaultRelays, signedEvent))
 
-        console.log('response from publish event', sub);
+        console.log('response from publish event', published);
 
-        return sub;
+        return published;
     }
 
     const handlePayInvoice = async (invoice: string, pubkey: string) => {
