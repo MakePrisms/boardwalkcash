@@ -151,7 +151,10 @@ export const useNwc = () => {
                     defaultRelays,
                     [
                         {
-                            authors: [pk], kinds: [13194, 23194]
+                            // Add a since filter
+                            // since the client was last opened?
+                            // for now since 5 mins ago
+                            authors: [pk], kinds: [13194, 23194], since: Math.floor(Date.now() / 1000) - 300,
                         },
                     ], {
                     onevent: async (event: any) => {
