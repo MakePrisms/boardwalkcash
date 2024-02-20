@@ -10,6 +10,7 @@ import { useNwc } from "@/hooks/useNwc";
 import { useCashu } from "@/hooks/useCashu";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import Disclaimer from "@/components/Disclaimer";
 
 
 export default function Home() {
@@ -58,6 +59,7 @@ export default function Home() {
                 {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
+            <Disclaimer />
         </main>
     );
 }
