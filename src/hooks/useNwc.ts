@@ -152,27 +152,42 @@ export const useNwc = () => {
             };
 
             const listenForEvents = async () => {
+                let latestEventTimestamp = window.localStorage.getItem('latestEventtimestamp');
+                const nowTimestamp = Math.floor(Date.now() / 1000);
+
+                if (!latestEventTimestamp) {
+                    latestEventTimestamp = nowTimestamp.toString();
+                    window.localStorage.setItem('latestEventtimestamp', latestEventTimestamp);
+                }
+
+                const sinceTimestamp = parseInt(latestEventTimestamp, 10);
+
+                // Validate the sinceTimestamp to be reasonable
+                if (isNaN(sinceTimestamp) || sinceTimestamp > nowTimestamp) {
+                    console.error('Invalid latestEventtimestamp from localStorage. Using current timestamp.');
+                    latestEventTimestamp = nowTimestamp.toString();
+                }
+
                 const sub = pool.subscribeMany(
                     defaultRelays,
                     [
                         {
-                            // Add a since filter
-                            // since the client was last opened?
-                            // for now since 5 mins ago
-                            authors: [nwaAppPubkey], kinds: [13194, 23194], since: Math.floor(Date.now() / 1000) - 300,
+                            authors: [nwaAppPubkey], kinds: [13194, 23194], since: sinceTimestamp,
                         },
                     ], {
-                    onevent: async (event: any) => {
+                    onevent: async (event) => {
                         console.log('event', event);
-                        console.log('nwa', nwa);
                         await decryptEvent(event, nwa);
+
+                        // Update the latestEventtimestamp in localStorage after processing the event
+                        const eventTimestamp = event.created_at.toString();
+                        window.localStorage.setItem('latestEventtimestamp', eventTimestamp);
                     },
                     onclose(reason) {
                         console.log('Subscription closed:', reason);
                     }
-                }
-                );
-            }
+                });
+            };
 
             // Initial connection attempt
             attemptReconnect();

@@ -109,6 +109,8 @@ const Receive = ({ wallet }) => {
             await relay.publish(signedEvent);
 
             relay.close();
+
+            window.location.href = '/';
         }
     }
 
