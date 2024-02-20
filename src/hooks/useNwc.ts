@@ -117,7 +117,7 @@ export const useNwc = () => {
     };
 
     const decryptEvent = async (event: any, nwa: any) => {
-        const decrypted = await nip04.decrypt(nwa.nwaSecretKey, nwa.nwaPubkey, event.content);
+        const decrypted = await nip04.decrypt(nwa.nwaSecretKey, event.pubkey, event.content);
         console.log('decrypted', decrypted);
         if (decrypted) {
             const parsed = JSON.parse(decrypted);
@@ -164,6 +164,7 @@ export const useNwc = () => {
                     ], {
                     onevent: async (event: any) => {
                         console.log('event', event);
+                        console.log('nwa', nwa);
                         await decryptEvent(event, nwa);
                     },
                     onclose(reason) {
