@@ -14,7 +14,7 @@ const Send = ({ wallet }) => {
 
     const { addToast } = useToast();
 
-    const {handlePayInvoice} = useCashu();
+    const { handlePayInvoice } = useCashu();
 
     const estimateFee = async () => {
         if (!invoice) {
@@ -46,7 +46,7 @@ const Send = ({ wallet }) => {
             console.error(error);
             addToast("An error occurred while paying the invoice.", "error");
         }
-        
+
         setIsSending(false);
         setIsSendModalOpen(false);
         setInvoice('');
@@ -55,11 +55,12 @@ const Send = ({ wallet }) => {
     };
 
     return (
-        <Button 
-            onClick={() => setIsSendModalOpen(true)} 
-            className="bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none"
-        >
-            &nbsp;&nbsp;Send&nbsp;<ArrowUpRightIcon className="ms-2 h-5 w-5"/>
+        <>
+            <Button
+                onClick={() => setIsSendModalOpen(true)}
+                className="bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none"
+            >
+                &nbsp;&nbsp;Send&nbsp;<ArrowUpRightIcon className="ms-2 h-5 w-5" /></Button>
             <Modal show={isSendModalOpen} onClose={() => setIsSendModalOpen(false)}>
                 <Modal.Header>Send Lightning Invoice</Modal.Header>
                 {isSending ? (
@@ -102,7 +103,7 @@ const Send = ({ wallet }) => {
                     </>
                 )}
             </Modal>
-        </Button>
+        </>
     );
 };
 

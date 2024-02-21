@@ -75,15 +75,15 @@ const Receive = () => {
 
             if (pubkey) {
                 secretJson = JSON.stringify({
-                        secret: secret, 
-                        commands: [
-                            ...requiredCommands.split(","),
-                        ],
-                        relay: appRelay,
-                        lud16: `${pubkey}@quick-cashu.vercel.app` 
-                    });
+                    secret: secret,
+                    commands: [
+                        ...requiredCommands.split(","),
+                    ],
+                    relay: appRelay,
+                    lud16: `${pubkey}@quick-cashu.vercel.app`
+                });
             } else {
-                secretJson = JSON.stringify({ 
+                secretJson = JSON.stringify({
                     secret: secret,
                     commands: [
                         ...requiredCommands.split(","),
@@ -133,7 +133,7 @@ const Receive = () => {
         }
 
         try {
-            const {pr, hash} = await requestMintInvoice(amount);
+            const { pr, hash } = await requestMintInvoice(amount);
 
             setInvoiceToPay(pr);
 
@@ -169,10 +169,11 @@ const Receive = () => {
     };
 
     return (
-        <Button 
-            onClick={() => setIsReceiveModalOpen(true)} 
-            className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
-            Receive <ArrowDownRightIcon className="ms-2 h-5 w-5"/>
+        <>
+            <Button
+                onClick={() => setIsReceiveModalOpen(true)}
+                className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
+                Receive <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
             <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (
@@ -223,7 +224,7 @@ const Receive = () => {
                     </>
                 )}
             </Modal>
-        </Button>
+        </>
     );
 };
 
