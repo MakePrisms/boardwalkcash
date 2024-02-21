@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button, Modal, Spinner } from "flowbite-react";
+import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { useToast } from "@/hooks/useToast";
 import { useCashu } from "@/hooks/useCashu";
@@ -54,8 +55,11 @@ const Send = ({ wallet }) => {
     };
 
     return (
-        <div>
-            <Button onClick={() => setIsSendModalOpen(true)} color="success">Send</Button>
+        <Button 
+            onClick={() => setIsSendModalOpen(true)} 
+            className="bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none"
+        >
+            &nbsp;&nbsp;Send&nbsp;<ArrowUpRightIcon className="ms-2 h-5 w-5"/>
             <Modal show={isSendModalOpen} onClose={() => setIsSendModalOpen(false)}>
                 <Modal.Header>Send Lightning Invoice</Modal.Header>
                 {isSending ? (
@@ -98,7 +102,7 @@ const Send = ({ wallet }) => {
                     </>
                 )}
             </Modal>
-        </div>
+        </Button>
     );
 };
 

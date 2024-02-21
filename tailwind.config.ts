@@ -13,6 +13,14 @@ module.exports = {
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
+      fontFamily: {
+        'teko': ['Teko', 'sans-serif'],
+        'kode-mono': ['Kode Mono', 'monospace'],
+      },
+      colors: {
+        'cyan-teal': '#26A69A',
+        'cyan-teal-dark': '#1E7A6E',
+      },
     },
   },
   plugins: [

@@ -49,13 +49,13 @@ export default function Home() {
     useCashu();
 
     return (
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
+        <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
             <Balance balance={balance} />
             <div className="py-8 w-full">
-            <div className="flex flex-row justify-between w-1/2 mb-4 mx-auto">
-                <Receive />
-                <Send wallet={wallet} />
-            </div>
+                <div className="flex flex-row justify-center mx-auto">
+                    <Receive />
+                    <Send wallet={wallet} />
+                </div>
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
             <Disclaimer />
