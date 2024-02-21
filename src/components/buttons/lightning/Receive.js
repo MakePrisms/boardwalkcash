@@ -3,12 +3,15 @@ import axios from "axios";
 import { Button, Modal, Spinner } from "flowbite-react";
 import { useToast } from "@/hooks/useToast";
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
+import { useCashu } from "@/hooks/useCashu";
 
-const Receive = ({ wallet }) => {
+const Receive = () => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
     const [amount, setAmount] = useState('');
     const [isReceiving, setIsReceiving] = useState(false);
     const [invoiceToPay, setInvoiceToPay] = useState('');
+
+    const { requestMintInvoice } = useCashu();
 
     const { addToast } = useToast();
 
@@ -129,13 +132,7 @@ const Receive = ({ wallet }) => {
         }
 
         try {
-            const { pr, hash } = await wallet.requestMint(parseInt(amount));
-
-            if (!pr || !hash) {
-                addToast("An error occurred while trying to receive.", "error");
-                setIsReceiving(false);
-                return;
-            }
+            const {pr, hash} = await requestMintInvoice(amount);
 
             setInvoiceToPay(pr);
 

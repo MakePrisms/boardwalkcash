@@ -53,10 +53,9 @@ export default function Home() {
             <Balance balance={balance} />
             <div className="py-8 w-full">
             <div className="flex flex-row justify-between w-1/2 mb-4 mx-auto">
-                <Receive wallet={wallet} />
+                <Receive />
                 <Send wallet={wallet} />
             </div>
-                {/* <LightningButtons wallet={wallet} mint={mint} /> */}
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
             <Disclaimer />

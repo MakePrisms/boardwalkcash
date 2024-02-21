@@ -2,9 +2,16 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setBalance } from '@/redux/reducers/CashuReducer';
+import { useToast } from './useToast';
+import { getAmountFromInvoice } from "@/utils/bolt11";
+import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
 
 export const useCashu = () => {
     const dispatch = useDispatch();
+    const { addToast } = useToast();
+
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+    const wallet = new CashuWallet(mint);
 
     const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
@@ -24,6 +31,51 @@ export const useCashu = () => {
             console.error(`Failed to delete proof with ID ${proofId}:`, error);
         }
     };
+
+    const requestMintInvoice = async (amount: string) => {
+        const { pr, hash } = await wallet.requestMint(parseInt(amount));
+
+            if (!pr || !hash) {
+                addToast("An error occurred while trying to receive.", "error");
+                return;
+            }
+
+            return { pr, hash };
+    }
+
+    const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
+        if (!invoice || estimatedFee === null) {
+            addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
+            return;
+        }
+
+        const invoiceAmount = getAmountFromInvoice(invoice);
+        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+        let amountToPay = invoiceAmount + estimatedFee;
+
+        if (proofs.reduce((acc: any, proof: any) => acc + proof.amount, 0) < amountToPay) {
+            addToast("You don't have enough funds to pay this invoice + fees", "error");
+            return;
+        }
+
+        try {
+            const sendResponse = await wallet.send(amountToPay, proofs);
+            if (sendResponse && sendResponse.send) {
+                const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+                if (!invoiceResponse || !invoiceResponse.isPaid) {
+                    addToast("An error occurred during the payment.", "error");
+                } else {
+                    if (sendResponse.returnChange) {
+                        window.localStorage.setItem('proofs', JSON.stringify(sendResponse.returnChange));
+                    }
+                    addToast("Payment successful", "success");
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("An error occurred while trying to send.", "error");
+        }
+    }
 
     const updateProofsAndBalance = async () => {
         const pubkey = window.localStorage.getItem('pubkey');
@@ -86,5 +138,5 @@ export const useCashu = () => {
         };
     }, [dispatch]);
 
-    return null;
+    return {handlePayInvoice, requestMintInvoice}
 };
