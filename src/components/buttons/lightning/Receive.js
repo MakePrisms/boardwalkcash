@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Button, Modal, Spinner } from "flowbite-react";
+import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useToast } from "@/hooks/useToast";
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { useCashu } from "@/hooks/useCashu";
@@ -168,8 +169,10 @@ const Receive = () => {
     };
 
     return (
-        <div>
-            <Button onClick={() => setIsReceiveModalOpen(true)} color="warning">Receive</Button>
+        <Button 
+            onClick={() => setIsReceiveModalOpen(true)} 
+            className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
+            Receive <ArrowDownRightIcon className="ms-2 h-5 w-5"/>
             <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (
@@ -220,7 +223,7 @@ const Receive = () => {
                     </>
                 )}
             </Modal>
-        </div>
+        </Button>
     );
 };
 
