@@ -38,6 +38,7 @@ const Send = ({ wallet }) => {
 
     const handleSend = async () => {
         setIsSending(true);
+        setIsSendModalOpen(false);
 
         try {
             await handlePayInvoice(invoice, estimatedFee);
@@ -48,7 +49,6 @@ const Send = ({ wallet }) => {
         }
 
         setIsSending(false);
-        setIsSendModalOpen(false);
         setInvoice('');
         setEstimatedFee(null);
         setShowSubmit(false);
