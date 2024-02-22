@@ -3,6 +3,7 @@ import { SimplePool, nip04, generateSecretKey, getPublicKey, finalizeEvent } fro
 import { useToast } from './useToast';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { getAmountFromInvoice } from '@/utils/bolt11';
+import { assembleLightningAddress } from "@/utils/index";
 
 const defaultRelays = [
     'wss://relay.getalby.com/v1',
@@ -106,11 +107,16 @@ export const useNwc = () => {
 
     const createConnection = () => {
         const quickCashuPubkey = window.localStorage.getItem('pubkey');
+        if (!quickCashuPubkey) {
+            addToast("No public key found", "error");
+            return;
+        }
         const sk = generateSecretKey();
         const pk = getPublicKey(sk);
         const secretHex = Buffer.from(sk).toString('hex');
         const relayUrl = encodeURIComponent('wss://relay.mutinywallet.com');
-        const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=${quickCashuPubkey}@quick-cashu.vercel.app`;
+        const lud16 = assembleLightningAddress(quickCashuPubkey, window.location.host);
+        const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=${lud16}`;
 
         localStorage.setItem('nwc_secret', secretHex);
         localStorage.setItem('nwc_connectionUri', uri);

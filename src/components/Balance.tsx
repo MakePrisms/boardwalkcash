@@ -1,6 +1,7 @@
 import { Tooltip } from "flowbite-react";
 import React, { useState, useEffect } from "react";
 import ClipboardButton from "./buttons/CopyButton";
+import { assembleLightningAddress } from "@/utils/index";
 
 const Balance = ({ balance }: any) => {
   const [lightningAddress, setLightningAddress] = useState<string | null>(null);
@@ -14,11 +15,10 @@ const Balance = ({ balance }: any) => {
 
     if (storedPubkey) {
       const host = window.location.host;
+       
+      setLightningAddress(assembleLightningAddress(storedPubkey, host));
       
-      setLightningAddress(`${storedPubkey}@${host}`);
-      
-      const formattedPubkey = `${storedPubkey.slice(0, 5)}...${storedPubkey.slice(-3)}`;
-      setFormattedAddress(`${formattedPubkey}@${host}`);
+      setFormattedAddress(assembleLightningAddress(storedPubkey, host, true));
     }
   }, []);
 

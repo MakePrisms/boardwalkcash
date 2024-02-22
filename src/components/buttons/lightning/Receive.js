@@ -5,6 +5,7 @@ import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useToast } from "@/hooks/useToast";
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { useCashu } from "@/hooks/useCashu";
+import { assembleLightningAddress } from "@/utils/index";
 
 const Receive = () => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -80,7 +81,7 @@ const Receive = () => {
                         ...requiredCommands.split(","),
                     ],
                     relay: appRelay,
-                    lud16: `${pubkey}@quick-cashu.vercel.app`
+                    lud16: `${assembleLightningAddress(pubkey, window.location.host)}`
                 });
             } else {
                 secretJson = JSON.stringify({
