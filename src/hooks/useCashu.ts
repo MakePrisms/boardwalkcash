@@ -44,7 +44,7 @@ export const useCashu = () => {
     }
 
     const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
-        if (!invoice || estimatedFee === null) {
+        if (!invoice || isNaN(estimatedFee)) {
             addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
             return;
         }

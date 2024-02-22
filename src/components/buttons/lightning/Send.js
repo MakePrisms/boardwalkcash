@@ -40,7 +40,7 @@ const Send = ({ wallet }) => {
         setIsSending(true);
 
         try {
-            await handlePayInvoice(invoice);
+            await handlePayInvoice(invoice, estimatedFee);
             addToast("Invoice paid successfully.", "success");
         } catch (error) {
             console.error(error);
