@@ -1,21 +1,34 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Button, Modal, Spinner } from "flowbite-react";
+import { Button, Modal, Spinner, Tooltip } from "flowbite-react";
 import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useToast } from "@/hooks/useToast";
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { useCashu } from "@/hooks/useCashu";
 import { assembleLightningAddress } from "@/utils/index";
+import ClipboardButton from "../CopyButton";
 
 const Receive = () => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
     const [amount, setAmount] = useState('');
     const [isReceiving, setIsReceiving] = useState(false);
     const [invoiceToPay, setInvoiceToPay] = useState('');
+    const [lightningAddress, setLightningAddress] = useState();
 
     const { requestMintInvoice } = useCashu();
 
     const { addToast } = useToast();
+
+  
+    useEffect(() => {
+      const storedPubkey = window.localStorage.getItem("pubkey");
+  
+      if (storedPubkey) {
+        const host = window.location.host;
+         
+        setLightningAddress(assembleLightningAddress(storedPubkey, host));
+      }
+    }, []);
 
     const handleNwa = async () => {
         let params = new URL(document.location.href).searchParams;
@@ -211,13 +224,16 @@ const Receive = () => {
                                             onChange={(e) => setAmount(e.target.value)}
                                         />
                                     </div>
-                                    <Modal.Footer>
-                                        <Button color="failure" onClick={() => setIsReceiveModalOpen(false)}>
+                                    <Modal.Footer className="flex flex-row justify-around">
+                                        {/* <Button color="failure" onClick={() => setIsReceiveModalOpen(false)}>
                                             Cancel
-                                        </Button>
+                                        </Button> */}
                                         <Button color="success" onClick={handleReceive}>
-                                            Submit
+                                            Generate Invoice
                                         </Button>
+                                        <Tooltip content="Copy lightning address">
+                                            <ClipboardButton toCopy={lightningAddress} toShow="Lightning Address"/>
+                                        </Tooltip>
                                     </Modal.Footer>
                                 </>
                             )}

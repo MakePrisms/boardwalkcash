@@ -1,67 +1,36 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/useToast";
-
-const iconColor = `text-[var(--foreground-rgb)]`
-
-const clipboardIcon = () => {
-  return (
-    <svg
-      className={`w-6 h-6 ${iconColor} dark:text-white`}
-      aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M15 4h3c.6 0 1 .4 1 1v15c0 .6-.4 1-1 1H6a1 1 0 0 1-1-1V5c0-.6.4-1 1-1h3m0 3h6m-6 5h6m-6 4h6M10 3v4h4V3h-4Z"
-      />
-    </svg>
-  );
-};
-
-const checkIcon = () => {
-  return (
-    <svg
-      className="w-6 h-6 text-[var(--foreground-rgb)] dark:text-white"
-      aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M5 13l4 4L19 7"
-      />
-    </svg>
-  );
-};
+import { Button } from "flowbite-react";
+import {
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentIcon,
+} from "@heroicons/react/20/solid";
 
 interface Props {
-  text: string;
+  toCopy: string;
+  toShow: string;
+  className?: string;
 }
 
-const ClipboardButton: React.FC<Props> = ({ text }) => {
+const ClipboardButton: React.FC<Props> = ({
+  toCopy,
+  toShow,
+  className = "",
+}) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const { addToast } = useToast();
 
   const handleCopy = () => {
     navigator.clipboard
-      .writeText(text)
+      .writeText(toCopy)
       .then(() => {
         setIsCopied(true);
         addToast("Copied to clipboard", "info");
 
         setTimeout(() => {
           setIsCopied(false);
-        }, 3000);
+        }, 5000);
       })
       .catch((err): void => {
         console.error("Copy failed", err);
@@ -70,10 +39,13 @@ const ClipboardButton: React.FC<Props> = ({ text }) => {
   };
 
   return (
-    <button onClick={handleCopy}>
-      {isCopied ? checkIcon() : clipboardIcon()}
-      <i className="fb-icon fb-icon-clipboard" />
-    </button>
+    <Button onClick={handleCopy} className={className}>
+      <>
+        <div className="flex flex-row content-center justify-center align-middle">
+          {toShow} {isCopied ? <ClipboardDocumentCheckIcon className="w-5 h-5"/> : <ClipboardDocumentIcon className="w-5 h-5" />}
+        </div>
+      </>
+    </Button>
   );
 };
 
