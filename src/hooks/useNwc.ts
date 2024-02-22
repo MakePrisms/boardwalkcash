@@ -171,7 +171,7 @@ export const useNwc = () => {
                     window.localStorage.setItem('latestEventtimestamp', latestEventTimestamp);
                 }
 
-                const sinceTimestamp = parseInt(latestEventTimestamp, 10);
+                const sinceTimestamp = parseInt(latestEventTimestamp, 10) + 1;
 
                 // Validate the sinceTimestamp to be reasonable
                 if (isNaN(sinceTimestamp) || sinceTimestamp > nowTimestamp) {
