@@ -36,7 +36,6 @@ const Balance = ({ balance }: any) => {
           </Tooltip>
         </h2>
       ) : null}
-      {nwa ? <h2>Wallet Connected to Discord Zap Bot</h2> : null}
     </div>
   );
 };
