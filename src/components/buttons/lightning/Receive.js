@@ -176,6 +176,10 @@ const Receive = () => {
         try {
             await navigator.clipboard.writeText(text);
             addToast("Invoice copied to clipboard.", "success");
+            setInvoiceToPay('');
+            setAmount('')
+            setIsReceiving(false);
+            setIsReceiveModalOpen(false);
         } catch (err) {
             console.error("Failed to copy: ", err);
             addToast("Failed to copy invoice to clipboard.", "error");
