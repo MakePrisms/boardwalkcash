@@ -65,9 +65,15 @@ export const useCashu = () => {
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     addToast("An error occurred during the payment.", "error");
                 } else {
-                    if (sendResponse.returnChange) {
-                        window.localStorage.setItem('proofs', JSON.stringify(sendResponse.returnChange));
+                    const updatedProofs = sendResponse.returnChange || [];
+
+                    if (invoiceResponse.change) {
+                        invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
                     }
+
+                    window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+
+
                     addToast("Payment successful", "success");
                 }
             }
