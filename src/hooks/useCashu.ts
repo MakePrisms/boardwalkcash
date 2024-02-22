@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setBalance } from '@/redux/reducers/CashuReducer';
+import { setError, setSending, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
@@ -44,6 +45,7 @@ export const useCashu = () => {
     }
 
     const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
+        dispatch(setSending('Sending...'))
         if (!invoice || isNaN(estimatedFee)) {
             addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
             return;
@@ -53,7 +55,8 @@ export const useCashu = () => {
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
         let amountToPay = invoiceAmount + estimatedFee;
 
-        if (proofs.reduce((acc: any, proof: any) => acc + proof.amount, 0) < amountToPay) {
+        const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+        if (balance < amountToPay) {
             addToast("You don't have enough funds to pay this invoice + fees", "error");
             return;
         }
@@ -63,7 +66,7 @@ export const useCashu = () => {
             if (sendResponse && sendResponse.send) {
                 const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
-                    addToast("An error occurred during the payment.", "error");
+                    dispatch(setError("Payment failed"));
                 } else {
                     const updatedProofs = sendResponse.returnChange || [];
 
@@ -73,8 +76,9 @@ export const useCashu = () => {
 
                     window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
-
-                    addToast("Payment successful", "success");
+                    const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+                    
+                    dispatch(setSuccess(balance - newBalance));
                 }
             }
         } catch (error) {

@@ -5,7 +5,7 @@ import { assembleLightningAddress } from "@/utils/index";
 
 const Balance = ({ balance }: any) => {
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full mb-28">
+    <div className="flex flex-col items-center justify-center w-full h-full mb-14">
       <h1 className="mb-4">
         <span className="font-teko text-5xl font-bold">{balance}</span>{" "}
         <span className="font-4xl text-cyan-teal font-bold">sats</span>

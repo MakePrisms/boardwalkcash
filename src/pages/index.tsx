@@ -11,6 +11,7 @@ import { useCashu } from "@/hooks/useCashu";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import Disclaimer from "@/components/Disclaimer";
+import ActivityIndicator from "@/components/ActivityIndicator";
 
 
 export default function Home() {
@@ -51,6 +52,7 @@ export default function Home() {
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
             <Balance balance={balance} />
+            <ActivityIndicator />
             <div className="py-8 w-full">
                 <div className="flex flex-row justify-center mx-auto">
                     <Receive />
