@@ -1,42 +1,23 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios"
+import React, { useEffect } from "react";
 import Balance from "@/components/Balance";
 import Receive from "@/components/buttons/lightning/Receive";
 import Send from "@/components/buttons/lightning/Send";
 import EcashButtons from "@/components/buttons/EcashButtons";
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
-import { generateSecretKey, getPublicKey } from 'nostr-tools'
 import { useNwc } from "@/hooks/useNwc";
+import { useAppDispatch } from '@/redux/store';
+import { initializeUser } from "@/redux/reducers/UserReducer";
 import { useCashu } from "@/hooks/useCashu";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 
 
 export default function Home() {
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
-        // Check for pubkey in local storage
-        const storedPrivKey = localStorage.getItem('privkey');
-
-        if (!storedPrivKey) {
-            // If no privkey is found, generate a new keypair
-            const newSecretKey = generateSecretKey();
-            const newPubKey = getPublicKey(newSecretKey)
-
-            // turn the secret key into a hex string
-            const sec = new Uint8Array(newSecretKey);
-            const newSecretKeyHex = Buffer.from(sec).toString('hex');
-
-            localStorage.setItem('privkey', newSecretKeyHex);
-            localStorage.setItem('pubkey', newPubKey);
-            
-            // save pubkey to db
-            // If a new keypair is generated overwrite the old pubkey
-            axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
-                pubkey: newPubKey,
-            });
-        }
-    }, []);
+        dispatch(initializeUser());
+    }, [dispatch]);
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
 

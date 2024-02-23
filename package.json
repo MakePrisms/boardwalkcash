@@ -30,6 +30,7 @@
     "react-dom": "^18",
     "react-redux": "^9.1.0",
     "redux": "^5.0.1",
+    "redux-thunk": "^3.1.0",
     "vercel": "^33.5.0"
   },
   "devDependencies": {

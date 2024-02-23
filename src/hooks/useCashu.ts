@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setBalance } from '@/redux/reducers/CashuReducer';
 import { setError, setSending, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
@@ -11,6 +11,10 @@ export const useCashu = () => {
     const dispatch = useDispatch();
     const { addToast } = useToast();
 
+    const pubkey = useSelector((state: any) => state.user.pubkey);
+    const userStatus = useSelector((state: any) => state.user.status);
+
+
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
 
@@ -20,14 +24,14 @@ export const useCashu = () => {
     const deleteProofById = async (proofId: any) => {
         try {
             await axios.delete(`/api/proofs/${proofId}`)
-            .then((response) => {
-                if (response.status === 204) {
-                    console.log(`Proof with ID ${proofId} deleted successfully.`);
-                }
-            })
-            .catch((error) => {
-                console.log(error);
-            });
+                .then((response) => {
+                    if (response.status === 204) {
+                        console.log(`Proof with ID ${proofId} deleted successfully.`);
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
         } catch (error) {
             console.error(`Failed to delete proof with ID ${proofId}:`, error);
         }
@@ -36,12 +40,12 @@ export const useCashu = () => {
     const requestMintInvoice = async (amount: string) => {
         const { pr, hash } = await wallet.requestMint(parseInt(amount));
 
-            if (!pr || !hash) {
-                addToast("An error occurred while trying to receive.", "error");
-                return;
-            }
+        if (!pr || !hash) {
+            addToast("An error occurred while trying to receive.", "error");
+            return;
+        }
 
-            return { pr, hash };
+        return { pr, hash };
     }
 
     const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
@@ -88,8 +92,9 @@ export const useCashu = () => {
     }
 
     const updateProofsAndBalance = async () => {
-        const pubkey = window.localStorage.getItem('pubkey');
-        if (!pubkey) return;
+        if (!pubkey || userStatus !== 'succeeded') {
+            return;
+        }
 
         try {
             const proofsResponse = await axios.get(`/api/proofs/${pubkey}`);
@@ -148,5 +153,5 @@ export const useCashu = () => {
         };
     }, [dispatch]);
 
-    return {handlePayInvoice, requestMintInvoice}
+    return { handlePayInvoice, requestMintInvoice }
 };
