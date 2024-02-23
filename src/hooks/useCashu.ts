@@ -11,10 +11,6 @@ export const useCashu = () => {
     const dispatch = useDispatch();
     const { addToast } = useToast();
 
-    const pubkey = useSelector((state: any) => state.user.pubkey);
-    const userStatus = useSelector((state: any) => state.user.status);
-
-
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
 
@@ -92,7 +88,8 @@ export const useCashu = () => {
     }
 
     const updateProofsAndBalance = async () => {
-        if (!pubkey || userStatus !== 'succeeded') {
+        const pubkey = window.localStorage.getItem('pubkey');
+        if (!pubkey) {
             return;
         }
 
