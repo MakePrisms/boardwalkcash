@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Button, Modal, Spinner, Tooltip } from "flowbite-react";
+import { useDispatch } from "react-redux";
+import { resetStatus, setError, setReceiving, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useToast } from "@/hooks/useToast";
 import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
@@ -19,6 +21,7 @@ const Receive = () => {
 
     const { addToast } = useToast();
 
+    const dispatch = useDispatch();
   
     useEffect(() => {
       const storedPubkey = window.localStorage.getItem("pubkey");
@@ -145,6 +148,8 @@ const Receive = () => {
             setIsReceiving(false);
             return;
         }
+        
+        dispatch(setReceiving());
 
         try {
             const { pr, hash } = await requestMintInvoice(amount);
@@ -161,14 +166,15 @@ const Receive = () => {
             if (pollingResponse.status === 200 && pollingResponse.data.success) {
                 setTimeout(() => {
                     setIsReceiving(false);
-                    addToast(`You have successfully received ${amount} sats.`, "success");
+                    dispatch(setSuccess(`Received ${amount} sats!`))
                 }, 1000);
             }
         } catch (error) {
             console.error(error);
-            addToast("An error occurred while trying to receive.", "error");
+            dispatch(setError("An error occurred."))
         } finally {
             setIsReceiving(false);
+            dispatch(resetStatus())
         }
     };
 
@@ -191,7 +197,7 @@ const Receive = () => {
             <Button
                 onClick={() => setIsReceiveModalOpen(true)}
                 className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
-                Receive <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
+                 <span className="text-lg">Receive</span> <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
             <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (

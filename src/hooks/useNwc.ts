@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { SimplePool, nip04, generateSecretKey, getPublicKey, finalizeEvent } from 'nostr-tools';
+import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
 import { useToast } from './useToast';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { getAmountFromInvoice } from '@/utils/bolt11';
@@ -17,6 +19,8 @@ const defaultRelays = [
 export const useNwc = () => {
     const { addToast } = useToast();
 
+    const dispatch = useDispatch();
+    
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
 
     const wallet = new CashuWallet(mint);
@@ -67,20 +71,22 @@ export const useNwc = () => {
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
         let amountToPay = invoiceAmount + fee;
 
-        if (proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0) < amountToPay) {
-            addToast("You don't have enough funds to pay this invoice + fees", "error");
+        const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+        if (balance < amountToPay) {
+            dispatch(setError("Payment request exceeded available balance."))
             return;
         }
 
         try {
+            dispatch(setSending("Processing payment request..."))
             const sendResponse = await wallet.send(amountToPay, proofs);
             if (sendResponse && sendResponse.send) {
-                console.log('sendResponse', sendResponse);
+                await new Promise((resolve) => setTimeout(resolve, 3000));
                 const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
-                console.log('invoiceResponse', invoiceResponse);
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
-                    addToast("An error occurred during the payment.", "error");
+                    dispatch(setError("Payment failed"))
                 } else {
+
                     const updatedProofs = sendResponse.returnChange || [];
 
                     if (invoiceResponse.change) {
@@ -89,14 +95,18 @@ export const useNwc = () => {
 
                     window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
                     
-                    addToast("Payment successful", "success");
                     const response = await handleResponse(invoiceResponse, pubkey, eventId);
+                    
+                    const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+
+                    dispatch(setSuccess(balance - newBalance));
                 }
             }
         } catch (error) {
             console.error(error);
-            addToast("An error occurred while trying to send.", "error");
+            dispatch(setError("Payment failed"))
         }
+        
     }
 
     const handleRequest = async (decrypted: any, pubkey: string, eventId: string) => {
