@@ -36,8 +36,24 @@ export const SendModal = ({
 
   const { handlePayInvoice } = useCashu();
 
+  const handleBackClick = () => {
+    if (currentTab === Tabs.Amount) {
+      setCurrentTab(Tabs.Destination);
+    } else if (currentTab === Tabs.Fee) {
+      if (destination.startsWith("lnbc")) {
+        setCurrentTab(Tabs.Destination);
+      } else if (destination.includes("@")) {
+        setCurrentTab(Tabs.Amount);
+      }
+    }
+  }
+
   const estimateFee = async (toPay?: string) => {
     if (!toPay) {
+      if (!amountSat) {
+        addToast("Please enter an amount.", "warning");
+        return;
+      }
       try {
         const invoice = await getInvoiceFromLightningAddress(
           destination,
@@ -119,7 +135,7 @@ export const SendModal = ({
                 onChange={(e) => setDestination(e.target.value)}
               />
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="flex flex-row justify-end">
               <Button color="info" onClick={handleDestination}>
                 Continue
               </Button>
@@ -140,7 +156,8 @@ export const SendModal = ({
                 }
               />
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="flex flex-row justify-around">
+              <Button color="failure" onClick={handleBackClick}>Back</Button>
               <Button color="info" onClick={(e) => estimateFee()}>
                 Continue
               </Button>
@@ -158,7 +175,8 @@ export const SendModal = ({
                 {getAmountFromInvoice(invoice) + estimatedFee!} sats
               </div>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer className="flex flex-row justify-around">
+              <Button color="failure" onClick={handleBackClick}>Back</Button>
               <Button color="success" onClick={handleSend}>
                 Pay
               </Button>
