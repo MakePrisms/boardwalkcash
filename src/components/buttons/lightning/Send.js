@@ -60,7 +60,7 @@ const Send = ({ wallet }) => {
                 onClick={() => setIsSendModalOpen(true)}
                 className="bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none"
             >
-                &nbsp;&nbsp;Send&nbsp;<ArrowUpRightIcon className="ms-2 h-5 w-5" /></Button>
+                <span className="text-lg">&nbsp;&nbsp;Send&nbsp;</span><ArrowUpRightIcon className="ms-2 h-5 w-5" /></Button>
             <Modal show={isSendModalOpen} onClose={() => setIsSendModalOpen(false)}>
                 <Modal.Header>Send Lightning Invoice</Modal.Header>
                 {isSending ? (

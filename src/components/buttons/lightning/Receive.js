@@ -197,7 +197,7 @@ const Receive = () => {
             <Button
                 onClick={() => setIsReceiveModalOpen(true)}
                 className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
-                Receive <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
+                 <span className="text-lg">Receive</span> <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
             <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (

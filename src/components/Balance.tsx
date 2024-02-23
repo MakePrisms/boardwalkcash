@@ -52,10 +52,10 @@ const Balance = ({ balance }: any) => {
   return (
     <div className="flex flex-col items-center justify-center w-full h-full mb-14">
       <h1 onClick={handleClick} className="mb-4 hover:cursor-pointer">
-        <span className="font-teko text-5xl font-bold">
+        <span className="font-teko text-6xl font-bold">
           {unit === "sats" ? balance : usdBalance}
         </span>{" "}
-        <span className="font-4xl text-cyan-teal font-bold">{unit}</span>
+        <span className="font-5xl text-cyan-teal font-bold">{unit}</span>
       </h1>
     </div>
   );
