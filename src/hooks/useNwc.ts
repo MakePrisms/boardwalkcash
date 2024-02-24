@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useDispatch } from 'react-redux';
-import { SimplePool, nip04, generateSecretKey, getPublicKey, finalizeEvent } from 'nostr-tools';
+import { nip04, generateSecretKey, getPublicKey } from 'nostr-tools';
+import NDK, { NDKEvent, NDKFilter, NDKKind, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
 import { useToast } from './useToast';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
@@ -16,7 +17,19 @@ const defaultRelays = [
     "wss://relay.primal.net"
 ]
 
+interface NWA {
+    nwaSecretKey: string;
+    nwaPubkey: string;
+    appPublicKey: string;
+}
+
 export const useNwc = () => {
+    const [queue, setQueue] = useState<{event: NDKEvent; nwa: NWA}[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [recentInvoices, setRecentInvoices] = useState<string[]>([]); 
+
+    const ndk = useRef<NDK | null>(null);
+
     const { addToast } = useToast();
 
     const dispatch = useDispatch();
@@ -25,13 +38,10 @@ export const useNwc = () => {
 
     const wallet = new CashuWallet(mint);
 
-    const pool = new SimplePool()
-
     const handleResponse = async (response: any, pubkey: string, eventId: string) => {
         const nwa = localStorage.getItem('nwa');
         const appPublicKey = localStorage.getItem('appPublicKey')!;
         const nwaPrivKey = JSON.parse(nwa!).nwaSecretKey;
-        const nwaPubKey = JSON.parse(nwa!).nwaPubkey;
 
         if (!nwaPrivKey) {
             addToast("No NWA private key found", "error");
@@ -48,17 +58,15 @@ export const useNwc = () => {
 
         const encrypted = await nip04.encrypt(nwaPrivKey, appPublicKey, content);
 
-        const event = {
-            kind: 23195,
-            content: encrypted,
-            tags: [["e", eventId]],
-            created_at: Math.floor(Date.now() / 1000),
-        }
+        const event = new NDKEvent(ndk.current!)
+        event.kind = 23195;
+        event.content = encrypted;
+        event.tags = [["e", eventId]];
+        event.created_at = Math.floor(Date.now() / 1000);
 
-        const signedEvent = await finalizeEvent(event, nwaPrivKey);
+        await event.sign(new NDKPrivateKeySigner(nwaPrivKey))
 
-        const published = await Promise.any(pool.publish(defaultRelays, signedEvent))
-
+        const published = await event.publish();
         console.log('response from publish event', published);
 
         return published;
@@ -70,7 +78,7 @@ export const useNwc = () => {
 
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
         let amountToPay = invoiceAmount + fee;
-
+        console.log("useing proofs", proofs);
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
         if (balance < amountToPay) {
             dispatch(setError("Payment request exceeded available balance."))
@@ -112,7 +120,14 @@ export const useNwc = () => {
     const handleRequest = async (decrypted: any, pubkey: string, eventId: string) => {
         switch (decrypted.method) {
             case 'pay_invoice':
+                console.log("got pay invoice request")
                 const invoice = decrypted.params.invoice;
+                if (recentInvoices.includes(invoice)) {
+                    console.log("invoice already paid");
+                    return;
+                } else {
+                    setRecentInvoices((prev) => [...prev, invoice]);
+                }
                 await handlePayInvoice(invoice, pubkey, eventId);
 
             default:
@@ -146,82 +161,72 @@ export const useNwc = () => {
         }
     }
 
+    const getSince = () => {
+        let latestEventTimestamp = window.localStorage.getItem('latestEventTimestamp');
+        const nowTimestamp = Math.floor(Date.now() / 1000);
+
+        if (!latestEventTimestamp) {
+            window.localStorage.setItem('latestEventTimestamp', nowTimestamp.toString());
+            latestEventTimestamp = nowTimestamp.toString();
+        }
+        return parseInt(latestEventTimestamp) + 1;
+    }
+
     useEffect(() => {
         const nwaAppPubkey = window.localStorage.getItem('appPublicKey');
-        const nwa = JSON.parse(window.localStorage.getItem('nwa')!);
+        const nwa: NWA = JSON.parse(window.localStorage.getItem('nwa')!);
         console.log('nwaAppPubkey', nwaAppPubkey);
         console.log('nwa', nwa);
+
+
+        const listen = async () => {
+            ndk.current = new NDK();
+            ndk.current.explicitRelayUrls = defaultRelays;
+            await ndk.current.connect().then(() => console.log('connected to NDK'));
+
+            const filter: NDKFilter = {
+                kinds: [NDKKind.NostrWalletConnectReq],
+                authors: [nwaAppPubkey!],
+                since: getSince(),
+            }
+
+            const sub = ndk.current.subscribe(filter);
+
+            sub.on('event', (event: NDKEvent) => setQueue((prev) => [...prev, {event: event, nwa: nwa}]));
+        }
 
         if (nwa && nwaAppPubkey) {
             let isMounted = true; // Flag to manage cleanup and avoid setting state on unmounted component
 
-            const attemptReconnect = (initialDelay = 1000, maxDelay = 30000) => {
-                let delay = initialDelay;
-                const reconnect = () => {
-                    if (!isMounted) return; // Stop if component has unmounted
-                    listenForEvents().catch(() => {
-                        // Wait for the current delay, then try to reconnect
-                        setTimeout(() => {
-                            if (!isMounted) return; // Check again before trying to reconnect
-                            reconnect();
-                            // Increase the delay for the next attempt, capped at maxDelay
-                            delay = Math.min(delay * 2, maxDelay);
-                        }, delay);
-                    });
-                };
-                reconnect();
-            };
-
-            const listenForEvents = async () => {
-                let latestEventTimestamp = window.localStorage.getItem('latestEventtimestamp');
-                const nowTimestamp = Math.floor(Date.now() / 1000);
-
-                if (!latestEventTimestamp) {
-                    latestEventTimestamp = nowTimestamp.toString();
-                    window.localStorage.setItem('latestEventtimestamp', latestEventTimestamp);
-                }
-
-                const sinceTimestamp = parseInt(latestEventTimestamp, 10) + 1;
-
-                // Validate the sinceTimestamp to be reasonable
-                if (isNaN(sinceTimestamp) || sinceTimestamp > nowTimestamp) {
-                    console.error('Invalid latestEventtimestamp from localStorage. Using current timestamp.');
-                    latestEventTimestamp = nowTimestamp.toString();
-                }
-
-                const sub = pool.subscribeMany(
-                    defaultRelays,
-                    [
-                        {
-                            authors: [nwaAppPubkey], kinds: [13194, 23194], since: sinceTimestamp,
-                        },
-                    ], {
-                    onevent: async (event) => {
-                        console.log('event', event);
-                        await decryptEvent(event, nwa);
-
-                        // Update the latestEventtimestamp in localStorage after processing the event
-                        const eventTimestamp = event.created_at.toString();
-                        window.localStorage.setItem('latestEventtimestamp', eventTimestamp);
-                    },
-                    onclose(reason) {
-                        console.log('Subscription closed:', reason);
-                    }
-                });
-            };
-
-            // Initial connection attempt
-            attemptReconnect();
+            if (isMounted) {
+                listen();
+            }
 
             return () => {
-                isMounted = false; // Set the flag to false when the component unmounts
+                isMounted = false; 
                 // Cleanup logic here (e.g., unsubscribe from relays)
             };
         }
-    }, []); // Empty dependency array ensures this effect runs only once on mount
+    }, []);
+
+    // Effect to start processing when there are items in the queue
+    useEffect(() => {
+        const processQueue = async () => {
+            if (!isProcessing && queue.length > 0) {
+                setIsProcessing(true);
+
+                const {event, nwa} = queue[0];
+
+                await decryptEvent(event, nwa);
+
+                setQueue((prev) => prev.slice(1));
+                setIsProcessing(false);
+            };
+        }
+        processQueue();
+    }, [queue, isProcessing]);
 
     function extractPublicKeyFromUri(uri: any) {
-        // Remove the scheme part and split by "?" to isolate the public key
         const pkPart = uri.split('://')[1].split('?')[0];
         return pkPart;
     }
