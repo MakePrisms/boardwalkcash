@@ -94,7 +94,8 @@ export const useNwc = () => {
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     dispatch(setError("Payment failed"))
                 } else {
-
+                    console.log("invoiceResponse", invoiceResponse)
+                    
                     const updatedProofs = sendResponse.returnChange || [];
 
                     if (invoiceResponse.change) {
@@ -106,8 +107,10 @@ export const useNwc = () => {
                     const response = await handleResponse(invoiceResponse, pubkey, eventId);
                     
                     const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+                    const feePaid = balance - newBalance - invoiceAmount;
+                    const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
 
-                    dispatch(setSuccess(balance - newBalance));
+                    dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
                 }
             }
         } catch (error) {
