@@ -25,7 +25,10 @@ const Balance = ({ balance }: any) => {
       const balanceBtc = newBalance / 100_000_000;
       const balanceUsd = balanceBtc * usdBtc;
 
-      if (balanceUsd < 0.01) {
+      if (balanceUsd === 0) {
+        setUsdBalance("0.00");
+      }
+      else if (balanceUsd < 0.01) {
         setUsdBalance("< 0.01");
       } else {
         setUsdBalance(balanceUsd.toFixed(2));
