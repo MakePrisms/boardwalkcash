@@ -19,6 +19,7 @@ import ActivityIndicator from "@/components/ActivityIndicator";
 
 export default function Home() {
     const dispatch = useAppDispatch();
+
     const {updateProofsAndBalance} = useCashu();
     useNwc();
 
