@@ -27,10 +27,9 @@ export default function Home() {
     useEffect(() => {
         updateProofsAndBalance();
 
-        // poll for proofs every 5 seconds
         const interval = setInterval(() => {
             updateProofsAndBalance();
-        }, 5000);
+        }, 3000);
 
         return () => clearInterval(interval);
     }, [dispatch, updateProofsAndBalance]);
