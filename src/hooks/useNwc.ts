@@ -78,7 +78,6 @@ export const useNwc = () => {
 
         const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
         let amountToPay = invoiceAmount + fee;
-        console.log("useing proofs", proofs);
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
         if (balance < amountToPay) {
             dispatch(setError("Payment request exceeded available balance."))
@@ -94,8 +93,6 @@ export const useNwc = () => {
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     dispatch(setError("Payment failed"))
                 } else {
-                    console.log("invoiceResponse", invoiceResponse)
-                    
                     const updatedProofs = sendResponse.returnChange || [];
 
                     if (invoiceResponse.change) {

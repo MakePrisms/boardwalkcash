@@ -56,9 +56,7 @@ export const useCashu = () => {
 
         const invoiceAmount = getAmountFromInvoice(invoice);
         let amountToPay = invoiceAmount + estimatedFee;
-        console.log('proofs', proofs)
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
-        console.log('balance', balance);
         if (balance < amountToPay) {
             addToast("You don't have enough funds to pay this invoice + fees", "error");
             return;
@@ -66,10 +64,8 @@ export const useCashu = () => {
 
         try {
             const sendResponse = await wallet.send(amountToPay, proofs);
-            console.log('sendResponse', sendResponse);
             if (sendResponse && sendResponse.send) {
                 const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
-                console.log('invoiceResponse', invoiceResponse);
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     dispatch(setError("Payment failed"));
                 } else {
@@ -78,8 +74,6 @@ export const useCashu = () => {
                     if (invoiceResponse.change) {
                         invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
                     }
-
-                    console.log('updatedProofs', updatedProofs);
 
                     dispatch(rewriteProofs(updatedProofs));
                     dispatch(getBalance());
