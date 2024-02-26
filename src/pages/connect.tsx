@@ -1,18 +1,46 @@
 import React, { useEffect } from "react";
-import Disclaimer from "@/components/Disclaimer";
 import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from "@/redux/reducers/UserReducer";
 import { Spinner } from "flowbite-react";
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from "nostr-tools";
 import { assembleLightningAddress } from "@/utils";
+import Balance from "@/components/Balance";
+import Receive from "@/components/buttons/lightning/Receive";
+import Send from "@/components/buttons/lightning/Send";
+import EcashButtons from "@/components/buttons/EcashButtons";
+import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { useNwc } from "@/hooks/useNwc";
+import { useCashu } from "@/hooks/useCashu";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import Disclaimer from "@/components/Disclaimer";
+import ActivityIndicator from "@/components/ActivityIndicator";
 
 
 export default function Home() {
     const dispatch = useAppDispatch();
+    const {updateProofsAndBalance} = useCashu();
+    useNwc();
+
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+    const wallet = new CashuWallet(mint);
+
+    const balance = useSelector((state: RootState) => state.cashu.balance);
 
     useEffect(() => {
         dispatch(initializeUser());
     }, [dispatch]);
+
+    useEffect(() => {
+        updateProofsAndBalance();
+
+        // poll for proofs every 5 seconds
+        const interval = setInterval(() => {
+            updateProofsAndBalance();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [dispatch, updateProofsAndBalance]);
 
     const handleNwa = async () => {
         let params = new URL(document.location.href).searchParams;
@@ -124,11 +152,12 @@ export default function Home() {
 
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
-            {/* <Balance balance={balance} /> */}
+            <Balance balance={balance} />
+            <ActivityIndicator />
             <div className="py-8 w-full">
-                <div className="flex flex-col justify-center align-middle items-center mx-auto">
-                   <Spinner size="xl" className="mb-4"/>
-                   <h2>Connecting you to the Zap Bot...</h2>
+                <div className="flex flex-row justify-center mx-auto">
+                    <Receive />
+                    <Send wallet={wallet} />
                 </div>
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { getBalance, getProofs, updateProofs, rewriteProofs } from '@/redux/reducers/CashuReducer';
+import { getBalance, rewriteProofs } from '@/redux/reducers/CashuReducer';
 import { setError, setSending, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
@@ -9,8 +9,6 @@ import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
 export const useCashu = () => {
     const dispatch = useDispatch();
     const { addToast } = useToast();
-
-    const proofs = useSelector((state: any) => state.cashu.proofs);
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
@@ -43,6 +41,13 @@ export const useCashu = () => {
     }
 
     const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
+        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+        if (!proofs) {
+            addToast("No proofs found", "error");
+            return;
+        }
+
         dispatch(setSending('Sending...'))
         if (!invoice || isNaN(estimatedFee)) {
             addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
@@ -93,6 +98,14 @@ export const useCashu = () => {
     }
 
     const updateProofsAndBalance = async () => {
+        dispatch(getBalance());
+        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+        if (!proofs) {
+            return;
+        }
+        
+
         const pubkey = window.localStorage.getItem('pubkey');
         if (!pubkey) {
             return;
@@ -101,6 +114,11 @@ export const useCashu = () => {
         try {
             const proofsResponse = await axios.get(`/api/proofs/${pubkey}`);
             const proofsFromDb = proofsResponse.data;
+
+            if (!proofsFromDb) {
+                return;
+            }
+
             const formattedProofs = proofsFromDb.map((proof: any) => ({
                 C: proof.C,
                 amount: proof.amount,
@@ -108,12 +126,16 @@ export const useCashu = () => {
                 secret: proof.secret,
             }));
 
+            if (formattedProofs.length === 0) {
+                return;
+            }
+
             const newProofs = formattedProofs.filter((proof: any) => !proofs.some((localProof: any) => localProof.secret === proof.secret));
 
             let updatedProofs;
             if (newProofs.length > 0) {
                 updatedProofs = [...proofs, ...newProofs];
-                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+                dispatch(rewriteProofs(updatedProofs));
 
                 const totalReceived = newProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
 
@@ -129,8 +151,6 @@ export const useCashu = () => {
             } else {
                 updatedProofs = proofs;
             }
-            dispatch(getProofs());
-            dispatch(getBalance());
         } catch (error) {
             console.error('Failed to update proofs and balance:', error);
         }
