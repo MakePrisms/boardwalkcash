@@ -153,12 +153,11 @@ export default function Home() {
 
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
-            <Balance balance={balance} />
-            <ActivityIndicator />
+            {/* <Balance balance={balance} /> */}
             <div className="py-8 w-full">
-                <div className="flex flex-row justify-center mx-auto">
-                    <Receive />
-                    <Send wallet={wallet} />
+                <div className="flex flex-col justify-center align-middle items-center mx-auto">
+                   <Spinner size="xl" className="mb-4"/>
+                   <h2>Connecting you to the Zap Bot...</h2>
                 </div>
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
