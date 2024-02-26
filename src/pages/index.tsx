@@ -41,7 +41,6 @@ export default function Home() {
 
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
-
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
             <Balance balance={balance} />

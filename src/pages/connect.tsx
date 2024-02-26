@@ -16,17 +16,11 @@ import { RootState } from "@/redux/store";
 import Disclaimer from "@/components/Disclaimer";
 import ActivityIndicator from "@/components/ActivityIndicator";
 
-
 export default function Home() {
     const dispatch = useAppDispatch();
 
     const {updateProofsAndBalance} = useCashu();
     useNwc();
-
-    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
-    const wallet = new CashuWallet(mint);
-
-    const balance = useSelector((state: RootState) => state.cashu.balance);
 
     useEffect(() => {
         dispatch(initializeUser());
@@ -42,6 +36,12 @@ export default function Home() {
 
         return () => clearInterval(interval);
     }, [dispatch, updateProofsAndBalance]);
+
+    const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
+
+    const wallet = new CashuWallet(mint);
+
+    const balance = useSelector((state: RootState) => state.cashu.balance);
 
     const handleNwa = async () => {
         let params = new URL(document.location.href).searchParams;
