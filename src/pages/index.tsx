@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { use, useEffect } from "react";
 import Balance from "@/components/Balance";
 import Receive from "@/components/buttons/lightning/Receive";
 import Send from "@/components/buttons/lightning/Send";
@@ -16,10 +16,23 @@ import ActivityIndicator from "@/components/ActivityIndicator";
 
 export default function Home() {
     const dispatch = useAppDispatch();
+    const {updateProofsAndBalance} = useCashu();
+    useNwc();
 
     useEffect(() => {
         dispatch(initializeUser());
     }, [dispatch]);
+
+    useEffect(() => {
+        updateProofsAndBalance();
+
+        // poll for proofs every 5 seconds
+        const interval = setInterval(() => {
+            updateProofsAndBalance();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [dispatch, updateProofsAndBalance]);
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
 
@@ -27,8 +40,6 @@ export default function Home() {
 
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
-    useNwc();
-    useCashu();
 
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">

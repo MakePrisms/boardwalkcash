@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { setBalance } from '@/redux/reducers/CashuReducer';
+import { getBalance, getProofs, updateProofs, rewriteProofs } from '@/redux/reducers/CashuReducer';
 import { setError, setSending, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
@@ -11,12 +10,11 @@ export const useCashu = () => {
     const dispatch = useDispatch();
     const { addToast } = useToast();
 
+    const proofs = useSelector((state: any) => state.cashu.proofs);
+
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
 
-    const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
-
-    // Function to delete a proof by ID
     const deleteProofById = async (proofId: any) => {
         try {
             await axios.delete(`/api/proofs/${proofId}`)
@@ -52,10 +50,10 @@ export const useCashu = () => {
         }
 
         const invoiceAmount = getAmountFromInvoice(invoice);
-        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
         let amountToPay = invoiceAmount + estimatedFee;
-
+        console.log('proofs', proofs)
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+        console.log('balance', balance);
         if (balance < amountToPay) {
             addToast("You don't have enough funds to pay this invoice + fees", "error");
             return;
@@ -63,8 +61,10 @@ export const useCashu = () => {
 
         try {
             const sendResponse = await wallet.send(amountToPay, proofs);
+            console.log('sendResponse', sendResponse);
             if (sendResponse && sendResponse.send) {
                 const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+                console.log('invoiceResponse', invoiceResponse);
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     dispatch(setError("Payment failed"));
                 } else {
@@ -74,9 +74,12 @@ export const useCashu = () => {
                         invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
                     }
 
-                    window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+                    console.log('updatedProofs', updatedProofs);
 
-                    const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+                    dispatch(rewriteProofs(updatedProofs));
+                    dispatch(getBalance());
+
+                    const newBalance = proofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
                     const feePaid = balance - newBalance - invoiceAmount;
                     const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
 
@@ -105,12 +108,11 @@ export const useCashu = () => {
                 secret: proof.secret,
             }));
 
-            const localProofs = getProofs();
-            const newProofs = formattedProofs.filter((proof: any) => !localProofs.some((localProof: any) => localProof.secret === proof.secret));
+            const newProofs = formattedProofs.filter((proof: any) => !proofs.some((localProof: any) => localProof.secret === proof.secret));
 
             let updatedProofs;
             if (newProofs.length > 0) {
-                updatedProofs = [...localProofs, ...newProofs];
+                updatedProofs = [...proofs, ...newProofs];
                 window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
                 const totalReceived = newProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
@@ -125,36 +127,14 @@ export const useCashu = () => {
                     await deleteProofById(proofId);
                 }
             } else {
-                updatedProofs = localProofs;
+                updatedProofs = proofs;
             }
-
-            const newBalance = updatedProofs?.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0) || 0;
-            dispatch(setBalance(newBalance));
+            dispatch(getProofs());
+            dispatch(getBalance());
         } catch (error) {
             console.error('Failed to update proofs and balance:', error);
         }
     };
 
-    useEffect(() => {
-        updateProofsAndBalance();
-
-        const intervalId = setInterval(() => {
-            updateProofsAndBalance();
-        }, 3000); // Poll every 3 seconds
-
-        const handleStorageChange = (event: any) => {
-            if (event.key === 'proofs') {
-                updateProofsAndBalance();
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            clearInterval(intervalId);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [dispatch]);
-
-    return { handlePayInvoice, requestMintInvoice }
+    return { handlePayInvoice, requestMintInvoice, updateProofsAndBalance }
 };

@@ -61,7 +61,7 @@ export const ToastProvider = ({ children }) => {
                 {toastList.map((toast) => {
                     const { icon, bgColor, textColor } = getToastStyle(toast.type);
                     return (
-                        <Toast pos key={toast.id}>
+                        <Toast key={toast.id}>
                             <div className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bgColor} text-cyan-500 dark:${bgColor} dark:${textColor}`}>
                                 {icon}
                             </div>
