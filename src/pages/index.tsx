@@ -12,6 +12,7 @@ import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from "@/redux/reducers/UserReducer";
 import Disclaimer from "@/components/Disclaimer";
 import ActivityIndicator from "@/components/ActivityIndicator";
+import { setSuccess } from "@/redux/reducers/ActivityReducer";
 
 
 export default function Home() {
@@ -19,6 +20,11 @@ export default function Home() {
 
     useEffect(() => {
         dispatch(initializeUser());
+
+        let params = new URL(document.location.href).searchParams
+        if (params.get("just_connected") === "true") {
+            dispatch(setSuccess("Connected to Zap Bot!"));
+        }
     }, [dispatch]);
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
