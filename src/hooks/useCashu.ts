@@ -113,6 +113,10 @@ export const useCashu = () => {
                 updatedProofs = [...localProofs, ...newProofs];
                 window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
+                const totalReceived = newProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+
+                dispatch(setSuccess(`Received ${totalReceived} sat${totalReceived === 1 ? "" : "s"}!`))
+
                 // Delete new proofs from the database
                 // get the index as well
                 for (const proof of newProofs) {
