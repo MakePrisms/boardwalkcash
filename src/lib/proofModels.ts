@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 interface ProofData {
     proofId: string; // Assuming proofId is necessary for your logic
