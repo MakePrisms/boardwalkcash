@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Button, Modal, Spinner, Tooltip } from "flowbite-react";
+import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useDispatch } from "react-redux";
 import { resetStatus, setError, setReceiving, setSuccess } from "@/redux/reducers/ActivityReducer";
-import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useToast } from "@/hooks/useToast";
-import { Relay, generateSecretKey, getPublicKey, finalizeEvent, nip04 } from "nostr-tools";
 import { useCashu } from "@/hooks/useCashu";
 import { assembleLightningAddress } from "@/utils/index";
 import ClipboardButton from "../CopyButton";
+import QRCode from "qrcode.react";
 
 const Receive = () => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -18,19 +18,16 @@ const Receive = () => {
     const [lightningAddress, setLightningAddress] = useState();
 
     const { requestMintInvoice } = useCashu();
-
     const { addToast } = useToast();
-
     const dispatch = useDispatch();
-  
+
     useEffect(() => {
-      const storedPubkey = window.localStorage.getItem("pubkey");
-  
-      if (storedPubkey) {
-        const host = window.location.host;
-         
-        setLightningAddress(assembleLightningAddress(storedPubkey, host));
-      }
+        const storedPubkey = window.localStorage.getItem("pubkey");
+
+        if (storedPubkey) {
+            const host = window.location.host;
+            setLightningAddress(assembleLightningAddress(storedPubkey, host));
+        }
     }, []);
 
     const handleReceive = async () => {
@@ -40,20 +37,17 @@ const Receive = () => {
             setIsReceiving(false);
             return;
         }
-        
+
         dispatch(setReceiving());
 
         try {
             const { pr, hash } = await requestMintInvoice(amount);
-
             setInvoiceToPay(pr);
 
             const pollingResponse = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${hash}`, {
                 pubkey: window.localStorage.getItem('pubkey'),
                 amount: amount,
             });
-
-            console.log('pollingResponse', pollingResponse);
 
             if (pollingResponse.status === 200 && pollingResponse.data.success) {
                 setTimeout(() => {
@@ -89,7 +83,8 @@ const Receive = () => {
             <Button
                 onClick={() => setIsReceiveModalOpen(true)}
                 className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
-                 <span className="text-lg">Receive</span> <ArrowDownRightIcon className="ms-2 h-5 w-5" /> </Button>
+                <span className="text-lg">Receive</span> <ArrowDownRightIcon className="ms-2 h-5 w-5" />
+            </Button>
             <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (
@@ -100,44 +95,30 @@ const Receive = () => {
                     <>
                         <Modal.Body>
                             {invoiceToPay ? (
-                                <>
-                                    <div className="space-y-6">
-                                        <input
-                                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
-                                            type="text"
-                                            value={invoiceToPay}
-                                            readOnly
-                                        />
-                                    </div>
-                                    <Modal.Footer className="w-full flex flex-row justify-end">
-                                        <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
-                                            Copy
-                                        </Button>
-                                    </Modal.Footer>
-                                </>
+                                <div className="flex flex-col items-center justify-center space-y-4">
+                                    <QRCode value={invoiceToPay} size={256} level={"H"} />
+                                    <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
+                                        Copy
+                                    </Button>
+                                </div>
                             ) : (
-                                <>
-                                    <div className="space-y-6">
-                                        <input
-                                            className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
-                                            type="number"
-                                            placeholder="Enter amount"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                        />
-                                    </div>
-                                    <Modal.Footer className="flex flex-row justify-around">
-                                        {/* <Button color="failure" onClick={() => setIsReceiveModalOpen(false)}>
-                                            Cancel
-                                        </Button> */}
+                                <div className="space-y-6">
+                                    <input
+                                        className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                                        type="number"
+                                        placeholder="Enter amount"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                    />
+                                    <div className="flex justify-around">
                                         <Button color="success" onClick={handleReceive}>
                                             Generate Invoice
                                         </Button>
                                         <Tooltip content="Copy lightning address">
-                                            <ClipboardButton toCopy={lightningAddress} toShow="Lightning Address"/>
+                                            <ClipboardButton toCopy={lightningAddress} toShow="Lightning Address" />
                                         </Tooltip>
-                                    </Modal.Footer>
-                                </>
+                                    </div>
+                                </div>
                             )}
                         </Modal.Body>
                     </>
