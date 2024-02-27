@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createManyProofs } from '@/lib/proofModels';
@@ -21,37 +20,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { pubkey, amount }: PollingRequest = req.body;
 
-    const checkPaymentStatus = async (hash: string) => {
-        const response = await axios.get(`https://8333.space:3338/v1/mint/quote/bolt11/${hash}`);
-        console.log('Payment status response:', response.data);
-        return response.data;
-    };
-
     try {
         let paymentConfirmed = false;
         const maxAttempts = 90;
         let attempts = 0;
         let interval = 2000;
+        
+        const user = await findUserByPubkey(pubkey);
+        if (!user) {
+            res.status(404).send({ success: false, message: 'User not found.' });
+            return;
+        }
 
         while (!paymentConfirmed && attempts < maxAttempts) {
-            const status = await checkPaymentStatus(slug);
             console.log("polling", attempts);
-            if (status.paid) {
-                paymentConfirmed = true;
-
+            try {
                 const { proofs } = await wallet.requestTokens(amount, slug);
-
+    
                 console.log('Proofs:', proofs);
-
-                const user = await findUserByPubkey(pubkey);
-                if (!user) {
-                    res.status(404).send({ success: false, message: 'User not found.' });
-                    return;
-                }
-
-                // add user.id as userId to each proof
-                // rename proof.id to proof.proofId
-                // remove proof.id
                 let proofsPayload = proofs.map((proof) => {
                     return {
                         proofId: proof.id,
@@ -73,10 +59,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 res.status(200).send({ success: true, message: 'Payment confirmed and proofs created.' });
                 return;
-
-            } else {
-                attempts++;
-                await new Promise(resolve => setTimeout(resolve, interval));
+            } catch (e) {
+                if (e instanceof Error && e.message.includes("not paid")){
+                    console.log("quote not paid");
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                } else {
+                    throw e;
+                }
             }
         }
 
