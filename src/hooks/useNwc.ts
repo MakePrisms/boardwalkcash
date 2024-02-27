@@ -251,8 +251,13 @@ export const useNwc = () => {
         const decrypted = await nip04.decrypt(nwa.nwaSecretKey, event.pubkey, event.content);
         if (decrypted) {
             const parsed = JSON.parse(decrypted);
+            setSince(event.created_at)
             const response = await handleRequest(parsed, event.pubkey, event.id);
         }
+    }
+
+    const setSince = (timestamp: number) => {
+        window.localStorage.setItem('latestEventTimestamp', timestamp.toString()); 
     }
 
     const getSince = () => {
