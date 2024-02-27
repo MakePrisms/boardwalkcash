@@ -4,7 +4,7 @@ import { nip04, generateSecretKey, getPublicKey } from 'nostr-tools';
 import NDK, { NDKEvent, NDKFilter, NDKKind, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
 import { useToast } from './useToast';
-import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, PayLnInvoiceResponse, Proof } from '@cashu/cashu-ts';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { assembleLightningAddress } from "@/utils/index";
 
@@ -67,55 +67,149 @@ export const useNwc = () => {
         await event.sign(new NDKPrivateKeySigner(nwaPrivKey))
 
         const published = await event.publish();
-        console.log('response from publish event', published);
 
         return published;
+    }
+
+    const getNeededProofs = (amount: number) => {
+        const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+        let closestProofs: Proof[] = [];
+        let closestSum = -Infinity; 
+
+        // First, check if any single proof is big enough
+        for (let proof of proofs) {
+            if (
+                proof.amount >= amount &&
+                (closestSum === 0 || proof.amount < closestSum)
+            ) {
+                closestProofs = [proof];
+                closestSum = proof.amount;
+            }
+        }
+
+        const findClosest = (idx: number, currentSum: number, currentProofs: Proof[]) => {
+            // If we are closer this time, update the closest values
+            if ((currentSum >= amount && currentSum < closestSum) || (currentSum >= amount && closestSum < amount)) {
+                closestProofs = [...currentProofs];
+                closestSum = currentSum;
+            }
+
+            if (idx >= proofs.length) return; // Base case
+
+            // Include next proof
+            findClosest(idx + 1, currentSum + proofs[idx].amount, [...currentProofs, proofs[idx]]);
+
+            // Exclude next proof
+            findClosest(idx + 1, currentSum, currentProofs);
+        }
+        
+        // Only start the recursive search if we haven't already found a single proof that meets the criteria
+        if (closestSum < amount || closestProofs.length > 1) {
+            findClosest(0, 0, []);
+        };
+
+        console.log("## closest amount", closestProofs.reduce((acc, proof) => acc + proof.amount, 0));
+
+        const remainngProofs = proofs.filter((proof) => !closestProofs.includes(proof));
+
+        if (closestSum < amount) {
+            // put everything back
+            window.localStorage.setItem('proofs', JSON.stringify([...remainngProofs, ...closestProofs]));
+            return []
+        } else {
+            // just put change back
+            window.localStorage.setItem('proofs', JSON.stringify([...remainngProofs]));
+            return closestProofs;
+        }
+    }
+    
+    const updateHeldProofs = (proofsToAdd: Proof[]) => {
+        if (proofsToAdd.length === 0) return;
+
+        const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+        const updatedProofs = [...proofs, ...proofsToAdd];
+        window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+    }
+
+    const handleAsyncPayment = async (invoice: string, invoiceAmount: number, fee: number, proofs: Proof[], pubkey: string, eventId: string) => {
+        let invoiceResponse: PayLnInvoiceResponse
+        try {
+            invoiceResponse = await wallet.payLnInvoice(invoice, proofs);
+        } catch (e) {
+            console.error("Error paying invoice", e);
+            dispatch(setError("Payment failed"))
+            updateHeldProofs(proofs);
+            return;
+        }
+        
+        if (!invoiceResponse || !invoiceResponse.isPaid) {
+            // put the proofs back
+            updateHeldProofs(proofs);
+            dispatch(setError("Payment failed"))
+        } else {
+            console.log("invoiceResponse", invoiceResponse);
+
+            if (invoiceResponse.change) {
+                updateHeldProofs(invoiceResponse.change);
+            }
+
+            await handleResponse(invoiceResponse, pubkey, eventId);
+            
+            const feePaid = fee - invoiceResponse.change.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+
+            const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
+            
+            console.log(`## paid ${invoiceAmount + feePaid} sats total (${feePaid} sat fee).`)
+            dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
+        }
     }
 
     const handlePayInvoice = async (invoice: string, pubkey: string, eventId: string) => {
         const invoiceAmount = getAmountFromInvoice(invoice);
         const fee = await wallet.getFee(invoice);
-
-        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+        
         let amountToPay = invoiceAmount + fee;
-        console.log("useing proofs", proofs);
+        console.log("## amountToPay", amountToPay);
+
+        // only take what we need from local storage. Put the rest back
+        const proofs = getNeededProofs(amountToPay);
+
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
         if (balance < amountToPay) {
+            console.log("## insufficient balance", balance, amountToPay);
             dispatch(setError("Payment request exceeded available balance."))
             return;
         }
 
+        let change: Proof[] = [];
         try {
             dispatch(setSending("Processing payment request..."))
-            const sendResponse = await wallet.send(amountToPay, proofs);
-            if (sendResponse && sendResponse.send) {
-                await new Promise((resolve) => setTimeout(resolve, 3000));
-                const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
-                if (!invoiceResponse || !invoiceResponse.isPaid) {
-                    dispatch(setError("Payment failed"))
-                } else {
-                    console.log("invoiceResponse", invoiceResponse)
-                    
-                    const updatedProofs = sendResponse.returnChange || [];
+            
+            let proofsToSend = proofs;
+            
+            if (balance !== amountToPay) {
+                console.log("## swapping proofs")
 
-                    if (invoiceResponse.change) {
-                        invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
-                    }
+                const sendResponse = await wallet.send(amountToPay, proofs);
+                console.log("## swapped complete")
+                if (sendResponse && sendResponse.send) {
+                    // Send the exact amount we need
+                    proofsToSend = sendResponse.send;
 
-                    window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
-                    
-                    const response = await handleResponse(invoiceResponse, pubkey, eventId);
-                    
-                    const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
-                    const feePaid = balance - newBalance - invoiceAmount;
-                    const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
-
-                    dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
+                    // add any change to the change array
+                    sendResponse.returnChange.forEach(p => change.push(p))
                 }
             }
+            // await new Promise((resolve) => setTimeout(resolve, 3000));
+            handleAsyncPayment(invoice, invoiceAmount, fee, proofsToSend, pubkey, eventId).then(() => console.log("payment complete"));
         } catch (error) {
             console.error(error);
             dispatch(setError("Payment failed"))
+        } finally {
+            console.log("change", change);
+            updateHeldProofs(change);
         }
         
     }
@@ -123,10 +217,8 @@ export const useNwc = () => {
     const handleRequest = async (decrypted: any, pubkey: string, eventId: string) => {
         switch (decrypted.method) {
             case 'pay_invoice':
-                console.log("got pay invoice request")
                 const invoice = decrypted.params.invoice;
                 if (recentInvoices.includes(invoice)) {
-                    console.log("invoice already paid");
                     return;
                 } else {
                     setRecentInvoices((prev) => [...prev, invoice]);
@@ -157,7 +249,6 @@ export const useNwc = () => {
 
     const decryptEvent = async (event: any, nwa: any) => {
         const decrypted = await nip04.decrypt(nwa.nwaSecretKey, event.pubkey, event.content);
-        console.log('decrypted', decrypted);
         if (decrypted) {
             const parsed = JSON.parse(decrypted);
             const response = await handleRequest(parsed, event.pubkey, event.id);
