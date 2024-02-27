@@ -112,9 +112,9 @@ export default function Home() {
 
             relay.close();
 
-            setTimeout(() => {
+            // setTimeout(() => {
                 window.location.href = "/?just_connected=true";
-            }, 2000);
+            // }, 2000);
         }
     }
 
