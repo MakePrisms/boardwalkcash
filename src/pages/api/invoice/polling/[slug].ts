@@ -33,7 +33,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const user = await findUserByPubkey(pubkey);
         if (!user) {
+
             await kv.set(pubkey, 'failed');
+
             res.status(404).send({ success: false, message: 'User not found.' });
             return;
         }
@@ -74,7 +76,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     attempts++;
                     await new Promise(resolve => setTimeout(resolve, interval));
                 } else {
+
                     await kv.set(pubkey, 'failed');
+
                     throw e;
                 }
             }
