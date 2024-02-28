@@ -93,10 +93,10 @@ const Receive = () => {
                     </div>
                 ) : (
                     <>
-                        <Modal.Body>
+                        <Modal.Body className="bg-gray-600">
                             {invoiceToPay ? (
                                 <div className="flex flex-col items-center justify-center space-y-4">
-                                    <QRCode value={invoiceToPay} size={256} level={"H"} />
+                                    <QRCode value={invoiceToPay} size={458} level={"H"} className="rounded-lg m-4 border-white border-2" />
                                     <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
                                         Copy
                                     </Button>
