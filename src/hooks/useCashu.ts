@@ -2,11 +2,10 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setBalance } from '@/redux/reducers/CashuReducer';
-import { setError, setSending, setSuccess, setReceiving, resetStatus } from "@/redux/reducers/ActivityReducer";
+import { setError, setSending, setSuccess } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
-import { createClient } from '@vercel/kv';
 
 export const useCashu = () => {
     const dispatch = useDispatch();
@@ -90,37 +89,11 @@ export const useCashu = () => {
         }
     }
 
-    const checkIsReceiving = async (pubkey: string) => {
-        const response = await axios.get(`/api/kv/${pubkey}`);
-
-        if (response && response.data && response.data.value) {            
-            switch (response.data.value) {
-                case 'receiving':
-                    dispatch(setReceiving("Receiving..."));
-                    dispatch(resetStatus());
-                    break;
-                case 'success':
-                    dispatch(setSuccess('Received!'));
-                    dispatch(resetStatus());
-                    break;
-                case 'failed':
-                    dispatch(setError('Failed to receive.'));
-                    dispatch(resetStatus());
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
     const updateProofsAndBalance = async () => {
         const pubkey = window.localStorage.getItem('pubkey');
         if (!pubkey) {
             return;
         }
-
-        // first check if we are already receiving
-        await checkIsReceiving(pubkey);
 
         try {
             const proofsResponse = await axios.get(`/api/proofs/${pubkey}`);
