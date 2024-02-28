@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
+import { kv } from "@vercel/kv";
+
 
 interface PollingRequest {
     pubkey: string;
@@ -20,6 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { pubkey, amount }: PollingRequest = req.body;
 
+    // Set user's status to "receiving" at the start of polling
+    await kv.set(pubkey, 'receiving');
+
     try {
         let paymentConfirmed = false;
         const maxAttempts = 90;
@@ -28,6 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const user = await findUserByPubkey(pubkey);
         if (!user) {
+            await kv.set(pubkey, 'failed');
             res.status(404).send({ success: false, message: 'User not found.' });
             return;
         }
@@ -53,9 +59,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.log('Proofs created:', created);
 
                 if (!created) {
+                    await kv.set(pubkey, 'failed');
                     res.status(500).send({ success: false, message: 'Failed to create proofs.' });
                     return;
                 }
+
+                await kv.set(pubkey, 'success');
 
                 res.status(200).send({ success: true, message: 'Payment confirmed and proofs created.' });
                 return;
@@ -65,15 +74,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     attempts++;
                     await new Promise(resolve => setTimeout(resolve, interval));
                 } else {
+                    await kv.set(pubkey, 'failed');
                     throw e;
                 }
             }
         }
 
         if (!paymentConfirmed) {
+            await kv.set(pubkey, 'failed');
             res.status(408).send({ success: false, message: 'Payment confirmation timeout.' });
         }
     } catch (error) {
+        await kv.set(pubkey, 'failed');
         console.error('Error during payment status check:', error);
         res.status(500).send({ success: false, message: 'Internal server error.' });
     }
