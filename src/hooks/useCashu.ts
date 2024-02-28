@@ -97,15 +97,12 @@ export const useCashu = () => {
             switch (response.data.value) {
                 case 'receiving':
                     dispatch(setReceiving("Receiving..."));
-                    dispatch(resetStatus());
                     break;
                 case 'success':
-                    dispatch(setSuccess('Received!'));
-                    dispatch(resetStatus());
+                    await axios.post(`/api/kv/${pubkey}`, { value: 'none' });
                     break;
                 case 'failed':
-                    dispatch(setError('Failed to receive.'));
-                    dispatch(resetStatus());
+                    await axios.post(`/api/kv/${pubkey}`, { value: 'none' });
                     break;
                 default:
                     break;
