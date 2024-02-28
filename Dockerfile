@@ -10,4 +10,4 @@ COPY . .
 
 RUN npm install
 
-CMD ["npm", "run", "dev"]
+ENTRYPOINT ["/bin/bash", "/app/docker_entrypoint.sh"]
