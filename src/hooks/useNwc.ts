@@ -4,12 +4,13 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools';
 import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
 import { useToast } from './useToast';
-import { CashuMint, CashuWallet, PayLnInvoiceResponse, Proof } from '@cashu/cashu-ts';
+import { AmountPreference, CashuMint, CashuWallet, PayLnInvoiceResponse, Proof, SendResponse } from '@cashu/cashu-ts';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { assembleLightningAddress } from "@/utils/index";
 import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
+import { getDefaultAmountPreference } from '@cashu/cashu-ts/dist/lib/es5/utils';
 
 const defaultRelays = [
     'wss://relay.getalby.com/v1',
@@ -76,14 +77,18 @@ export const useNwc = () => {
     }
 
     const processEventBuffer = (nwa: NWA) => {
+        console.log("Processing event buffer...", eventBufferRef.current.length, "events")
         setQueue((prev) => [...prev, {events: eventBufferRef.current, nwa: nwa}]);
 
         // Reset the buffer directly
-        eventBufferRef.current = [];
-        if (bufferTimer.current) {
-            clearTimeout(bufferTimer.current);
-            bufferTimer.current = null;
-        }
+        // setTimeout(() => {
+            console.log("## Resetting event buffer")
+            eventBufferRef.current = [];
+            if (bufferTimer.current) {
+                clearTimeout(bufferTimer.current);
+                bufferTimer.current = null;
+            }
+        // }, 2000);
     };
 
     useEffect(() => {
@@ -112,12 +117,17 @@ export const useNwc = () => {
                     eventBufferRef.current.push(event);
                     setSince(event.created_at!)
                     console.log("## Added event to buffer:", eventBufferRef.current.length, "events in buffer")
+                    if (eventBufferRef.current.length === 1) {
+                        dispatch(setSending("Processing payment..."))
+                    } else if (eventBufferRef.current.length > 1) {
+                        dispatch(setSending("Processing prism payment..."))
+                    }
                 }
 
                 if (!bufferTimer.current) {
                     bufferTimer.current = setTimeout(() => {
                         processEventBuffer(nwa); // Process and reset the buffer
-                    }, 2000);
+                    }, 2500);
                 }
             });
         }
@@ -136,10 +146,64 @@ export const useNwc = () => {
         }
     }, []);
 
+    class InsufficientFundsError extends Error {
+        constructor() {
+            super("Insufficient funds to pay invoice + fees.");
+            this.name = "InsufficientFundsError";
+        }
+    }
+
+    const calcTokens = (processors: NIP47RequestProcessor[]) => {
+        let totalToSend = 0;
+        let preference: Array<AmountPreference> = [];
+        const denominationsNeeded = processors.reduce((acc, p) => {
+            const id = p.requestEvent.id;
+            const denoms: number[] = p.calcNeededDenominations();
+            if (!acc.has(id)) {
+                acc.set(id, []);
+            }
+            acc.get(id)!.push(...denoms);
+            totalToSend += denoms.reduce((a, b) => a + b, 0);
+            denoms.forEach((d) => {
+                if (preference.some((p) => p.amount === d)) {
+                    preference.find((p) => p.amount === d)!.count += 1;
+                } else {
+                    preference.push({ amount: d, count: 1 });
+                }
+            });
+            return acc;
+        }, new Map() as Map<string, number[]>);
+
+        console.log("## Total to send:", totalToSend);
+        console.log("## Preferences:", preference);
+
+        const proofsToSwap = getNeededProofs(totalToSend);
+
+        console.log("## Proofs to swap:", proofsToSwap);
+
+        if (proofsToSwap.length === 0) {
+            throw new InsufficientFundsError();
+        }   
+
+        return { denominations: denominationsNeeded, proofs: proofsToSwap, preference, totalToSend };
+    }
+
+    const initProcessors = (events: NDKEvent[], nwa: NWA) => {
+        return events.map((e) => new NIP47RequestProcessor(e, nwa, wallet, ndk.current!));
+    }
+
+    const failPayments = (processors: NIP47RequestProcessor[], code?: string) => {
+        processors.forEach((p) => {
+            p.sendError(code || "INTERNAL").catch((e) => console.error("Error sending error", e));
+        });
+    }
+
     // Effect to start processing when there are items in the queue
     useEffect(() => {
         const processQueue = async () => {
-            if (!isProcessing && queue.length > 0) {
+            if (!isProcessing && queue.length > 0 ) {
+                if (queue[0].events.length === 0) return;
+                console.log("Starting to process queue...", queue)
                 setIsProcessing(true);
                 
                 const {events, nwa} = queue[0];
@@ -147,21 +211,74 @@ export const useNwc = () => {
                 dispatch(setSending(processingMessage))
 
                 // initialize all the requests
-                const processors = events.map((e) => new NIP47RequestProcessor(e, nwa, wallet, ndk.current!));
+                const processors = initProcessors(events, nwa);
 
-                // decrypt all the requests
-                await Promise.all(processors.map(async (p) => p.setUp()));
+                try {
+                    // decrypt all the requests and set invoice + fee amounts
+                    await Promise.all(processors.map(async (p) => p.setUp()));
+                } catch (e) {
+                    console.error("Error setting up processors", e);
+                    dispatch(setError("Error sending payments"));
+                    failPayments(processors);
+                    return;
+                }
 
-                const totalToSend = processors.reduce((acc, p) => acc + p.invoiceAmount, 0);
+                let swappedProofs: SendResponse;
+                let calcedDenoms: Map<string, number[]>;
+                try {
+                    const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
+                    calcedDenoms = denominations
+                    swappedProofs = await wallet.send(totalToSend, proofs, preference);
+                } catch (e) {
+                    if (e instanceof InsufficientFundsError) {
+                        dispatch(setError(e.message))
+                    } else {
+                        console.error("Error swapping proofs", e);
+                        dispatch(setError("Payment failed: error swapping proofs"));
+                    }
+                    failPayments(processors);
+                    return;
+                } 
 
-                dispatch(setSending(processingMessage + `(total: ${totalToSend} sat)`))
+                // add the change proofs back to what we have stored
+                updateStoredProofs([...swappedProofs.returnChange]);
 
-                console.log("##Total to send:", totalToSend, "sats")
+                // set the proofs to pay invoice for each processor
+                processors.forEach((p) => {
+                    const denoms = calcedDenoms.get(p.requestEvent.id);
+
+                    if (!denoms) throw new Error('something went wrong. no denominations found');
+
+                    const proofsToSend = denoms.map((d) => {
+                        const proof = swappedProofs.send.find((p) => p.amount === d);
+                        // now delete this proof from our list of proofs in swappedProofs.send
+                        if (proof) {
+                            swappedProofs.send = swappedProofs.send.filter((p) => p !== proof);
+                        } else {
+                            failPayments(processors, "INTERNAL");
+                            throw new Error('something went wrong. ran out of needed proofs');
+                        }
+                        return proof;
+                    })
+
+                    console.log("## proofsToSend", proofsToSend);
+                    p.proofs = [...proofsToSend];
+                });
 
                 const promises = processors.map(async (p, idx) => {
-                    const result = await p.process();
-
-                    return result;
+                    try {
+                        const result = await p.process();
+                        console.log("## result", result);
+                        return result;
+                        // return {...result, error: null};
+                    } catch (e) {
+                        console.error("Error processing payment", e);
+                        // dispatch(setError("Error processing payment"));
+                        // if (e instanceof Error) {
+                        //     return {error: e.message};
+                        // }
+                        return undefined;
+                    }
                 })
 
                 const results = await Promise.all(promises);
@@ -169,13 +286,17 @@ export const useNwc = () => {
                 console.log("Results:", results)
 
                 const [totalPaid, totalFee] = results.reduce((acc, res) => {
-                    if (!res) return acc
+                    if (!res) return acc;
                     return [acc[0] + res.sent, acc[1] + res.fee]
                 }, [0, 0]);
 
                 setQueue((prev) => prev.slice(1));
                 setIsProcessing(false);
-                dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` and paid ${totalFee} sat in fees` : ""}`))
+                if (totalPaid === 0) {
+                    dispatch(setError("Payment failed"))
+                } else {
+                    dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` and paid ${totalFee} sat in fees` : ""}`))
+                }
             };
         }
         processQueue();

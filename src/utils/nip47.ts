@@ -46,9 +46,9 @@ export class NIP47Response extends NDKEvent {
   constructor(
     public readonly ndk: NDK,
     public readonly method: NIP47Method,
-    public readonly params: any,
-    public readonly error: string | null = null,
-    public readonly requestEvent: NDKEvent
+    public readonly resultData: object | null = null,
+    public readonly errorData: object | null = null,
+    public readonly requestEvent: NDKEvent,
   ) {
     super(ndk);
 
@@ -64,8 +64,8 @@ export class NIP47Response extends NDKEvent {
   public buildResponse = async (nwaPrivKey: string) => {
     const content = JSON.stringify({
       result_type: this.method,
-      result: this.params,
-      error: this.error,
+      result: this.resultData,
+      error: this.errorData,
     });
 
     const encrypted = await this.encryptContent(

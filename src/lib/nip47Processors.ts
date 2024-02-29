@@ -3,17 +3,17 @@ import { NWA } from "@/hooks/useNwc";
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, PayLnInvoiceResponse, Proof } from "@cashu/cashu-ts";
-import { getNeededProofs, updateStoredProofs } from "@/utils/cashu";
+import {  updateStoredProofs } from "@/utils/cashu";
 
 export class NIP47RequestProcessor {
   private method: string | undefined = undefined;
   private params: { invoice?: string; } | undefined = undefined;
-  private invoices: string[] = []
-  private isPrism: boolean = false;
+  public fee: number = 0;
   public invoiceAmount: number = 0;
   private requestHandlers = new Map<string, () => Promise<any>>([
     ['pay_invoice', this._pay_invoice.bind(this)]
   ]);
+  public proofs: Proof[] | undefined = undefined;
 
   constructor(
     public readonly requestEvent: NDKEvent,
@@ -28,7 +28,7 @@ export class NIP47RequestProcessor {
     // }
   }
 
-  async sendResponse (response: any, requestEvent: NDKEvent) {
+  async sendResponse (result: object | null, error: object | null) {
     const nwa = localStorage.getItem("nwa");
     const nwaPrivKey = JSON.parse(nwa!).nwaSecretKey;
 
@@ -40,9 +40,9 @@ export class NIP47RequestProcessor {
     const responseEvent = new NIP47Response(
       this.ndk,
       NIP47Method.pay_invoice,
-      { ...response },
-      null,
-      requestEvent
+      result,
+      error,
+      this.requestEvent
     );
 
     await responseEvent.buildResponse(nwaPrivKey);
@@ -52,19 +52,27 @@ export class NIP47RequestProcessor {
     return published;
   };
 
-  async handleAsyncPayment  (invoice: string, fee: number, proofs: Proof[], requestEvent: NDKEvent) {
+  async sendError (errorCode: string) {
+    await this.sendResponse(null, {code: errorCode});
+  }
+
+
+  async handleAsyncPayment  (invoice: string, fee: number, requestEvent: NDKEvent) {
+    if (!this.proofs) {
+      throw new Error("Something went wrong, no proofs set")
+    }
     let invoiceResponse: PayLnInvoiceResponse
     try {
-        invoiceResponse = await this.wallet.payLnInvoice(invoice, proofs);
+        invoiceResponse = await this.wallet.payLnInvoice(invoice, this.proofs);
     } catch (e) {
-        console.error("Error paying invoice", e);
-        updateStoredProofs(proofs);
-        return;
+        updateStoredProofs(this.proofs);
+        throw new Error(`Error paying invoice: ${e}`)
     }
     
     if (!invoiceResponse || !invoiceResponse.isPaid) {
         // put the proofs back
-        updateStoredProofs(proofs);
+        updateStoredProofs(this.proofs);
+        throw new Error("Payment failed")
         // dispatch(setError("Payment failed"))
     } else {
         console.log("invoiceResponse", invoiceResponse);
@@ -73,7 +81,7 @@ export class NIP47RequestProcessor {
             updateStoredProofs(invoiceResponse.change);
         }
 
-        await this.sendResponse({preimage: invoiceResponse.preimage || "preimage"}, requestEvent);
+        await this.sendResponse({preimage: invoiceResponse.preimage || "preimage"}, null);
         
         const feePaid = fee - invoiceResponse.change.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
 
@@ -86,46 +94,16 @@ export class NIP47RequestProcessor {
 }
 
   private async _pay_invoice(): Promise<any> {
-    const { pubkey, id } = this.requestEvent;
     const invoice = this.params?.invoice
     if (!invoice) {
       throw new Error("could not get invoice from request")
     }
-    const fee = await this.wallet.getFee(invoice);
 
-    let amountToPay = this.invoiceAmount + fee;
+    let amountToPay = this.invoiceAmount + this.fee;
     console.log("## amountToPay", amountToPay);
 
-    // only take what we need from local storage. Put the rest back
-    const proofs = getNeededProofs(amountToPay);
+    const payResult = await this.handleAsyncPayment(invoice, this.fee, this.requestEvent)
 
-    const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
-    if (balance < amountToPay) {
-      console.log(`## insufficient balance. Have ${balance}. Need ${amountToPay}`);
-
-      throw new Error("Insufficient balance")
-    }
-
-    let change: Proof[] = [];
-    let proofsToSend = proofs;
-
-    if (balance !== amountToPay) {
-      console.log("## swapping proofs")
-
-      const sendResponse = await this.wallet.send(amountToPay, proofs);
-      console.log("## swapped complete")
-      if (sendResponse && sendResponse.send) {
-        // Send the exact amount we need
-        proofsToSend = sendResponse.send;
-
-        // add any change to the change array
-        sendResponse.returnChange.forEach(p => change.push(p))
-      }
-    }
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-    const payResult = await this.handleAsyncPayment(invoice, fee, proofsToSend, this.requestEvent)
-    console.log("change", change);
-    updateStoredProofs(change);
     return payResult
   }
 
@@ -134,6 +112,7 @@ export class NIP47RequestProcessor {
     try {
       return await handler()
     } catch (e) {
+      this.sendError("INTERNAL")
       console.error("error executing handler", e)
     }
   }
@@ -148,31 +127,57 @@ export class NIP47RequestProcessor {
     this.params = params;
 
     if (method !== "pay_invoice") {
+      this.sendError("NOT_IMPLEMENTED")
       throw new Error("nwc method NOT_IMPLEMENTED")
     }
 
     if (!this.params?.invoice) {
+      this.sendError("INTERNAL")
       throw new Error("could not get invoice from request")
     }
 
     this.invoiceAmount = getAmountFromInvoice(this.params.invoice)
+
+    try {
+      this.fee = await this.wallet.getFee(this.params.invoice);
+    } catch {
+      this.sendError("INTERNAL")
+      throw new Error("failed to fetch fee")
+    }
   }
 
   public async process() {
     if (!this.method) {
-      throw new Error("muyst call setUp before process")
+      this.sendError("INTERNAL")
+      throw new Error("must call setUp before process")
     }
-
 
     const handler = this.requestHandlers.get(this.method)
 
     if (!handler) {
+      this.sendError("NOT_IMPLEMENTED")
       throw new Error("nwc method NOT_IMPLEMENTED")
     }
 
     const responseContent = await this._execute(handler)
 
     return responseContent
+  }
+
+  public calcNeededDenominations() {
+    const amount = this.invoiceAmount + this.fee;
+
+    let remaining = amount;
+    let denoms: number[] = [];
+    while (remaining > 0) {
+      const tokenValue = Math.pow(2, Math.floor(Math.log2(remaining)));
+      remaining -= tokenValue;
+      if (remaining < 0) {
+        throw new Error("remaining amount is negative")
+      }
+      denoms.push(tokenValue);
+    }
+    return denoms;
   }
 }
 
