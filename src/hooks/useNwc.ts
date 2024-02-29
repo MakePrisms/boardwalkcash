@@ -221,6 +221,7 @@ export const useNwc = () => {
                     console.error("Error setting up processors", e);
                     dispatch(setError("Error sending payments"));
                     failPayments(processors);
+                    dispatch(unlockBalance())
                     return;
                 }
 
@@ -238,6 +239,7 @@ export const useNwc = () => {
                         dispatch(setError("Payment failed: error swapping proofs"));
                     }
                     failPayments(processors);
+                    dispatch(unlockBalance())
                     return;
                 } 
 
