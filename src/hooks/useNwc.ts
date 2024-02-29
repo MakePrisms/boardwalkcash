@@ -79,17 +79,15 @@ export const useNwc = () => {
 
     const processEventBuffer = (nwa: NWA) => {
         console.log("Processing event buffer...", eventBufferRef.current.length, "events")
-        setQueue((prev) => [...prev, {events: eventBufferRef.current, nwa: nwa}]);
+        const events = [...eventBufferRef.current]
+        setQueue((prev) => [...prev, {events, nwa: nwa}]);
 
-        // Reset the buffer directly
-        // setTimeout(() => {
-            console.log("## Resetting event buffer")
-            eventBufferRef.current = [];
-            if (bufferTimer.current) {
-                clearTimeout(bufferTimer.current);
-                bufferTimer.current = null;
-            }
-        // }, 2000);
+        console.log("## Resetting event buffer")
+        eventBufferRef.current = [];
+        if (bufferTimer.current) {
+            clearTimeout(bufferTimer.current);
+            bufferTimer.current = null;
+        }
     };
 
     useEffect(() => {
