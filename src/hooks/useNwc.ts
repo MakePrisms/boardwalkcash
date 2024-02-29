@@ -76,7 +76,6 @@ export const useNwc = () => {
     }
 
     const processEventBuffer = (nwa: NWA) => {
-        console.log("in processEventBuffer:", eventBufferRef.current);
         setQueue((prev) => [...prev, {events: eventBufferRef.current, nwa: nwa}]);
 
         // Reset the buffer directly
@@ -108,16 +107,15 @@ export const useNwc = () => {
             const sub = ndk.current.subscribe(filter);
 
             sub.on('event', (event: NDKEvent) => {
-                console.log("EVENT RECEIVED");
                 if (!eventBufferRef.current.some(e => e.id === event.id)){
-                    eventBufferRef.current.push(event); // Modify the buffer directly
+                    // Add the event to the buffer if it's not already there
+                    eventBufferRef.current.push(event);
                     setSince(event.created_at!)
+                    console.log("## Added event to buffer:", eventBufferRef.current.length, "events in buffer")
                 }
 
                 if (!bufferTimer.current) {
-                    console.log("SETTING TIMEOUT");
                     bufferTimer.current = setTimeout(() => {
-                        console.log("Grouping payments into prism");
                         processEventBuffer(nwa); // Process and reset the buffer
                     }, 2000);
                 }
@@ -140,31 +138,44 @@ export const useNwc = () => {
 
     // Effect to start processing when there are items in the queue
     useEffect(() => {
-        console.log('queue', queue);
         const processQueue = async () => {
             if (!isProcessing && queue.length > 0) {
                 setIsProcessing(true);
                 
                 const {events, nwa} = queue[0];
-                dispatch(setSending(`Processing prism payment...`))
+                const processingMessage = `Processing ${events.length > 1 ? "prism" : ""} payment...`;
+                dispatch(setSending(processingMessage))
 
-                console.log("Requests:", events)
+                // initialize all the requests
+                const processors = events.map((e) => new NIP47RequestProcessor(e, nwa, wallet, ndk.current!));
 
-                const results = events.map(async (e) => {
-                    const processor = new NIP47RequestProcessor(e, nwa, wallet, ndk.current!);
+                // decrypt all the requests
+                await Promise.all(processors.map(async (p) => p.setUp()));
 
-                    await processor.process();
+                const totalToSend = processors.reduce((acc, p) => acc + p.invoiceAmount, 0);
+
+                dispatch(setSending(processingMessage + `(total: ${totalToSend} sat)`))
+
+                console.log("##Total to send:", totalToSend, "sats")
+
+                const promises = processors.map(async (p, idx) => {
+                    const result = await p.process();
+
+                    return result;
                 })
 
-                await Promise.all(results)
+                const results = await Promise.all(promises);
 
-                // setSince(event.created_at!);
+                console.log("Results:", results)
 
-                // // await handleRequest(request, event);
+                const [totalPaid, totalFee] = results.reduce((acc, res) => {
+                    if (!res) return acc
+                    return [acc[0] + res.sent, acc[1] + res.fee]
+                }, [0, 0]);
 
                 setQueue((prev) => prev.slice(1));
                 setIsProcessing(false);
-                dispatch(setSuccess("Done!"))
+                dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` and paid ${totalFee} sat in fees` : ""}`))
             };
         }
         processQueue();

@@ -10,7 +10,7 @@ export class NIP47RequestProcessor {
   private params: { invoice?: string; } | undefined = undefined;
   private invoices: string[] = []
   private isPrism: boolean = false;
-
+  public invoiceAmount: number = 0;
   private requestHandlers = new Map<string, () => Promise<any>>([
     ['pay_invoice', this._pay_invoice.bind(this)]
   ]);
@@ -52,7 +52,7 @@ export class NIP47RequestProcessor {
     return published;
   };
 
-  async handleAsyncPayment  (invoice: string, invoiceAmount: number, fee: number, proofs: Proof[], requestEvent: NDKEvent) {
+  async handleAsyncPayment  (invoice: string, fee: number, proofs: Proof[], requestEvent: NDKEvent) {
     let invoiceResponse: PayLnInvoiceResponse
     try {
         invoiceResponse = await this.wallet.payLnInvoice(invoice, proofs);
@@ -79,8 +79,8 @@ export class NIP47RequestProcessor {
 
         const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
         
-        return {sent: invoiceAmount, fee: feePaid}
-        console.log(`## paid ${invoiceAmount + feePaid} sats total (${feePaid} sat fee).`)
+        console.log(`## paid ${this.invoiceAmount + feePaid} sats total (${feePaid} sat fee).`)
+        return {sent: this.invoiceAmount, fee: feePaid}
         // dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
     }
 }
@@ -91,10 +91,9 @@ export class NIP47RequestProcessor {
     if (!invoice) {
       throw new Error("could not get invoice from request")
     }
-    const invoiceAmount = getAmountFromInvoice(invoice);
     const fee = await this.wallet.getFee(invoice);
 
-    let amountToPay = invoiceAmount + fee;
+    let amountToPay = this.invoiceAmount + fee;
     console.log("## amountToPay", amountToPay);
 
     // only take what we need from local storage. Put the rest back
@@ -102,7 +101,7 @@ export class NIP47RequestProcessor {
 
     const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
     if (balance < amountToPay) {
-      console.log("## insufficient balance", balance, amountToPay);
+      console.log(`## insufficient balance. Have ${balance}. Need ${amountToPay}`);
 
       throw new Error("Insufficient balance")
     }
@@ -124,7 +123,7 @@ export class NIP47RequestProcessor {
       }
     }
     // await new Promise((resolve) => setTimeout(resolve, 3000));
-    const payResult = await this.handleAsyncPayment(invoice, invoiceAmount, fee, proofsToSend, this.requestEvent)
+    const payResult = await this.handleAsyncPayment(invoice, fee, proofsToSend, this.requestEvent)
     console.log("change", change);
     updateStoredProofs(change);
     return payResult
@@ -139,7 +138,7 @@ export class NIP47RequestProcessor {
     }
   }
 
-  public async process() {
+  public async setUp() {
     const { method, params } = await decryptEventContent(
       this.requestEvent,
       this.nwa
@@ -148,7 +147,24 @@ export class NIP47RequestProcessor {
     this.method = method;
     this.params = params;
 
-    const handler = this.requestHandlers.get(method)
+    if (method !== "pay_invoice") {
+      throw new Error("nwc method NOT_IMPLEMENTED")
+    }
+
+    if (!this.params?.invoice) {
+      throw new Error("could not get invoice from request")
+    }
+
+    this.invoiceAmount = getAmountFromInvoice(this.params.invoice)
+  }
+
+  public async process() {
+    if (!this.method) {
+      throw new Error("muyst call setUp before process")
+    }
+
+
+    const handler = this.requestHandlers.get(this.method)
 
     if (!handler) {
       throw new Error("nwc method NOT_IMPLEMENTED")
@@ -156,7 +172,7 @@ export class NIP47RequestProcessor {
 
     const responseContent = await this._execute(handler)
 
-    console.log("PAID", responseContent)
+    return responseContent
   }
 }
 
