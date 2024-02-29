@@ -11,6 +11,7 @@ import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
 import { getDefaultAmountPreference } from '@cashu/cashu-ts/dist/lib/es5/utils';
+import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
 
 const defaultRelays = [
     'wss://relay.getalby.com/v1',
@@ -147,8 +148,8 @@ export const useNwc = () => {
     }, []);
 
     class InsufficientFundsError extends Error {
-        constructor() {
-            super("Insufficient funds to pay invoice + fees.");
+        constructor(totalToSend: number) {
+            super("Insufficient funds. Trying to send " + totalToSend + " sats total.");
             this.name = "InsufficientFundsError";
         }
     }
@@ -182,7 +183,7 @@ export const useNwc = () => {
         console.log("## Proofs to swap:", proofsToSwap);
 
         if (proofsToSwap.length === 0) {
-            throw new InsufficientFundsError();
+            throw new InsufficientFundsError(totalToSend);
         }   
 
         return { denominations: denominationsNeeded, proofs: proofsToSwap, preference, totalToSend };
@@ -203,6 +204,7 @@ export const useNwc = () => {
         const processQueue = async () => {
             if (!isProcessing && queue.length > 0 ) {
                 if (queue[0].events.length === 0) return;
+                dispatch(lockBalance())
                 console.log("Starting to process queue...", queue)
                 setIsProcessing(true);
                 
@@ -270,13 +272,8 @@ export const useNwc = () => {
                         const result = await p.process();
                         console.log("## result", result);
                         return result;
-                        // return {...result, error: null};
                     } catch (e) {
                         console.error("Error processing payment", e);
-                        // dispatch(setError("Error processing payment"));
-                        // if (e instanceof Error) {
-                        //     return {error: e.message};
-                        // }
                         return undefined;
                     }
                 })
@@ -296,6 +293,13 @@ export const useNwc = () => {
                     dispatch(setError("Payment failed"))
                 } else {
                     dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` and paid ${totalFee} sat in fees` : ""}`))
+                }
+                dispatch(unlockBalance())
+                try {
+                    const newBalance = JSON.parse(localStorage.getItem('proofs')!).reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
+                    dispatch(setBalance(newBalance));
+                } catch (e){
+                    console.error("Error setting new balance", e);
                 }
             };
         }

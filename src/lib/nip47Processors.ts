@@ -149,12 +149,16 @@ export class NIP47RequestProcessor {
   public async process() {
     if (!this.method) {
       this.sendError("INTERNAL")
+      if (this.proofs) {
+        this.proofs && updateStoredProofs(this.proofs);
+      }
       throw new Error("must call setUp before process")
     }
 
     const handler = this.requestHandlers.get(this.method)
 
     if (!handler) {
+      this.proofs && updateStoredProofs(this.proofs);
       this.sendError("NOT_IMPLEMENTED")
       throw new Error("nwc method NOT_IMPLEMENTED")
     }
