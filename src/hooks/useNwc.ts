@@ -78,7 +78,8 @@ export const useNwc = () => {
     }
 
     const processEventBuffer = (nwa: NWA) => {
-        console.log("Processing event buffer...", eventBufferRef.current.length, "events")
+        console.log("Processing event buffer...", eventBufferRef.current.length, "events", eventBufferRef.current.map(e => e.rawEvent()))
+
         const events = [...eventBufferRef.current]
         setQueue((prev) => [...prev, {events, nwa: nwa}]);
 
