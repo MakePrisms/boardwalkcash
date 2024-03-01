@@ -222,6 +222,8 @@ export const useNwc = () => {
                     dispatch(setError("Error sending payments"));
                     failPayments(processors);
                     dispatch(unlockBalance())
+                    setQueue((prev) => prev.slice(1));
+                    setIsProcessing(false);
                     return;
                 }
 
@@ -240,6 +242,8 @@ export const useNwc = () => {
                     }
                     failPayments(processors);
                     dispatch(unlockBalance())
+                    setQueue((prev) => prev.slice(1));
+                    setIsProcessing(false);
                     return;
                 } 
 
