@@ -202,7 +202,7 @@ export const useCashu = () => {
 
         const intervalId = setInterval(() => {
             updateProofsAndBalance();
-        }, 10000); // Poll every 3 seconds
+        }, 3000); // Poll every 3 seconds
 
         const handleStorageChange = (event: any) => {
             if (event.key === 'proofs') {
