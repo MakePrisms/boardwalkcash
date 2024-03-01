@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setBalance } from '@/redux/reducers/CashuReducer';
 import { setError, setSending, setSuccess, setReceiving, resetStatus } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
-import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
+import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { createClient } from '@vercel/kv';
 
 export const useCashu = () => {
+    const [receivingStatus, setReceivingStatus] = useState<string | null>(null);
+    
     const dispatch = useDispatch();
     const { addToast } = useToast();
 
@@ -49,6 +51,7 @@ export const useCashu = () => {
         dispatch(setSending('Sending...'))
         if (!invoice || isNaN(estimatedFee)) {
             addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
+            dispatch(resetStatus())
             return;
         }
 
@@ -58,12 +61,19 @@ export const useCashu = () => {
 
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
         if (balance < amountToPay) {
-            addToast("You don't have enough funds to pay this invoice + fees", "error");
+            dispatch(setError("Insufficient balance to pay " + amountToPay + " sats"))
             return;
         }
 
         try {
-            const sendResponse = await wallet.send(amountToPay, proofs);
+            let sendResponse: SendResponse;
+            try {
+                sendResponse = await wallet.send(amountToPay, proofs);
+            } catch (e) {
+                console.error("error swapping proofs", e);
+                dispatch(setError("Payment failed"));
+                return
+            }
             if (sendResponse && sendResponse.send) {
                 const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
@@ -93,8 +103,10 @@ export const useCashu = () => {
     const checkIsReceiving = async (pubkey: string) => {
         const response = await axios.get(`/api/kv/${pubkey}`);
 
-        if (response && response.data && response.data.value) {            
-            switch (response.data.value) {
+        if (response && response.data && response.data.value) { 
+            const status = response.data.value;
+            receivingStatus !== status && setReceivingStatus(status);           
+            switch (status) {
                 case 'receiving':
                     dispatch(setReceiving("Receiving..."));
                     break;
@@ -105,7 +117,9 @@ export const useCashu = () => {
                     await axios.post(`/api/kv/${pubkey}`, { value: 'none' });
                     break;
                 case 'none':
-                    dispatch(resetStatus());
+                    if (receivingStatus === 'receiving') {
+                        dispatch(resetStatus());
+                    }
                     break;
                 default:
                     break;

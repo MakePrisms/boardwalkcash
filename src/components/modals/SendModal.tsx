@@ -90,7 +90,6 @@ export const SendModal = ({
 
     try {
       await handlePayInvoice(invoice, estimatedFee as number);
-      addToast("Invoice paid successfully.", "success");
     } catch (error) {
       console.error(error);
       addToast("An error occurred while paying the invoice.", "error");
