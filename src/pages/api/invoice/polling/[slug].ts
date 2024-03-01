@@ -40,6 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         while (!paymentConfirmed && attempts < maxAttempts) {
             console.log("polling", attempts);
+
+            if (attempts >= 10) {
+                kv.set(pubkey, 'none')
+            }
+
             try {
                 const { proofs } = await wallet.requestTokens(amount, slug);
     

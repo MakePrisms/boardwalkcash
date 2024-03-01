@@ -104,6 +104,9 @@ export const useCashu = () => {
                 case 'failed':
                     await axios.post(`/api/kv/${pubkey}`, { value: 'none' });
                     break;
+                case 'none':
+                    dispatch(resetStatus());
+                    break;
                 default:
                     break;
             }
