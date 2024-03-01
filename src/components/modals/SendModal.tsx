@@ -127,26 +127,25 @@ export const SendModal = ({
           <>
             <Modal.Body>
               <input
-                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4"
                 type="text"
                 placeholder="Lightning address or invoice"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
               />
+              <div className="flex justify-end">
+                <Button color="info" onClick={handleDestination}>
+                  Continue
+                </Button>
+              </div>
             </Modal.Body>
-            <Modal.Footer className="flex flex-row justify-end">
-              <Button color="info" onClick={handleDestination}>
-                Continue
-              </Button>
-            </Modal.Footer>
           </>
         );
       case Tabs.Amount:
         return (
-          <>
             <Modal.Body>
               <input
-                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4"
                 type="number"
                 placeholder="Amount in sats"
                 value={amountSat || ""}
@@ -154,33 +153,30 @@ export const SendModal = ({
                   setAmountSat(() => parseInt(e.target.value, 10))
                 }
               />
+              <div className="flex items-center flex-row justify-around">
+                <Button color="failure" onClick={handleBackClick}>Back</Button>
+                <Button color="info" onClick={(e) => estimateFee()}>
+                  Continue
+                </Button>
+              </div>
             </Modal.Body>
-            <Modal.Footer className="flex flex-row justify-around">
-              <Button color="failure" onClick={handleBackClick}>Back</Button>
-              <Button color="info" onClick={(e) => estimateFee()}>
-                Continue
-              </Button>
-            </Modal.Footer>
-          </>
         );
       case Tabs.Fee:
         return (
-          <>
             <Modal.Body>
-              <div className="mt-4 text-sm text-black">
+              <div className=" text-sm text-black mb-4">
                 Estimated Fee: {estimatedFee} sats
                 <br />
                 Total amount to pay:{" "}
                 {getAmountFromInvoice(invoice) + estimatedFee!} sats
               </div>
+              <div className="flex justify-around">
+                <Button color="failure" onClick={handleBackClick}>Back</Button>
+                <Button color="success" onClick={handleSend}>
+                  Pay
+                </Button>
+              </div>
             </Modal.Body>
-            <Modal.Footer className="flex flex-row justify-around">
-              <Button color="failure" onClick={handleBackClick}>Back</Button>
-              <Button color="success" onClick={handleSend}>
-                Pay
-              </Button>
-            </Modal.Footer>
-          </>
         );
       case Tabs.Send:
         return (
