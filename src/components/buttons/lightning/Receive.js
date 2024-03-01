@@ -114,12 +114,12 @@ const Receive = () => {
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                     />
-                                    <div className="flex justify-around">
-                                        <Button color="success" onClick={handleReceive}>
-                                            Generate Invoice
+                                    <div className="flex flex-col items-center md:flex-row justify-around">
+                                        <Button color="success" onClick={handleReceive} className="mb-4 md:mb-0">
+                                          &nbsp;&nbsp;Generate Invoice&nbsp;
                                         </Button>
                                         <Tooltip content="Copy lightning address">
-                                            <ClipboardButton toCopy={lightningAddress} toShow="Lightning Address" />
+                                            <ClipboardButton onClick={handleModalClose} toCopy={lightningAddress} toShow="Lightning Address" />
                                         </Tooltip>
                                     </div>
                                 </div>

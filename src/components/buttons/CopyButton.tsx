@@ -9,12 +9,14 @@ import {
 interface Props {
   toCopy: string;
   toShow: string;
+  onClick?: () => void;
   className?: string;
 }
 
 const ClipboardButton: React.FC<Props> = ({
   toCopy,
   toShow,
+  onClick,
   className = "",
 }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -36,6 +38,10 @@ const ClipboardButton: React.FC<Props> = ({
         console.error("Copy failed", err);
         addToast("Failed to copy to clipboard", "error");
       });
+
+    if (onClick) {
+      onClick();
+    }
   };
 
   return (
