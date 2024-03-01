@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import Balance from "@/components/Balance";
 import Receive from "@/components/buttons/lightning/Receive";
 import Send from "@/components/buttons/lightning/Send";
-import EcashButtons from "@/components/buttons/EcashButtons";
-import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof } from '@cashu/cashu-ts';
 import { useNwc } from "@/hooks/useNwc";
 import { useCashu } from "@/hooks/useCashu";
 import { useSelector } from "react-redux";
@@ -30,6 +29,21 @@ export default function Home() {
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
 
     const wallet = new CashuWallet(mint);
+
+    useEffect(() => {
+        const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+        const checkProofs = async () => {
+            if (!proofs.length) return;
+            const unspendable = await wallet.checkProofsSpent(proofs);
+            console.log("unspendable", unspendable)
+            const spendable = proofs.filter(p => !unspendable.some(u => u.secret === p.secret))
+            console.log(`## Removing ${unspendable.length} unspendable proofs`, unspendable);
+            window.localStorage.setItem('proofs', JSON.stringify(spendable));
+        }
+
+        checkProofs();
+    }, [])
 
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
