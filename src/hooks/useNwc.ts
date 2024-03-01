@@ -216,6 +216,7 @@ export const useNwc = () => {
 
                 try {
                     // decrypt all the requests and set invoice + fee amounts
+                    dispatch(setSending("Calculating fees..."))
                     await Promise.all(processors.map(async (p) => p.setUp()));
                 } catch (e) {
                     console.error("Error setting up processors", e);
@@ -268,9 +269,19 @@ export const useNwc = () => {
                     p.proofs = [...proofsToSend];
                 });
 
+
+                let payCounter = 0;
+                if (processors.length === 1) {
+                    dispatch(setSending("Paying invoice..."))
+                } else {
+                    dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`))
+                }
                 const promises = processors.map(async (p, idx) => {
                     try {
                         const result = await p.process();
+                        payCounter++
+                        const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`
+                        dispatch(setSending(msg))
                         console.log("## result", result);
                         return result;
                     } catch (e) {
