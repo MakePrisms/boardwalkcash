@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { setBalance } from '@/redux/reducers/CashuReducer';
+import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
 import { setError, setSending, setSuccess, setReceiving, resetStatus } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
-import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
+import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';
 import { createClient } from '@vercel/kv';
+import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 
 export const useCashu = () => {
     const [receivingStatus, setReceivingStatus] = useState<string | null>(null);
@@ -49,19 +50,24 @@ export const useCashu = () => {
 
     const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
         dispatch(setSending('Sending...'))
+        dispatch(lockBalance())
+
         if (!invoice || isNaN(estimatedFee)) {
             addToast("Please enter an invoice and estimate the fee before submitting.", "warning");
             dispatch(resetStatus())
+            dispatch(unlockBalance())
             return;
         }
 
         const invoiceAmount = getAmountFromInvoice(invoice);
-        const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+        const proofs = getNeededProofs(invoiceAmount + estimatedFee)
         let amountToPay = invoiceAmount + estimatedFee;
 
         const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
         if (balance < amountToPay) {
             dispatch(setError("Insufficient balance to pay " + amountToPay + " sats"))
+            updateStoredProofs(proofs);
+            dispatch(unlockBalance())
             return;
         }
 
@@ -72,12 +78,25 @@ export const useCashu = () => {
             } catch (e) {
                 console.error("error swapping proofs", e);
                 dispatch(setError("Payment failed"));
+                updateStoredProofs(proofs);
+                dispatch(unlockBalance())
                 return
             }
             if (sendResponse && sendResponse.send) {
-                const invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+                updateStoredProofs(sendResponse.returnChange || []);
+                let invoiceResponse: PayLnInvoiceResponse;
+                try {
+                    invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+                } catch (e) {
+                    console.error("error paying invoice", e);
+                    dispatch(setError("Payment failed"));
+                    dispatch(unlockBalance())
+                    updateStoredProofs(sendResponse.send);
+                    return
+                }
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
                     dispatch(setError("Payment failed"));
+                    dispatch(unlockBalance())
                 } else {
                     const updatedProofs = sendResponse.returnChange || [];
 
@@ -85,7 +104,7 @@ export const useCashu = () => {
                         invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
                     }
 
-                    window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+                    updateStoredProofs(updatedProofs);
 
                     const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
                     const feePaid = balance - newBalance - invoiceAmount;
@@ -97,6 +116,8 @@ export const useCashu = () => {
         } catch (error) {
             console.error(error);
             addToast("An error occurred while trying to send.", "error");
+        } finally {
+            dispatch(unlockBalance());
         }
     }
 
@@ -181,7 +202,7 @@ export const useCashu = () => {
 
         const intervalId = setInterval(() => {
             updateProofsAndBalance();
-        }, 3000); // Poll every 3 seconds
+        }, 10000); // Poll every 3 seconds
 
         const handleStorageChange = (event: any) => {
             if (event.key === 'proofs') {
