@@ -38,8 +38,6 @@ const Receive = () => {
             return;
         }
 
-        dispatch(setReceiving());
-
         try {
             const { pr, hash } = await requestMintInvoice(amount);
             setInvoiceToPay(pr);
@@ -50,16 +48,15 @@ const Receive = () => {
             });
 
             if (pollingResponse.status === 200 && pollingResponse.data.success) {
-                setTimeout(() => {
-                    setIsReceiving(false);
-                    dispatch(setSuccess(`Received ${amount} sats!`))
-                }, 1000);
+                setIsReceiving(false);
+                setIsReceiveModalOpen(false);
+                setInvoiceToPay('');
+                setAmount('');
+                dispatch(setSuccess(`Received ${amount} sats!`))
             }
         } catch (error) {
             console.error(error);
             dispatch(setError("An error occurred."))
-        } finally {
-            setIsReceiving(false);
             dispatch(resetStatus())
         }
     };
@@ -78,6 +75,13 @@ const Receive = () => {
         }
     };
 
+    const handleModalClose = () => {
+        setIsReceiveModalOpen(false);
+        setInvoiceToPay('');
+        setAmount('');
+        setIsReceiving(false);
+    }
+
     return (
         <>
             <Button
@@ -85,7 +89,7 @@ const Receive = () => {
                 className="me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none">
                 <span className="text-lg">Receive</span> <ArrowDownRightIcon className="ms-2 h-5 w-5" />
             </Button>
-            <Modal show={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)}>
+            <Modal show={isReceiveModalOpen} onClose={handleModalClose}>
                 <Modal.Header>Receive Lightning Payment</Modal.Header>
                 {isReceiving && !invoiceToPay ? (
                     <div className="flex justify-center items-center my-8">
@@ -93,10 +97,10 @@ const Receive = () => {
                     </div>
                 ) : (
                     <>
-                        <Modal.Body className="bg-gray-600">
+                        <Modal.Body>
                             {invoiceToPay ? (
                                 <div className="flex flex-col items-center justify-center space-y-4">
-                                    <QRCode value={`lightning:${invoiceToPay}`} size={458} level={"H"} className="rounded-lg m-4 border-white border-2" />
+                                    <QRCode value={`lightning:${invoiceToPay}`} size={258} level={"H"} className="rounded-lg m-4 border-white border-2" />
                                     <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
                                         Copy
                                     </Button>
