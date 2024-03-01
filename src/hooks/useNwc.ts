@@ -216,7 +216,6 @@ export const useNwc = () => {
 
                 try {
                     // decrypt all the requests and set invoice + fee amounts
-                    dispatch(setSending("Calculating fees..."))
                     await Promise.all(processors.map(async (p) => p.setUp()));
                 } catch (e) {
                     console.error("Error setting up processors", e);
