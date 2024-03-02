@@ -108,7 +108,7 @@ export const useCashu = () => {
 
                     const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
                     const feePaid = balance - newBalance - invoiceAmount;
-                    const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
+                    const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? "s" : ""} fee` : '';
 
                     dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
                 }

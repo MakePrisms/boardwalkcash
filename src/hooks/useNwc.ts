@@ -307,7 +307,7 @@ export const useNwc = () => {
                 if (totalPaid === 0) {
                     dispatch(setError("Payment failed"))
                 } else {
-                    dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` and paid ${totalFee} sat in fees` : ""}`))
+                    dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` + ${totalFee} sat${totalFee > 1 ? "s": ""} fees` : ""}`))
                 }
                 dispatch(unlockBalance())
                 try {
