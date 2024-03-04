@@ -12,6 +12,8 @@ import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 export const useCashu = () => {
     const [receivingStatus, setReceivingStatus] = useState<string | null>(null);
     
+    let intervalCount = 0;
+    
     const dispatch = useDispatch();
     const { addToast } = useToast();
 
@@ -148,6 +150,38 @@ export const useCashu = () => {
         }
     }
 
+    const checkProofsValid = async () => {
+        const localProofs = getProofs();
+    
+        // Create checkPayload from the local proofs
+        const checkPayload = {
+            proofs: localProofs.map((proof: any) => ({ secret: proof.secret })),
+        };
+    
+        try {
+            // Call the check method
+            const response = await mint.check(checkPayload);
+    
+            // Handle the response
+            if (response && response.spendable) {
+    
+                // Filter out non-spendable proofs
+                const spendableProofs = localProofs.filter((proof: any, index: number) => response.spendable[index]);
+
+                // If the spendable proofs have changed, update the local storage
+                if (spendableProofs.length !== localProofs.length) {
+                    window.localStorage.setItem('proofs', JSON.stringify(spendableProofs));
+                }
+            } else {
+                console.error('Failed to check proofs or invalid response');
+            }
+        } catch (error) {
+            console.error('Failed to check proofs:', error);
+        }
+    };
+    
+    
+
     const updateProofsAndBalance = async () => {
         const pubkey = window.localStorage.getItem('pubkey');
         if (!pubkey) {
@@ -199,22 +233,22 @@ export const useCashu = () => {
 
     useEffect(() => {
         updateProofsAndBalance();
-
+        
         const intervalId = setInterval(() => {
             updateProofsAndBalance();
-        }, 3000); // Poll every 3 seconds
 
-        const handleStorageChange = (event: any) => {
-            if (event.key === 'proofs') {
-                updateProofsAndBalance();
+            // Increment the counter
+            intervalCount += 1;
+
+            // Every fourth interval, call checkProofsValid
+            if (intervalCount >= 4) {
+                checkProofsValid();
+                intervalCount = 0;
             }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
+        }, 3000); // Poll every 3 seconds
 
         return () => {
             clearInterval(intervalId);
-            window.removeEventListener('storage', handleStorageChange);
         };
     }, [dispatch]);
 
