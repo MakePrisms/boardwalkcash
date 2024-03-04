@@ -132,7 +132,9 @@ export default function Home() {
                 </div>
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
-            <Disclaimer />
+            <footer className="fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center">
+                <Disclaimer />
+            </footer>
         </main>
     );
 }

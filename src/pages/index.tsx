@@ -12,17 +12,25 @@ import { initializeUser } from "@/redux/reducers/UserReducer";
 import Disclaimer from "@/components/Disclaimer";
 import ActivityIndicator from "@/components/ActivityIndicator";
 import { setSuccess } from "@/redux/reducers/ActivityReducer";
+import ZapBotButton from "@/components/buttons/ZapBot";
 
 
 export default function Home() {
+    const [showZapBotButton, setShowZapBotButton] = useState(false);
+    
     const dispatch = useAppDispatch();
 
     useEffect(() => {
         dispatch(initializeUser());
 
+        if(!window.localStorage.getItem('nwa')) {
+            setShowZapBotButton(true);
+        }
+
         let params = new URL(document.location.href).searchParams
         if (params.get("just_connected") === "true") {
             dispatch(setSuccess("Connected to Zap Bot!"));
+            setShowZapBotButton(false);
         }
     }, [dispatch]);
 
@@ -61,7 +69,10 @@ export default function Home() {
                 </div>
                 {/* <EcashButtons wallet={wallet} /> */}
             </div>
-            <Disclaimer />
+            <footer className="fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center">
+                { showZapBotButton && <ZapBotButton />}
+                <Disclaimer />
+            </footer>
         </main>
     );
 }
