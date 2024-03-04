@@ -1,16 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { generateSecretKey, getPublicKey } from 'nostr-tools';
 import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
 import { useToast } from './useToast';
-import { AmountPreference, CashuMint, CashuWallet, PayLnInvoiceResponse, Proof, SendResponse } from '@cashu/cashu-ts';
-import { getAmountFromInvoice } from '@/utils/bolt11';
-import { assembleLightningAddress } from "@/utils/index";
+import { AmountPreference, CashuMint, CashuWallet, Proof, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
-import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
-import { getDefaultAmountPreference } from '@cashu/cashu-ts/dist/lib/es5/utils';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
 
 const defaultRelays = [
@@ -30,37 +25,16 @@ export interface NWA {
 export const useNwc = () => {
     const [queue, setQueue] = useState<{events: NDKEvent[]; nwa: NWA}[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [recentInvoices, setRecentInvoices] = useState<string[]>([]); 
-    const [processors, setProcessors] = useState<NIP47RequestProcessor[]>([]);
 
     const ndk = useRef<NDK | null>(null);
     const bufferTimer = useRef<NodeJS.Timeout | null>(null)
     const eventBufferRef = useRef<NDKEvent[]>([])
-
-    const { addToast } = useToast();
 
     const dispatch = useDispatch();
     
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
 
     const wallet = new CashuWallet(mint);
-
-    const createConnection = () => {
-        const quickCashuPubkey = window.localStorage.getItem('pubkey');
-        if (!quickCashuPubkey) {
-            addToast("No public key found", "error");
-            return;
-        }
-        const sk = generateSecretKey();
-        const pk = getPublicKey(sk);
-        const secretHex = Buffer.from(sk).toString('hex');
-        const relayUrl = encodeURIComponent('wss://relay.mutinywallet.com');
-        const lud16 = assembleLightningAddress(quickCashuPubkey, window.location.host);
-        const uri = `nostr+walletconnect://${pk}?relay=${relayUrl}&secret=${secretHex}&lud16=${lud16}`;
-
-        localStorage.setItem('nwc_secret', secretHex);
-        localStorage.setItem('nwc_connectionUri', uri);
-    };
 
     const setSince = (timestamp: number) => {
         window.localStorage.setItem('latestEventTimestamp', timestamp.toString()); 
@@ -198,139 +172,139 @@ export const useNwc = () => {
         });
     }
 
+    const resetQueue = () => {
+        dispatch(unlockBalance());
+        setQueue((prev) => prev.slice(1));
+        setIsProcessing(false);
+    }
+
+    const getProofsForProcessor = (allProofs: SendResponse, denominations: number[]) => {
+        const proofsToSend = denominations.map((d) => {
+            const proof = allProofs.send.find((p) => p.amount === d);
+            // now delete this proof from our list of proofs in swappedProofs.send
+            if (proof) {
+                allProofs.send = allProofs.send.filter((p) => p !== proof);
+            } else {
+                failPayments(processors, "INTERNAL");
+                throw new Error('something went wrong. ran out of needed proofs');
+            }
+            return proof;
+        })
+        return proofsToSend;
+    }
+
+    const setFinalMessage = (results: {sent: number; fee: number;}[]) => {
+        const [totalPaid, totalFee] = results.reduce((acc, res) => {
+            if (!res) return acc;
+            return [acc[0] + res.sent, acc[1] + res.fee]
+        }, [0, 0]);
+
+        if (totalPaid === 0) {
+            dispatch(setError("Payment failed"))
+        } else {
+            dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` + ${totalFee} sat${totalFee > 1 ? "s": ""} fees` : ""}`))
+        }
+    }
+
     // Effect to start processing when there are items in the queue
     useEffect(() => {
         const processQueue = async () => {
-            if (!isProcessing && queue.length > 0 ) {
-                if (queue[0].events.length === 0) return;
-                dispatch(lockBalance())
-                console.log("Starting to process queue...", queue)
-                setIsProcessing(true);
+            if (isProcessing || queue.length === 0 ) return;
+            if (queue[0].events.length === 0) return;
+            console.log("Starting to process queue...", queue)
+
+            dispatch(lockBalance())
+            setIsProcessing(true);
+            
+            const {events, nwa} = queue[0];
+
+            const processingMessage = `Processing ${events.length > 1 ? "prism" : ""} payment...`;
+            dispatch(setSending(processingMessage))
+
+            // initialize all the requests
+            const processors = initProcessors(events, nwa);
+
+            // decrypt all the requests and set invoice + fee amounts
+            try {
+                await Promise.all(processors.map(async (p) => p.setUp()));
+            } catch (e) {
+                console.error("Error setting up processors", e);
+                dispatch(setError("Error sending payments"));
+                failPayments(processors);
+                resetQueue();
+                return;
+            }
+
+            let swappedProofs: SendResponse;
+            let calcedDenoms: Map<string, number[]>;
+            try {
+                const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
+                calcedDenoms = denominations
+                swappedProofs = await wallet.send(totalToSend, proofs, preference);
+            } catch (e) {
+                if (e instanceof InsufficientFundsError) {
+                    dispatch(setError(e.message))
+                } else {
+                    console.error("Error swapping proofs", e);
+                    dispatch(setError("Payment failed: error swapping proofs"));
+                }
+                failPayments(processors);
+                resetQueue();
+                return;
+            } 
+
+            // add the change proofs back to what we have stored
+            updateStoredProofs([...swappedProofs.returnChange]);
+
+            // set the proofs to pay invoice for each processor
+            processors.forEach((p) => {
+                const denoms = calcedDenoms.get(p.requestEvent.id);
+
+                if (!denoms) throw new Error('something went wrong. no denominations found');
+
+                const proofsToSend = getProofsForProcessor(swappedProofs, denoms);
                 
-                const {events, nwa} = queue[0];
-                const processingMessage = `Processing ${events.length > 1 ? "prism" : ""} payment...`;
-                dispatch(setSending(processingMessage))
+                console.log("## proofsToSend", proofsToSend);
+                p.proofs = [...proofsToSend];
+            });
 
-                // initialize all the requests
-                const processors = initProcessors(events, nwa);
 
+            let payCounter = 0;
+            if (processors.length === 1) {
+                dispatch(setSending("Paying invoice..."))
+            } else {
+                dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`))
+            }
+
+            const promises = processors.map(async (p) => {
                 try {
-                    // decrypt all the requests and set invoice + fee amounts
-                    await Promise.all(processors.map(async (p) => p.setUp()));
+                    const result = await p.process();
+
+                    payCounter++
+                    
+                    const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`
+                    dispatch(setSending(msg))
+
+                    console.log("## result", result);
+                    return result;
                 } catch (e) {
-                    console.error("Error setting up processors", e);
-                    dispatch(setError("Error sending payments"));
-                    failPayments(processors);
-                    dispatch(unlockBalance())
-                    setQueue((prev) => prev.slice(1));
-                    setIsProcessing(false);
-                    return;
+                    console.error("Error processing payment", e);
+                    return undefined;
                 }
+            })
 
-                let swappedProofs: SendResponse;
-                let calcedDenoms: Map<string, number[]>;
-                try {
-                    const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
-                    calcedDenoms = denominations
-                    swappedProofs = await wallet.send(totalToSend, proofs, preference);
-                } catch (e) {
-                    if (e instanceof InsufficientFundsError) {
-                        dispatch(setError(e.message))
-                    } else {
-                        console.error("Error swapping proofs", e);
-                        dispatch(setError("Payment failed: error swapping proofs"));
-                    }
-                    failPayments(processors);
-                    dispatch(unlockBalance())
-                    setQueue((prev) => prev.slice(1));
-                    setIsProcessing(false);
-                    return;
-                } 
+            const results = await Promise.all(promises);
 
-                // add the change proofs back to what we have stored
-                updateStoredProofs([...swappedProofs.returnChange]);
+            console.log("Results:", results)
 
-                // set the proofs to pay invoice for each processor
-                processors.forEach((p) => {
-                    const denoms = calcedDenoms.get(p.requestEvent.id);
+            resetQueue();
 
-                    if (!denoms) throw new Error('something went wrong. no denominations found');
+            const newBalance = JSON.parse(localStorage.getItem('proofs') || '[]').reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
+            dispatch(setBalance(newBalance));
 
-                    const proofsToSend = denoms.map((d) => {
-                        const proof = swappedProofs.send.find((p) => p.amount === d);
-                        // now delete this proof from our list of proofs in swappedProofs.send
-                        if (proof) {
-                            swappedProofs.send = swappedProofs.send.filter((p) => p !== proof);
-                        } else {
-                            failPayments(processors, "INTERNAL");
-                            throw new Error('something went wrong. ran out of needed proofs');
-                        }
-                        return proof;
-                    })
-
-                    console.log("## proofsToSend", proofsToSend);
-                    p.proofs = [...proofsToSend];
-                });
-
-
-                let payCounter = 0;
-                if (processors.length === 1) {
-                    dispatch(setSending("Paying invoice..."))
-                } else {
-                    dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`))
-                }
-                const promises = processors.map(async (p, idx) => {
-                    try {
-                        const result = await p.process();
-                        payCounter++
-                        const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`
-                        dispatch(setSending(msg))
-                        console.log("## result", result);
-                        return result;
-                    } catch (e) {
-                        console.error("Error processing payment", e);
-                        return undefined;
-                    }
-                })
-
-                const results = await Promise.all(promises);
-
-                console.log("Results:", results)
-
-                const [totalPaid, totalFee] = results.reduce((acc, res) => {
-                    if (!res) return acc;
-                    return [acc[0] + res.sent, acc[1] + res.fee]
-                }, [0, 0]);
-
-                setQueue((prev) => prev.slice(1));
-                setIsProcessing(false);
-                if (totalPaid === 0) {
-                    dispatch(setError("Payment failed"))
-                } else {
-                    dispatch(setSuccess(`Sent ${totalPaid} sat${totalPaid === 1 ? "" : "s"}${totalFee ? ` + ${totalFee} sat${totalFee > 1 ? "s": ""} fees` : ""}`))
-                }
-                dispatch(unlockBalance())
-                try {
-                    const newBalance = JSON.parse(localStorage.getItem('proofs')!).reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
-                    dispatch(setBalance(newBalance));
-                } catch (e){
-                    console.error("Error setting new balance", e);
-                }
-            };
+            setFinalMessage(results);
         }
+
         processQueue();
     }, [queue, isProcessing]);
-
-    function extractPublicKeyFromUri(uri: any) {
-        const pkPart = uri.split('://')[1].split('?')[0];
-        return pkPart;
-    }
-
-    // This function parses the NWC connection URI and extracts the public key and relay URL
-    function parseConnectionUri(uri: string): { pk: string; relayUrl: string } {
-        const url = new URL(uri);
-        const pk = extractPublicKeyFromUri(uri);
-        const relayUrl = decodeURIComponent(url.searchParams.get('relay') || '');
-        return { pk, relayUrl };
-    }
 };
