@@ -22,12 +22,15 @@ const Receive = () => {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        const storedPubkey = window.localStorage.getItem("pubkey");
-
-        if (storedPubkey) {
-            const host = window.location.host;
-            setLightningAddress(assembleLightningAddress(storedPubkey, host));
-        }
+        // timeout for the pubKey to be set in localStorage on first load
+        setTimeout(() => {
+            const storedPubkey = window.localStorage.getItem("pubkey");
+    
+            if (storedPubkey) {
+                const host = window.location.host;
+                setLightningAddress(assembleLightningAddress(storedPubkey, host));
+            }
+        }, 500);
     }, []);
 
     const handleReceive = async () => {
