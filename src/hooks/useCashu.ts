@@ -152,6 +152,10 @@ export const useCashu = () => {
 
     const checkProofsValid = async () => {
         const localProofs = getProofs();
+
+        if (localProofs.length === 0) {
+            return;
+        }
     
         // Create checkPayload from the local proofs
         const checkPayload = {
