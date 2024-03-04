@@ -185,7 +185,6 @@ export const useNwc = () => {
             if (proof) {
                 allProofs.send = allProofs.send.filter((p) => p !== proof);
             } else {
-                failPayments(processors, "INTERNAL");
                 throw new Error('something went wrong. ran out of needed proofs');
             }
             return proof;
