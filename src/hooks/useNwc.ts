@@ -236,8 +236,10 @@ export const useNwc = () => {
 
             let swappedProofs: SendResponse;
             let calcedDenoms: Map<string, number[]>;
+            let currentProofs: Proof[] = [];
             try {
                 const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
+                currentProofs = proofs
                 calcedDenoms = denominations
                 swappedProofs = await wallet.send(totalToSend, proofs, preference);
             } catch (e) {
@@ -246,6 +248,7 @@ export const useNwc = () => {
                 } else {
                     console.error("Error swapping proofs", e);
                     dispatch(setError("Payment failed: error swapping proofs"));
+                    updateStoredProofs([...currentProofs])
                 }
                 failPayments(processors);
                 resetQueue();
