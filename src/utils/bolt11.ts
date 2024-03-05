@@ -8,3 +8,12 @@ export const getAmountFromInvoice = (invoice: string) => {
     const amount = Number(decodedInvoice.sections[2].value / 1000);
     return amount;
 };
+
+export const getAmountAndExpiryFromInvoice = (invoice: string) => {
+    const decoded = bolt11Decoder.decode(invoice);
+
+    const amount = Number(decoded.sections[2].value / 1000);
+    const expiry = decoded.expiry + decoded.sections[4].value;
+
+    return { amount, expiry };
+}

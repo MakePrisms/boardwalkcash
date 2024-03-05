@@ -3,6 +3,7 @@ import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
 import { kv } from "@vercel/kv";
+import { updateMintQuote } from '@/lib/mintQuoteModels';
 
 
 interface PollingRequest {
@@ -68,6 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     res.status(500).send({ success: false, message: 'Failed to create proofs.' });
                     return;
                 }
+
+                await updateMintQuote(slug, { paid: true });
 
                 await kv.set(pubkey, 'success');
 

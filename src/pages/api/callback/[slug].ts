@@ -4,6 +4,7 @@ import { runMiddleware, corsMiddleware } from "@/utils/middleware";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts"
 import { findUserByPubkey } from "@/lib/userModels";
+import { createMintQuote } from "@/lib/mintQuoteModels";
 
 const BACKEND_URL = process.env.BACKEND_URL
 
@@ -52,6 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const invoice = await wallet.requestMint(value);
 
                 if (invoice && invoice.pr && invoice.hash) {
+                    await createMintQuote(invoice.hash, invoice.pr, user.pubkey);
+                    
                     // start polling
                     axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${invoice.hash}`, {
                         pubkey: user.pubkey,

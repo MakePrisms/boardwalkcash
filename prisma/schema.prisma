@@ -9,12 +9,13 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  pubkey    String   @unique
-  username  String?  @unique
-  proofs    Proof[] // Establishes a one-to-many relationship with the Proof model
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int         @id @default(autoincrement())
+  pubkey     String      @unique
+  username   String?     @unique
+  proofs     Proof[] // Establishes a one-to-many relationship with the Proof model
+  mintQuotes MintQuote[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Proof {
@@ -27,4 +28,15 @@ model Proof {
   user    User   @relation(fields: [userId], references: [id]) // Links back to the User model
 
   @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
+}
+
+model MintQuote {
+  id         String   @id
+  amount     Int
+  request    String
+  paid       Boolean
+  expiryUnix Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [pubkey], references: [pubkey])
+  pubkey     String
 }
