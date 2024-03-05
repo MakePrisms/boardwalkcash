@@ -1,8 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
 import { createManyProofs } from '@/lib/proofModels';
-import { findUserByPubkey } from '@/lib/userModels';
-import { kv } from "@vercel/kv";
+import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
 
 
@@ -23,8 +22,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { pubkey, amount }: PollingRequest = req.body;
 
-    // Set user's status to "receiving" at the start of polling
-    await kv.set(pubkey, 'receiving');
+    // Set user's "receiving" to true at the start of polling
+    await updateUser(pubkey, { receiving: true });
 
     try {
         let paymentConfirmed = false;
@@ -34,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const user = await findUserByPubkey(pubkey);
         if (!user) {
-            await kv.set(pubkey, 'failed');
+            await updateUser(pubkey, { receiving: false });
             res.status(404).send({ success: false, message: 'User not found.' });
             return;
         }
@@ -43,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log("polling", attempts);
 
             if (attempts >= 10) {
-                kv.set(pubkey, 'none')
+                await updateUser(pubkey, { receiving: false });
             }
 
             try {
@@ -65,14 +64,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.log('Proofs created:', created);
 
                 if (!created) {
-                    await kv.set(pubkey, 'failed');
+                    await updateUser(pubkey, { receiving: false });
                     res.status(500).send({ success: false, message: 'Failed to create proofs.' });
                     return;
                 }
 
                 await updateMintQuote(slug, { paid: true });
 
-                await kv.set(pubkey, 'success');
+                await updateUser(pubkey, { receiving: false });
 
                 res.status(200).send({ success: true, message: 'Payment confirmed and proofs created.' });
                 return;
@@ -82,18 +81,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     attempts++;
                     await new Promise(resolve => setTimeout(resolve, interval));
                 } else {
-                    await kv.set(pubkey, 'failed');
+                    await updateUser(pubkey, { receiving: false });
                     throw e;
                 }
             }
         }
 
         if (!paymentConfirmed) {
-            await kv.set(pubkey, 'failed');
+            await updateUser(pubkey, { receiving: false });
             res.status(408).send({ success: false, message: 'Payment confirmation timeout.' });
         }
     } catch (error) {
-        await kv.set(pubkey, 'failed');
+        await updateUser(pubkey, { receiving: false });
         console.error('Error during payment status check:', error);
         res.status(500).send({ success: false, message: 'Internal server error.' });
     }
