@@ -5,6 +5,7 @@ const Balance = ({ balance }: any) => {
   const [usdBtc, setUsdBtc] = useState(0);
   const [unit, setUnit] = useState("sats");
   const [usdBalance, setUsdBalance] = useState("0.00");
+  const [exchangeError, setExchangeError] = useState(false);
 
   const { addToast } = useToast();
 
@@ -13,10 +14,12 @@ const Balance = ({ balance }: any) => {
     fetch("https://mempool.space/api/v1/prices").then((res) =>
       res.json().then((data) => {
         setUsdBtc(data.USD);
+        setExchangeError(false);
       })
     ).catch((error) => {
       console.error("Error fetching USD to BTC rate: ", error);
       addToast("Error fetching USD to BTC rate", "error")
+      setExchangeError(true);
     });
   }, []); 
 
@@ -60,6 +63,7 @@ const Balance = ({ balance }: any) => {
         </span>{" "}
         <span className="font-5xl text-cyan-teal font-bold">{unit}</span>
       </h1>
+      {exchangeError && unit === 'usd' && <p className="text-red-600">error fetching exchange rate</p>}
     </div>
   );
 };
