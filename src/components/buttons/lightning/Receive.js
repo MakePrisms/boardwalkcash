@@ -9,7 +9,6 @@ import { useCashu } from "@/hooks/useCashu";
 import { assembleLightningAddress } from "@/utils/index";
 import ClipboardButton from "../CopyButton";
 import QRCode from "qrcode.react";
-import { createMintQuote } from "@/lib/mintQuoteModels";
 
 const Receive = () => {
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -46,7 +45,11 @@ const Receive = () => {
             const { pr, hash } = await requestMintInvoice(amount);
             setInvoiceToPay(pr);
             
-            await createMintQuote(hash, pr, window.localStorage.getItem('pubkey'));
+            await axios.post("/api/quotes/mint", {
+                pubkey: window.localStorage.getItem('pubkey'),
+                quoteId: hash,
+                request: pr
+            })
 
             const pollingResponse = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${hash}`, {
                 pubkey: window.localStorage.getItem('pubkey'),
