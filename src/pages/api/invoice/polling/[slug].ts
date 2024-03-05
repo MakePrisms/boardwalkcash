@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         while (!paymentConfirmed && attempts < maxAttempts) {
             console.log("polling", attempts);
 
-            if (attempts >= 10) {
+            if (attempts === 10) {
                 await updateUser(pubkey, { receiving: false });
             }
 

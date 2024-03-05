@@ -9,7 +9,7 @@ import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cas
 import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 
 export const useCashu = () => {
-    const [receivingStatus, setReceivingStatus] = useState<string | null>(null);
+    const [receivingStatus, setReceivingStatus] = useState(false);
     
     let intervalCount = 0;
     
@@ -172,8 +172,10 @@ export const useCashu = () => {
 
             if (isReceiving && activityStateStatus !== "receiving") {
                 dispatch(setReceiving("Receiving..."));
-            } else if(!isReceiving && activityStateStatus === "receiving") {
+                setReceivingStatus(true);
+            } else if(!isReceiving && receivingStatus) {
                 dispatch(resetStatus());
+                setReceivingStatus(false);
             }
 
             const proofsFromDb = pollingResponse.data.proofs;
