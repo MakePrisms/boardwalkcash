@@ -38,6 +38,12 @@ const activitySlice = createSlice({
       state.status = 'error';
       state.data.message = action.payload || 'An error occurred. Please try again.';
     },
+    setNotReceiving: (state) => {
+      if (state.status === 'receiving') {
+        state.status = 'default';
+        state.data = {};
+      }
+    },
     resetStatus: (state) => {
       state.status = 'default';
       state.data = {};
@@ -50,6 +56,7 @@ export const {
   setReceiving,
   setSuccess,
   setError,
+  setNotReceiving,
   resetStatus,
 } = activitySlice.actions;
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
-import { setError, setSending, setSuccess, setReceiving, resetStatus } from "@/redux/reducers/ActivityReducer";
+import { setError, setSending, setSuccess, setReceiving, resetStatus, setNotReceiving } from "@/redux/reducers/ActivityReducer";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';
@@ -172,10 +172,10 @@ export const useCashu = () => {
 
             if (isReceiving) {
                 dispatch(setReceiving("Receiving..."));
-                setReceivingStatus(true);
-            } else {
-                dispatch(resetStatus());
-                receivingStatus && setReceivingStatus(false);
+            } 
+
+            if (!isReceiving) {
+                dispatch(setNotReceiving())
             }
 
             const proofsFromDb = pollingResponse.data.proofs;
