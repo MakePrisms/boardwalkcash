@@ -170,8 +170,6 @@ export const useCashu = () => {
 
             const isReceiving = pollingResponse.data?.receiving
 
-            console.log("recieving", isReceiving, receivingStatus)
-            
             if (isReceiving) {
                 dispatch(setReceiving("Receiving..."));
                 setReceivingStatus(true);
