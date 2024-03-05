@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const proofs = await findProofsByUserId(user.id);
 
         if (proofs) {
-          return res.status(200).json(proofs);
+          return res.status(200).json({proofs, receiving: user.receiving});
         } else {
           return res.status(404).json({ message: 'Proof not found' });
         }

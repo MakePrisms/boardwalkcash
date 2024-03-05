@@ -172,9 +172,11 @@ export const useCashu = () => {
 
             if (isReceiving && activityStateStatus !== "receiving") {
                 dispatch(setReceiving("Receiving..."));
+            } else if(!isReceiving && activityStateStatus === "receiving") {
+                dispatch(resetStatus());
             }
 
-            const proofsFromDb = pollingResponse.data;
+            const proofsFromDb = pollingResponse.data.proofs;
             const formattedProofs = proofsFromDb.map((proof: any) => ({
                 C: proof.C,
                 amount: proof.amount,
