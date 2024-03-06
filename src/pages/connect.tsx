@@ -40,14 +40,6 @@ export default function Home() {
             const budget = queryParamsObj.get("budget");
             const identity = queryParamsObj.get("identity");
 
-            // Log or process the extracted values as needed
-            console.log("App Public Key:", appPublicKey);
-            console.log("Relay:", appRelay);
-            console.log("Secret:", secret);
-            console.log("Required Commands:", requiredCommands);
-            console.log("Budget:", budget);
-            console.log("Identity:", identity);
-
             if (!appRelay) {
                 console.log("No relay found");
                 return;
@@ -55,7 +47,6 @@ export default function Home() {
 
             const relay = await Relay.connect(appRelay);
 
-            // let's publish a new event while simultaneously monitoring the relay for it
             let nwaSecretKey = generateSecretKey();
             let nwaPubkey = getPublicKey(nwaSecretKey);
             // encode secret as hex
@@ -64,8 +55,6 @@ export default function Home() {
             window.localStorage.setItem('appPublicKey', appPublicKey);
             // save nwa object wth appPublicKey pk and sk to localStorage
             window.localStorage.setItem('nwa', JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey: hexEncodedSecretKey }));
-
-            console.log("req commands:", typeof requiredCommands, requiredCommands);
 
             let secretJson;
 
@@ -90,8 +79,6 @@ export default function Home() {
                 });
             }
 
-            console.log("Secret JSON:", secretJson);
-
             const encryptedContent = await nip04.encrypt(
                 nwaSecretKey,
                 appPublicKey,
@@ -107,14 +94,11 @@ export default function Home() {
 
             // this assigns the pubkey, calculates the event id and signs the event in a single step
             const signedEvent = finalizeEvent(eventTemplate, nwaSecretKey);
-            console.log("Signed event:", signedEvent);
             await relay.publish(signedEvent);
 
             relay.close();
 
-            // setTimeout(() => {
-                window.location.href = "/?just_connected=true";
-            // }, 2000);
+            window.location.href = "/?just_connected=true";
         }
     }
 
@@ -124,13 +108,11 @@ export default function Home() {
 
     return (
         <main className="flex flex-col items-center justify-center mx-auto min-h-screen">
-            {/* <Balance balance={balance} /> */}
             <div className="py-8 w-full">
                 <div className="flex flex-col justify-center align-middle items-center mx-auto">
                    <Spinner size="xl" className="mb-4"/>
                    <h2>Connecting you to the Zap Bot...</h2>
                 </div>
-                {/* <EcashButtons wallet={wallet} /> */}
             </div>
             <footer className="fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center">
                 <Disclaimer />

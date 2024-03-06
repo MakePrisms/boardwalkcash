@@ -1,4 +1,3 @@
-// pages/api/users/[slug].ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { deleteUser, findUserByPubkey, updateUser } from '@/lib/userModels';
 

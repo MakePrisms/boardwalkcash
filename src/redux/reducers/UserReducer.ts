@@ -2,14 +2,12 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
 
-// Define the shape of the user state
 interface UserState {
   pubkey: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
 
-// Define the initial state with explicit types
 const initialState: UserState = {
   pubkey: null,
   status: 'idle',
@@ -41,8 +39,6 @@ export const initializeUser = createAsyncThunk<
 
         return { pubkey: newPubKey }; // This matches the defined return type
       }
-      // If the keys already exist, you can optionally return them or undefined
-      // return { pubkey: storedPubKey };
     } catch (error) {
       return rejectWithValue('Error initializing user');
     }
@@ -52,31 +48,23 @@ export const initializeUser = createAsyncThunk<
 const userSlice = createSlice({
     name: 'user',
     initialState,
-    reducers: {
-      // Your synchronous reducers go here
-    },
+    reducers: {},
     extraReducers: (builder) => {
       builder
         .addCase(initializeUser.pending, (state) => {
           state.status = 'loading';
         })
-        // Adjusted to handle both { pubkey: string } and undefined payload types
         .addCase(initializeUser.fulfilled, (state, action: PayloadAction<{ pubkey: string } | undefined>) => {
           state.status = 'succeeded';
-          // Ensure we only update the state if the payload is not undefined
           if (action.payload) {
             state.pubkey = action.payload.pubkey;
-          } else {
-            // Optionally handle the case where the payload is undefined
-            // For example, you might want to log a message or set the state differently
           }
         })
         .addCase(initializeUser.rejected, (state, action) => {
           state.status = 'failed';
-          state.error = action.error.message ?? null; // Correctly accessing the error message
+          state.error = action.error.message ?? null;
         });
     },
   });
 
 export default userSlice.reducer;
-// Export any actions if they are defined

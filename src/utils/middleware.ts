@@ -1,13 +1,11 @@
 import Cors from 'cors';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-// Initialize the cors middleware
 export const corsMiddleware = Cors({
     methods: ['GET', 'HEAD', 'POST'],
     origin: '*',
 });
 
-// Define a type for the middleware function
 type Middleware = (
     req: NextApiRequest,
     res: NextApiResponse,

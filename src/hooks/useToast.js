@@ -47,7 +47,7 @@ export const ToastProvider = ({ children }) => {
                 };
             default:
                 return {
-                    icon: null, // You may choose to have a default icon for generic messages
+                    icon: null, // no defaut icon for now
                     bgColor: 'bg-gray-100',
                     textColor: 'text-gray-800',
                 };

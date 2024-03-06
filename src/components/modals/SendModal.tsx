@@ -70,7 +70,6 @@ export const SendModal = ({
 
     setIsSending(true);
     try {
-      console.log("Estimating fee for invoice:", toPay)
       const fee = await wallet.getFee(toPay!);
       setEstimatedFee(fee);
       setShowSubmit(true); // Show submit button after estimating fee

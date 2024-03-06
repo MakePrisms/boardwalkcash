@@ -73,10 +73,7 @@ export class NIP47RequestProcessor {
         // put the proofs back
         updateStoredProofs(this.proofs);
         throw new Error("Payment failed")
-        // dispatch(setError("Payment failed"))
     } else {
-        console.log("invoiceResponse", invoiceResponse);
-
         if (invoiceResponse.change) {
             updateStoredProofs(invoiceResponse.change);
         }
@@ -89,7 +86,6 @@ export class NIP47RequestProcessor {
         
         console.log(`## paid ${this.invoiceAmount + feePaid} sats total (${feePaid} sat fee).`)
         return {sent: this.invoiceAmount, fee: feePaid}
-        // dispatch(setSuccess(`Sent ${invoiceAmount} sat${invoiceAmount === 1 ? "" : "s"}${feeMessage}`));
     }
 }
 

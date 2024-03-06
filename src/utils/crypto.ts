@@ -1,8 +1,6 @@
-// Use elliptic curve library
 import { ec as EC } from 'elliptic';
 import { randomBytes } from 'crypto';
 
-// Initialize elliptic curve
 const ec = new EC('secp256k1');
 
 // A workaround function to get a curve point from x
@@ -37,16 +35,12 @@ export function generateBlindedMessagesForAmount(amount: number, keysetId: strin
     };
 }
 
-export function unblindSignature(blindedSignature: string, blindingFactor: string, mintPublicKey: string) {
-    console.log('blindingFactor', blindingFactor);
-    
+export function unblindSignature(blindedSignature: string, blindingFactor: string, mintPublicKey: string) {    
     // Convert the mint's public key from hex to an elliptic curve public key object
     const K = ec.keyFromPublic(mintPublicKey, 'hex').getPublic();
 
     // Convert the hexadecimal blinding factor back into a BigNumber or appropriate elliptic curve private key format
     const r = new EC('secp256k1').keyFromPrivate(blindingFactor, 'hex').getPrivate();
-    
-    console.log('r', r.toString(16)); // Log to verify the conversion
     
     // Decode the blinded signature from hex to an elliptic curve point
     const C_ = ec.curve.decodePoint(blindedSignature, 'hex');

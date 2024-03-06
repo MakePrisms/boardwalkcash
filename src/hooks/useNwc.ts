@@ -68,9 +68,6 @@ export const useNwc = () => {
     useEffect(() => {
         const nwaAppPubkey = window.localStorage.getItem('appPublicKey');
         const nwa: NWA = JSON.parse(window.localStorage.getItem('nwa')!);
-        console.log('nwaAppPubkey', nwaAppPubkey);
-        console.log('nwa', nwa);
-
 
         const listen = async () => {
             ndk.current = new NDK();

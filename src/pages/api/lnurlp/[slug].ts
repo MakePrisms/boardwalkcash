@@ -14,10 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return
     }
 
-    // need to get the pubkey from db
     const user = await findUserByPubkey(slug.toString());
-
-    console.log('user in lnurlp', user)
 
     if (!user) {
         res.status(404).json({ error: 'User not found' })

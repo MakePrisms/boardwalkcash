@@ -22,7 +22,6 @@ export const useCashu = () => {
 
     const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
-    // Function to delete a proof by ID
     const deleteProofById = async (proofId: any) => {
         try {
             await axios.delete(`/api/proofs/${proofId}`)

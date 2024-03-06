@@ -44,7 +44,6 @@ export default function Home() {
         const checkProofs = async () => {
             if (!proofs.length) return;
             const unspendable = await wallet.checkProofsSpent(proofs);
-            console.log("unspendable", unspendable)
             const spendable = proofs.filter(p => !unspendable.some(u => u.secret === p.secret))
             console.log(`## Removing ${unspendable.length} unspendable proofs`, unspendable);
             window.localStorage.setItem('proofs', JSON.stringify(spendable));

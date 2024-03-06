@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 interface ProofData {
-    proofId: string; // Assuming proofId is necessary for your logic
+    proofId: string;
     amount: number;
     secret: string;
     C: string;
