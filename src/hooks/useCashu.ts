@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
-import { setError, setSending, setSuccess, setReceiving, resetStatus, setNotReceiving } from "@/redux/reducers/ActivityReducer";
+import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
+import { setError, setSending, setSuccess, setReceiving, resetStatus, setNotReceiving } from "@/redux/slices/ActivitySlice";
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';

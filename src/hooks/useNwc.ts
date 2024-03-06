@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
-import { setSending, setError, setSuccess } from '@/redux/reducers/ActivityReducer';
+import { setSending, setError, setSuccess } from '@/redux/slices/ActivitySlice';
 import { useToast } from './useToast';
 import { AmountPreference, CashuMint, CashuWallet, Proof, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/reducers/CashuReducer';
+import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
 
 const defaultRelays = [
     'wss://relay.getalby.com/v1',

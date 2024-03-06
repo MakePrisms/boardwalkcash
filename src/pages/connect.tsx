@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import Disclaimer from "@/components/Disclaimer";
 import { useAppDispatch } from '@/redux/store';
-import { initializeUser } from "@/redux/reducers/UserReducer";
+import { initializeUser } from "@/redux/slices/UserSlice";
 import { Spinner } from "flowbite-react";
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from "nostr-tools";
 import { assembleLightningAddress } from "@/utils";

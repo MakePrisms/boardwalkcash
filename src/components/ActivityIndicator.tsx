@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Spinner } from "flowbite-react";
-import { resetStatus } from "@/redux/reducers/ActivityReducer";
+import { resetStatus } from "@/redux/slices/ActivitySlice";
 import { RootState } from "@/redux/store";
 
 const ActivityIndicator = () => {

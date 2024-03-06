@@ -48,7 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 const { proofs } = await wallet.requestTokens(amount, slug);
     
-                console.log('Proofs:', proofs);
                 let proofsPayload = proofs.map((proof) => {
                     return {
                         proofId: proof.id,

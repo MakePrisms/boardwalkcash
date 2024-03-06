@@ -8,10 +8,10 @@ import { useCashu } from "@/hooks/useCashu";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useAppDispatch } from '@/redux/store';
-import { initializeUser } from "@/redux/reducers/UserReducer";
+import { initializeUser } from "@/redux/slices/UserSlice";
 import Disclaimer from "@/components/Disclaimer";
 import ActivityIndicator from "@/components/ActivityIndicator";
-import { setSuccess } from "@/redux/reducers/ActivityReducer";
+import { setSuccess } from "@/redux/slices/ActivitySlice";
 import ZapBotButton from "@/components/buttons/ZapBot";
 
 
