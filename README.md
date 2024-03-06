@@ -32,18 +32,16 @@ Before you begin, ensure you have the following tools installed and running:
 1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/quickcashu.git
-```
+   
 2. Navigate to the project directory:
 
     ```bash
     cd quickcashu
-    ```
 
 3. Use Docker Compose to build and run the containers:
 
     ```bash
     docker-compose up --build
-    ```
 
 ### Usage
 
