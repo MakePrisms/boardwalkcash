@@ -4,6 +4,7 @@ A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 
 ## Table of Contents
 
+- [Features](#features)
 - [Getting Started](#getting-started)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -12,6 +13,17 @@ A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 - [License](#license)
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
+
+## Features
+
+- **Lightning Network Integration**: Send and Receive Lightning Network payments with ease.
+- **Cashu Ecash Wallet**: Store balance as self-custodial e-cash while at rest.
+- **Lightning Address**: Receive payments using a simple auto-generated Lightning Address.
+- **Nostr Wallet Connect**: Connect Wallet to other apps easily with Nostr Wallet Connect.
+- **Nostr Wallet Authentication**: Utilize Nostr wallet authentication for secure access and easy connection setup
+- **Cross-Platform Compatibility**: Fully responsive design, compatible with various devices and screen sizes.
+- **User-Friendly Interface**: Easy navigation and clear design to enhance user experience.
+
 
 ## Getting Started
 
