@@ -180,7 +180,7 @@ export const useCashu = () => {
                 dispatch(setNotReceiving())
             }
 
-            const proofsFromDb = pollingResponse.data;
+            const proofsFromDb = pollingResponse.data.proofs;
             const formattedProofs = proofsFromDb.map((proof: ProofData) => ({
                 C: proof.C,
                 amount: proof.amount,
