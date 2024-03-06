@@ -1,13 +1,12 @@
 # QuickCashU
 
-Welcome to QuickCashU, an open-source Lightning / Cashu Ecash wallet designed for fast, secure, and user-friendly digital transactions. This wallet utilizes the power of the Lightning Network and the flexibility of Cashu to offer an enhanced digital currency experience. Built with Next.js and TypeScript, QuickCashU aims to deliver a robust and scalable solution for cryptocurrency enthusiasts.
+An open-source Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Usage](#usage)
 - [Architecture](#architecture)
 - [Contributing](#contributing)
 - [License](#license)
@@ -25,7 +24,6 @@ Before you begin, ensure you have the following tools installed and running:
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 - [Node.js](https://nodejs.org/en/)
-- [PostgreSQL](https://www.postgresql.org/)
 
 ### Installation
 
@@ -43,13 +41,9 @@ Before you begin, ensure you have the following tools installed and running:
     ```bash
     docker-compose up --build
 
-### Usage
-
-After installation, you can start using QuickCashU for sending and receiving digital currency securely and efficiently. Refer to the documentation for more detailed usage instructions.
-
 ### Architecture
 
-QuickCashU is designed with a modular and scalable architecture. Below is an overview of its main components:
+quickcashu is designed with a modular and scalable architecture. Below is an overview of its main components:
 
 ### Frontend
 - Framework: Built with Next.js and TypeScript for robust and scalable web applications.
@@ -57,9 +51,8 @@ QuickCashU is designed with a modular and scalable architecture. Below is an ove
 - Hooks: Custom React hooks for managing state and side effects, ensuring optimal performance and code reusability.
 
 ### Backend
-- API Endpoints: RESTful API endpoints facilitating wallet operations such as balance inquiries, transaction history, and fund transfers.
+- API Endpoints: RESTful API endpoints facilitating mint operations such as paying invoices, creating invoices, and checking/exchanging proofs with the mint.
 - Database: PostgreSQL database, managed using Prisma ORM, ensuring efficient data handling and integrity.
-- Authentication: Secure user authentication mechanisms for protecting user data and transactions.
 
 ### Docker Integration
 - Docker Containers: Containerization of the frontend and database for consistent development and deployment environments.
@@ -67,7 +60,7 @@ QuickCashU is designed with a modular and scalable architecture. Below is an ove
 
 ### Contributing
 
-Contributions are what make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
+Any contributions you make are greatly appreciated.
 - Fork the Project
 - Create your Feature Branch (git checkout -b feature/AmazingFeature)
 - Commit your Changes (git commit -m 'Add some AmazingFeature')
@@ -80,7 +73,8 @@ Distributed under the MIT License. See LICENSE for more information.
 
 ### Contact
 
-Your Name - email@example.com
+[https://github.com/gudnuf](https://github.com/gudnuf)
+[https://github.com/austinkelsay](https://github.com/austinkelsay)
 
 Project Link: [https://github.com/makeprisms/quickcashu](https://github.com/makeprisms/quickcashu)
 
