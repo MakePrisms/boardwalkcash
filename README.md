@@ -58,13 +58,13 @@ Before you begin, ensure you have the following tools installed and running:
 quickcashu is designed with a modular and scalable architecture.
 
 ### Frontend
-- **Framework: Built with Next.js and TypeScript.
-- **Pages:
+- **Framework: Built with Next.js and TypeScript**.
+- **Pages**:
     - _app.tsx: Wraps the entire app with context providers and global styles
     - _document.tsx: Custom document for Next.js
     - index.tsx: The main page for the app. Starts up top level hooks and reads in proofs from localstorage
     - connect.tsx: The connect page for nostr wallet auth used for connecting wallet to the MakePrisms Zap Discord Bot
-- **Components:
+- **Components**:
     - Balance: Displays sat/usd balance
     - ActivityIndicator: controls the user messaging which appears between balance and buttons
     - buttons/lightning: contains the Lightning send and receive buttons with their internal logic and state
@@ -72,27 +72,27 @@ quickcashu is designed with a modular and scalable architecture.
     - CopyButton: for copying to clipboard
     - ZapBot: For connecting to the MakePrisms Discord ZapBot
     - EcashButtons: Currently in development
-- **Hooks: Custom React hooks for managing state and side effects.
+- **Hooks**: Custom React hooks for managing state and side effects.
     - useCashu: Handles all of the calls to cashu mint and cashu-ts library. Reads/Writes to localstorage for handling proofs
     - useNwc: Handles the nostr wallet connect and nostr wallet auth flows
     - useToast: Handles simple toast messages for user feedback. Wraps the entire app.
-- **State Management: Global state management using Redux Toolkit.
+- **State Management**: Global state management using Redux Toolkit.
     - store.ts: Redux Toolkit store for global state management
     - slices/ActivitySlice.ts: Redux Toolkit slice for managing activity state
     - slices/CashuSlice.ts: Redux Toolkit slice for managing cashu state
     - slices/UserSlice.ts: Redux Toolkit slice for managing user state
-- **LocalStorage for persisting user data and allowing user to self custody ecash proofs.
+- **LocalStorage**: for persisting user data and allowing user to self custody ecash proofs.
     - localStorage is being called for reads/writes across the app. This is used to store the user's proofs.
     - We are currently working on a more consistent and centralized way to handle this.
 
 ### Backend
-- **API Endpoints: RESTful API endpoints facilitating lud16, crud operations on the db, and mint operations such as paying invoices, creating invoices, and checking/exchanging proofs with the mint.
+- **API Endpoints**: RESTful API endpoints facilitating lud16, crud operations on the db, and mint operations such as paying invoices, creating invoices, and checking/exchanging proofs with the mint.
     - /api/callback: Handles the callback for lud16
     - /api/invoice/polling: Handles the polling for any invoice waiting to be paid
     - /api/lnurlp: Handles the lud16 lnurlp flow for paying invoices
     - /api/proofs: Handles all CRUD operations for the user's proofs
     - /api/users: Handles all CRUD operations for the user's data
-- **Database: PostgreSQL database, managed using Prisma ORM, ensuring efficient data handling and integrity.
+- **Database**: PostgreSQL database, managed using Prisma ORM, ensuring efficient data handling and integrity.
 
 ### Docker Integration
 - Docker Containers: Containerization of the frontend and database for consistent development and deployment environments.
