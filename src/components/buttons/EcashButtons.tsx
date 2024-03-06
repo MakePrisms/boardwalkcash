@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "flowbite-react";
 
-const EcashButtons = ({wallet}: any) => {
+const EcashButtons = () => {
     return (
         <div className="flex flex-col mx-auto w-1/2 mt-16">
             <div className="flex flex-row justify-between w-full">

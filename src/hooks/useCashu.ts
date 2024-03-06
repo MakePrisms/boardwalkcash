@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
 import { setError, setSending, setSuccess, setReceiving, resetStatus, setNotReceiving } from "@/redux/slices/ActivitySlice";
+import { RootState } from '@/redux/store';
+import { ProofData } from '@/types';
+import { Proof } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';
@@ -15,14 +18,14 @@ export const useCashu = () => {
     
     const dispatch = useDispatch();
     const { addToast } = useToast();
-    const activityStateStatus = useSelector((state: any) => state.activity.status)
+    const activityStateStatus = useSelector((state: RootState) => state.activity.status)
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
 
     const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
-    const deleteProofById = async (proofId: any) => {
+    const deleteProofById = async (proofId: string) => {
         try {
             await axios.delete(`/api/proofs/${proofId}`)
                 .then((response) => {
@@ -64,7 +67,7 @@ export const useCashu = () => {
         const proofs = getNeededProofs(invoiceAmount + estimatedFee)
         let amountToPay = invoiceAmount + estimatedFee;
 
-        const balance = proofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+        const balance = proofs.reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
         if (balance < amountToPay) {
             dispatch(setError("Insufficient balance to pay " + amountToPay + " sats"))
             updateStoredProofs(proofs);
@@ -102,12 +105,12 @@ export const useCashu = () => {
                     const updatedProofs = sendResponse.returnChange || [];
 
                     if (invoiceResponse.change) {
-                        invoiceResponse.change.forEach((change: any) => updatedProofs.push(change));
+                        invoiceResponse.change.forEach((change: Proof) => updatedProofs.push(change));
                     }
 
                     updateStoredProofs(updatedProofs);
 
-                    const newBalance = updatedProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+                    const newBalance = updatedProofs.map((proof: Proof) => proof.amount).reduce((a: number, b: number) => a + b, 0);
                     const feePaid = balance - newBalance - invoiceAmount;
                     const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? "s" : ""} fee` : '';
 
@@ -131,7 +134,7 @@ export const useCashu = () => {
     
         // Create checkPayload from the local proofs
         const checkPayload = {
-            proofs: localProofs.map((proof: any) => ({ secret: proof.secret })),
+            proofs: localProofs.map((proof: Proof) => ({ secret: proof.secret })),
         };
     
         try {
@@ -142,7 +145,7 @@ export const useCashu = () => {
             if (response && response.spendable) {
     
                 // Filter out non-spendable proofs
-                const spendableProofs = localProofs.filter((proof: any, index: number) => response.spendable[index]);
+                const spendableProofs = localProofs.filter((proof: Proof, index: number) => response.spendable[index]);
 
                 // If the spendable proofs have changed, update the local storage
                 if (spendableProofs.length !== localProofs.length) {
@@ -177,8 +180,8 @@ export const useCashu = () => {
                 dispatch(setNotReceiving())
             }
 
-            const proofsFromDb = pollingResponse.data.proofs;
-            const formattedProofs = proofsFromDb.map((proof: any) => ({
+            const proofsFromDb = pollingResponse.data;
+            const formattedProofs = proofsFromDb.map((proof: ProofData) => ({
                 C: proof.C,
                 amount: proof.amount,
                 id: proof.proofId,
@@ -186,21 +189,21 @@ export const useCashu = () => {
             }));
 
             const localProofs = getProofs();
-            const newProofs = formattedProofs.filter((proof: any) => !localProofs.some((localProof: any) => localProof.secret === proof.secret));
+            const newProofs = formattedProofs.filter((proof: ProofData) => !localProofs.some((localProof: Proof) => localProof.secret === proof.secret));
 
             let updatedProofs;
             if (newProofs.length > 0) {
                 updatedProofs = [...localProofs, ...newProofs];
                 window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
-                const totalReceived = newProofs.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+                const totalReceived = newProofs.map((proof: Proof) => proof.amount).reduce((a: number, b: number) => a + b, 0);
 
                 dispatch(setSuccess(`Received ${totalReceived} sat${totalReceived === 1 ? "" : "s"}!`))
 
                 // Delete new proofs from the database
                 // get the index as well
                 for (const proof of newProofs) {
-                    const proofId = proofsFromDb.find((p: any) => p.secret === proof.secret).id;
+                    const proofId = proofsFromDb.find((p: ProofData) => p.secret === proof.secret).id;
                     console.log('Deleting proof with ID:', proofId);
                     await deleteProofById(proofId);
                 }
@@ -208,7 +211,7 @@ export const useCashu = () => {
                 updatedProofs = localProofs;
             }
 
-            const newBalance = updatedProofs?.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0) || 0;
+            const newBalance = updatedProofs?.map((proof: Proof) => proof.amount).reduce((a: number, b: number) => a + b, 0) || 0;
             dispatch(setBalance(newBalance));
         } catch (error) {
             console.error('Failed to update proofs and balance:', error);

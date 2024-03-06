@@ -1,14 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import { ProofData } from '@/types';
 
 const prisma = new PrismaClient();
-
-interface ProofData {
-    proofId: string;
-    amount: number;
-    secret: string;
-    C: string;
-    userId: number;
-}
 
 async function createProof(proofData: ProofData) {
     const proof = await prisma.proof.create({

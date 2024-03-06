@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/useToast";
 
-const Balance = ({ balance }: any) => {
+const Balance = ({ balance }: { balance: number }) => {
   const [usdBtc, setUsdBtc] = useState(0);
   const [unit, setUnit] = useState("sats");
   const [usdBalance, setUsdBalance] = useState("0.00");

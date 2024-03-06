@@ -109,7 +109,7 @@ Any contributions you make are greatly appreciated.
 
 ### License
 
-Distributed under the MIT License. See LICENSE for more information.
+Distributed under the MIT License. See [LICENSE](https://github.com/makeprisms/quick-cashu/blob/main/LICENSE) for more information.
 
 ### Contact
 

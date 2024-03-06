@@ -80,7 +80,7 @@ export class NIP47RequestProcessor {
 
         await this.sendResponse({preimage: invoiceResponse.preimage || "preimage"}, null);
         
-        const feePaid = fee - invoiceResponse.change.map((proof: any) => proof.amount).reduce((a: number, b: number) => a + b, 0);
+        const feePaid = fee - invoiceResponse.change.map((proof: Proof) => proof.amount).reduce((a: number, b: number) => a + b, 0);
 
         const feeMessage = feePaid > 0 ? ` + ${feePaid} sats fee` : '';
         
@@ -103,7 +103,7 @@ export class NIP47RequestProcessor {
     return payResult
   }
 
-  private async _execute(handler: any) {
+  private async _execute(handler: () => Promise<any>) {
     console.log("Executing handler for ", this.method)
     try {
       return await handler()

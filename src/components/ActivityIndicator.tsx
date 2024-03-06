@@ -11,7 +11,7 @@ const ActivityIndicator = () => {
 
   const dispatch = useDispatch();
 
-  let resetTimeout: any = useRef(null);
+  const resetTimeout = useRef<NodeJS.Timeout | number | null>(null);
 
   useEffect(() => {
     resetTimeout.current && clearTimeout(resetTimeout.current);
