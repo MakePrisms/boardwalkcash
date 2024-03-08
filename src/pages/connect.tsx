@@ -4,7 +4,7 @@ import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from "@/redux/slices/UserSlice";
 import { Spinner } from "flowbite-react";
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from "nostr-tools";
-import { assembleLightningAddress } from "@/utils";
+import { assembleLightningAddress } from "@/utils/lud16";
 
 
 export default function Home() {

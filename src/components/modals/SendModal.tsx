@@ -4,7 +4,7 @@ import { getAmountFromInvoice } from "@/utils/bolt11";
 import { useCashu } from "@/hooks/useCashu";
 import { useToast } from "@/hooks/useToast";
 import { CashuWallet } from "@cashu/cashu-ts";
-import { getInvoiceFromLightningAddress } from "@/utils";
+import { getInvoiceFromLightningAddress } from "@/utils/lud16";
 
 interface SendModalProps {
   isSendModalOpen: boolean;

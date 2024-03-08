@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { resetStatus, setError, setReceiving, setSuccess } from "@/redux/slices/ActivitySlice";
 import { useToast } from "@/hooks/useToast";
 import { useCashu } from "@/hooks/useCashu";
-import { assembleLightningAddress } from "@/utils/index";
+import { assembleLightningAddress } from "@/utils/lud16";
 import ClipboardButton from "../utility/ClipboardButton";
 import QRCode from "qrcode.react";
 
