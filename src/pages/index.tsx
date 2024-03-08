@@ -12,7 +12,7 @@ import { initializeUser } from "@/redux/slices/UserSlice";
 import Disclaimer from "@/components/Disclaimer";
 import ActivityIndicator from "@/components/ActivityIndicator";
 import { setSuccess } from "@/redux/slices/ActivitySlice";
-import ZapBotButton from "@/components/buttons/ZapBot";
+import ZapBotButton from "@/components/buttons/ZapBotButton";
 
 
 export default function Home() {
@@ -38,20 +38,6 @@ export default function Home() {
 
     const wallet = new CashuWallet(mint);
 
-    useEffect(() => {
-        const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
-
-        const checkProofs = async () => {
-            if (!proofs.length) return;
-            const unspendable = await wallet.checkProofsSpent(proofs);
-            const spendable = proofs.filter(p => !unspendable.some(u => u.secret === p.secret))
-            console.log(`## Removing ${unspendable.length} unspendable proofs`, unspendable);
-            window.localStorage.setItem('proofs', JSON.stringify(spendable));
-        }
-
-        checkProofs();
-    }, [])
-
     const balance = useSelector((state: RootState) => state.cashu.balance);
 
     useNwc();
@@ -66,7 +52,6 @@ export default function Home() {
                     <Receive />
                     <Send wallet={wallet} />
                 </div>
-                {/* <EcashButtons wallet={wallet} /> */}
             </div>
             <footer className="fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center">
                 { showZapBotButton && <ZapBotButton />}
