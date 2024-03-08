@@ -40,7 +40,6 @@ const Balance = ({ balance }: { balance: number }) => {
   };
 
   useEffect(() => {
-    // This effect runs when balance, usdBtc, or unit changes
     updateUsdBalance();
   }, [balance, usdBtc, unit]);
 

@@ -28,9 +28,8 @@ export const SendModal = ({
   const [destination, setDestination] = useState("");
   const [amountSat, setAmountSat] = useState(0);
   const [invoice, setInvoice] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [estimatedFee, setEstimatedFee] = useState<number | null>(null); // State to store estimated fee
-  const [showSubmit, setShowSubmit] = useState(false); // State to control button visibility
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
 
   const { addToast } = useToast();
 
@@ -46,45 +45,26 @@ export const SendModal = ({
         setCurrentTab(Tabs.Amount);
       }
     }
-  }
+  };
 
-  const estimateFee = async (toPay?: string) => {
-    if (!toPay) {
-      if (!amountSat) {
-        addToast("Please enter an amount.", "warning");
-        return;
-      }
-      try {
-        const invoice = await getInvoiceFromLightningAddress(
-          destination,
-          amountSat * 1000
-        );
-        setInvoice(invoice);
-        toPay = invoice;
-      } catch (error) {
-        console.error(error);
-        addToast("An error occurred while fetching the invoice.", "error");
-        return;
-      }
-    }
+  const estimateFee = async (invoice: string) => {
+    setIsProcessing(true);
 
-    setIsSending(true);
     try {
-      const fee = await wallet.getFee(toPay!);
+      const fee = await wallet.getFee(invoice);
+
       setEstimatedFee(fee);
-      setShowSubmit(true); // Show submit button after estimating fee
       addToast(`Estimated fee: ${fee} sats`, "info");
       setCurrentTab(Tabs.Fee);
     } catch (error) {
       console.error(error);
       addToast("An error occurred while estimating the fee.", "error");
     } finally {
-      setIsSending(false);
+      setIsProcessing(false);
     }
   };
 
   const handleSend = async () => {
-    setIsSending(true);
     setIsSendModalOpen(false);
 
     try {
@@ -94,12 +74,30 @@ export const SendModal = ({
       addToast("An error occurred while paying the invoice.", "error");
     }
 
+    // reset modal state
     setCurrentTab(Tabs.Destination);
     setDestination("");
-    setIsSending(false);
     setInvoice("");
     setEstimatedFee(null);
-    setShowSubmit(false);
+  };
+
+  const handleLightningAddress = async () => {
+    if (!amountSat) {
+      addToast("Please enter an amount.", "warning");
+      return;
+    }
+
+    try {
+      const invoice = await getInvoiceFromLightningAddress(
+        destination,
+        amountSat * 1000
+      );
+      setInvoice(invoice);
+      await estimateFee(invoice);
+    } catch (error) {
+      console.error(error);
+      addToast("An error occurred while fetching the invoice.", "error");
+    }
   };
 
   const handleDestination = async () => {
@@ -109,12 +107,10 @@ export const SendModal = ({
     }
 
     if (destination.startsWith("lnbc")) {
-      console.log("Destination is an invoice");
       setInvoice(destination);
-      estimateFee(destination);
+      await estimateFee(destination);
       setCurrentTab(Tabs.Fee);
     } else if (destination.includes("@")) {
-      console.log("Destination is a lightning address");
       setCurrentTab(Tabs.Amount);
     }
   };
@@ -140,49 +136,55 @@ export const SendModal = ({
             </Modal.Body>
           </>
         );
+
       case Tabs.Amount:
         return (
-            <Modal.Body>
-              <input
-                className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4"
-                type="number"
-                placeholder="Amount in sats"
-                value={amountSat || ""}
-                onChange={(e) =>
-                  setAmountSat(() => parseInt(e.target.value, 10))
-                }
-              />
-              <div className="flex items-center flex-row justify-around">
-                <Button color="failure" onClick={handleBackClick}>Back</Button>
-                <Button color="info" onClick={(e) => estimateFee()}>
-                  Continue
-                </Button>
-              </div>
-            </Modal.Body>
+          <Modal.Body>
+            <input
+              className="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4"
+              type="number"
+              placeholder="Amount in sats"
+              value={amountSat || ""}
+              onChange={(e) => setAmountSat(() => parseInt(e.target.value, 10))}
+            />
+            <div className="flex items-center flex-row justify-around">
+              <Button color="failure" onClick={handleBackClick}>
+                Back
+              </Button>
+              <Button color="info" onClick={handleLightningAddress}>
+                Continue
+              </Button>
+            </div>
+          </Modal.Body>
         );
+
       case Tabs.Fee:
         return (
-            <Modal.Body>
-              <div className=" text-sm text-black mb-4">
-                Estimated Fee: {estimatedFee} sats
-                <br />
-                Total amount to pay:{" "}
-                {getAmountFromInvoice(invoice) + estimatedFee!} sats
-              </div>
-              <div className="flex justify-around">
-                <Button color="failure" onClick={handleBackClick}>Back</Button>
-                <Button color="success" onClick={handleSend}>
-                  Pay
-                </Button>
-              </div>
-            </Modal.Body>
+          <Modal.Body>
+            <div className=" text-sm text-black mb-4">
+              Estimated Fee: {estimatedFee} sats
+              <br />
+              Total amount to pay:{" "}
+              {getAmountFromInvoice(invoice) + estimatedFee!} sats
+            </div>
+            <div className="flex justify-around">
+              <Button color="failure" onClick={handleBackClick}>
+                Back
+              </Button>
+              <Button color="success" onClick={handleSend}>
+                Pay
+              </Button>
+            </div>
+          </Modal.Body>
         );
+
       case Tabs.Send:
         return (
           <div className="flex justify-center items-center my-8">
             <Spinner size="xl" />
           </div>
         );
+
       default:
         return null;
     }
@@ -191,7 +193,7 @@ export const SendModal = ({
   return (
     <Modal show={isSendModalOpen} onClose={() => setIsSendModalOpen(false)}>
       <Modal.Header>Send</Modal.Header>
-      {isSending ? (
+      {isProcessing ? (
         <div className="flex justify-center items-center my-8">
           <Spinner size="xl" />
         </div>

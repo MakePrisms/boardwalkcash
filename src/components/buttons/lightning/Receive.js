@@ -3,7 +3,7 @@ import axios from "axios";
 import { Button, Modal, Spinner, Tooltip } from "flowbite-react";
 import { ArrowDownRightIcon } from "@heroicons/react/20/solid"
 import { useDispatch } from "react-redux";
-import { resetStatus, setError, setReceiving, setSuccess } from "@/redux/slices/ActivitySlice";
+import { resetStatus, setError, setSuccess } from "@/redux/slices/ActivitySlice";
 import { useToast } from "@/hooks/useToast";
 import { useCashu } from "@/hooks/useCashu";
 import { assembleLightningAddress } from "@/utils/lud16";

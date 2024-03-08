@@ -5,3 +5,10 @@ export interface ProofData {
     C: string;
     userId: number;
 }
+
+export interface NWAEventContent {
+    secret: string;
+    commands: string[];
+    relay?: string;
+    lud16?: string;
+}

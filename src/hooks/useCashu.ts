@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
 import { setError, setSending, setSuccess, setReceiving, resetStatus, setNotReceiving } from "@/redux/slices/ActivitySlice";
-import { RootState } from '@/redux/store';
 import { ProofData } from '@/types';
 import { Proof } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
@@ -12,13 +11,10 @@ import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cas
 import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
 
 export const useCashu = () => {
-    const [receivingStatus, setReceivingStatus] = useState(false);
-    
     let intervalCount = 0;
     
     const dispatch = useDispatch();
     const { addToast } = useToast();
-    const activityStateStatus = useSelector((state: RootState) => state.activity.status)
 
     const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
     const wallet = new CashuWallet(mint);
@@ -30,7 +26,7 @@ export const useCashu = () => {
             await axios.delete(`/api/proofs/${proofId}`)
                 .then((response) => {
                     if (response.status === 204) {
-                        console.log(`Proof with ID ${proofId} deleted successfully.`);
+                        console.log(`Proof with ID ${proofId} deleted drom database and moved into local storage.`);
                     }
                 })
                 .catch((error) => {
@@ -158,8 +154,6 @@ export const useCashu = () => {
             console.error('Failed to check proofs:', error);
         }
     };
-    
-    
 
     const updateProofsAndBalance = async () => {
         const pubkey = window.localStorage.getItem('pubkey');
@@ -174,10 +168,8 @@ export const useCashu = () => {
 
             if (isReceiving) {
                 dispatch(setReceiving("Receiving..."));
-            } 
-
-            if (!isReceiving) {
-                dispatch(setNotReceiving())
+            } else {
+                dispatch(setNotReceiving());
             }
 
             const proofsFromDb = pollingResponse.data.proofs;
