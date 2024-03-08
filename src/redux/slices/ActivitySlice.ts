@@ -13,6 +13,10 @@ const initialState: ActivityState = {
   data: {},
 };
 
+// TODO: consolidate these into one or two actions. 
+// processing to handle sending and receiving
+
+// TODO: message queue
 const activitySlice = createSlice({
   name: 'activity',
   initialState,
