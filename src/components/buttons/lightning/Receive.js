@@ -7,7 +7,7 @@ import { resetStatus, setError, setReceiving, setSuccess } from "@/redux/slices/
 import { useToast } from "@/hooks/useToast";
 import { useCashu } from "@/hooks/useCashu";
 import { assembleLightningAddress } from "@/utils/index";
-import ClipboardButton from "../CopyButton";
+import ClipboardButton from "../utility/ClipboardButton";
 import QRCode from "qrcode.react";
 
 const Receive = () => {
@@ -70,20 +70,6 @@ const Receive = () => {
         }
     };
 
-    const copyToClipboard = async (text) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            addToast("Invoice copied to clipboard.", "success");
-            setInvoiceToPay('');
-            setAmount('')
-            setIsReceiving(false);
-            setIsReceiveModalOpen(false);
-        } catch (err) {
-            console.error("Failed to copy: ", err);
-            addToast("Failed to copy invoice to clipboard.", "error");
-        }
-    };
-
     const handleModalClose = () => {
         setIsReceiveModalOpen(false);
         setInvoiceToPay('');
@@ -110,9 +96,7 @@ const Receive = () => {
                             {invoiceToPay ? (
                                 <div className="flex flex-col items-center justify-center space-y-4">
                                     <QRCode value={`lightning:${invoiceToPay}`} size={258} level={"H"} className="rounded-lg m-4 border-white border-2" />
-                                    <Button color="success" onClick={() => copyToClipboard(invoiceToPay)}>
-                                        Copy
-                                    </Button>
+                                    <ClipboardButton toCopy={invoiceToPay} toShow="Copy" onClick={handleModalClose}/>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
