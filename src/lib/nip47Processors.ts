@@ -3,7 +3,7 @@ import { NWA } from "@/hooks/useNwc";
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, PayLnInvoiceResponse, Proof } from "@cashu/cashu-ts";
-import {  updateStoredProofs } from "@/utils/cashu";
+import {  addBalance } from "@/utils/cashu";
 
 export class NIP47RequestProcessor {
   private method: string | undefined = undefined;
@@ -65,17 +65,17 @@ export class NIP47RequestProcessor {
     try {
         invoiceResponse = await this.wallet.payLnInvoice(invoice, this.proofs);
     } catch (e) {
-        updateStoredProofs(this.proofs);
+        addBalance(this.proofs);
         throw new Error(`Error paying invoice: ${e}`)
     }
     
     if (!invoiceResponse || !invoiceResponse.isPaid) {
         // put the proofs back
-        updateStoredProofs(this.proofs);
+        addBalance(this.proofs);
         throw new Error("Payment failed")
     } else {
         if (invoiceResponse.change) {
-            updateStoredProofs(invoiceResponse.change);
+            addBalance(invoiceResponse.change);
         }
 
         await this.sendResponse({preimage: invoiceResponse.preimage || "preimage"}, null);
@@ -146,7 +146,7 @@ export class NIP47RequestProcessor {
     if (!this.method) {
       this.sendError("INTERNAL")
       if (this.proofs) {
-        this.proofs && updateStoredProofs(this.proofs);
+        this.proofs && addBalance(this.proofs);
       }
       throw new Error("must call setUp before process")
     }
@@ -154,7 +154,7 @@ export class NIP47RequestProcessor {
     const handler = this.requestHandlers.get(this.method)
 
     if (!handler) {
-      this.proofs && updateStoredProofs(this.proofs);
+      this.proofs && addBalance(this.proofs);
       this.sendError("NOT_IMPLEMENTED")
       throw new Error("nwc method NOT_IMPLEMENTED")
     }

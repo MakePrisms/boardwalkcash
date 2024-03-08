@@ -2,9 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/slices/ActivitySlice';
-import { useToast } from './useToast';
 import { AmountPreference, CashuMint, CashuWallet, Proof, SendResponse } from '@cashu/cashu-ts';
-import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
+import { getNeededProofs, addBalance } from '@/utils/cashu';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
 
@@ -51,6 +50,14 @@ export const useNwc = () => {
         return parseInt(latestEventTimestamp) + 1;
     }
 
+    const setActivityMessage = () => {
+        if(eventBufferRef.current.length ===1) {
+            dispatch(setSending("Processing payment..."))
+        } else {
+            dispatch(setSending("Processing prism payment..."))
+        }
+    }
+    
     const processEventBuffer = (nwa: NWA) => {
         console.log("Processing event buffer...", eventBufferRef.current.length, "events", eventBufferRef.current.map(e => e.rawEvent()))
 
@@ -87,12 +94,10 @@ export const useNwc = () => {
                     // Add the event to the buffer if it's not already there
                     eventBufferRef.current.push(event);
                     setSince(event.created_at!)
+                    
                     console.log("## Added event to buffer:", eventBufferRef.current.length, "events in buffer")
-                    if (eventBufferRef.current.length === 1) {
-                        dispatch(setSending("Processing payment..."))
-                    } else if (eventBufferRef.current.length > 1) {
-                        dispatch(setSending("Processing prism payment..."))
-                    }
+
+                    setActivityMessage()
                 }
 
                 if (!bufferTimer.current) {
@@ -176,18 +181,16 @@ export const useNwc = () => {
     }
 
     const getProofsForProcessor = (allProofs: SendResponse, denominations: number[]) => {
-        const proofsToSend = denominations.map((d) => {
-            const proof = allProofs.send.find((p) => p.amount === d);
-            // now delete this proof from our list of proofs in swappedProofs.send
-            if (proof) {
-                allProofs.send = allProofs.send.filter((p) => p !== proof);
-            } else {
-                throw new Error('something went wrong. ran out of needed proofs');
+        const proofsToSend = [];
+        for (const denomination of denominations) {
+            const index = allProofs.send.findIndex(p => p.amount === denomination);
+            if (index === -1) {
+                throw new Error('Insufficient proofs for the required denomination');
             }
-            return proof;
-        })
+            proofsToSend.push(allProofs.send.splice(index, 1)[0]);
+        }
         return proofsToSend;
-    }
+    };
 
     const setFinalMessage = (results: {sent: number; fee: number;}[]) => {
         const [totalPaid, totalFee] = results.reduce((acc, res) => {
@@ -205,8 +208,9 @@ export const useNwc = () => {
     // Effect to start processing when there are items in the queue
     useEffect(() => {
         const processQueue = async () => {
-            if (isProcessing || queue.length === 0 ) return;
-            if (queue[0].events.length === 0) return;
+            if (isProcessing) return;
+            if (queue.length === 0 || queue[0].events.length === 0 ) return;
+            
             console.log("Starting to process queue...", queue)
 
             dispatch(lockBalance())
@@ -217,92 +221,92 @@ export const useNwc = () => {
             const processingMessage = `Processing ${events.length > 1 ? "prism" : ""} payment...`;
             dispatch(setSending(processingMessage))
 
-            // initialize all the requests
-            const processors = initProcessors(events, nwa);
+            const processors: NIP47RequestProcessor[] = initProcessors(events, nwa);
 
-            // decrypt all the requests and set invoice + fee amounts
             try {
-                await Promise.all(processors.map(async (p) => p.setUp()));
+                // decrypt all the requests and set invoice + fee amounts
+                for (const processor of processors) {
+                    // one at a time otherwise mint gets sad
+                    await processor.setUp();
+                }
+            
+                const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
+
+                let swappedProofs: SendResponse;
+                try {
+                    swappedProofs = await wallet.send(totalToSend, proofs, preference);
+                } catch (e) {
+                    console.error("Error swapping proofs", e);
+                    dispatch(setError("Payment failed: error swapping proofs"));
+                    addBalance([...proofs])
+                    failPayments(processors);
+                    resetQueue();
+                    return;
+                } 
+
+                // add the change proofs back to what we have stored
+                addBalance([...swappedProofs.returnChange]);
+
+                // set the proofs to pay invoice for each processor
+                processors.forEach((p) => {
+                    const denoms = denominations.get(p.requestEvent.id);
+
+                    if (!denoms) throw new Error('something went wrong. no denominations found');
+
+                    const proofsToSend = getProofsForProcessor(swappedProofs, denoms);
+                    
+                    console.log("## proofsToSend", proofsToSend);
+                    p.proofs = [...proofsToSend];
+                });
+
+
+                let payCounter = 0;
+                if (processors.length === 1) {
+                    dispatch(setSending("Paying invoice..."))
+                } else {
+                    dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`))
+                }
+
+                // execute the payment for each processor
+                const promises = processors.map(async (p) => {
+                    try {
+                        const result = await p.process();
+
+                        payCounter++
+                        
+                        const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`
+                        dispatch(setSending(msg))
+
+                        console.log("## result", result);
+                        return result;
+                    } catch (e) {
+                        console.error("Error processing payment", e);
+                        return undefined;
+                    }
+                })
+
+                const results = await Promise.all(promises);
+
+                console.log("Results:", results)
+
+                resetQueue();
+
+                const newBalance = JSON.parse(localStorage.getItem('proofs') || '[]').reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
+                dispatch(setBalance(newBalance));
+
+                setFinalMessage(results);
             } catch (e) {
+                if (e instanceof InsufficientFundsError) {
+                    dispatch(setError(e.message))
+                }
                 console.error("Error setting up processors", e);
                 dispatch(setError("Error sending payments"));
                 failPayments(processors);
                 resetQueue();
                 return;
             }
-
-            let swappedProofs: SendResponse;
-            let calcedDenoms: Map<string, number[]>;
-            let currentProofs: Proof[] = [];
-            try {
-                const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
-                currentProofs = proofs
-                calcedDenoms = denominations
-                swappedProofs = await wallet.send(totalToSend, proofs, preference);
-            } catch (e) {
-                if (e instanceof InsufficientFundsError) {
-                    dispatch(setError(e.message))
-                } else {
-                    console.error("Error swapping proofs", e);
-                    dispatch(setError("Payment failed: error swapping proofs"));
-                    updateStoredProofs([...currentProofs])
-                }
-                failPayments(processors);
-                resetQueue();
-                return;
-            } 
-
-            // add the change proofs back to what we have stored
-            updateStoredProofs([...swappedProofs.returnChange]);
-
-            // set the proofs to pay invoice for each processor
-            processors.forEach((p) => {
-                const denoms = calcedDenoms.get(p.requestEvent.id);
-
-                if (!denoms) throw new Error('something went wrong. no denominations found');
-
-                const proofsToSend = getProofsForProcessor(swappedProofs, denoms);
-                
-                console.log("## proofsToSend", proofsToSend);
-                p.proofs = [...proofsToSend];
-            });
-
-
-            let payCounter = 0;
-            if (processors.length === 1) {
-                dispatch(setSending("Paying invoice..."))
-            } else {
-                dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`))
-            }
-
-            const promises = processors.map(async (p) => {
-                try {
-                    const result = await p.process();
-
-                    payCounter++
-                    
-                    const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`
-                    dispatch(setSending(msg))
-
-                    console.log("## result", result);
-                    return result;
-                } catch (e) {
-                    console.error("Error processing payment", e);
-                    return undefined;
-                }
-            })
-
-            const results = await Promise.all(promises);
-
-            console.log("Results:", results)
-
-            resetQueue();
-
-            const newBalance = JSON.parse(localStorage.getItem('proofs') || '[]').reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
-            dispatch(setBalance(newBalance));
-
-            setFinalMessage(results);
         }
+
 
         processQueue();
     }, [queue, isProcessing]);

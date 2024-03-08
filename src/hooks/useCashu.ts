@@ -8,7 +8,7 @@ import { Proof } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
 import { getAmountFromInvoice } from "@/utils/bolt11";
 import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';
-import { getNeededProofs, updateStoredProofs } from '@/utils/cashu';
+import { getNeededProofs, addBalance } from '@/utils/cashu';
 
 export const useCashu = () => {
     let intervalCount = 0;
@@ -66,7 +66,7 @@ export const useCashu = () => {
         const balance = proofs.reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
         if (balance < amountToPay) {
             dispatch(setError("Insufficient balance to pay " + amountToPay + " sats"))
-            updateStoredProofs(proofs);
+            addBalance(proofs);
             dispatch(unlockBalance())
             return;
         }
@@ -78,12 +78,12 @@ export const useCashu = () => {
             } catch (e) {
                 console.error("error swapping proofs", e);
                 dispatch(setError("Payment failed"));
-                updateStoredProofs(proofs);
+                addBalance(proofs);
                 dispatch(unlockBalance())
                 return
             }
             if (sendResponse && sendResponse.send) {
-                updateStoredProofs(sendResponse.returnChange || []);
+                addBalance(sendResponse.returnChange || []);
                 let invoiceResponse: PayLnInvoiceResponse;
                 try {
                     invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
@@ -91,7 +91,7 @@ export const useCashu = () => {
                     console.error("error paying invoice", e);
                     dispatch(setError("Payment failed"));
                     dispatch(unlockBalance())
-                    updateStoredProofs(sendResponse.send);
+                    addBalance(sendResponse.send);
                     return
                 }
                 if (!invoiceResponse || !invoiceResponse.isPaid) {
@@ -104,7 +104,7 @@ export const useCashu = () => {
                         invoiceResponse.change.forEach((change: Proof) => updatedProofs.push(change));
                     }
 
-                    updateStoredProofs(updatedProofs);
+                    addBalance(updatedProofs);
 
                     const newBalance = updatedProofs.map((proof: Proof) => proof.amount).reduce((a: number, b: number) => a + b, 0);
                     const feePaid = balance - newBalance - invoiceAmount;

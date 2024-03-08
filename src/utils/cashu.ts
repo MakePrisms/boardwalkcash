@@ -38,7 +38,7 @@ export const getNeededProofs = (amount: number) => {
   }
 };
 
-export const updateStoredProofs = (proofsToAdd: Proof[]) => {
+export const addBalance = (proofsToAdd: Proof[]) => {
   if (proofsToAdd.length === 0) return;
 
   const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
