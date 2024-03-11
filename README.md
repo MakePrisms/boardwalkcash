@@ -16,13 +16,12 @@ A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 
 ## Features
 
--  **Lightning Network Integration**: Send and Receive Lightning Network payments with ease.
--  **Cashu Ecash Wallet**: Store balance as self-custodial e-cash while at rest.
--  **Lightning Address**: Receive payments using a simple auto-generated Lightning Address.
--  **Nostr Wallet Connect**: Connect Wallet to other apps easily with Nostr Wallet Connect.
--  **Nostr Wallet Authentication**: Utilize Nostr wallet authentication for secure access and easy connection setup
--  **Cross-Platform Compatibility**: Fully responsive design, compatible with various devices and screen sizes.
--  **User-Friendly Interface**: Easy navigation and clear design to enhance user experience.
+-  **Lightning Integration**: Send and Receive Lightning payments.
+-  **Cashu Ecash Wallet**: Store balance locally as e-cash while at rest.
+-  **Lightning Address**: Receive payments using an auto-generated Lightning Address.
+-  **Nostr Wallet Connect**: Initiate payments from apps using NWC ([NIP-47](https://github.com/nostr-protocol/nips/blob/master/47.md))
+-  **Nostr Wallet Authentication**: Seamlessly create app connections with NWA ([NIP-67](https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md))
+-  **Prism Payments**: Use NWC to pay multiple invoices at once
 
 ## Getting Started
 
@@ -60,33 +59,27 @@ Before you begin, ensure you have the following tools installed and running:
 
 ## Architecture
 
-quickcashu is designed with a modular and scalable architecture.
-
 ### Frontend
 
 -  **Framework: Built with Next.js and TypeScript**.
 -  **Pages**:
-   -  \_app.tsx: Wraps the entire app with context providers and global styles
-   -  \_document.tsx: Custom document for Next.js
    -  index.tsx: The main page for the app. Starts up top level hooks and reads in proofs from localstorage
-   -  connect.tsx: The connect page for nostr wallet auth used for connecting wallet to the MakePrisms Zap Discord Bot
+   -  connect.tsx: Reads in query params to connect with the apps using NWA
 -  **Components**:
    -  Balance: Displays sat/usd balance
-   -  ActivityIndicator: controls the user messaging which appears between balance and buttons
-   -  buttons/lightning: contains the Lightning send and receive buttons with their internal logic and state
-   -  SendModal: Handles UI / State for sending Modal
-   -  CopyButton: for copying to clipboard
-   -  ZapBotButton: Simply provides an invite link to Prism's Discord Zap Bot
+   -  ActivityIndicator: Controls the user messaging which appears between balance and buttons
+   -  buttons/lightning: Contains send and receive buttons for making Lightning payments
+   -  SendModal: UI / state for Lightning send flow
+   -  ClipboardButton: for copying to clipboard
    -  EcashButtons: Currently in development
 -  **Hooks**: Custom React hooks for managing state and side effects.
    -  useCashu: Handles all of the calls to cashu mint and cashu-ts library. Reads/Writes to localstorage for handling proofs
-   -  useNwc: Subscribes to and handles NWC requests.
-   -  useToast: Handles simple toast messages for user feedback. Wraps the entire app.
+   -  useNwc: Subscribes to and handles NWC requests and prism payments.
 -  **State Management**: Global state management using Redux Toolkit.
    -  store.ts: Redux Toolkit store for global state management
-   -  slices/ActivitySlice.ts: Redux Toolkit slice for managing activity state
-   -  slices/CashuSlice.ts: Redux Toolkit slice for managing cashu state
-   -  slices/UserSlice.ts: Redux Toolkit slice for managing user state
+   -  slices/ActivitySlice.ts: managing activity state
+   -  slices/CashuSlice.ts: managing cashu state
+   -  slices/UserSlice.ts: managing user state
 -  **LocalStorage**: for persisting user data and allowing user to self custody ecash proofs.
    -  localStorage is being called for reads/writes across the app. This is used to store the user's proofs.
    -  We are currently working on a more consistent and centralized way to handle this.
@@ -94,17 +87,19 @@ quickcashu is designed with a modular and scalable architecture.
 ### Backend
 
 -  **API Endpoints**: RESTful API endpoints facilitating lud16, crud operations on the db, and mint operations such as paying invoices, creating invoices, and checking/exchanging proofs with the mint.
-   -  /api/callback: Handles the callback for lud16
-   -  /api/invoice/polling: Handles the polling for any invoice waiting to be paid
-   -  /api/lnurlp: Handles the lud16 lnurlp flow for paying invoices
-   -  /api/proofs: Handles all CRUD operations for the user's proofs
-   -  /api/users: Handles all CRUD operations for the user's data
+   -  /api/callback: lud16 callback
+   -  /api/invoice/polling: Polls mint for invoices waiting to be paid.
+   -  /api/cron/invoice: Once above polling times out, this cron job check every minute for not-expired invoices
+   -  /api/lnurlp: lud16 lnurlp flow for paying invoices
+   -  /api/proofs: CRUD operations for the user's proofs
+   -  /api/users: CRUD operations for the user's data
+   -  /api/quotes: CRUD operations for managing quotes we need to keep track of
 -  **Database**: PostgreSQL database, managed using Prisma ORM.
 
 ### Docker Integration
 
--  Docker Containers: Containerization of the frontend and database for consistent development and deployment environments.
--  Docker Compose: Simplifies the configuration and management of multi-container Docker applications.
+-  Docker Containers: Next.js app and database are containerized.
+-  Docker Compose: orchestrates the deployment.
 
 **NOTE**: You may run only the database with docker and use your local Node.js environment for running the Next.js app, if you so choose.
 
