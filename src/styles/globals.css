@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-end-rgb: #0a1f44;
-  --background-start-rgb: #0f3470;
+   --foreground-rgb: 255, 255, 255;
+   --background-end-rgb: #0a1f44;
+   --background-start-rgb: #0f3470;
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -17,17 +17,17 @@
 } */
 
 body {
-  font-family: "Kode Mono", monospace;
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    135deg,
-    var(--background-end-rgb) 0%,
-    var(--background-start-rgb) 100%
-  );
+   font-family: 'Kode Mono', monospace;
+   color: rgb(var(--foreground-rgb));
+   background: linear-gradient(
+      135deg,
+      var(--background-end-rgb) 0%,
+      var(--background-start-rgb) 100%
+   );
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+   .text-balance {
+      text-wrap: balance;
+   }
 }
