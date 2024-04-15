@@ -242,7 +242,7 @@ export const useNwc = () => {
 
             let swappedProofs: SendResponse;
             try {
-               swappedProofs = await wallet.send(totalToSend, proofs, preference);
+               swappedProofs = await wallet.send(totalToSend, proofs, { preference });
             } catch (e) {
                console.error('Error swapping proofs', e);
                dispatch(setError('Payment failed: error swapping proofs'));

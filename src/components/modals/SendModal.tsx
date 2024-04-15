@@ -3,7 +3,7 @@ import { Modal, Spinner, Button } from 'flowbite-react';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { CashuWallet } from '@cashu/cashu-ts';
+import { CashuWallet, MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 
 interface SendModalProps {
@@ -26,10 +26,20 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
    const [invoice, setInvoice] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
+   const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
 
    const { addToast } = useToast();
 
    const { handlePayInvoice } = useCashu();
+
+   const resetModalState = () => {
+      setCurrentTab(Tabs.Destination);
+      setDestination('');
+      setAmountSat(0);
+      setInvoice('');
+      setEstimatedFee(null);
+      setMeltQuote(null);
+   };
 
    const handleBackClick = () => {
       if (currentTab === Tabs.Amount) {
@@ -47,10 +57,12 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
       setIsProcessing(true);
 
       try {
-         const fee = await wallet.getFee(invoice);
+         const quote = await wallet.getMeltQuote(invoice);
 
-         setEstimatedFee(fee);
-         addToast(`Estimated fee: ${fee} sats`, 'info');
+         setMeltQuote(quote);
+
+         setEstimatedFee(quote.fee_reserve);
+         addToast(`Estimated fee: ${quote.fee_reserve} sats`, 'info');
          setCurrentTab(Tabs.Fee);
       } catch (error) {
          console.error(error);
@@ -61,10 +73,14 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
    };
 
    const handleSend = async () => {
+      if (!meltQuote) {
+         resetModalState();
+         throw new Error('Failed to get a melt quote');
+      }
       setIsSendModalOpen(false);
 
       try {
-         await handlePayInvoice(invoice, estimatedFee as number);
+         await handlePayInvoice(invoice, meltQuote, estimatedFee as number);
       } catch (error) {
          console.error(error);
          addToast('An error occurred while paying the invoice.', 'error');

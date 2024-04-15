@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
    for (const quote of quotesToCheck) {
       try {
-         const { proofs } = await wallet.requestTokens(quote.amount, quote.id);
+         const { proofs } = await wallet.mintTokens(quote.amount, quote.id);
          console.log('Proofs:', proofs);
          if (proofs.length > 0) {
             await handleTokensFound(quote, proofs);

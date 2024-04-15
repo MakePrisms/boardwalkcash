@@ -2,7 +2,7 @@ import { NIP47Method, NIP47Request, NIP47Response, decryptEventContent } from '@
 import { NWA } from '@/hooks/useNwc';
 import NDK, { NDKEvent } from '@nostr-dev-kit/ndk';
 import { getAmountFromInvoice } from '@/utils/bolt11';
-import { CashuWallet, PayLnInvoiceResponse, Proof } from '@cashu/cashu-ts';
+import { CashuWallet, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
 import { addBalance } from '@/utils/cashu';
 
 export class NIP47RequestProcessor {
@@ -14,6 +14,7 @@ export class NIP47RequestProcessor {
       ['pay_invoice', this._pay_invoice.bind(this)],
    ]);
    public proofs: Proof[] | undefined = undefined;
+   private quoteId: string | undefined = undefined;
 
    constructor(
       public readonly requestEvent: NDKEvent,
@@ -28,7 +29,7 @@ export class NIP47RequestProcessor {
 
       if (!nwaPrivKey) {
          throw new Error("NWA's private key not found.");
-         
+
          return;
       }
 
@@ -55,9 +56,13 @@ export class NIP47RequestProcessor {
       if (!this.proofs) {
          throw new Error('Something went wrong, no proofs set');
       }
-      let invoiceResponse: PayLnInvoiceResponse;
+      let invoiceResponse: MeltTokensResponse;
       try {
-         invoiceResponse = await this.wallet.payLnInvoice(invoice, this.proofs);
+         invoiceResponse = await this.wallet.payLnInvoice(invoice, this.proofs, {
+            quote: this.quoteId!,
+            amount: this.invoiceAmount,
+            fee_reserve: fee,
+         });
       } catch (e) {
          addBalance(this.proofs);
          throw new Error(`Error paying invoice: ${e}`);
@@ -128,7 +133,9 @@ export class NIP47RequestProcessor {
       this.invoiceAmount = getAmountFromInvoice(this.params.invoice);
 
       try {
-         this.fee = await this.wallet.getFee(this.params.invoice);
+         const meltQuote = await this.wallet.getMeltQuote(this.params.invoice);
+         this.quoteId = meltQuote.quote;
+         this.fee = meltQuote.fee_reserve;
       } catch {
          this.sendError('INTERNAL');
          throw new Error('failed to fetch fee');

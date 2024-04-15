@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          }
 
          try {
-            const { proofs } = await wallet.requestTokens(amount, slug);
+            const { proofs } = await wallet.mintTokens(amount, slug);
 
             let proofsPayload = proofs.map(proof => {
                return {
@@ -78,8 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
             return;
          } catch (e) {
-            if (e instanceof Error && e.message.includes('not paid')) {
-               console.log('quote not paid');
+            if (e instanceof Error) {
+               console.log('quote not paid', e.message);
                attempts++;
                await new Promise(resolve => setTimeout(resolve, interval));
             } else {

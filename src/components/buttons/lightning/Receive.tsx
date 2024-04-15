@@ -15,7 +15,7 @@ const Receive = () => {
    const [amount, setAmount] = useState('');
    const [isReceiving, setIsReceiving] = useState(false);
    const [invoiceToPay, setInvoiceToPay] = useState('');
-   const [lightningAddress, setLightningAddress] = useState();
+   const [lightningAddress, setLightningAddress] = useState('');
 
    const { requestMintInvoice } = useCashu();
    const { addToast } = useToast();
@@ -42,17 +42,17 @@ const Receive = () => {
       }
 
       try {
-         const { pr, hash } = await requestMintInvoice(amount);
-         setInvoiceToPay(pr);
+         const { quote, request } = await requestMintInvoice(amount);
+         setInvoiceToPay(request);
 
          await axios.post('/api/quotes/mint', {
             pubkey: window.localStorage.getItem('pubkey'),
-            quoteId: hash,
-            request: pr,
+            quoteId: quote,
+            request,
          });
 
          const pollingResponse = await axios.post(
-            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${hash}`,
+            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
             {
                pubkey: window.localStorage.getItem('pubkey'),
                amount: amount,

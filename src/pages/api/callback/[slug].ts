@@ -48,22 +48,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             res.status(400).json({ error: 'Amount too low' });
             return;
          } else {
-            const invoice = await wallet.requestMint(value);
+            const { quote, request } = await wallet.getMintQuote(value);
 
-            if (invoice && invoice.pr && invoice.hash) {
-               await createMintQuote(invoice.hash, invoice.pr, user.pubkey);
+            if (request) {
+               await createMintQuote(quote, request, user.pubkey);
 
                // start polling
-               axios.post(
-                  `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${invoice.hash}`,
-                  {
-                     pubkey: user.pubkey,
-                     amount: value,
-                  },
-               );
+               axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
+                  pubkey: user.pubkey,
+                  amount: value,
+               });
 
                return res.status(200).json({
-                  pr: invoice.pr,
+                  pr: request,
                });
             } else {
                res.status(500).json({ error: 'Error generating invoice' });

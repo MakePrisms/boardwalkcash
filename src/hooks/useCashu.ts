@@ -11,10 +11,9 @@ import {
    setNotReceiving,
 } from '@/redux/slices/ActivitySlice';
 import { ProofData } from '@/types';
-import { Proof } from '@cashu/cashu-ts';
+import { MeltQuoteResponse, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
-import { getAmountFromInvoice } from '@/utils/bolt11';
-import { CashuWallet, CashuMint, SendResponse, PayLnInvoiceResponse } from '@cashu/cashu-ts';
+import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance } from '@/utils/cashu';
 
 export const useCashu = () => {
@@ -46,17 +45,16 @@ export const useCashu = () => {
    };
 
    const requestMintInvoice = async (amount: string) => {
-      const { pr, hash } = await wallet.requestMint(parseInt(amount));
+      const { quote, request } = await wallet.getMintQuote(parseInt(amount));
 
-      if (!pr || !hash) {
-         addToast('An error occurred while trying to receive.', 'error');
-         return;
-      }
-
-      return { pr, hash };
+      return { quote, request };
    };
 
-   const handlePayInvoice = async (invoice: string, estimatedFee: number) => {
+   const handlePayInvoice = async (
+      invoice: string,
+      meltQuote: MeltQuoteResponse,
+      estimatedFee: number,
+   ) => {
       dispatch(setSending('Sending...'));
       dispatch(lockBalance());
 
@@ -67,7 +65,7 @@ export const useCashu = () => {
          return;
       }
 
-      const invoiceAmount = getAmountFromInvoice(invoice);
+      const invoiceAmount = meltQuote.amount;
       const proofs = getNeededProofs(invoiceAmount + estimatedFee);
       let amountToPay = invoiceAmount + estimatedFee;
 
@@ -83,6 +81,7 @@ export const useCashu = () => {
          let sendResponse: SendResponse;
          try {
             sendResponse = await wallet.send(amountToPay, proofs);
+            addBalance(sendResponse.returnChange || []);
          } catch (e) {
             console.error('error swapping proofs', e);
             dispatch(setError('Payment failed'));
@@ -91,10 +90,9 @@ export const useCashu = () => {
             return;
          }
          if (sendResponse && sendResponse.send) {
-            addBalance(sendResponse.returnChange || []);
-            let invoiceResponse: PayLnInvoiceResponse;
+            let invoiceResponse: MeltTokensResponse;
             try {
-               invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send);
+               invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send, meltQuote);
             } catch (e) {
                console.error('error paying invoice', e);
                dispatch(setError('Payment failed'));
@@ -106,17 +104,11 @@ export const useCashu = () => {
                dispatch(setError('Payment failed'));
                dispatch(unlockBalance());
             } else {
-               const updatedProofs = sendResponse.returnChange || [];
-
-               if (invoiceResponse.change) {
-                  invoiceResponse.change.forEach((change: Proof) => updatedProofs.push(change));
-               }
-
-               addBalance(updatedProofs);
-
-               const newBalance = updatedProofs
-                  .map((proof: Proof) => proof.amount)
-                  .reduce((a: number, b: number) => a + b, 0);
+               addBalance(invoiceResponse.change || []);
+               const newBalance = JSON.parse(localStorage.getItem('proofs') || '[]').reduce(
+                  (acc: number, proof: Proof) => acc + proof.amount,
+                  0,
+               );
 
                const feePaid = balance - newBalance - invoiceAmount;
                const feeMessage =
@@ -144,20 +136,14 @@ export const useCashu = () => {
          return;
       }
 
-      // Create checkPayload from the local proofs
-      const checkPayload = {
-         proofs: localProofs.map((proof: Proof) => ({ secret: proof.secret })),
-      };
-
       try {
          // Call the check method
-         const response = await mint.check(checkPayload);
+         const spentProofs = await wallet.checkProofsSpent(localProofs);
 
-         // Handle the response
-         if (response && response.spendable) {
+         if (spentProofs.length > 0) {
             // Filter out non-spendable proofs
             const spendableProofs = localProofs.filter(
-               (proof: Proof, index: number) => response.spendable[index],
+               (proof: Proof, index: number) => !spentProofs.includes(proof),
             );
 
             // If the spendable proofs have changed, update the local storage
