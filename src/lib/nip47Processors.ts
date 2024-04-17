@@ -176,7 +176,7 @@ export class NIP47RequestProcessor {
    }
 
    public calcNeededDenominations() {
-      const amount = this.amountCents + this.fee;
+      const amount = Math.ceil(this.amountCents + this.fee);
 
       let remaining = amount;
       let denoms: number[] = [];
