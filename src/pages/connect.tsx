@@ -6,13 +6,10 @@ import { Spinner } from 'flowbite-react';
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
 import { assembleLightningAddress } from '@/utils/lud16';
 import { NWAEventContent } from '@/types';
+import { useRouter } from 'next/router';
 
 export default function Home() {
-   const dispatch = useAppDispatch();
-
-   useEffect(() => {
-      dispatch(initializeUser());
-   }, [dispatch]);
+   const router = useRouter();
 
    // implements nip67 https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md
    const handleNwa = async () => {
@@ -94,7 +91,7 @@ export default function Home() {
          relay.close();
 
          // redirect to home page
-         window.location.href = '/?just_connected=true';
+         router.push('/setup?just_connected=true');
       }
    };
 

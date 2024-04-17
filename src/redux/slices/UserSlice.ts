@@ -31,8 +31,17 @@ export const initializeUser = createAsyncThunk<
          localStorage.setItem('privkey', newSecretKeyHex);
          localStorage.setItem('pubkey', newPubKey);
 
-         // TODO: Let user set their own mint URL
-         const defaultMintUrl = process.env.NEXT_PUBLIC_CASHU_MINT_URL;
+         const keysets = JSON.parse(localStorage.getItem('keysets') || '[]');
+
+         if (keysets.length === 0) {
+            throw new Error('No keysets were found in local storage.');
+         }
+
+         if (keysets.length > 1) {
+            throw new Error('Multiple keysets were found in local storage.');
+         }
+
+         const defaultMintUrl = keysets[0].url;
 
          await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
             pubkey: newPubKey,
