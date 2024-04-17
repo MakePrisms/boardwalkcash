@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/Wallet.slice';
 import {
    setError,
    setSending,
@@ -10,11 +10,12 @@ import {
    resetStatus,
    setNotReceiving,
 } from '@/redux/slices/ActivitySlice';
-import { ProofData } from '@/types';
+import { ProofData, Wallet } from '@/types';
 import { MeltQuoteResponse, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
 import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance } from '@/utils/cashu';
+import { RootState } from '@/redux/store';
 
 export const useCashu = () => {
    let intervalCount = 0;
@@ -22,10 +23,8 @@ export const useCashu = () => {
    const dispatch = useDispatch();
    const { addToast } = useToast();
 
-   const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
-   const wallet = new CashuWallet(mint);
-
    const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
+   const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    const deleteProofById = async (proofId: string) => {
       try {
@@ -44,7 +43,9 @@ export const useCashu = () => {
       }
    };
 
-   const requestMintInvoice = async (amount: string) => {
+   const requestMintInvoice = async (amount: string, keyset: Wallet) => {
+      const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
+
       const { quote, request } = await wallet.getMintQuote(parseInt(amount));
 
       return { quote, request };
@@ -54,7 +55,10 @@ export const useCashu = () => {
       invoice: string,
       meltQuote: MeltQuoteResponse,
       estimatedFee: number,
+      keyset: Wallet,
    ) => {
+      const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
+
       dispatch(setSending('Sending...'));
       dispatch(lockBalance());
 
@@ -129,7 +133,7 @@ export const useCashu = () => {
       }
    };
 
-   const checkProofsValid = async () => {
+   const checkProofsValid = async (wallet: CashuWallet) => {
       const localProofs = getProofs();
 
       if (localProofs.length === 0) {
@@ -232,7 +236,10 @@ export const useCashu = () => {
 
          // Every fourth interval, call checkProofsValid
          if (intervalCount >= 4) {
-            checkProofsValid();
+            Object.values(wallets).forEach(w => {
+               const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
+               checkProofsValid(wallet);
+            });
             intervalCount = 0;
          }
       }, 3000); // Poll every 3 seconds

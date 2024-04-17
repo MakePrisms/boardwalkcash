@@ -3,18 +3,18 @@ import { ProofData } from '@/types';
 
 const prisma = new PrismaClient();
 
-async function createProof(proofData: ProofData) {
-   const proof = await prisma.proof.create({
-      data: {
-         proofId: proofData.proofId,
-         amount: proofData.amount,
-         secret: proofData.secret,
-         C: proofData.C,
-         userId: proofData.userId,
-      },
-   });
-   return proof;
-}
+// async function createProof(proofData: ProofData) {
+//    const proof = await prisma.proof.create({
+//       data: {
+//          proofId: proofData.proofId,
+//          amount: proofData.amount,
+//          secret: proofData.secret,
+//          C: proofData.C,
+//          userId: proofData.userId,
+//       },
+//    });
+//    return proof;
+// }
 
 async function createManyProofs(proofs: ProofData[]) {
    const result = await prisma.proof.createMany({
@@ -65,7 +65,7 @@ async function deleteProof(id: number) {
 }
 
 export {
-   createProof,
+   // createProof,
    createManyProofs,
    findProofById,
    findProofsByUserId,

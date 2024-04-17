@@ -3,10 +3,8 @@ import crypto from 'crypto';
 import { runMiddleware, corsMiddleware } from '@/utils/middleware';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
-import { findUserByPubkey } from '@/lib/userModels';
+import { findUserByPubkeyWithMint } from '@/lib/userModels';
 import { createMintQuote } from '@/lib/mintQuoteModels';
-
-const BACKEND_URL = process.env.BACKEND_URL;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    await runMiddleware(req, res, corsMiddleware);
@@ -18,14 +16,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
    }
 
-   const wallet = new CashuWallet(new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!));
-
-   const user = await findUserByPubkey(slug.toString());
+   const user = await findUserByPubkeyWithMint(slug.toString());
 
    if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
    }
+
+   const DEFAULT_UNIT = 'sat';
+
+   const keyset = user.defaultMint.keysets.find(keyset => keyset.unit === DEFAULT_UNIT);
+
+   if (!keyset) {
+      res.status(404).json({ error: 'Users default mint does not support default unit' });
+      return;
+   }
+
+   const keys = keyset.keys.reduce(
+      (acc, key) => {
+         const [tokenAmt, pubkey] = key.split(':');
+         acc[tokenAmt] = pubkey;
+         return acc;
+      },
+      {} as Record<string, string>,
+   );
+
+   const wallet = new CashuWallet(new CashuMint(user.defaultMint.url), {
+      keys: {
+         id: keyset.id,
+         keys,
+         unit: keyset.unit,
+      },
+   });
 
    if (slug === user.pubkey) {
       // Ensure amount is treated as a string, even if it comes as an array
@@ -51,12 +73,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const { quote, request } = await wallet.getMintQuote(value);
 
             if (request) {
-               await createMintQuote(quote, request, user.pubkey);
+               await createMintQuote(quote, request, user.pubkey, keyset.id);
 
                // start polling
                axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
                   pubkey: user.pubkey,
                   amount: value,
+                  keysetId: keyset.id,
+                  mintUrl: user.defaultMint.url,
                });
 
                return res.status(200).json({

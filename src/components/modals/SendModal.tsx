@@ -3,13 +3,14 @@ import { Modal, Spinner, Button } from 'flowbite-react';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { CashuWallet, MeltQuoteResponse } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
    setIsSendModalOpen: (value: boolean) => void;
-   wallet: CashuWallet;
 }
 
 enum Tabs {
@@ -19,7 +20,7 @@ enum Tabs {
    Send = 'send',
 }
 
-export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendModalProps) => {
+export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProps) => {
    const [currentTab, setCurrentTab] = useState<Tabs>(Tabs.Destination);
    const [destination, setDestination] = useState('');
    const [amountSat, setAmountSat] = useState(0);
@@ -29,8 +30,8 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
 
    const { addToast } = useToast();
-
    const { handlePayInvoice } = useCashu();
+   const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    const resetModalState = () => {
       setCurrentTab(Tabs.Destination);
@@ -54,7 +55,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
    };
 
    const estimateFee = async (invoice: string) => {
-      setIsProcessing(true);
+      const activeWallet = Object.values(wallets).find(w => w.active);
+      if (!activeWallet) throw new Error('No active wallets');
+
+      const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
 
       try {
          const quote = await wallet.getMeltQuote(invoice);
@@ -79,8 +83,11 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen, wallet }: SendM
       }
       setIsSendModalOpen(false);
 
+      const activeWallet = Object.values(wallets).find(w => w.active);
+      if (!activeWallet) throw new Error('no active wallet');
+
       try {
-         await handlePayInvoice(invoice, meltQuote, estimatedFee as number);
+         await handlePayInvoice(invoice, meltQuote, estimatedFee as number, activeWallet);
       } catch (error) {
          console.error(error);
          addToast('An error occurred while paying the invoice.', 'error');

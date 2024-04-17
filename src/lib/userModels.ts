@@ -1,11 +1,16 @@
-import { PrismaClient } from '@prisma/client';
+import { Mint, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function createUser(pubkey: string) {
+async function createUser(pubkey: string, defaultMint: Mint) {
    const user = await prisma.user.create({
       data: {
          pubkey,
+         defaultMint: {
+            connect: {
+               url: defaultMint.url,
+            },
+         },
       },
    });
    return user;
@@ -24,6 +29,22 @@ async function findUserByPubkey(pubkey: string) {
    const user = await prisma.user.findUnique({
       where: {
          pubkey,
+      },
+   });
+   return user;
+}
+
+async function findUserByPubkeyWithMint(pubkey: string) {
+   const user = await prisma.user.findUnique({
+      where: {
+         pubkey,
+      },
+      include: {
+         defaultMint: {
+            include: {
+               keysets: true,
+            },
+         },
       },
    });
    return user;
@@ -50,4 +71,11 @@ async function deleteUser(id: number) {
    return user;
 }
 
-export { createUser, findUserById, findUserByPubkey, updateUser, deleteUser };
+export {
+   createUser,
+   findUserById,
+   findUserByPubkey,
+   findUserByPubkeyWithMint,
+   updateUser,
+   deleteUser,
+};

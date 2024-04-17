@@ -4,7 +4,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/20/solid';
 import { SendModal } from '@/components/modals/SendModal';
 import { CashuWallet } from '@cashu/cashu-ts';
 
-const Send = ({ wallet }: { wallet: CashuWallet }) => {
+const Send = () => {
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
    return (
@@ -16,11 +16,7 @@ const Send = ({ wallet }: { wallet: CashuWallet }) => {
             <span className='text-lg'>&nbsp;&nbsp;Send&nbsp;</span>
             <ArrowUpRightIcon className='ms-2 h-5 w-5' />
          </Button>
-         <SendModal
-            isSendModalOpen={isSendModalOpen}
-            setIsSendModalOpen={setIsSendModalOpen}
-            wallet={wallet}
-         />
+         <SendModal isSendModalOpen={isSendModalOpen} setIsSendModalOpen={setIsSendModalOpen} />
       </>
    );
 };

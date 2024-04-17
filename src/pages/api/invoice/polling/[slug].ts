@@ -3,6 +3,8 @@ import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
+import { ProofData } from '@/types';
+import { findMintByUrl } from '@/lib/mintModels';
 
 interface PollingRequest {
    pubkey: string;
@@ -11,13 +13,42 @@ interface PollingRequest {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
+   const { mintUrl, keysetId } = req.body;
+
+   if (!mintUrl) {
+      res.status(400).send({ success: false, message: 'No mint URL provided.' });
+      return;
+   }
+
+   const mintLocal = await findMintByUrl(mintUrl);
+
+   const keyset = mintLocal.keysets.find(keyset => keyset.id === keysetId);
+   if (!keyset) {
+      res.status(404).send({ success: false, message: 'Keyset not found.' });
+      return;
+   }
+
+   const keys = keyset.keys.reduce(
+      (acc, key) => {
+         const [tokenAmt, pubkey] = key.split(':');
+         acc[tokenAmt] = pubkey;
+         return acc;
+      },
+      {} as Record<string, string>,
+   );
+
+   const wallet = new CashuWallet(new CashuMint(mintLocal.url), {
+      keys: {
+         id: keysetId,
+         keys,
+         unit: keyset.unit,
+      },
+   });
 
    if (typeof slug !== 'string') {
       res.status(400).send({ success: false, message: 'Invalid hash provided.' });
       return;
    }
-
-   const wallet = new CashuWallet(new CashuMint(process.env.CASHU_MINT_URL!));
 
    const { pubkey, amount }: PollingRequest = req.body;
 
@@ -47,13 +78,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          try {
             const { proofs } = await wallet.mintTokens(amount, slug);
 
-            let proofsPayload = proofs.map(proof => {
+            let proofsPayload: ProofData[] = proofs.map(proof => {
                return {
                   proofId: proof.id,
                   secret: proof.secret,
                   amount: proof.amount,
                   C: proof.C,
                   userId: user.id,
+                  mintKeysetId: keysetId,
                };
             });
 

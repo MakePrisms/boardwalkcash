@@ -1,12 +1,12 @@
-import activityReducer, { ActivityState } from './slices/ActivitySlice';
+import activityReducer from './slices/ActivitySlice';
 import { useDispatch } from 'react-redux';
-import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
-import cashuReducer from '@/redux/slices/CashuSlice';
+import { configureStore } from '@reduxjs/toolkit';
+import walletReducer from '@/redux/slices/Wallet.slice';
 import userReducer from '@/redux/slices/UserSlice';
 
 export const store = configureStore({
    reducer: {
-      cashu: cashuReducer,
+      wallet: walletReducer,
       activity: activityReducer,
       user: userReducer,
    },

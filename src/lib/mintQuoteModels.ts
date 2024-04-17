@@ -1,7 +1,12 @@
 import prisma from './prisma';
 import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
 
-export const createMintQuote = async (quoteId: string, request: string, pubkey: string) => {
+export const createMintQuote = async (
+   quoteId: string,
+   request: string,
+   pubkey: string,
+   keysetId: string,
+) => {
    const { amount, expiry } = getAmountAndExpiryFromInvoice(request);
 
    const quote = await prisma.mintQuote.create({
@@ -12,6 +17,7 @@ export const createMintQuote = async (quoteId: string, request: string, pubkey: 
          amount,
          expiryUnix: expiry,
          paid: false,
+         mintKeysetId: keysetId,
       },
    });
    return quote;
@@ -30,6 +36,9 @@ export const findMintQuotesToRedeem = async () => {
          createdAt: {
             lt: threeMinutesAgo, // polling times out after 3 minutes
          },
+      },
+      include: {
+         mintKeyset: true,
       },
    });
    return quotes;

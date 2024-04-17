@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Modal, Spinner, Tooltip } from 'flowbite-react';
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { resetStatus, setError, setSuccess } from '@/redux/slices/ActivitySlice';
 import { useToast } from '@/hooks/useToast';
 import { useCashu } from '@/hooks/useCashu';
 import { assembleLightningAddress } from '@/utils/lud16';
 import ClipboardButton from '../utility/ClipboardButton';
 import QRCode from 'qrcode.react';
+import { RootState } from '@/redux/store';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -20,6 +21,7 @@ const Receive = () => {
    const { requestMintInvoice } = useCashu();
    const { addToast } = useToast();
    const dispatch = useDispatch();
+   const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    useEffect(() => {
       // timeout for the pubKey to be set in localStorage on first load
@@ -34,7 +36,11 @@ const Receive = () => {
    }, []);
 
    const handleReceive = async () => {
+      const activeWallet = Object.values(wallets).find(w => w.active);
+      if (!activeWallet) throw new Error('No active wallet is set');
+
       setIsReceiving(true);
+
       if (!amount) {
          addToast('Please enter an amount.', 'warning');
          setIsReceiving(false);
@@ -42,13 +48,15 @@ const Receive = () => {
       }
 
       try {
-         const { quote, request } = await requestMintInvoice(amount);
+         const { quote, request } = await requestMintInvoice(amount, activeWallet);
          setInvoiceToPay(request);
 
          await axios.post('/api/quotes/mint', {
             pubkey: window.localStorage.getItem('pubkey'),
             quoteId: quote,
             request,
+            keysetId: activeWallet.id,
+            mintUrl: activeWallet.url,
          });
 
          const pollingResponse = await axios.post(
@@ -56,6 +64,8 @@ const Receive = () => {
             {
                pubkey: window.localStorage.getItem('pubkey'),
                amount: amount,
+               mintUrl: activeWallet.url,
+               keysetId: activeWallet.id,
             },
          );
 

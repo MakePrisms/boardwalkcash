@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
 import { setSending, setError, setSuccess } from '@/redux/slices/ActivitySlice';
 import { AmountPreference, CashuMint, CashuWallet, Proof, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance } from '@/utils/cashu';
 import { NIP47RequestProcessor } from '@/lib/nip47Processors';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/CashuSlice';
+import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/Wallet.slice';
+import { RootState } from '@/redux/store';
 
 const defaultRelays = [
    'wss://relay.getalby.com/v1',
@@ -31,9 +32,7 @@ export const useNwc = () => {
 
    const dispatch = useDispatch();
 
-   const mint = new CashuMint(process.env.NEXT_PUBLIC_CASHU_MINT_URL!);
-
-   const wallet = new CashuWallet(mint);
+   const wallets = useSelector((s: RootState) => s.wallet.keysets);
 
    const setSince = (timestamp: number) => {
       window.localStorage.setItem('latestEventTimestamp', timestamp.toString());
@@ -166,6 +165,10 @@ export const useNwc = () => {
    };
 
    const initProcessors = (events: NDKEvent[], nwa: NWA) => {
+      const activeWallet = Object.values(wallets).find(w => w.active);
+      if (!activeWallet) throw new Error('No active wallet set');
+      const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
+
       return events.map(e => new NIP47RequestProcessor(e, nwa, wallet, ndk.current!));
    };
 
@@ -242,6 +245,10 @@ export const useNwc = () => {
 
             let swappedProofs: SendResponse;
             try {
+               const activeWallet = Object.values(wallets).find(w => w.active);
+               if (!activeWallet) throw new Error('No active wallet set');
+               const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
+
                swappedProofs = await wallet.send(totalToSend, proofs, { preference });
             } catch (e) {
                console.error('Error swapping proofs', e);

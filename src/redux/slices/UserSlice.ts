@@ -31,12 +31,16 @@ export const initializeUser = createAsyncThunk<
          localStorage.setItem('privkey', newSecretKeyHex);
          localStorage.setItem('pubkey', newPubKey);
 
+         // TODO: Let user set their own mint URL
+         const defaultMintUrl = process.env.NEXT_PUBLIC_CASHU_MINT_URL;
+
          await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
             pubkey: newPubKey,
+            mintUrl: defaultMintUrl,
          });
 
          return { pubkey: newPubKey }; // This matches the defined return type
-      }
+      } // TODO: else, try to create a new user with the stored pubkey
    } catch (error) {
       return rejectWithValue('Error initializing user');
    }

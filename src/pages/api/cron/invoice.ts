@@ -5,7 +5,7 @@ import { findUserByPubkey } from '@/lib/userModels';
 import { CashuMint, CashuWallet, Proof } from '@cashu/cashu-ts';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const handleTokensFound = async (quote: MintQuote, proofs: Proof[]) => {
+const handleTokensFound = async (quote: MintQuote, keysetId: string, proofs: Proof[]) => {
    await updateMintQuote(quote.id, { paid: true });
 
    const user = await findUserByPubkey(quote.pubkey);
@@ -21,6 +21,7 @@ const handleTokensFound = async (quote: MintQuote, proofs: Proof[]) => {
          amount: proof.amount,
          C: proof.C,
          userId: user.id,
+         mintKeysetId: keysetId,
       };
    });
 
@@ -35,14 +36,13 @@ const handleTokensFound = async (quote: MintQuote, proofs: Proof[]) => {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const quotesToCheck = await findMintQuotesToRedeem();
 
-   const wallet = new CashuWallet(new CashuMint(process.env.CASHU_MINT_URL!));
-
    for (const quote of quotesToCheck) {
+      const wallet = new CashuWallet(new CashuMint(quote.mintKeyset.mintUrl));
       try {
          const { proofs } = await wallet.mintTokens(quote.amount, quote.id);
          console.log('Proofs:', proofs);
          if (proofs.length > 0) {
-            await handleTokensFound(quote, proofs);
+            await handleTokensFound(quote, quote.mintKeysetId, proofs);
          }
       } catch (e) {
          if (e instanceof Error && e.message.includes('not paid')) {

@@ -1,12 +1,26 @@
+import { findKeysetById, findOrCreateMint } from '@/lib/mintModels';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 import { updateUser } from '@/lib/userModels';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function POST(req: NextApiRequest, res: NextApiResponse) {
-   const { quoteId, request, pubkey } = req.body;
+   const { quoteId, request, pubkey, keysetId, mintUrl } = req.body;
+
+   const keyset = await findKeysetById(keysetId);
+
+   if (!keyset && !mintUrl) {
+      return res.status(404).json({
+         message:
+            'Mintkeyset must exist in the database. Include a mintUrl in the req.body to have one created for you.',
+      });
+   }
+
+   if (!keyset && mintUrl) {
+      await findOrCreateMint(mintUrl);
+   }
 
    try {
-      await createMintQuote(quoteId, request, pubkey);
+      await createMintQuote(quoteId, request, pubkey, keysetId);
 
       await updateUser(pubkey, { receiving: true });
 
