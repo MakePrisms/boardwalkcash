@@ -1,42 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/useToast';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 
 const Balance = ({ balance }: { balance: number }) => {
    const [usdBtc, setUsdBtc] = useState(0);
-   const [unit, setUnit] = useState('sats');
+   const [unit, setUnit] = useState('usd');
    const [usdBalance, setUsdBalance] = useState('0.00');
    const [exchangeError, setExchangeError] = useState(false);
 
-   const { addToast } = useToast();
-
    useEffect(() => {
-      // Fetch the USD to BTC rate on load
-      fetch('https://mempool.space/api/v1/prices')
-         .then(res =>
-            res.json().then(data => {
-               setUsdBtc(data.USD);
-               setExchangeError(false);
-            }),
-         )
-         .catch(error => {
-            console.error('Error fetching USD to BTC rate: ', error);
-            addToast('Error fetching USD to BTC rate', 'error');
-            setExchangeError(true);
-         });
+      const setBalance = async () => {};
+      setBalance();
    }, []);
 
    const updateUsdBalance = (newBalance = balance) => {
-      if (unit === 'usd') {
-         const balanceBtc = newBalance / 100_000_000;
-         const balanceUsd = balanceBtc * usdBtc;
-
-         if (balanceUsd === 0) {
-            setUsdBalance('0.00');
-         } else if (balanceUsd < 0.01) {
-            setUsdBalance('< 0.01');
-         } else {
-            setUsdBalance(balanceUsd.toFixed(2));
-         }
+      const balanceCents = newBalance;
+      if (balanceCents < 0) {
+         setUsdBalance('0.00');
+      } else {
+         const balanceDollars = balanceCents / 100;
+         setUsdBalance(balanceDollars.toFixed(2));
       }
    };
 
@@ -57,9 +40,10 @@ const Balance = ({ balance }: { balance: number }) => {
 
    return (
       <div className='flex flex-col items-center justify-center w-full h-full mb-14'>
-         <h1 onClick={handleClick} className='mb-4 hover:cursor-pointer'>
+         <h1 className='mb-4 hover:cursor-pointer'>
             <span className='font-teko text-6xl font-bold'>
-               {unit === 'sats' ? balance : usdBalance}
+               {/* {unit === 'sats' ? balance : usdBalance} */}
+               {usdBalance}
             </span>{' '}
             <span className='font-5xl text-cyan-teal font-bold'>{unit}</span>
          </h1>

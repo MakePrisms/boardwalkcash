@@ -43,10 +43,13 @@ export const useCashu = () => {
       }
    };
 
-   const requestMintInvoice = async (amount: string, keyset: Wallet) => {
+   const requestMintInvoice = async (
+      { unit, amount }: { unit: string; amount: number },
+      keyset: Wallet,
+   ) => {
       const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
 
-      const { quote, request } = await wallet.getMintQuote(parseInt(amount));
+      const { quote, request } = await wallet.getMintQuote(amount);
 
       return { quote, request };
    };
@@ -118,11 +121,7 @@ export const useCashu = () => {
                const feeMessage =
                   feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';
 
-               dispatch(
-                  setSuccess(
-                     `Sent ${invoiceAmount} sat${invoiceAmount === 1 ? '' : 's'}${feeMessage}`,
-                  ),
-               );
+               dispatch(setSuccess(`Sent $${invoiceAmount / 100}!`));
             }
          }
       } catch (error) {
@@ -202,7 +201,7 @@ export const useCashu = () => {
                .map((proof: Proof) => proof.amount)
                .reduce((a: number, b: number) => a + b, 0);
 
-            dispatch(setSuccess(`Received ${totalReceived} sat${totalReceived === 1 ? '' : 's'}!`));
+            dispatch(setSuccess(`Received $${(totalReceived / 100).toFixed(2)}!`));
 
             // Delete new proofs from the database
             // get the index as well
@@ -219,7 +218,7 @@ export const useCashu = () => {
             updatedProofs
                ?.map((proof: Proof) => proof.amount)
                .reduce((a: number, b: number) => a + b, 0) || 0;
-         dispatch(setBalance(newBalance));
+         dispatch(setBalance({ usd: newBalance }));
       } catch (error) {
          console.error('Failed to update proofs and balance:', error);
       }

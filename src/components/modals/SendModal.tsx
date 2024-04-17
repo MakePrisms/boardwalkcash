@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
 import { CashuMint, CashuWallet, MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -23,7 +23,7 @@ enum Tabs {
 export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProps) => {
    const [currentTab, setCurrentTab] = useState<Tabs>(Tabs.Destination);
    const [destination, setDestination] = useState('');
-   const [amountSat, setAmountSat] = useState(0);
+   const [amountSat, setAmountSat] = useState('');
    const [invoice, setInvoice] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
    const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
@@ -31,12 +31,13 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
 
    const { addToast } = useToast();
    const { handlePayInvoice } = useCashu();
+   const { unitToSats } = useExchangeRate();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    const resetModalState = () => {
       setCurrentTab(Tabs.Destination);
       setDestination('');
-      setAmountSat(0);
+      setAmountSat('');
       setInvoice('');
       setEstimatedFee(null);
       setMeltQuote(null);
@@ -107,7 +108,8 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
 
       try {
-         const invoice = await getInvoiceFromLightningAddress(destination, amountSat * 1000);
+         const satsFromUsd = await unitToSats(parseFloat(amountSat), 'usd');
+         const invoice = await getInvoiceFromLightningAddress(destination, satsFromUsd * 1000);
          setInvoice(invoice);
          await estimateFee(invoice);
       } catch (error) {
@@ -159,9 +161,9 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                   <input
                      className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
                      type='number'
-                     placeholder='Amount in sats'
+                     placeholder='Amount in USD (eg. 0.21)'
                      value={amountSat || ''}
-                     onChange={e => setAmountSat(() => parseInt(e.target.value, 10))}
+                     onChange={e => setAmountSat(() => e.target.value)}
                   />
                   <div className='flex items-center flex-row justify-around'>
                      <Button color='failure' onClick={handleBackClick}>
@@ -178,9 +180,9 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             return (
                <Modal.Body>
                   <div className=' text-sm text-black mb-4'>
-                     Estimated Fee: {estimatedFee} sats
+                     Estimated Fee: ${estimatedFee}
                      <br />
-                     Total amount to pay: {getAmountFromInvoice(invoice) + estimatedFee!} sats
+                     Total amount to pay: ${parseFloat(amountSat) + estimatedFee!}
                   </div>
                   <div className='flex justify-around'>
                      <Button color='failure' onClick={handleBackClick}>

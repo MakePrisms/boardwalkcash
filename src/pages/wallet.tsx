@@ -49,7 +49,7 @@ export default function Home() {
    return (
       <>
          <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
-            <Balance balance={balance} />
+            <Balance balance={balance.usd} />
             <ActivityIndicator />
             <div className='py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto'>
