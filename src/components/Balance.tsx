@@ -15,10 +15,12 @@ const Balance = ({ balance }: { balance: number }) => {
 
    const updateUsdBalance = (newBalance = balance) => {
       const balanceCents = newBalance;
-      if (balanceCents < 0) {
+      if (balanceCents <= 0) {
          setUsdBalance('0.00');
       } else {
+         console.log('balanceCents:', balanceCents);
          const balanceDollars = balanceCents / 100;
+         console.log('balanceDollars:', balanceDollars);
          setUsdBalance(balanceDollars.toFixed(2));
       }
    };

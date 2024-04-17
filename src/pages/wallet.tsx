@@ -43,6 +43,8 @@ export default function Home() {
 
    const balance = useSelector((state: RootState) => state.wallet.balance);
 
+   console.log('balance:', balance);
+
    useNwc();
    useCashu();
 

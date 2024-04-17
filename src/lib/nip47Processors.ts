@@ -10,6 +10,7 @@ export class NIP47RequestProcessor {
    private params: { invoice?: string } | undefined = undefined;
    public fee: number = 0;
    public invoiceAmount: number = 0;
+   public amountCents: number = 0;
    private requestHandlers = new Map<string, () => Promise<any>>([
       ['pay_invoice', this._pay_invoice.bind(this)],
    ]);
@@ -60,7 +61,7 @@ export class NIP47RequestProcessor {
       try {
          invoiceResponse = await this.wallet.payLnInvoice(invoice, this.proofs, {
             quote: this.quoteId!,
-            amount: this.invoiceAmount,
+            amount: this.amountCents,
             fee_reserve: fee,
          });
       } catch (e) {
@@ -86,7 +87,7 @@ export class NIP47RequestProcessor {
                .reduce((a: number, b: number) => a + b, 0);
 
          console.log(`## paid ${this.invoiceAmount + feePaid} sats total (${feePaid} sat fee).`);
-         return { sent: this.invoiceAmount, fee: feePaid };
+         return { sent: this.amountCents, fee: feePaid };
       }
    }
 
@@ -130,7 +131,17 @@ export class NIP47RequestProcessor {
          throw new Error('could not get invoice from request');
       }
 
+      console.log('## invoice', this.params.invoice);
+
       this.invoiceAmount = getAmountFromInvoice(this.params.invoice);
+
+      this.amountCents = await fetch('https://mempool.space/api/v1/prices').then(res =>
+         res.json().then(data => {
+            const usdBtc = data.USD;
+            const usdSat = usdBtc / 100_000_000;
+            return parseFloat((this.invoiceAmount * usdSat * 100).toFixed(2));
+         }),
+      );
 
       try {
          const meltQuote = await this.wallet.getMeltQuote(this.params.invoice);
@@ -165,7 +176,7 @@ export class NIP47RequestProcessor {
    }
 
    public calcNeededDenominations() {
-      const amount = this.invoiceAmount + this.fee;
+      const amount = this.amountCents + this.fee;
 
       let remaining = amount;
       let denoms: number[] = [];

@@ -23,9 +23,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
    }
 
-   const DEFAULT_UNIT = 'sat';
+   const DEFAULT_UNIT = 'usd';
 
    const keyset = user.defaultMint.keysets.find(keyset => keyset.unit === DEFAULT_UNIT);
+
+   console.log('Keyset:', keyset);
 
    if (!keyset) {
       res.status(404).json({ error: 'Users default mint does not support default unit' });
@@ -64,13 +66,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          const descriptionHash = Buffer.from(hash, 'hex').toString('base64'); // Encoding as base64
 
          // Convert amount from millisatoshis to satoshis
-         const value = parseInt(amount) / 1000;
+         const amountSat = parseInt(amount) / 1000;
 
-         if (value < 1) {
+         const amountUsd = await fetch('https://mempool.space/api/v1/prices').then(res =>
+            res.json().then(data => {
+               const usdBtc = data.USD;
+               console.log('USD to BTC rate:', usdBtc);
+               const usdSat = usdBtc / 100_000_000;
+               console.log('USD to SAT rate:', usdSat);
+               console.log('usd', amountSat * usdSat);
+               return parseFloat((amountSat * usdSat * 100).toFixed(2));
+            }),
+         );
+
+         console.log('Amount in USD:', amountUsd);
+
+         if (amountUsd < 1) {
             res.status(400).json({ error: 'Amount too low' });
             return;
          } else {
-            const { quote, request } = await wallet.getMintQuote(value);
+            const { quote, request } = await wallet.getMintQuote(amountUsd);
 
             if (request) {
                await createMintQuote(quote, request, user.pubkey, keyset.id);
@@ -78,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                // start polling
                axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
                   pubkey: user.pubkey,
-                  amount: value,
+                  amount: amountUsd,
                   keysetId: keyset.id,
                   mintUrl: user.defaultMint.url,
                });
