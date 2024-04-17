@@ -8,13 +8,13 @@ const updateKeysetLocalStorage = (keysets: { [key: string]: Wallet }) => {
 };
 
 interface WalletState {
-   balance: number;
+   balance: { [unit: string]: number };
    balanceLocked: boolean;
    keysets: { [key: string]: Wallet };
 }
 
 const initialState: WalletState = {
-   balance: 0,
+   balance: {},
    balanceLocked: false,
    keysets: {},
 };
@@ -31,7 +31,7 @@ export const walletSlice = createSlice({
    name: 'walletSlice',
    initialState,
    reducers: {
-      setBalance: (state, action) => {
+      setBalance: (state, action: PayloadAction<{ [unit: string]: number }>) => {
          if (state.balanceLocked) {
             return;
          }
