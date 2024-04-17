@@ -47,8 +47,13 @@ const Receive = () => {
          return;
       }
 
+      const amountUsdCents = parseFloat(amount) * 100;
+
       try {
-         const { quote, request } = await requestMintInvoice(amount, activeWallet);
+         const { quote, request } = await requestMintInvoice(
+            { unit: 'cent', amount: amountUsdCents },
+            activeWallet,
+         );
          setInvoiceToPay(request);
 
          await axios.post('/api/quotes/mint', {
@@ -63,7 +68,7 @@ const Receive = () => {
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
             {
                pubkey: window.localStorage.getItem('pubkey'),
-               amount: amount,
+               amount: amountUsdCents,
                mintUrl: activeWallet.url,
                keysetId: activeWallet.id,
             },
@@ -74,7 +79,7 @@ const Receive = () => {
             setIsReceiveModalOpen(false);
             setInvoiceToPay('');
             setAmount('');
-            dispatch(setSuccess(`Received ${amount} sats!`));
+            dispatch(setSuccess(`Received $${amount}!`));
          }
       } catch (error) {
          console.error(error);
@@ -126,7 +131,7 @@ const Receive = () => {
                            <input
                               className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
                               type='number'
-                              placeholder='Enter amount'
+                              placeholder='Enter amount USD (eg. 0.21)'
                               value={amount}
                               onChange={e => setAmount(e.target.value)}
                            />

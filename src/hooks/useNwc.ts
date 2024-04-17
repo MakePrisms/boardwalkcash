@@ -309,7 +309,7 @@ export const useNwc = () => {
                (acc: number, proof: Proof) => acc + proof.amount,
                0,
             );
-            dispatch(setBalance(newBalance));
+            dispatch(setBalance({ usd: newBalance }));
 
             setFinalMessage(results);
          } catch (e) {
