@@ -37,7 +37,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    const quotesToCheck = await findMintQuotesToRedeem();
 
    for (const quote of quotesToCheck) {
-      const wallet = new CashuWallet(new CashuMint(quote.mintKeyset.mintUrl));
+      const keyset = quote.mintKeyset;
+      if (!keyset) {
+         res.status(404).send({ success: false, message: 'Keyset not found.' });
+         return;
+      }
+
+      const keys = keyset.keys.reduce(
+         (acc, key) => {
+            const [tokenAmt, pubkey] = key.split(':');
+            acc[tokenAmt] = pubkey;
+            return acc;
+         },
+         {} as Record<string, string>,
+      );
+
+      const wallet = new CashuWallet(new CashuMint(keyset.mintUrl), {
+         keys: {
+            id: keyset.id,
+            keys,
+            unit: keyset.unit,
+         },
+      });
       try {
          const { proofs } = await wallet.mintTokens(quote.amount, quote.id);
          console.log('Proofs:', proofs);
