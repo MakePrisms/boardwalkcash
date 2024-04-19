@@ -60,7 +60,7 @@ export const useCashu = () => {
       estimatedFee: number,
       keyset: Wallet,
    ) => {
-      const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
+      const wallet = new CashuWallet(new CashuMint(keyset.url), { keys: keyset.keys });
 
       dispatch(setSending('Sending...'));
       dispatch(lockBalance());
