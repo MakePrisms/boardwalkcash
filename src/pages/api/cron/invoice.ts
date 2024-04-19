@@ -60,7 +60,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          },
       });
       try {
-         const { proofs } = await wallet.mintTokens(quote.amount, quote.id);
+         const { proofs } = await wallet.mintTokens(quote.amount, quote.id, {
+            keysetId: keyset.id,
+         });
          console.log('Proofs:', proofs);
          if (proofs.length > 0) {
             await handleTokensFound(quote, quote.mintKeysetId, proofs);

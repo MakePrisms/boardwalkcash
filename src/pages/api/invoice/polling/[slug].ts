@@ -76,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          }
 
          try {
-            const { proofs } = await wallet.mintTokens(amount, slug);
+            const { proofs } = await wallet.mintTokens(amount, slug, { keysetId: keyset.id });
 
             let proofsPayload: ProofData[] = proofs.map(proof => {
                return {
