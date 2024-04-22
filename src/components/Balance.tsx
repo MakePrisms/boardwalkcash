@@ -45,7 +45,7 @@ const Balance = ({ balance }: { balance: number }) => {
          <h1 className='mb-4 hover:cursor-pointer'>
             <span className='font-teko text-6xl font-bold'>
                {/* {unit === 'sats' ? balance : usdBalance} */}
-               {usdBalance}
+               {isNaN(Number(usdBalance)) ? '0.00' : usdBalance}
             </span>{' '}
             <span className='font-5xl text-cyan-teal font-bold'>{unit}</span>
          </h1>
