@@ -43,11 +43,19 @@ export const walletSlice = createSlice({
       unlockBalance: state => {
          state.balanceLocked = false;
       },
-      addKeyset: (state, action: PayloadAction<{ keyset: MintKeys; url: string }>) => {
+      addKeyset: (
+         state,
+         action: PayloadAction<{ keyset: MintKeys; url: string; active?: boolean }>,
+      ) => {
          const { keyset, url } = action.payload;
          // const active = Object.keys(state.keysets).length > 0 ? false : true;
-         const active = true;
-         const toAdd: Wallet = { id: keyset.id, keys: keyset, proofs: [], url, active };
+         const toAdd: Wallet = {
+            id: keyset.id,
+            keys: keyset,
+            proofs: [],
+            url,
+            active: action.payload.active || false,
+         };
          const newKeysetState = { ...state.keysets, [keyset.id]: toAdd };
          state.keysets = newKeysetState;
          updateKeysetLocalStorage(newKeysetState);

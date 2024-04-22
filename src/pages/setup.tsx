@@ -32,15 +32,15 @@ export default function Home() {
             return;
          }
 
-         dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl }));
+         dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl, active: true }));
 
          addToast('Mint added successfully', 'success');
 
          // Redirect to the wallet page
          handleRedirect();
-      } catch (e) {
+      } catch (e: any) {
          console.error(e);
-         addToast('Error adding mint', 'error');
+         addToast('Error adding mint' + e.message || '', 'error');
       } finally {
          setAddingMint(false);
       }

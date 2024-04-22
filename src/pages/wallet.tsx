@@ -62,7 +62,7 @@ export default function Home() {
                <Disclaimer />
             </footer>
          </main>
-         {/* <SettingsSidebar /> */}
+         <SettingsSidebar />
       </>
    );
 }
