@@ -8,11 +8,6 @@ const Balance = ({ balance }: { balance: number }) => {
    const [usdBalance, setUsdBalance] = useState('0.00');
    const [exchangeError, setExchangeError] = useState(false);
 
-   useEffect(() => {
-      const setBalance = async () => {};
-      setBalance();
-   }, []);
-
    const updateUsdBalance = (newBalance = balance) => {
       const balanceCents = newBalance;
       if (balanceCents <= 0) {
@@ -42,7 +37,7 @@ const Balance = ({ balance }: { balance: number }) => {
 
    return (
       <div className='flex flex-col items-center justify-center w-full h-full mb-14'>
-         <h1 className='mb-4 hover:cursor-pointer'>
+         <h1 className='mb-4'>
             <span className='font-teko text-6xl font-bold'>
                {/* {unit === 'sats' ? balance : usdBalance} */}
                {isNaN(Number(usdBalance)) ? '0.00' : usdBalance}

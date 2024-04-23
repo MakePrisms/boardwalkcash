@@ -153,8 +153,6 @@ export const useCashu = () => {
             if (spendableProofs.length !== localProofs.length) {
                window.localStorage.setItem('proofs', JSON.stringify(spendableProofs));
             }
-         } else {
-            console.error('Failed to check proofs or invalid response');
          }
       } catch (error) {
          console.error('Failed to check proofs:', error);
@@ -191,6 +189,8 @@ export const useCashu = () => {
             (proof: ProofData) =>
                !localProofs.some((localProof: Proof) => localProof.secret === proof.secret),
          );
+
+         if (newProofs.length === 0) return;
 
          let updatedProofs;
          if (newProofs.length > 0) {
