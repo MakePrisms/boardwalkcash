@@ -1,6 +1,6 @@
-import { Mint, PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Mint } from '@prisma/client';
+import { findOrCreateMint } from './mintModels';
+import prisma from './prisma';
 
 async function createUser(pubkey: string, defaultMint: Mint) {
    const user = await prisma.user.create({
@@ -50,13 +50,30 @@ async function findUserByPubkeyWithMint(pubkey: string) {
    return user;
 }
 
-async function updateUser(pubkey: string, updates: { username?: string; receiving?: boolean }) {
+async function updateUser(
+   pubkey: string,
+   updates: { username?: string; receiving?: boolean; mintUrl?: string },
+) {
+   let defaultMint;
+   if (updates.mintUrl) {
+      const mintLocal = await findOrCreateMint(updates.mintUrl);
+
+      delete updates.mintUrl;
+
+      defaultMint = {
+         connect: {
+            url: mintLocal.url,
+         },
+      };
+   }
+
    const user = await prisma.user.update({
       where: {
          pubkey,
       },
       data: {
          ...updates,
+         defaultMint,
       },
    });
    return user;
