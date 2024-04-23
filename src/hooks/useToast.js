@@ -57,7 +57,7 @@ export const ToastProvider = ({ children }) => {
    return (
       <ToastContext.Provider value={contextValue}>
          {children}
-         <div className='fixed bottom-5 right-5 space-y-4'>
+         <div className='fixed bottom-5 right-5 space-y-4 z-10'>
             {toastList.map(toast => {
                const { icon, bgColor, textColor } = getToastStyle(toast.type);
                return (
