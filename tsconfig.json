@@ -16,6 +16,6 @@
          "@/*": ["./src/*"]
       }
    },
-   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "global.d.ts", "bolt11-decoder.d.ts"],
    "exclude": ["node_modules"]
 }
