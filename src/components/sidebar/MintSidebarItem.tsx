@@ -8,6 +8,8 @@ import { Badge, Button, Popover, Sidebar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import ProcessingSwapModal from './ProcessingSwapModal';
+import SetMainButton from './SetMainButton';
+import SwapToMainButton from './SwapToMainButton';
 
 interface MintSidebarItemProps {
    keyset: Wallet;
@@ -80,79 +82,25 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                   {formattedMintUrl()} <Badge>${mintBalance}</Badge>
                </div>
                <div className='flex justify-between align-middle min-w-max'>
-                  <Popover
-                     open={setMainOpen}
-                     content={
-                        <div className='w-80 text-sm text-gray-400'>
-                           <div className='border-b border-gray-200 bg-gray-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700'>
-                              <h3
-                                 id='set-main-popover'
-                                 className='font-semibold text-gray-900 dark:text-white'
-                              >
-                                 Set Main
-                              </h3>
-                           </div>
-                           <div className='px-3 py-2 mb-3'>
-                              <p className='whitespace-break-spaces break-words'>
-                                 {`Set ${keyset.url} as main sending and receiving mint?`}
-                              </p>
-                           </div>
-                           <div className='flex justify-around mb-3 mr-3'>
-                              <Button onClick={() => setSetMainOpen(false)} color='failure'>
-                                 Cancel
-                              </Button>
-                              <Button onClick={handleSetMain} color='success'>
-                                 Confirm
-                              </Button>
-                           </div>
-                        </div>
-                     }
-                  >
-                     <button
-                        onClick={() => setSetMainOpen(true)}
-                        className='text-xs underline mr-3'
-                     >
-                        Set Main
-                     </button>
-                  </Popover>
-                  <Popover
-                     open={swapToMainOpen}
-                     content={
-                        <div className='w-80 text-sm text-gray-400'>
-                           <div className='border-b border-gray-200 bg-gray-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700'>
-                              <h3
-                                 id='swap-popover'
-                                 className='font-semibold text-gray-900 dark:text-white'
-                              >
-                                 Swap to Main
-                              </h3>
-                           </div>
-                           <div className='px-3 py-2'>
-                              <p className='whitespace-break-spaces break-words'>
-                                 Swap all the funds from {keyset.url} to the main mint?
-                              </p>
-                           </div>
-                           <div className='flex justify-around mb-3 mr-3'>
-                              <Button onClick={() => setSwapToMainOpen(false)} color='failure'>
-                                 Cancel
-                              </Button>
-                              <Button onClick={handleSwapToMain} color='success'>
-                                 Confirm
-                              </Button>
-                           </div>
-                        </div>
-                     }
-                  >
-                     <button
-                        onClick={() => setSwapToMainOpen(true)}
-                        className='text-xs mr-3 underline'
-                     >
-                        Swap to Main
-                     </button>
-                  </Popover>
                   <button onClick={handleCopy} className='text-xs underline mr-3'>
                      Copy
                   </button>
+                  {!keyset.active && (
+                     <>
+                        <SetMainButton
+                           keyset={keyset}
+                           setSetMainOpen={setSetMainOpen}
+                           setMainOpen={setMainOpen}
+                           handleSetMain={handleSetMain}
+                        />
+                        <SwapToMainButton
+                           swapToMainOpen={swapToMainOpen}
+                           keyset={keyset}
+                           setSwapToMainOpen={setSwapToMainOpen}
+                           handleSwapToMain={handleSwapToMain}
+                        />
+                     </>
+                  )}
                   {keyset.active ? (
                      <Badge className='' color='success'>
                         Main
