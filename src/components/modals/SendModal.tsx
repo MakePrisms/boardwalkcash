@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { CashuMint, CashuWallet, MeltQuoteResponse } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, MeltQuoteResponse, Proof } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
@@ -41,6 +41,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       setInvoice('');
       setEstimatedFee(null);
       setMeltQuote(null);
+      setIsSendModalOpen(false);
    };
 
    const handleBackClick = () => {
@@ -59,10 +60,29 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       const activeWallet = Object.values(wallets).find(w => w.active);
       if (!activeWallet) throw new Error('No active wallets');
 
+      const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+      const activeBalance = proofs.reduce((acc: number, proof: Proof) => {
+         if (proof.id === activeWallet.id) {
+            acc += proof.amount;
+         }
+         return acc;
+      }, 0);
+
+      console.log('active balance: ', activeBalance);
+
       const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
 
       try {
          const quote = await wallet.getMeltQuote(invoice);
+
+         if (activeBalance < quote.fee_reserve + quote.amount) {
+            addToast(
+               'Insufficient balance to pay the invoice. If you have funds on another mint, please swap them to your main mint.',
+               'error',
+            );
+            resetModalState();
+            return;
+         }
 
          setMeltQuote(quote);
 
