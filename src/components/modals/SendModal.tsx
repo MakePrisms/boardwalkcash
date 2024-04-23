@@ -68,8 +68,6 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
          return acc;
       }, 0);
 
-      console.log('active balance: ', activeBalance);
-
       const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
 
       try {
@@ -86,12 +84,14 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
 
          setMeltQuote(quote);
 
+         setAmountSat((quote.amount / 100).toFixed(2));
          setEstimatedFee(quote.fee_reserve);
          addToast(`Estimated fee: ${quote.fee_reserve} sats`, 'info');
          setCurrentTab(Tabs.Fee);
       } catch (error) {
          console.error(error);
          addToast('An error occurred while estimating the fee.', 'error');
+         resetModalState();
       } finally {
          setIsProcessing(false);
       }
