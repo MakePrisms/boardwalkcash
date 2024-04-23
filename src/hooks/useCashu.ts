@@ -23,7 +23,11 @@ export const useCashu = () => {
    const dispatch = useDispatch();
    const { addToast } = useToast();
 
-   const getProofs = () => JSON.parse(window.localStorage.getItem('proofs') || '[]');
+   const getProofs = (keysetId?: string) => {
+      const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+      if (!keysetId) return allProofs;
+      return allProofs.filter((proof: Proof) => proof.id === keysetId);
+   };
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    const deleteProofById = async (proofId: string) => {
@@ -224,6 +228,57 @@ export const useCashu = () => {
       }
    };
 
+   const swapToMain = async (keyset: Wallet) => {
+      const proofs = getProofs(keyset.id);
+
+      if (proofs.length === 0) {
+         addToast('No balance to swap', 'warning');
+         return;
+      }
+
+      const swapFrom = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
+
+      const mainWallet = Object.values(wallets).find(w => w.active);
+
+      if (!mainWallet) {
+         addToast('No main wallet found', 'error');
+         return;
+      }
+
+      const swapTo = new CashuWallet(new CashuMint(mainWallet.url), { ...mainWallet });
+
+      try {
+         const amountToSwap = proofs.reduce((a, b) => a + b.amount, 0);
+         const { request, quote: mintQuoteId } = await swapTo.getMintQuote(amountToSwap);
+
+         const payInvoiceRes = await swapFrom.payLnInvoice(request, proofs);
+
+         if (!payInvoiceRes || !payInvoiceRes.isPaid) {
+            addToast('Failed to pay invoice', 'error');
+            return;
+         }
+
+         const { proofs: newProofs } = await swapTo.mintTokens(amountToSwap, mintQuoteId);
+
+         const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
+
+         updatedProofs.push(...newProofs);
+
+         console.log('updatedProofs:', updatedProofs);
+
+         window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+
+         const newBalance = updatedProofs.reduce((a, b) => a + b.amount, 0);
+
+         dispatch(setBalance({ usd: newBalance }));
+
+         addToast(`Swapped $${(amountToSwap / 100).toFixed(2)} to your main mint`, 'success');
+      } catch (e) {
+         console.error('Failed to swap proofs:', e);
+         addToast('Failed to swap proofs', 'error');
+      }
+   };
+
    useEffect(() => {
       updateProofsAndBalance();
 
@@ -248,5 +303,5 @@ export const useCashu = () => {
       };
    }, [dispatch]);
 
-   return { handlePayInvoice, requestMintInvoice };
+   return { handlePayInvoice, requestMintInvoice, swapToMain };
 };
