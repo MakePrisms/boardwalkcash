@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
    }
 
    if (slug === user.pubkey) {
-      const metadata = [['text/plain', 'quickcashu lightning address endpoint']];
+      const metadata = [['text/plain', 'Boardwalk Cash lightning address endpoint']];
 
       res.status(200).json({
          callback: `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/callback/${user.pubkey}`,

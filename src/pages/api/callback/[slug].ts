@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const amount = Array.isArray(queryParams.amount) ? queryParams.amount[0] : queryParams.amount;
 
       if (amount) {
-         const metadata = [['text/plain', 'quickcashu lightning address endpoint']];
+         const metadata = [['text/plain', 'Boardwalk Cash lightning address endpoint']];
 
          const metadataString = JSON.stringify(metadata);
 

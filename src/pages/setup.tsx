@@ -6,10 +6,81 @@ import { CashuMint } from '@cashu/cashu-ts';
 import { useToast } from '@/hooks/useToast';
 import { useDispatch } from 'react-redux';
 import { addKeyset } from '@/redux/slices/Wallet.slice';
+import Image from 'next/image';
+
+const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
+   return (
+      <>
+         <main className='flex flex-col md:flex-row items-center justify-center mx-auto min-h-screen'>
+            <div className='flex flex-col md:flex-row items-center justify-center'>
+               <Image
+                  className='md:mr-10'
+                  src='/BoardwalkSquareWithText.png'
+                  alt='Boardwalk Cash'
+                  width={250}
+                  height={250}
+               />
+               <div className='md:max-w-72 flex flex-col p-3 items-end'>
+                  <div>
+                     <p className='mb-5'>
+                        Boardwalk Cash is the easiest way to send and receive dollars instantly.
+                     </p>
+                  </div>
+                  <div>
+                     <Button className='mr-4' onClick={() => nextPage(2)}>
+                        Continue
+                     </Button>
+                  </div>
+               </div>
+            </div>
+         </main>
+      </>
+   );
+};
+
+const WarningPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
+   return (
+      <main className='flex flex-col md:flex-row items-center justify-center mx-auto min-h-screen'>
+         <div className='w-full md:w-1/2 space-y-4 p-5'>
+            <h2 className='underline text-2xl'>Warning!</h2>
+            <p>
+               Boardwalk Cash is a self-custodial ecash wallet that lets you send and receive
+               dollars instantly and privately built on top of bitcoin lightning wallets that have
+               integrated the Cashu protocol.
+            </p>
+            <p>
+               Boardwalk Cash is in early BETA! We hold no responsibility for people losing access
+               to funds. Use at your own risk!
+            </p>
+            <p>
+               Boardwalk Cash is an experimental wallet based on the Cashu and Nostr protocols which
+               are both still extremely early in development and subject to changes without warning.
+            </p>
+            <p>
+               Boardwalk Cash operates on your browser and all information is stored on the local
+               storage of your browser. The tokens are bearer tokens, which mean if you lose access
+               to your tokens, there is no way to recover them. You should not use a private window,
+               or the cache might get cleared. Also, before deleting your browser history or cache,
+               you should backup your tokens.
+            </p>
+            <p>
+               Terms of service can be found at{' '}
+               <a className='text-cyan-teal underline' href='https://www.makeprisms.com/terms'>
+                  https://www.makeprisms.com/terms
+               </a>
+            </p>
+            <div className='flex justify-end'>
+               <Button onClick={() => nextPage(3)}>Continue</Button>
+            </div>
+         </div>
+      </main>
+   );
+};
 
 export default function Home() {
    const [mintUrl, setMintUrl] = useState('');
    const [addingMint, setAddingMint] = useState(false);
+   const [currentSetupStep, setCurrentSetupStep] = useState(1);
 
    const dispatch = useDispatch();
    const router = useRouter();
@@ -67,16 +138,25 @@ export default function Home() {
       }
    }, []);
 
+   if (currentSetupStep === 1) {
+      return <FirstPage nextPage={setCurrentSetupStep} />;
+   }
+
+   if (currentSetupStep === 2) {
+      return <WarningPage nextPage={setCurrentSetupStep} />;
+   }
+
    return (
       <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
-         <form className='max-w-md' onSubmit={e => handleSubmit(e)}>
+         <form className='max-w-md p-5 mb-5' onSubmit={e => handleSubmit(e)}>
             <div className='mb-5'>
                <h2 className='text-3xl underline mb-2'>Add a Mint</h2>
                <p className='text-white'>
-                  Cashu mints custody your bitcoin in exchange for ecash tokens. This wallet allows
-                  you to custody ecash in your browser and transact with near perfect privacy.
-                  Before you add a mint, make sure you are aware of the risks associated and only
-                  put in what you can afford to lose! This wallet and Cashu are still experimental.
+                  Boardwalk Cash requires adding a mint. Mints issue ecash tokens and are
+                  responsible for providing validation and liquidity. Before you add a mint, make
+                  sure you are aware of the risks associated with the specific mint and only put in
+                  what you can afford to lose! This wallet, most mints and the Cashu protocol are
+                  still experimental.
                </p>
             </div>
             <div className='mb-2 block'>
@@ -96,6 +176,7 @@ export default function Home() {
                      <a
                         href='https://bitcoinmints.com?show=cashu&units=usd'
                         className='ml-1 font-medium hover:underline text-cyan-teal'
+                        target='__blank'
                      >
                         bitcoinmints.com
                      </a>{' '}

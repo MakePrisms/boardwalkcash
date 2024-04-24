@@ -10,7 +10,7 @@ export default function App({ Component, pageProps }: AppProps) {
    return (
       <>
          <Head>
-            <title>Quick Cashu</title>
+            <title>Boardwalk Cash</title>
          </Head>
          <Provider store={store}>
             <ToastProvider>
