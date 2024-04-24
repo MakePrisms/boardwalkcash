@@ -28,7 +28,19 @@ export const useCashu = () => {
       if (!keysetId) return allProofs;
       return allProofs.filter((proof: Proof) => proof.id === keysetId);
    };
+   const wallet = useSelector((state: RootState) => state.wallet);
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+
+   useEffect(() => {
+      const localProofs = getProofs();
+      const balanceState = wallet.balance['usd'];
+
+      const newBalance = localProofs.reduce((a, b) => a + b.amount, 0);
+
+      if (balanceState !== newBalance) {
+         dispatch(setBalance({ usd: newBalance }));
+      }
+   }, [wallet.balance]);
 
    const deleteProofById = async (proofId: string) => {
       try {
