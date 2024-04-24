@@ -6,6 +6,54 @@ import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { findUserByPubkeyWithMint } from '@/lib/userModels';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 
+const customMintQuoteRequest = async (
+   amountSat: number,
+   amountUsd: number,
+   wallet: CashuWallet,
+) => {
+   const isBitcoinMints = wallet.mint.mintUrl.includes('mint.bitcoinmints.com');
+   const isLocalHost = wallet.mint.mintUrl.includes('localhost');
+   if (!isBitcoinMints && !isLocalHost) {
+      try {
+         return await wallet.getMintQuote(amountUsd);
+      } catch (error) {
+         console.error('Error getting mint quote:', error);
+         throw error;
+      }
+   }
+
+   const usdKeysetId = await wallet.mint
+      .getKeys()
+      .then(keys => keys.keysets.find(key => key.unit === 'usd')?.id);
+
+   if (!usdKeysetId) {
+      throw new Error('No USD keyset found');
+   }
+
+   const mintQuoteReq = {
+      amount: amountSat,
+      keysetId: usdKeysetId,
+      unit: 'sat',
+   };
+
+   console.log('Mint Quote Request:', mintQuoteReq);
+
+   try {
+      const mintQuote = await fetch(`${wallet.mint.mintUrl}/v1/mint/quote/bolt11`, {
+         method: 'POST',
+         body: JSON.stringify(mintQuoteReq),
+         headers: { 'Content-Type': 'application/json' },
+      }).then(res => res.json());
+
+      console.log('Mint Quote:', mintQuote);
+
+      return mintQuote;
+   } catch (e) {
+      console.error('Error getting mint quote:', e);
+      throw e;
+   }
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    await runMiddleware(req, res, corsMiddleware);
 
@@ -79,32 +127,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
          );
 
-         console.log('Amount in USD:', amountUsd);
+         const { quote, request } = await customMintQuoteRequest(amountSat, amountUsd, wallet);
 
-         if (amountUsd < 1) {
-            res.status(400).json({ error: 'Amount too low' });
-            return;
+         console.log('Quote:', quote);
+         console.log('Request:', request);
+
+         if (request) {
+            await createMintQuote(quote, request, user.pubkey, keyset.id);
+
+            // start polling
+            axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
+               pubkey: user.pubkey,
+               amount: amountUsd,
+               keysetId: keyset.id,
+               mintUrl: user.defaultMint.url,
+            });
+
+            return res.status(200).json({
+               pr: request,
+            });
          } else {
-            const { quote, request } = await wallet.getMintQuote(amountUsd);
-
-            if (request) {
-               await createMintQuote(quote, request, user.pubkey, keyset.id);
-
-               // start polling
-               axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
-                  pubkey: user.pubkey,
-                  amount: amountUsd,
-                  keysetId: keyset.id,
-                  mintUrl: user.defaultMint.url,
-               });
-
-               return res.status(200).json({
-                  pr: request,
-               });
-            } else {
-               res.status(500).json({ error: 'Error generating invoice' });
-               return;
-            }
+            res.status(500).json({ error: 'Error generating invoice' });
+            return;
          }
       } else {
          res.status(400).json({ error: 'Amount not specified' });
