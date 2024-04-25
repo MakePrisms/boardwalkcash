@@ -1,4 +1,4 @@
-# quickcashu
+# Boardwalk Cash
 
 A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 
@@ -40,14 +40,14 @@ Before you begin, ensure you have the following tools installed and running:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/quickcashu.git
+   git clone https://github.com/your-username/boardwalkcash.git
 
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd quickcashu
+   cd boardwalkcash
 
    ```
 
@@ -115,14 +115,14 @@ Any contributions you make are greatly appreciated.
 
 ### License
 
-Distributed under the MIT License. See [LICENSE](https://github.com/makeprisms/quick-cashu/blob/main/LICENSE) for more information.
+Distributed under the MIT License. See [LICENSE](https://github.com/makeprisms/boardwalkcash/blob/main/LICENSE) for more information.
 
 ### Contact
 
 -  [https://github.com/gudnuf](https://github.com/gudnuf)
 -  [https://github.com/austinkelsay](https://github.com/austinkelsay)
 
-Project Link: [https://github.com/makeprisms/quick-cashu](https://github.com/makeprisms/quick-cashu)
+Project Link: [https://github.com/makeprisms/boardwalkcash](https://github.com/makeprisms/boardwalkcash)
 
 ### Acknowledgements
 
