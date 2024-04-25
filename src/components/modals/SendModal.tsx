@@ -28,6 +28,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [isProcessing, setIsProcessing] = useState(false);
    const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
+   const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
 
    const { addToast } = useToast();
    const { handlePayInvoice } = useCashu();
@@ -115,10 +116,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
 
       // reset modal state
-      setCurrentTab(Tabs.Destination);
-      setDestination('');
-      setInvoice('');
-      setEstimatedFee(null);
+      resetModalState();
    };
 
    const handleLightningAddress = async () => {
@@ -128,6 +126,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
 
       try {
+         setIsFetchingInvoice(true);
          const satsFromUsd = await unitToSats(parseFloat(amountSat), 'usd');
          const invoice = await getInvoiceFromLightningAddress(destination, satsFromUsd * 1000);
          setInvoice(invoice);
@@ -135,6 +134,8 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       } catch (error) {
          console.error(error);
          addToast('An error occurred while fetching the invoice.', 'error');
+      } finally {
+         setIsFetchingInvoice(false);
       }
    };
 
@@ -189,7 +190,11 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                      <Button color='failure' onClick={handleBackClick}>
                         Back
                      </Button>
-                     <Button color='info' onClick={handleLightningAddress}>
+                     <Button
+                        isProcessing={isFetchingInvoice}
+                        color='info'
+                        onClick={handleLightningAddress}
+                     >
                         Continue
                      </Button>
                   </div>
