@@ -150,7 +150,7 @@ export default function Home() {
       <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
          <form className='max-w-md p-5 mb-5' onSubmit={e => handleSubmit(e)}>
             <div className='mb-5'>
-               <h2 className='text-3xl underline mb-2'>Add a Mint</h2>
+               <h2 className='text-2xl underline mb-2'>Add a Mint</h2>
                <p className='text-white'>
                   Boardwalk Cash requires adding a mint. Mints issue ecash tokens and are
                   responsible for providing validation and liquidity. Before you add a mint, make
