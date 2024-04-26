@@ -23,7 +23,7 @@ const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
                <div className='md:max-w-72 flex flex-col p-3 items-end'>
                   <div>
                      <p className='mb-5'>
-                        Boardwalk Cash is the easiest way to send and receive dollars instantly.
+                        Boardwalk Cash is the easiest way to send and receive cash instantly.
                      </p>
                   </div>
                   <div>
@@ -45,8 +45,8 @@ const WarningPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
             <h2 className='underline text-2xl'>Warning!</h2>
             <p>
                Boardwalk Cash is a self-custodial ecash wallet that lets you send and receive
-               dollars instantly and privately built on top of bitcoin lightning wallets that have
-               integrated the Cashu protocol.
+               dollar-denominated ecash instantly and privately built on top of bitcoin lightning
+               wallets that have integrated the Cashu protocol.
             </p>
             <p>
                Boardwalk Cash is in early BETA! We hold no responsibility for people losing access
@@ -172,7 +172,7 @@ export default function Home() {
                helperText={
                   <>
                      {/* <p className='text-white mb-4'> */}
-                     Search
+                     Search{' '}
                      <a
                         href='https://bitcoinmints.com?show=cashu&units=usd'
                         className='ml-1 font-medium hover:underline text-cyan-teal'
