@@ -6,6 +6,12 @@ import { NextApiRequest, NextApiResponse } from 'next';
 export default async function POST(req: NextApiRequest, res: NextApiResponse) {
    const { quoteId, request, pubkey, keysetId, mintUrl } = req.body;
 
+   if (!quoteId || !request || !pubkey || !keysetId) {
+      return res
+         .status(400)
+         .json({ message: 'quoteId, request, pubkey, and keysetId are required' });
+   }
+
    const keyset = await findKeysetById(keysetId);
 
    if (!keyset && !mintUrl) {

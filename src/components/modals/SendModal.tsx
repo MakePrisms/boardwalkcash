@@ -7,6 +7,7 @@ import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
+import SendEcashButton from '../buttons/ecash/SendEcashButton';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -154,6 +155,11 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
    };
 
+   const handleSendEcash = async () => {
+      console.log('Resetting modal state');
+      resetModalState();
+   };
+
    const renderTab = () => {
       switch (currentTab) {
          case Tabs.Destination:
@@ -168,6 +174,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                         onChange={e => setDestination(e.target.value)}
                      />
                      <div className='flex justify-end'>
+                        <SendEcashButton onClick={handleSendEcash} />
                         <Button color='info' onClick={handleDestination}>
                            Continue
                         </Button>
