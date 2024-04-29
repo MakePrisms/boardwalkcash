@@ -10,6 +10,8 @@ import { assembleLightningAddress } from '@/utils/lud16';
 import ClipboardButton from '../utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import { RootState } from '@/redux/store';
+import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
+import { Token } from '@cashu/cashu-ts';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -17,8 +19,10 @@ const Receive = () => {
    const [isReceiving, setIsReceiving] = useState(false);
    const [invoiceToPay, setInvoiceToPay] = useState('');
    const [lightningAddress, setLightningAddress] = useState('');
+   const [showEcashReceiveModal, setShowEcashReceiveModal] = useState(false);
+   const [token, setToken] = useState<Token | null>(null);
 
-   const { requestMintInvoice } = useCashu();
+   const { requestMintInvoice, decodeToken } = useCashu();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -35,6 +39,16 @@ const Receive = () => {
       }, 500);
    }, []);
 
+   useEffect(() => {
+      const decoded = decodeToken(amount);
+
+      if (!decoded) return;
+
+      setToken(decoded);
+      setShowEcashReceiveModal(true);
+      setIsReceiveModalOpen(false);
+   }, [amount]);
+
    const handleReceive = async () => {
       const activeWallet = Object.values(wallets).find(w => w.active);
       if (!activeWallet) throw new Error('No active wallet is set');
@@ -48,6 +62,13 @@ const Receive = () => {
       }
 
       const amountUsdCents = parseFloat(amount) * 100;
+      const pubkey = window.localStorage.getItem('pubkey');
+
+      if (!pubkey) {
+         addToast('No pubkey found.', 'error');
+         setIsReceiving(false);
+         return;
+      }
 
       try {
          const { quote, request } = await requestMintInvoice(
@@ -57,7 +78,7 @@ const Receive = () => {
          setInvoiceToPay(request);
 
          await axios.post('/api/quotes/mint', {
-            pubkey: window.localStorage.getItem('pubkey'),
+            pubkey,
             quoteId: quote,
             request,
             keysetId: activeWallet.id,
@@ -67,7 +88,7 @@ const Receive = () => {
          const pollingResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
             {
-               pubkey: window.localStorage.getItem('pubkey'),
+               pubkey,
                amount: amountUsdCents,
                mintUrl: activeWallet.url,
                keysetId: activeWallet.id,
@@ -104,7 +125,7 @@ const Receive = () => {
             <span className='text-lg'>Receive</span> <ArrowDownRightIcon className='ms-2 h-5 w-5' />
          </Button>
          <Modal show={isReceiveModalOpen} onClose={handleModalClose}>
-            <Modal.Header>Receive Lightning Payment</Modal.Header>
+            <Modal.Header>Receive</Modal.Header>
             {isReceiving && !invoiceToPay ? (
                <div className='flex justify-center items-center my-8'>
                   <Spinner size='xl' />
@@ -130,8 +151,7 @@ const Receive = () => {
                         <div className='space-y-6'>
                            <input
                               className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
-                              type='number'
-                              placeholder='Enter amount USD (eg. 0.21)'
+                              placeholder='Paste token or enter amount USD (eg. 0.21)'
                               value={amount}
                               onChange={e => setAmount(e.target.value)}
                            />
@@ -157,6 +177,11 @@ const Receive = () => {
                </>
             )}
          </Modal>
+         <ConfirmEcashReceiveModal
+            isOpen={showEcashReceiveModal}
+            onClose={() => setShowEcashReceiveModal(false)}
+            token={token}
+         />
       </>
    );
 };

@@ -37,7 +37,12 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
 
       setSwapToMainOpen(false);
 
-      swapToMain(keyset).finally(() => {
+      swapToMain({
+         id: keyset.id,
+         url: keyset.url,
+         unit: keyset.keys.unit,
+         keys: keyset.keys,
+      }).finally(() => {
          setSwapping(false);
       });
    };
@@ -95,7 +100,7 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                         />
                         <SwapToMainButton
                            swapToMainOpen={swapToMainOpen}
-                           keyset={keyset}
+                           mintUrl={keyset.url}
                            setSwapToMainOpen={setSwapToMainOpen}
                            handleSwapToMain={handleSwapToMain}
                         />

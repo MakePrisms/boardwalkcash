@@ -39,5 +39,18 @@ export const useExchangeRate = () => {
       }
    };
 
-   return { unitToSats };
+   const satsToUnit = async (amount: number, unit: string): Promise<number> => {
+      console.log('satsToUnit', amount, unit);
+      switch (unit) {
+         case 'sat':
+            return amount;
+         case 'usd':
+            const exchangeRate = await fetchUsdToSatRate();
+            return Math.floor(amount * exchangeRate * 100);
+         default:
+            throw new Error('Invalid unit');
+      }
+   };
+
+   return { unitToSats, satsToUnit };
 };

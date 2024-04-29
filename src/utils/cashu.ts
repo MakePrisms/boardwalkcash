@@ -1,11 +1,11 @@
-import { Proof } from '@cashu/cashu-ts';
+import { CashuWallet, MintQuoteResponse, Proof } from '@cashu/cashu-ts';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
  * @param amount Amount in satoshis we want to get proofs for
  * @returns Array of proofs or empty array if not enough proofs
  */
-export const getNeededProofs = (amount: number) => {
+export const getNeededProofs = (amount: number, keysetId?: string) => {
    const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
    let amountCollected: number = 0;
@@ -13,7 +13,7 @@ export const getNeededProofs = (amount: number) => {
    const proofsToPutBack: Proof[] = [];
 
    for (let proof of proofs) {
-      if (amountCollected < amount) {
+      if (amountCollected < amount && (!keysetId || proof.id === keysetId)) {
          proofsToSend.push(proof);
          amountCollected += proof.amount;
       } else {
@@ -39,4 +39,52 @@ export const addBalance = (proofsToAdd: Proof[]) => {
 
    const updatedProofs = [...proofs, ...proofsToAdd];
    window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+};
+
+export const customMintQuoteRequest = async (
+   amountSat: number,
+   amountUsd: number,
+   wallet: CashuWallet,
+) => {
+   const isBitcoinMints = wallet.mint.mintUrl.includes('mint.bitcoinmints.com');
+   const isLocalHost = wallet.mint.mintUrl.includes('localhost');
+   if (!isBitcoinMints && !isLocalHost) {
+      try {
+         return await wallet.getMintQuote(amountUsd);
+      } catch (error) {
+         console.error('Error getting mint quote:', error);
+         throw error;
+      }
+   }
+
+   const usdKeysetId = await wallet.mint
+      .getKeys()
+      .then(keys => keys.keysets.find(key => key.unit === 'usd')?.id);
+
+   if (!usdKeysetId) {
+      throw new Error('No USD keyset found');
+   }
+
+   const mintQuoteReq = {
+      amount: amountSat,
+      keysetId: usdKeysetId,
+      unit: 'sat',
+   };
+
+   console.log('Mint Quote Request:', mintQuoteReq);
+
+   try {
+      const mintQuote = await fetch(`${wallet.mint.mintUrl}/v1/mint/quote/bolt11`, {
+         method: 'POST',
+         body: JSON.stringify(mintQuoteReq),
+         headers: { 'Content-Type': 'application/json' },
+      }).then(res => res.json());
+
+      console.log('Mint Quote:', mintQuote);
+
+      return mintQuote as MintQuoteResponse;
+   } catch (e) {
+      console.error('Error getting mint quote:', e);
+      throw e;
+   }
 };

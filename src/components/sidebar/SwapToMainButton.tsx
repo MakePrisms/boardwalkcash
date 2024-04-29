@@ -3,14 +3,14 @@ import { Button, Popover } from 'flowbite-react';
 
 interface SwapToMainButtonProps {
    swapToMainOpen: boolean;
-   keyset: Wallet;
+   mintUrl: string;
    setSwapToMainOpen: (value: boolean) => void;
    handleSwapToMain: () => void;
 }
 
 const SwapToMainButton = ({
    swapToMainOpen,
-   keyset,
+   mintUrl,
    setSwapToMainOpen,
    handleSwapToMain,
 }: SwapToMainButtonProps) => (
@@ -25,7 +25,7 @@ const SwapToMainButton = ({
             </div>
             <div className='px-3 py-2'>
                <p className='whitespace-break-spaces break-words'>
-                  Swap all the funds from {keyset.url} to the main mint?
+                  Swap all the funds from {mintUrl} to the main mint?
                </p>
             </div>
             <div className='flex justify-around mb-3 mr-3'>
