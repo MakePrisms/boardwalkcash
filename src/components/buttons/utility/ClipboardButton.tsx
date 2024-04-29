@@ -40,7 +40,8 @@ const ClipboardButton: React.FC<Props> = ({ toCopy, toShow, onClick, className =
       <Button onClick={handleCopy} className={className}>
          <>
             <div className='flex flex-row content-center justify-center align-middle'>
-               {toShow}{' '}
+               {toShow}
+               &nbsp;
                {isCopied ? (
                   <ClipboardDocumentCheckIcon className='w-5 h-5' />
                ) : (
