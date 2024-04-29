@@ -99,7 +99,7 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
                <div className='flex flex-col justify-center items-center my-8 text-black space-y-3'>
                   {encodedToken && (
                      <>
-                        <AnimatedQRCode encodedToken={encodedToken} />
+                        <AnimatedQRCode text={`${encodedToken}`} chunkSize={250} />
                         <p> Token: {`${encodedToken.slice(0, 12)}...${encodedToken.slice(-5)}`}</p>
                         <ClipboardButton toCopy={encodedToken} toShow={`Copy`} />
                      </>
