@@ -24,12 +24,8 @@ import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cashu';
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
-import { FolderMinusIcon } from '@heroicons/react/20/solid';
-import { format } from 'path';
 
 export const useCashu = () => {
-   let intervalCount = 0;
-
    const dispatch = useDispatch();
    const { addToast } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
@@ -456,30 +452,6 @@ export const useCashu = () => {
       return keyset.unit;
    };
 
-   useEffect(() => {
-      updateProofsAndBalance();
-
-      const intervalId = setInterval(() => {
-         updateProofsAndBalance();
-
-         // Increment the counter
-         intervalCount += 1;
-
-         // Every fourth interval, call checkProofsValid
-         if (intervalCount >= 4) {
-            Object.values(wallets).forEach(w => {
-               const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-               checkProofsValid(wallet);
-            });
-            intervalCount = 0;
-         }
-      }, 3000); // Poll every 3 seconds
-
-      return () => {
-         clearInterval(intervalId);
-      };
-   }, [dispatch]);
-
    return {
       handlePayInvoice,
       requestMintInvoice,
@@ -487,5 +459,7 @@ export const useCashu = () => {
       decodeToken,
       swapToSend,
       fetchUnitFromProofs,
+      updateProofsAndBalance,
+      checkProofsValid,
    };
 };
