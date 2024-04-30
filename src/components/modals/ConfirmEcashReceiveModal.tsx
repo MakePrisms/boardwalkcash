@@ -8,6 +8,7 @@ import { useCashu } from '@/hooks/useCashu';
 import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -26,11 +27,13 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const [proofs, setProofs] = useState<Proof[]>([]);
    const [tokenUnit, setTokenUnit] = useState<string | null>(null);
    const [fromActiveMint, setFromActiveMint] = useState(true);
+   const [amountUsd, setAmountUsd] = useState<number | null>(null);
 
    const dispatch = useAppDispatch();
 
    const { swapToMain, fetchUnitFromProofs } = useCashu();
    const { addToast } = useToast();
+   const { satsToUnit } = useExchangeRate();
 
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
@@ -99,9 +102,22 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          setSupportedUnits(Array.from(units));
       });
 
+      setLoadingUnits(true);
       fetchUnitFromProofs(mintUrl, proofs)
          .then(unit => {
             setTokenUnit(unit);
+
+            return unit;
+         })
+         .then(async unit => {
+            const unitTotal = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
+            if (unit === 'sat') {
+               await satsToUnit(unitTotal, 'usd').then(usdAmount =>
+                  setAmountUsd(parseFloat((usdAmount / 100).toFixed(2))),
+               );
+            } else {
+               setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
+            }
          })
          .finally(() => setLoadingUnits(false));
    }, [mintUrl, proofs]);
@@ -174,11 +190,9 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    };
 
    const receiveAmountString = () => {
-      const symbol = tokenUnit !== 'usd' ? '₿' : '$';
-      let total: string | number = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
-      total = tokenUnit === 'usd' ? total / 100 : total;
-      total = tokenUnit === 'usd' ? total.toFixed(2) : total.toString();
-      return `${symbol}${total}`;
+      const symbol = tokenUnit !== 'usd' ? '~' : '';
+      const total = amountUsd;
+      return `${symbol}$${total}`;
    };
 
    if (loadingUnits) {
@@ -242,6 +256,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                         setSwapToMainOpen={setSwapToMainOpen}
                         handleSwapToMain={handleSwapToMain}
                         className='text-lg mb-0'
+                        isToMainMint={fromActiveMint}
                      />
                      <button
                         className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}

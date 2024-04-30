@@ -7,6 +7,7 @@ interface SwapToMainButtonProps {
    className?: string;
    setSwapToMainOpen: (value: boolean) => void;
    handleSwapToMain: () => void;
+   isToMainMint?: boolean;
 }
 
 const SwapToMainButton = ({
@@ -15,6 +16,7 @@ const SwapToMainButton = ({
    setSwapToMainOpen,
    handleSwapToMain,
    className,
+   isToMainMint = false,
 }: SwapToMainButtonProps) => (
    <Popover
       open={swapToMainOpen}
@@ -45,7 +47,7 @@ const SwapToMainButton = ({
          onClick={() => setSwapToMainOpen(true)}
          className={`${className && className} mr-3 underline`}
       >
-         Swap to Main
+         {isToMainMint ? 'Claim' : 'Swap to Main'}
       </button>
    </Popover>
 );
