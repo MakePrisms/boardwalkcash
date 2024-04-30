@@ -24,6 +24,8 @@ import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cashu';
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
+import { FolderMinusIcon } from '@heroicons/react/20/solid';
+import { format } from 'path';
 
 export const useCashu = () => {
    let intervalCount = 0;
@@ -262,6 +264,8 @@ export const useCashu = () => {
       swapFrom?: CashuWallet,
       swapTo?: CashuWallet,
    ) => {
+      console.log('Swapping from', swapFrom);
+      console.log('Swapping to', swapTo);
       let calledGetProofs = false;
       if (!proofs) {
          proofs = getProofs(keyset.id);
@@ -278,9 +282,9 @@ export const useCashu = () => {
          swapFrom = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
       }
 
+      const mainWallet = Object.values(wallets).find(w => w.active);
       if (!swapTo) {
          console.log('No swapTo wallet found. Using main wallet');
-         const mainWallet = Object.values(wallets).find(w => w.active);
 
          if (!mainWallet) {
             addToast('No main wallet found', 'error');
@@ -370,10 +374,19 @@ export const useCashu = () => {
 
          dispatch(setBalance({ usd: newBalance }));
 
-         addToast(`Swapped $${(amountUsd / 100).toFixed(2)} to your main mint`, 'success');
-      } catch (e) {
+         let successMsg = '';
+         if (swapTo.mint.mintUrl === mainWallet?.url) {
+            successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to your main mint`;
+         } else {
+            let formattedUrl = swapTo.mint.mintUrl.replace('https://', '');
+            formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
+            successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to ${formattedUrl}`;
+         }
+
+         addToast(successMsg, 'success');
+      } catch (e: any) {
          console.error('Failed to swap proofs:', e);
-         addToast('Failed to swap proofs', 'error');
+         addToast(`Failed to swap proofs - ${e.message && e.message}`, 'error');
       }
    };
 
@@ -421,6 +434,28 @@ export const useCashu = () => {
       return { proofs: send, wallet };
    };
 
+   const fetchUnitFromProofs = async (mintUrl: string, proofs: Proof[]) => {
+      if (proofs.length === 0) {
+         throw new Error('fetchUnitFromProofs failed: No proofs');
+      }
+
+      const keysetId = proofs[0].id;
+
+      const cashuWallet = new CashuWallet(new CashuMint(mintUrl));
+
+      const mintKeysets = await cashuWallet.mint.getKeys().then(({ keysets }) => keysets);
+
+      console.log('mintKeyset', mintKeysets);
+
+      const keyset = mintKeysets.find(keyset => keyset.id === keysetId);
+
+      if (!keyset) {
+         throw new Error('fetchUnitFromProofs failed: No keyset found');
+      }
+
+      return keyset.unit;
+   };
+
    useEffect(() => {
       updateProofsAndBalance();
 
@@ -445,5 +480,12 @@ export const useCashu = () => {
       };
    }, [dispatch]);
 
-   return { handlePayInvoice, requestMintInvoice, swapToMain, decodeToken, swapToSend };
+   return {
+      handlePayInvoice,
+      requestMintInvoice,
+      swapToMain,
+      decodeToken,
+      swapToSend,
+      fetchUnitFromProofs,
+   };
 };

@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { CashuMint, CashuWallet, MintActiveKeys, Token } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof, Token } from '@cashu/cashu-ts';
 import { Modal } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -7,6 +7,7 @@ import SwapToMainButton from '../sidebar/SwapToMainButton';
 import { useCashu } from '@/hooks/useCashu';
 import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
+import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -19,30 +20,38 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const [swapToMainOpen, setSwapToMainOpen] = useState(false);
    const [swapping, setSwapping] = useState(false);
    const wallet = useSelector((state: RootState) => state.wallet);
+   const [loadingUnits, setLoadingUnits] = useState(true);
    const [supportedUnits, setSupportedUnits] = useState<string[]>([]);
+   const [mintUrl, setMintUrl] = useState<string>('');
+   const [proofs, setProofs] = useState<Proof[]>([]);
+   const [tokenUnit, setTokenUnit] = useState<string | null>(null);
+   const [fromActiveMint, setFromActiveMint] = useState(true);
 
    const dispatch = useAppDispatch();
 
-   const { swapToMain } = useCashu();
+   const { swapToMain, fetchUnitFromProofs } = useCashu();
    const { addToast } = useToast();
 
-   const handleSwapToMain = () => {
+   const handleSwapToMain = async () => {
+      console.log('Swapping to main mint');
+      console.log('Token', token);
       if (!token) return null;
-
-      const { token: tokens, unit } = token;
-
-      if (!unit) return;
+      if (!tokenUnit) throw new Error('Token unit is not set');
 
       setSwapping(true);
 
-      setSwapToMainOpen(false);
-
-      swapToMain(
-         { unit, id: tokens[0].proofs[0].id, url: tokens[0].mint },
+      await swapToMain(
+         { unit: tokenUnit, id: tokens[0].proofs[0].id, url: tokens[0].mint },
          tokens[0].proofs,
-      ).finally(() => {
-         setSwapping(false);
-      });
+      )
+         .catch(() => {
+            addToast('Failed to swap to main mint', 'error');
+         })
+         .finally(() => {
+            setSwapToMainOpen(false);
+            onClose();
+            setSwapping(false);
+         });
    };
 
    useEffect(() => {
@@ -59,21 +68,46 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    }, [wallet, token]);
 
    useEffect(() => {
-      const mintUrl = token?.token[0].mint;
+      if (!token?.token[0].mint) return;
 
+      if (token?.token.length > 1) {
+         alert(
+            'Received a token with more than one mint. This is not supported yet. Please report this.',
+         );
+         throw new Error(
+            'Received a token with more than one mint. This is not supported yet. Please report this.',
+         );
+      }
+
+      setMintUrl(token.token[0].mint);
+      setProofs(token.token[0].proofs);
+   }, [token]);
+
+   useEffect(() => {
       if (!mintUrl) return;
+      const activeWallet = Object.values(wallet.keysets).find(w => w.active);
 
-      new CashuMint(mintUrl).getKeys().then((keys: MintActiveKeys) => {
+      if (mintUrl === activeWallet?.url) {
+         setFromActiveMint(true);
+      } else {
+         setFromActiveMint(false);
+      }
+      new CashuMint(mintUrl).getKeys().then(({ keysets }) => {
          const units = new Set<string>();
-         keys.keysets.forEach(keyset => units.add(keyset.unit));
+         keysets.forEach(keyset => units.add(keyset.unit));
 
          setSupportedUnits(Array.from(units));
+         setLoadingUnits(false);
       });
-   }, [token]);
+
+      fetchUnitFromProofs(mintUrl, proofs).then(unit => {
+         setTokenUnit(unit);
+      });
+   }, [mintUrl, proofs]);
 
    if (!token) return null;
 
-   const { token: tokens, unit } = token;
+   const { token: tokens } = token;
 
    if (tokens.length > 1) {
       alert(
@@ -84,10 +118,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       );
    }
 
-   const { proofs, mint: mintUrl } = tokens[0];
-
    const handleAddMint = async () => {
+      console.log('Adding mint', mintUrl);
       try {
+         setSwapping(true);
          const swapFromMint = new CashuMint(mintUrl);
          const { keysets } = await swapFromMint.getKeys();
 
@@ -119,12 +153,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
          console.log('Active Wallet', activeWallet);
 
-         const swapToMint = new CashuMint(activeWallet.url);
-
          await swapToMain(
-            { unit: unit!, id: proofs[0].id, url: mintUrl },
+            { unit: tokenUnit!, id: proofs[0].id, url: mintUrl },
             proofs,
-            new CashuWallet(swapFromMint, { unit: unit! }), // swap from
+            new CashuWallet(swapFromMint, { unit: tokenUnit! }), // swap from
             new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset }), // swap to
          );
 
@@ -135,50 +167,76 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             'Failed to add mint. Make sure the mint you are using supports Cashu V1',
             'error',
          );
+      } finally {
+         setSwapping(false);
       }
    };
 
-   return (
-      <Modal show={isOpen} onClose={onClose}>
-         <Modal.Header>Confirm Ecash Receive</Modal.Header>
+   const receiveAmountString = () => {
+      const symbol = tokenUnit === 'usd' ? '$' : '₿';
+      let total: string | number = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
+      total = tokenUnit === 'usd' ? total / 100 : total;
+      total = tokenUnit === 'usd' ? total.toFixed(2) : total.toString();
+      return `${symbol}${total}`;
+   };
 
-         <Modal.Body className='text-black'>
-            <div>
-               <p>Mint Url: {mintUrl}</p>
-               <p>
-                  {mintTrusted ? (
-                     <span className='text-green-500'>Trusted</span>
-                  ) : (
-                     <span className='text-red-500'>Not Trusted</span>
-                  )}
-               </p>
-               <p>Supported Units: {supportedUnits.join(', ')}</p>
-               <p>
+   return (
+      <>
+         <Modal show={isOpen} onClose={onClose}>
+            <Modal.Header>Confirm Ecash Receive</Modal.Header>
+
+            <Modal.Body className='text-black'>
+               <h3 className='text-5xl text-center mb-2'>{receiveAmountString()}</h3>
+               <div>
+                  <p className='text-center mb-2'>
+                     {mintTrusted ? (
+                        <span className='text-green-500'>Trusted</span>
+                     ) : (
+                        <span className='text-red-500'>Not Trusted</span>
+                     )}
+                  </p>
+                  {/* <p className='text-xs'>From: {mintUrl}</p> */}
+                  <p className='text-center text-sm mb-2'>
+                     <a
+                        href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
+                        target='_blank'
+                        className='text-cyan-teal underline'
+                     >
+                        Mint Reviews
+                     </a>
+                  </p>
+                  {/* <p>Supported Units: {supportedUnits.join(', ')}</p> */}
+                  {/* <p>
                   Boarwalk cash supports this mint?{' '}
-                  {supportedUnits.includes('usd') ? (
-                     <span className='text-green-500'>Yes</span>
+                  {!loadingUnits ? (
+                     supportedUnits.includes('usd') ? (
+                        <span className='text-green-500'>Yes</span>
+                     ) : (
+                        <span className='text-red-500'>No</span>
+                     )
                   ) : (
-                     <span className='text-red-500'>No</span>
+                     <Spinner />
                   )}
-               </p>
-               <SwapToMainButton
-                  swapToMainOpen={swapToMainOpen}
-                  mintUrl={mintUrl}
-                  setSwapToMainOpen={setSwapToMainOpen}
-                  handleSwapToMain={handleSwapToMain}
-               />
-               <button className='underline hover:cursor-pointer text-xs' onClick={handleAddMint}>
-                  Add mint and claim tokens
-               </button>
-            </div>
-            <div>
-               <p>Unit: {unit}</p>
-            </div>
-            <div>
-               <p>Total: {proofs.reduce((acc, proof) => (acc += proof.amount), 0)}</p>
-            </div>
-         </Modal.Body>
-      </Modal>
+               </p> */}
+                  <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
+                     <SwapToMainButton
+                        swapToMainOpen={swapToMainOpen}
+                        mintUrl={mintUrl}
+                        setSwapToMainOpen={setSwapToMainOpen}
+                        handleSwapToMain={handleSwapToMain}
+                     />
+                     <button
+                        className={`underline hover:cursor-pointer text-xs ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
+                        onClick={handleAddMint}
+                     >
+                        {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
+                     </button>
+                  </div>
+               </div>
+            </Modal.Body>
+         </Modal>
+         <ProcessingSwapModal isSwapping={swapping} />
+      </>
    );
 };
 
