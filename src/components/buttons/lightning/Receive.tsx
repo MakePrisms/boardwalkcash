@@ -114,6 +114,7 @@ const Receive = () => {
       setInvoiceToPay('');
       setAmount('');
       setIsReceiving(false);
+      setShowEcashReceiveModal(false);
    };
 
    return (
@@ -149,7 +150,7 @@ const Receive = () => {
                         </div>
                      ) : (
                         <div className='space-y-6'>
-                           <input
+                           <textarea
                               className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
                               placeholder='Paste token or enter amount USD (eg. 0.21)'
                               value={amount}
@@ -179,7 +180,7 @@ const Receive = () => {
          </Modal>
          <ConfirmEcashReceiveModal
             isOpen={showEcashReceiveModal}
-            onClose={() => setShowEcashReceiveModal(false)}
+            onClose={handleModalClose}
             token={token}
          />
       </>
