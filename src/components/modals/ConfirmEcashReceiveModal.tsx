@@ -1,6 +1,6 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { CashuMint, CashuWallet, Proof, Token } from '@cashu/cashu-ts';
-import { Modal } from 'flowbite-react';
+import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import SwapToMainButton from '../sidebar/SwapToMainButton';
@@ -97,12 +97,13 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          keysets.forEach(keyset => units.add(keyset.unit));
 
          setSupportedUnits(Array.from(units));
-         setLoadingUnits(false);
       });
 
-      fetchUnitFromProofs(mintUrl, proofs).then(unit => {
-         setTokenUnit(unit);
-      });
+      fetchUnitFromProofs(mintUrl, proofs)
+         .then(unit => {
+            setTokenUnit(unit);
+         })
+         .finally(() => setLoadingUnits(false));
    }, [mintUrl, proofs]);
 
    if (!token) return null;
@@ -173,12 +174,25 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    };
 
    const receiveAmountString = () => {
-      const symbol = tokenUnit === 'usd' ? '$' : '₿';
+      const symbol = tokenUnit !== 'usd' ? '₿' : '$';
       let total: string | number = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
       total = tokenUnit === 'usd' ? total / 100 : total;
       total = tokenUnit === 'usd' ? total.toFixed(2) : total.toString();
       return `${symbol}${total}`;
    };
+
+   if (loadingUnits) {
+      return (
+         <Modal show={isOpen} onClose={onClose}>
+            <Modal.Header>Confirm Ecash Receive</Modal.Header>
+            <Modal.Body>
+               <div className='flex flex-col space-y-4 justify-center items-center'>
+                  <Spinner size='xl' />
+               </div>
+            </Modal.Body>
+         </Modal>
+      );
+   }
 
    return (
       <>
