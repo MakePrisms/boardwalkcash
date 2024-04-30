@@ -12,13 +12,16 @@ import { initializeKeysets } from '@/redux/slices/Wallet.slice';
 import Disclaimer from '@/components/Disclaimer';
 import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
-import ZapBotButton from '@/components/buttons/ZapBotButton';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
+import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 
 export default function Home() {
    const [showZapBotButton, setShowZapBotButton] = useState(false);
 
    const dispatch = useAppDispatch();
+   const wallets = useSelector((state: RootState) => state.wallet.keysets);
+
+   const { updateProofsAndBalance, checkProofsValid } = useCashu();
 
    useEffect(() => {
       const localKeysets = window.localStorage.getItem('keysets');
@@ -39,6 +42,32 @@ export default function Home() {
             setShowZapBotButton(false);
          }
       }
+   }, [dispatch]);
+
+   useEffect(() => {
+      let intervalCount = 0;
+
+      // updateProofsAndBalance();
+
+      const intervalId = setInterval(() => {
+         updateProofsAndBalance();
+
+         // Increment the counter
+         intervalCount += 1;
+
+         // Every fourth interval, call checkProofsValid
+         if (intervalCount >= 8) {
+            Object.values(wallets).forEach(async w => {
+               const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
+               await checkProofsValid(wallet);
+            });
+            intervalCount = 0;
+         }
+      }, 3000); // Poll every 3 seconds
+
+      return () => {
+         clearInterval(intervalId);
+      };
    }, [dispatch]);
 
    const balance = useSelector((state: RootState) => state.wallet.balance);
