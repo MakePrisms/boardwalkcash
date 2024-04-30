@@ -8,7 +8,7 @@ import {
    getDecodedToken,
    getEncodedToken,
 } from '@cashu/cashu-ts';
-import { Modal } from 'flowbite-react';
+import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import AnimatedQRCode from '../AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
@@ -50,6 +50,7 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
       console.log('DECODED', getDecodedToken(encodedToken));
 
       setEncodedToken(encodedToken.replace('Token:', ''));
+      setSending(false);
    }, [tokenEntryData]);
 
    useEffect(() => {
@@ -87,14 +88,16 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
 
          setTokenEntryData({ proofs: newProofs, wallet });
       };
-
-      handleSendEcash();
+      handleSendEcash().finally(() => setSending(false));
    }, [amountUsd]);
    return (
       <>
          <Modal.Body>
-            {!sending ? (
-               <div>Loading...</div>
+            {sending ? (
+               <div className='flex flex-col space-y-4 justify-center items-center'>
+                  <Spinner size='xl' />
+                  <div className='text-black'>Creating sendable tokens...</div>
+               </div>
             ) : (
                <div className='flex flex-col justify-center items-center my-8 text-black space-y-3'>
                   {encodedToken && (
