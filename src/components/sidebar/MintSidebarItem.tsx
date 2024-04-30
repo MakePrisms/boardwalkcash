@@ -103,6 +103,7 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                            mintUrl={keyset.url}
                            setSwapToMainOpen={setSwapToMainOpen}
                            handleSwapToMain={handleSwapToMain}
+                           className='text-xs'
                         />
                      </>
                   )}

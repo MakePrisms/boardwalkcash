@@ -122,9 +122,16 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const handleAddMint = async () => {
       console.log('Adding mint', mintUrl);
       try {
-         setSwapping(true);
          const swapFromMint = new CashuMint(mintUrl);
          const { keysets } = await swapFromMint.getKeys();
+         const activeWallet = Object.values(wallet.keysets).find(w => w.active);
+
+         if (!activeWallet) {
+            addToast('No active wallet found', 'error');
+            return;
+         }
+
+         setSwapping(true);
 
          const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
 
@@ -144,13 +151,6 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          }
 
          console.log('Swapping');
-
-         const activeWallet = Object.values(wallet.keysets).find(w => w.active);
-
-         if (!activeWallet) {
-            addToast('No active wallet found', 'error');
-            return;
-         }
 
          console.log('Active Wallet', activeWallet);
 
@@ -200,25 +200,28 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             <Modal.Header>Confirm Ecash Receive</Modal.Header>
 
             <Modal.Body className='text-black'>
-               <h3 className='text-5xl text-center mb-2'>{receiveAmountString()}</h3>
+               <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>
                <div>
-                  <p className='text-center mb-2'>
-                     {mintTrusted ? (
-                        <span className='text-green-500'>Trusted</span>
-                     ) : (
-                        <span className='text-red-500'>Not Trusted</span>
-                     )}
-                  </p>
-                  {/* <p className='text-xs'>From: {mintUrl}</p> */}
-                  <p className='text-center text-sm mb-2'>
-                     <a
-                        href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
-                        target='_blank'
-                        className='text-cyan-teal underline'
-                     >
-                        Mint Reviews
-                     </a>
-                  </p>
+                  <div className='flex flex-row justify-center mb-4'>
+                     <p className='text-center text-sm mb-2 mr-3'>
+                        <a
+                           href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
+                           target='_blank'
+                           className=' underline'
+                        >
+                           View Reviews
+                        </a>
+                     </p>
+                     <p className='text-center mb-2 text-sm'>
+                        {mintTrusted ? (
+                           <span className='text-green-500'>Trusted</span>
+                        ) : (
+                           <span className='text-red-500'>Not Trusted</span>
+                        )}
+                     </p>
+                     {/* <p className='text-xs'>From: {mintUrl}</p> */}
+                  </div>
+
                   {/* <p>Supported Units: {supportedUnits.join(', ')}</p> */}
                   {/* <p>
                   Boarwalk cash supports this mint?{' '}
@@ -238,9 +241,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                         mintUrl={mintUrl}
                         setSwapToMainOpen={setSwapToMainOpen}
                         handleSwapToMain={handleSwapToMain}
+                        className='text-lg mb-0'
                      />
                      <button
-                        className={`underline hover:cursor-pointer text-xs ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
+                        className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
                         onClick={handleAddMint}
                      >
                         {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}

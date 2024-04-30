@@ -4,6 +4,7 @@ import { Button, Popover } from 'flowbite-react';
 interface SwapToMainButtonProps {
    swapToMainOpen: boolean;
    mintUrl: string;
+   className?: string;
    setSwapToMainOpen: (value: boolean) => void;
    handleSwapToMain: () => void;
 }
@@ -13,6 +14,7 @@ const SwapToMainButton = ({
    mintUrl,
    setSwapToMainOpen,
    handleSwapToMain,
+   className,
 }: SwapToMainButtonProps) => (
    <Popover
       open={swapToMainOpen}
@@ -39,7 +41,10 @@ const SwapToMainButton = ({
          </div>
       }
    >
-      <button onClick={() => setSwapToMainOpen(true)} className='text-xs mr-3 underline'>
+      <button
+         onClick={() => setSwapToMainOpen(true)}
+         className={`${className && className} mr-3 underline`}
+      >
          Swap to Main
       </button>
    </Popover>

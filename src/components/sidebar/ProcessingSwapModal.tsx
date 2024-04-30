@@ -1,6 +1,10 @@
 import { Modal, Spinner } from 'flowbite-react';
 
-const ProcessingSwapModal = ({ isSwapping }: { isSwapping: boolean }) => {
+interface ProcessingSwapModalProps {
+   isSwapping: boolean;
+}
+
+const ProcessingSwapModal = ({ isSwapping }: ProcessingSwapModalProps) => {
    return (
       <Modal show={isSwapping}>
          <Modal.Header>
@@ -13,8 +17,7 @@ const ProcessingSwapModal = ({ isSwapping }: { isSwapping: boolean }) => {
                </div>
                <div>
                   <p className='text-black text-center'>
-                     This can take up to 20 seconds. Please wait while we swap your balance to your
-                     main mint.
+                     This can take up to 20 seconds. Please wait while we swap your tokens.
                   </p>
                </div>
             </div>
