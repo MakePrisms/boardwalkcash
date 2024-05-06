@@ -125,7 +125,7 @@ export const useNwc = () => {
 
    class InsufficientFundsError extends Error {
       constructor(totalToSend: number) {
-         super(`Insufficient funds. Trying to send ${totalToSend} c total.`);
+         super(`Insufficient funds. Trying to send ${totalToSend} cents total.`);
          this.name = 'InsufficientFundsError';
       }
    }
@@ -242,7 +242,17 @@ export const useNwc = () => {
             // decrypt all the requests and set invoice + fee amounts
             for (const processor of processors) {
                // one at a time otherwise mint gets sad
-               await processor.setUp();
+               try {
+                  await processor.setUp();
+               } catch (e) {
+                  processor.sendError('INTERNAL');
+                  if (processors.length === 1) {
+                     dispatch(setError('Payment failed. Cannot send less than one cent'));
+                     return;
+                  } else {
+                     processors.splice(processors.indexOf(processor), 1);
+                  }
+               }
             }
 
             const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
