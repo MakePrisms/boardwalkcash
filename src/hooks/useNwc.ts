@@ -75,15 +75,19 @@ export const useNwc = () => {
       const nwa: NWA = JSON.parse(window.localStorage.getItem('nwa')!);
 
       const listen = async () => {
-         ndk.current = new NDK();
-         ndk.current.explicitRelayUrls = defaultRelays;
-         await ndk.current.connect().then(() => console.log('connected to NDK'));
+         ndk.current = new NDK({ explicitRelayUrls: defaultRelays });
+         await ndk.current
+            .connect()
+            .then(() => console.log('connected to NDK'))
+            .catch(e => console.error('Error connecting to NDK', e));
 
          const filter: NDKFilter = {
             kinds: [NDKKind.NostrWalletConnectReq],
             authors: [nwaAppPubkey!],
             since: getSince(),
          };
+
+         console.log('## Listening for events:', filter);
 
          const sub = ndk.current.subscribe(filter);
 
@@ -121,7 +125,7 @@ export const useNwc = () => {
 
    class InsufficientFundsError extends Error {
       constructor(totalToSend: number) {
-         super(`Insufficient funds. Trying to send ${totalToSend} sats total.`);
+         super(`Insufficient funds. Trying to send ${totalToSend} c total.`);
          this.name = 'InsufficientFundsError';
       }
    }
@@ -210,7 +214,7 @@ export const useNwc = () => {
       } else {
          dispatch(
             setSuccess(
-               `Sent ${totalPaid} sat${totalPaid === 1 ? '' : 's'}${totalFee ? ` + ${totalFee} sat${totalFee > 1 ? 's' : ''} fees` : ''}`,
+               `Sent ${totalPaid} cent${totalPaid === 1 ? '' : 's'}${totalFee ? ` + ${totalFee} cent${totalFee > 1 ? 's' : ''} fees` : ''}`,
             ),
          );
       }
@@ -312,12 +316,12 @@ export const useNwc = () => {
             dispatch(setBalance({ usd: newBalance }));
 
             setFinalMessage(results);
-         } catch (e) {
+         } catch (e: any) {
             if (e instanceof InsufficientFundsError) {
                dispatch(setError(e.message));
             } else {
                console.error('Error setting up processors', e);
-               dispatch(setError('Error sending payments'));
+               dispatch(setError(`Error sending payments${e.message ? ': ' + e.message : ''}`));
             }
             failPayments(processors);
             resetQueue();

@@ -139,9 +139,14 @@ export class NIP47RequestProcessor {
          res.json().then(data => {
             const usdBtc = data.USD;
             const usdSat = usdBtc / 100_000_000;
-            return parseFloat((this.invoiceAmount * usdSat * 100).toFixed(2));
+            return Math.floor(parseFloat((this.invoiceAmount * usdSat * 100).toFixed(2)));
          }),
       );
+
+      if (this.amountCents < 1) {
+         this.sendError('INTERNAL');
+         throw new Error('amount less than 1 cent');
+      }
 
       try {
          const meltQuote = await this.wallet.getMeltQuote(this.params.invoice);
