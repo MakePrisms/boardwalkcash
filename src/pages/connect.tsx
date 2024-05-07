@@ -14,6 +14,8 @@ export default function Home() {
 
    const dispatch = useAppDispatch();
 
+   const dispatch = useAppDispatch();
+
    // implements nip67 https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md
    const handleNwa = async () => {
       await dispatch(initializeUser());
