@@ -139,7 +139,7 @@ export class NIP47RequestProcessor {
          res.json().then(data => {
             const usdBtc = data.USD;
             const usdSat = usdBtc / 100_000_000;
-            return Math.floor(parseFloat((this.invoiceAmount * usdSat * 100).toFixed(2)));
+            return Math.round(parseFloat((this.invoiceAmount * usdSat * 100).toFixed(2)));
          }),
       );
 

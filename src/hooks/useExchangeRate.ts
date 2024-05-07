@@ -33,7 +33,7 @@ export const useExchangeRate = () => {
             return amount;
          case 'usd':
             const exchangeRate = await fetchUsdToSatRate();
-            return Math.floor(amount / exchangeRate);
+            return Math.round(amount / exchangeRate);
          default:
             throw new Error('Invalid unit');
       }
@@ -46,7 +46,7 @@ export const useExchangeRate = () => {
             return amount;
          case 'usd':
             const exchangeRate = await fetchUsdToSatRate();
-            return Math.floor(amount * exchangeRate * 100);
+            return Math.round(amount * exchangeRate * 100);
          default:
             throw new Error('Invalid unit');
       }
