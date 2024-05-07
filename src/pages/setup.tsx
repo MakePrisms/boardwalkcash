@@ -289,9 +289,6 @@ export default function Home() {
                </Button>
             </div>
          </form>
-         <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center'>
-            <Disclaimer />
-         </footer>
       </main>
    );
 }
