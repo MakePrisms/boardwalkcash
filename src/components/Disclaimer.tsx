@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const Disclaimer = () => {
    return (
       <div>
@@ -11,7 +13,11 @@ const Disclaimer = () => {
                >
                   open source
                </a>{' '}
-               and still experimental. Use at your own risk!
+               and still{' '}
+               <Link className='underline text-cyan-teal' href={'/warning'} target='_blank'>
+                  experimental
+               </Link>
+               . Use at your own risk!
             </p>
          </div>
       </div>
