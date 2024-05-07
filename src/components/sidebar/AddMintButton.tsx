@@ -5,6 +5,7 @@ import { useAppDispatch } from '@/redux/store';
 import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import { Wallet } from '@/types';
+import Link from 'next/link';
 
 export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
    const [fetchingMint, setFetchingMint] = useState(false);
@@ -65,7 +66,23 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
                placeholder='Mint URL'
                value={mintUrl}
                onChange={e => setMintUrl(e.target.value)}
-               helperText='Enter the URL of the mint you would like to add.'
+               helperText={
+                  <>
+                     Enter the URL of the mint you would like to add. Search at{' '}
+                     <a
+                        className='underline text-cyan-teal'
+                        href='https://bitcoinmints.com?show=cashu&units=usd'
+                        target='_blank'
+                     >
+                        bitcoinmints.com
+                     </a>
+                     . Understand mint{' '}
+                     <Link className='underline text-cyan-teal' href={'/mintrisks'} target='_blank'>
+                        risks
+                     </Link>
+                     .
+                  </>
+               }
             />
             <Button
                isProcessing={fetchingMint}
