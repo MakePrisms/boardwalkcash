@@ -6,6 +6,7 @@ import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import { Wallet } from '@/types';
 import Link from 'next/link';
+import { normalizeUrl } from '@/utils/url';
 
 export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
    const [fetchingMint, setFetchingMint] = useState(false);
@@ -21,9 +22,10 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
    }, [keysets]);
 
    const handleAddMint = async () => {
-      const mint = new CashuMint(mintUrl);
+      const url = normalizeUrl(mintUrl);
+      const mint = new CashuMint(url);
 
-      if (currentMints.includes(mintUrl)) {
+      if (currentMints.includes(url)) {
          addToast('Mint already added', 'error');
          return;
       }
@@ -42,7 +44,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
             return;
          }
 
-         dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl }));
+         dispatch(addKeyset({ keyset: usdKeyset, url }));
 
          setMintUrl('');
 

@@ -12,6 +12,7 @@ import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'no
 import { initializeUser } from '@/redux/slices/UserSlice';
 import { useAppDispatch } from '@/redux/store';
 import { assembleLightningAddress } from '@/utils/lud16';
+import { normalizeUrl } from '@/utils/url';
 
 const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
    return (
@@ -94,10 +95,12 @@ export default function Home() {
    const handleSubmit = async (event: React.FormEvent) => {
       event.preventDefault();
 
+      let url = normalizeUrl(mintUrl);
+
       setAddingMint(true);
 
       try {
-         const mint = new CashuMint(mintUrl);
+         const mint = new CashuMint(url);
 
          const { keysets } = await mint.getKeys();
 
@@ -108,7 +111,7 @@ export default function Home() {
             return;
          }
 
-         dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl, active: true }));
+         dispatch(addKeyset({ keyset: usdKeyset, url: url, active: true }));
 
          addToast('Mint added successfully', 'success');
 
