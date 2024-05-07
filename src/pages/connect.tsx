@@ -10,9 +10,14 @@ import { useRouter } from 'next/router';
 
 export default function Home() {
    const router = useRouter();
+   const { query } = router;
+
+   const dispatch = useAppDispatch();
 
    // implements nip67 https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md
    const handleNwa = async () => {
+      await dispatch(initializeUser());
+
       let params = new URL(document.location.href).searchParams;
 
       let nwa = params.get('nwa');
@@ -91,13 +96,38 @@ export default function Home() {
          relay.close();
 
          // redirect to home page
-         router.push('/setup?just_connected=true');
+         router.push('/wallet?just_connected=true');
       }
    };
 
    useEffect(() => {
-      handleNwa();
-   }, []);
+      const keysets = window.localStorage.getItem('keysets');
+
+      if (keysets) {
+         handleNwa();
+         return;
+      }
+
+      const params = new URL(document.location.href).searchParams;
+
+      if (Object.keys(query).length === 0) {
+         console.log('No query params found');
+         return;
+      }
+
+      const nwa = params.get('nwa');
+
+      if (!nwa) {
+         throw new Error('No NWA parameter found');
+      }
+
+      router.push({
+         pathname: '/setup',
+         query,
+      });
+
+      // handleNwa();
+   }, [query]);
 
    return (
       <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
