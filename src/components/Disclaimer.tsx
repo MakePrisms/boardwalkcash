@@ -14,7 +14,7 @@ const Disclaimer = () => {
                   open source
                </a>{' '}
                and still{' '}
-               <Link className='underline text-cyan-teal' href={'/warning'} target='_blank'>
+               <Link className='hover:underline text-cyan-teal' href={'/warning'} target='_blank'>
                   experimental
                </Link>
                . Use at your own risk!
