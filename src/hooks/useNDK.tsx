@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import NDK, {
    NDKEvent,
    NDKFilter,
@@ -61,23 +61,22 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
     * @param handler A function that accepts an NDKEvent and does something with it
     * @param opts Optional NDKSubscriptionOptions. Set `{closeOnEose: false}` to keep subscriptions open after eose
     */
-   const subscribeAndHandle = (
-      filter: NDKFilter,
-      handler: (event: NDKEvent) => void,
-      opts?: NDKSubscriptionOptions,
-   ) => {
-      // subscribe to the filter
-      const sub = ndk.current.subscribe(filter, opts);
+   const subscribeAndHandle = useCallback(
+      (filter: NDKFilter, handler: (event: NDKEvent) => void, opts?: NDKSubscriptionOptions) => {
+         // subscribe to the filter
+         const sub = ndk.current.subscribe(filter, opts);
 
-      // `sub` emits 'event' events when a new nostr event is received
-      // our handler then processes the event
-      sub.on('event', (e: NDKEvent) => {
-         // console.log('Received event:', e.id);
-         // if (seenEventIds.has(e.id)) return;
-         // seenEventIds.add(e.id);
-         handler(e);
-      });
-   };
+         // `sub` emits 'event' events when a new nostr event is received
+         // our handler then processes the event
+         sub.on('event', (e: NDKEvent) => {
+            // console.log('Received event:', e.id);
+            // if (seenEventIds.has(e.id)) return;
+            // seenEventIds.add(e.id);
+            handler(e);
+         });
+      },
+      [],
+   );
 
    const publishNostrEvent = async (event: NostrEvent) => {
       ndk.current.assertSigner();

@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { useNDK } from './useNDK';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { incrementConnectionSpent, setLastNwcReqTimestamp } from '@/redux/slices/NwcSlice';
+import { setLastNwcReqTimestamp } from '@/redux/slices/NwcSlice';
 import { NDKEvent, NDKFilter, NDKKind, NostrEvent } from '@nostr-dev-kit/ndk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nip04 } from 'nostr-tools';
@@ -89,8 +89,12 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    const [nip47RequestFilter, setNip47RequestFilter] = useState<NDKFilter | undefined>(undefined);
    const seenEventIds = useRef<Set<string>>(new Set());
 
-   const nwcState = useSelector((state: RootState) => state.nwc);
    const balance = useSelector((state: RootState) => state.wallet.balance.usd);
+
+   const nwcState = useSelector((state: RootState) => state.nwc);
+   const nwcStateRef = useRef(nwcState);
+   nwcStateRef.current = nwcState;
+
    const { subscribeAndHandle, publishNostrEvent } = useNDK();
    const { payInvoice: cashuPayInvoice } = useCashu();
    const { satsToUnit } = useExchangeRate();
@@ -247,13 +251,14 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
    const validateConnection = useCallback(
       async (appPubkey: string, request: NWCRequestContent) => {
-         // make sure the connection exists
-         if (!nwcState.allPubkeys.includes(appPubkey)) {
-            console.log('ALL PUBKEYS: ', nwcState.allPubkeys);
+         const currentState = nwcStateRef.current;
+
+         if (!currentState.allPubkeys.includes(appPubkey)) {
+            console.log('ALL PUBKEYS: ', currentState.allPubkeys);
             throw new NWCError(ErrorCodes.UNAUTHORIZED, 'Unauthorized app');
          }
 
-         const connection = nwcState.connections[appPubkey];
+         const connection = currentState.connections[appPubkey];
 
          if (!connection.permissions.includes(request.method)) {
             console.warn('## Connection permissions: ', connection.permissions, request.method);
@@ -291,14 +296,11 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
             }
          }
       },
-      [satsToUnit, balance, nwcState.allPubkeys, nwcState.connections],
+      [balance, satsToUnit, nwcStateRef],
    );
 
-   /**
-    * create a subscription for NIP47 requests and handle them
-    */
-   useEffect(() => {
-      const handleNwcRequest = async (event: NDKEvent) => {
+   const handleNwcRequest = useCallback(
+      async (event: NDKEvent) => {
          if (seenEventIds.current.has(event.id)) return;
          seenEventIds.current.add(event.id);
          dispatch(setLastNwcReqTimestamp(event.created_at!));
@@ -333,20 +335,19 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
                );
             }
          }
-      };
+      },
+      [sendNwcResponse, decryptNwcRequest, validateConnection, dispatch],
+   );
 
+   /**
+    * create a subscription for NIP47 requests and handle them
+    */
+   useEffect(() => {
       if (nip47RequestFilter) {
          console.log('Subscribing to NIP47 requests');
          subscribeAndHandle(nip47RequestFilter, handleNwcRequest, { closeOnEose: false });
       }
-   }, [
-      nip47RequestFilter,
-      dispatch,
-      // subscribeAndHandle,
-      // validateConnection,
-      // decryptNwcRequest,
-      // sendNwcResponse,
-   ]);
+   }, [nip47RequestFilter, subscribeAndHandle, handleNwcRequest]);
 };
 
 export default useNwc2;
