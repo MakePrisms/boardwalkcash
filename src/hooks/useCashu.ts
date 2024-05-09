@@ -467,6 +467,8 @@ export const useCashu = () => {
 
       console.log(`## GOT MELT QUOTE:`, meltQuote);
 
+      dispatch(lockBalance());
+
       const proofs = getNeededProofs(meltQuote.amount + meltQuote.fee_reserve, activeWallet.id);
 
       if (proofs.length === 0) {
@@ -501,6 +503,9 @@ export const useCashu = () => {
       addBalance(change);
 
       addToast('Payment successful', 'success');
+
+      dispatch(unlockBalance());
+      dispatch(setSuccess(`Sent $${(meltQuote.amount / 100).toFixed(2)}`));
 
       return { preimage: preimage || '', amountUsd: meltQuote.amount };
    };

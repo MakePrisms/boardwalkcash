@@ -8,6 +8,7 @@ import { nip04 } from 'nostr-tools';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useExchangeRate } from './useExchangeRate';
 import { useCashu } from './useCashu';
+import { setError, setSending } from '@/redux/slices/ActivitySlice';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -149,7 +150,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
          kinds: [NDKKind.NostrWalletConnectReq],
          // authors: nwcState.allPubkeys,
          '#p': [pubkey],
-         since: Math.floor(Date.now() / 1000), // TODO
+         since: nwcStateRef.current.lastReqTimestamp,
       };
 
       console.log('Setting NIP47 Request Filter: ', filter);
@@ -304,6 +305,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
          if (seenEventIds.current.has(event.id)) return;
          seenEventIds.current.add(event.id);
          dispatch(setLastNwcReqTimestamp(event.created_at!));
+         dispatch(setSending('Processing payment...'));
          const request = await decryptNwcRequest(event.pubkey, event.content);
 
          console.log(`============PROCESSING NWC REQUEST===============\n ## REQUEST: ${request}`);
@@ -322,7 +324,8 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
             const result = await handler(request.params);
 
             await sendNwcResponse(request.method, event, result);
-         } catch (e) {
+         } catch (e: any) {
+            dispatch(setError(`Failed to process request: ${e.message}`));
             if (e instanceof NWCError) {
                sendNwcResponse(request.method, event, undefined, e);
             } else {
