@@ -78,7 +78,7 @@ export const useNwc = () => {
          ndk.current = new NDK({ explicitRelayUrls: defaultRelays });
          await ndk.current
             .connect()
-            .then(() => console.log('connected to NDK'))
+            // .then(() => console.log('connected to NDK'))
             .catch(e => console.error('Error connecting to NDK', e));
 
          const filter: NDKFilter = {
@@ -87,7 +87,7 @@ export const useNwc = () => {
             since: getSince(),
          };
 
-         console.log('## Listening for events:', filter);
+         // console.log('## Listening for events:', filter);
 
          const sub = ndk.current.subscribe(filter);
 
@@ -240,7 +240,7 @@ export const useNwc = () => {
 
          try {
             // decrypt all the requests and set invoice + fee amounts
-            for (const processor of processors) {
+            for await (const processor of processors) {
                // one at a time otherwise mint gets sad
                try {
                   await processor.setUp();

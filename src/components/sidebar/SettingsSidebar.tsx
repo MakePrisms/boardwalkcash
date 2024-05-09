@@ -4,6 +4,8 @@ import { RootState } from '@/redux/store';
 import { Button, Sidebar } from 'flowbite-react';
 import MintSidebarItem from './MintSidebarItem';
 import AddMintButton from './AddMintButton';
+import NwcSidebarItem from './NwcSidebarItem';
+import AddConnectionButton from './AddConnectionButton';
 
 const SettingsCog = () => (
    <svg
@@ -39,6 +41,7 @@ const XMark = () => (
 export const SettingsSidebar = () => {
    const [hidden, sethidden] = useState(true);
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
+   const nwcState = useSelector((state: RootState) => state.nwc);
 
    return (
       <>
@@ -64,6 +67,16 @@ export const SettingsSidebar = () => {
                </Sidebar.ItemGroup>
                <Sidebar.ItemGroup>
                   <AddMintButton keysets={keysets} />
+               </Sidebar.ItemGroup>
+               <Sidebar.ItemGroup>
+                  <Sidebar.Collapse label='Connections'>
+                     {nwcState.allPubkeys.map((pubkey, idx) => (
+                        <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
+                     ))}
+                  </Sidebar.Collapse>
+               </Sidebar.ItemGroup>
+               <Sidebar.ItemGroup>
+                  <AddConnectionButton keysets={keysets} />
                </Sidebar.ItemGroup>
             </Sidebar.Items>
          </Sidebar>

@@ -13,9 +13,9 @@ const Balance = ({ balance }: { balance: number }) => {
       if (balanceCents <= 0) {
          setUsdBalance('0.00');
       } else {
-         console.log('balanceCents:', balanceCents);
+         // console.log('balanceCents:', balanceCents);
          const balanceDollars = balanceCents / 100;
-         console.log('balanceDollars:', balanceDollars);
+         // console.log('balanceDollars:', balanceDollars);
          setUsdBalance(balanceDollars.toFixed(2));
       }
    };
