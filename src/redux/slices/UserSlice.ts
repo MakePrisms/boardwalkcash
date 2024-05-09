@@ -3,19 +3,19 @@ import axios from 'axios';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
 
 interface UserState {
-   pubkey: string | null;
+   pubkey?: string;
+   privkey?: string;
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
 }
 
 const initialState: UserState = {
-   pubkey: null,
    status: 'idle',
    error: null,
 };
 
 export const initializeUser = createAsyncThunk<
-   { pubkey: string } | undefined, // Type of the return value from the thunk
+   { pubkey: string; privkey: string } | undefined, // Type of the return value from the thunk
    void, // First argument of the payload creator
    { rejectValue: string } // Types for ThunkAPI parameters
 >('user/initializeUser', async (_, { rejectWithValue }) => {
@@ -48,8 +48,15 @@ export const initializeUser = createAsyncThunk<
             mintUrl: defaultMintUrl,
          });
 
-         return { pubkey: newPubKey }; // This matches the defined return type
-      } // TODO: else, try to create a new user with the stored pubkey
+         return { pubkey: newPubKey, privkey: Buffer.from(newSecretKey).toString('hex') };
+      } else {
+         const user = await axios.get(
+            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
+         );
+
+         // console.log('User:', user.data);
+         return { pubkey: storedPubKey, privkey: storedPrivKey };
+      }
    } catch (error) {
       return rejectWithValue('Error initializing user');
    }
@@ -66,10 +73,11 @@ const userSlice = createSlice({
          })
          .addCase(
             initializeUser.fulfilled,
-            (state, action: PayloadAction<{ pubkey: string } | undefined>) => {
+            (state, action: PayloadAction<{ pubkey: string; privkey: string } | undefined>) => {
                state.status = 'succeeded';
                if (action.payload) {
                   state.pubkey = action.payload.pubkey;
+                  state.privkey = action.payload.privkey;
                }
             },
          )

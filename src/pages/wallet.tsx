@@ -14,12 +14,14 @@ import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import useNwc2 from '@/hooks/useNwc2';
 
 export default function Home() {
    const [showZapBotButton, setShowZapBotButton] = useState(false);
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const user = useSelector((state: RootState) => state.user);
 
    const { updateProofsAndBalance, checkProofsValid } = useCashu();
 
@@ -73,6 +75,7 @@ export default function Home() {
    const balance = useSelector((state: RootState) => state.wallet.balance);
 
    useNwc();
+   useNwc2({ privkey: user.privkey, pubkey: user.pubkey });
    useCashu();
 
    return (

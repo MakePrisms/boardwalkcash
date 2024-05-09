@@ -452,6 +452,59 @@ export const useCashu = () => {
       return keyset.unit;
    };
 
+   const payInvoice = async (invoice: string) => {
+      console.log('=========MELTING TOKENS=========+');
+
+      const activeWallet = Object.values(wallets).find(w => w.active);
+
+      if (!activeWallet) {
+         throw new Error('No active wallet found');
+      }
+
+      const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
+
+      const meltQuote = await wallet.getMeltQuote(invoice);
+
+      console.log(`## GOT MELT QUOTE:`, meltQuote);
+
+      const proofs = getNeededProofs(meltQuote.amount + meltQuote.fee_reserve, activeWallet.id);
+
+      if (proofs.length === 0) {
+         addToast('Insufficient balance in active mint', 'warning');
+         console.log('TODO: throw INSUFFICIENT BALANCE error and catch with the nwc processor');
+         throw new Error('Insufficient balance');
+      }
+
+      const { send, returnChange } = await wallet
+         .send(meltQuote.amount + meltQuote.fee_reserve, proofs)
+         .catch(e => {
+            addBalance(proofs);
+
+            addToast('Failed to send', 'error');
+
+            throw new Error('Failed to send', e);
+         });
+
+      addBalance(returnChange);
+
+      console.log('## SWAPPED FOR SENDABLE PROOFS: ', send);
+
+      const { change, isPaid, preimage } = await wallet.meltTokens(meltQuote, send, {
+         keysetId: activeWallet.id,
+      });
+
+      if (!isPaid) {
+         addToast('Payment failed', 'error');
+         throw new Error('Payment failed');
+      }
+
+      addBalance(change);
+
+      addToast('Payment successful', 'success');
+
+      return { preimage: preimage || '', amountUsd: meltQuote.amount };
+   };
+
    return {
       handlePayInvoice,
       requestMintInvoice,
@@ -461,5 +514,6 @@ export const useCashu = () => {
       fetchUnitFromProofs,
       updateProofsAndBalance,
       checkProofsValid,
+      payInvoice,
    };
 };

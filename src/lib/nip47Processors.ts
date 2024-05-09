@@ -116,7 +116,10 @@ export class NIP47RequestProcessor {
    }
 
    public async setUp() {
-      const { method, params } = await decryptEventContent(this.requestEvent, this.nwa);
+      const { method, params } = await decryptEventContent(
+         this.requestEvent,
+         this.nwa.nwaSecretKey,
+      );
 
       this.method = method;
       this.params = params;

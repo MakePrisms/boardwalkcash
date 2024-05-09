@@ -14,7 +14,9 @@ export const useExchangeRate = () => {
       const usdBtc = await fetch('https://mempool.space/api/v1/prices')
          .then(res =>
             res.json().then(data => {
-               console.log(data);
+               console.log(
+                  `FETCHED EXCHANGE RATE FROM https://mempool.space/api/v1/prices: data = ${JSON.stringify(data)}`,
+               );
                setLastFetched(Date.now());
                return data.USD;
             }),
@@ -40,7 +42,6 @@ export const useExchangeRate = () => {
    };
 
    const satsToUnit = async (amount: number, unit: string): Promise<number> => {
-      console.log('satsToUnit', amount, unit);
       switch (unit) {
          case 'sat':
             return amount;

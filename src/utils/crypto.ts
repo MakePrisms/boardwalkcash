@@ -1,5 +1,6 @@
 import { ec as EC } from 'elliptic';
 import { randomBytes } from 'crypto';
+import { generateSecretKey, getPublicKey } from 'nostr-tools';
 
 const ec = new EC('secp256k1');
 
@@ -64,3 +65,13 @@ export function unblindSignature(
    // Return the unblinded signature as a hexadecimal string
    return C.encode('hex', false);
 }
+
+export const generateKeyPair = () => {
+   const key: Uint8Array = generateSecretKey();
+   const pubkey = getPublicKey(key);
+   const privkey = Buffer.from(key).toString('hex');
+   return {
+      pubkey,
+      privkey,
+   };
+};

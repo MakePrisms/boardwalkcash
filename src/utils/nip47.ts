@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
+import NDK, { NDKEvent, NDKFilter, NDKKind, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
 export enum NIP47Method {
@@ -16,8 +16,11 @@ export interface NIP47Response {
    // error: {} | null;
 }
 
-export const decryptEventContent = async (event: NDKEvent, nwa: any): Promise<NIP47Request> => {
-   const decrypted = await nip04.decrypt(nwa.nwaSecretKey, event.pubkey, event.content);
+export const decryptEventContent = async (
+   event: NDKEvent,
+   secretKey: string,
+): Promise<NIP47Request> => {
+   const decrypted = await nip04.decrypt(secretKey, event.pubkey, event.content);
 
    const checkContent = (content: any): content is NIP47Request => {
       return content.method in NIP47Method && content.params;
