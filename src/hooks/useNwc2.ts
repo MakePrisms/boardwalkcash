@@ -150,7 +150,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
          kinds: [NDKKind.NostrWalletConnectReq],
          // authors: nwcState.allPubkeys,
          '#p': [pubkey],
-         since: nwcStateRef.current.lastReqTimestamp,
+         since: nwcStateRef.current.lastReqTimestamp + 1,
       };
 
       console.log('Setting NIP47 Request Filter: ', filter);
