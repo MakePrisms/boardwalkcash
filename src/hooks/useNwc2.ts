@@ -71,7 +71,7 @@ type NWCResult = NWCPayResponse | NWCGetInfoResponse | NWCGetBalanceResponse;
 
 type NWCResponseContent = {
    result_type: NWCMethods;
-   result?: NWCPayResponse;
+   result?: NWCResult;
    error?: {
       code: ErrorCodes;
       message?: string;
@@ -92,6 +92,10 @@ interface Nwc2Props {
    pubkey?: string;
 }
 
+const isPayInvoiceRequest = (params: NWCRequestParams): params is NWCPayInvoiceRequest => {
+   return 'invoice' in params;
+};
+
 const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    const [nip47RequestFilter, setNip47RequestFilter] = useState<NDKFilter | undefined>(undefined);
    const seenEventIds = useRef<Set<string>>(new Set());
@@ -109,10 +113,6 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
    const payInvoice = useCallback(
       async (params: NWCRequestParams, connectionPubkey: string): Promise<NWCPayResponse> => {
-         const isPayInvoiceRequest = (params: NWCRequestParams): params is NWCPayInvoiceRequest => {
-            return 'invoice' in params;
-         };
-
          if (!isPayInvoiceRequest(params)) {
             throw new NWCError(ErrorCodes.OTHER, 'Invalid request params');
          }
@@ -316,7 +316,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
             throw new NWCError(ErrorCodes.UNAUTHORIZED, 'Connection expired');
          }
 
-         if (request.method === NWCMethods.payInvoice) {
+         if (request.method === NWCMethods.payInvoice && isPayInvoiceRequest(request.params)) {
             let amount;
             if (request.params.amount) {
                amount = Math.floor(request.params.amount / 1000);
