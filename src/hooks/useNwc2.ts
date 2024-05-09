@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { useNDK } from './useNDK';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { setLastNwcReqTimestamp } from '@/redux/slices/NwcSlice';
+import { incrementConnectionSpent, setLastNwcReqTimestamp } from '@/redux/slices/NwcSlice';
 import { NDKEvent, NDKFilter, NDKKind, NostrEvent } from '@nostr-dev-kit/ndk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nip04 } from 'nostr-tools';
@@ -27,8 +27,8 @@ export enum NWCMethods {
    //  payKeysend = 'pay_keysend',
    //  listTransactions = 'list_transactions',
    //  lookupInvoice = 'lookup_invoice',
-   //  getBalance = 'get_balance',
-   //  getInfo = 'get_info',
+   getBalance = 'get_balance',
+   getInfo = 'get_info',
    //  multiPayInvoice = 'multi_pay_invoice',
    //  multiPayKeysend = 'multi_pay_keysend',
 }
@@ -37,19 +37,37 @@ type NWCPayResponse = {
    preimage: string;
 };
 
+type NWCGetInfoResponse = {
+   alias: string;
+   color: string;
+   pubkey: string;
+   network: string;
+   block_height: number;
+   block_hash: string;
+   methods: string[];
+};
+
+type NWCGetBalanceResponse = {
+   balance: number; // msats
+};
+
 type NWCPayInvoiceRequest = {
    invoice: string;
    amount?: number; // msats
 };
 
-type NWCRequestParams = NWCPayInvoiceRequest;
+type NWCGetInfoRequest = {};
+
+type NWCGetBalanceRequest = {};
+
+type NWCRequestParams = NWCPayInvoiceRequest | NWCGetInfoRequest | NWCGetBalanceRequest;
 
 type NWCRequestContent = {
    method: NWCMethods;
    params: NWCRequestParams;
 };
 
-type NWCResult = NWCPayResponse;
+type NWCResult = NWCPayResponse | NWCGetInfoResponse | NWCGetBalanceResponse;
 
 type NWCResponseContent = {
    result_type: NWCMethods;
@@ -59,18 +77,6 @@ type NWCResponseContent = {
       message?: string;
    };
 };
-
-// type NWCResponseContent = {
-//    result_type: NWCMethods;
-//    result?: {
-//       invoice?: string;
-//       // TODO: fill in other potential result data types
-//    };
-//    error?: {
-//       code: string;
-//       message?: string;
-//    };
-// };
 
 export class NWCError extends Error {
    constructor(
@@ -98,11 +104,11 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
    const { subscribeAndHandle, publishNostrEvent } = useNDK();
    const { payInvoice: cashuPayInvoice } = useCashu();
-   const { satsToUnit } = useExchangeRate();
+   const { satsToUnit, unitToSats } = useExchangeRate();
    const dispatch = useAppDispatch();
 
    const payInvoice = useCallback(
-      async (params: NWCRequestParams): Promise<NWCPayResponse> => {
+      async (params: NWCRequestParams, connectionPubkey: string): Promise<NWCPayResponse> => {
          const isPayInvoiceRequest = (params: NWCRequestParams): params is NWCPayInvoiceRequest => {
             return 'invoice' in params;
          };
@@ -120,16 +126,53 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
          const result = await cashuPayInvoice(invoice);
 
          // TODO
-         // dispatch(incrementConnectionSpent({ pubkey: connectionPubkey, spent: result.amountUsd}));
+         dispatch(
+            incrementConnectionSpent({
+               pubkey: connectionPubkey,
+               spent: Number((result.amountUsd / 100).toFixed(2)),
+            }),
+         );
 
          return { preimage: result.preimage };
       },
       [cashuPayInvoice],
    );
 
+   const getInfo = useCallback(
+      async (params: NWCRequestParams, connectionPubkey: string): Promise<NWCGetInfoResponse> => {
+         const isGetInfoRequest = (params: NWCRequestParams): params is NWCGetInfoRequest => {
+            return Object.keys(params).length === 0;
+         };
+
+         if (!isGetInfoRequest(params)) {
+            throw new NWCError(ErrorCodes.OTHER, 'Invalid request params');
+         }
+
+         return {
+            alias: 'Boardwalk Cash',
+            color: '#000000',
+            pubkey: pubkey!,
+            network: 'mainnet',
+            methods: Array.from(requestHandlers.current.keys()),
+            block_height: 0,
+            block_hash: '',
+         };
+      },
+      [],
+   );
+
+   const getBalance = useCallback(async (params: NWCRequestParams, connectionPubkey: string) => {
+      const balanceSats = await unitToSats(balance / 100, 'usd');
+      const balanceMsats = Math.floor(balanceSats * 1000);
+      return { balance: balanceMsats };
+   }, []);
+
    // Store the handlers map in a ref to maintain a consistent reference across renders
    const requestHandlers = useRef(
-      new Map<NWCMethods, (params: NWCRequestParams) => Promise<NWCResult>>(),
+      new Map<
+         NWCMethods,
+         (params: NWCRequestParams, connectionPubkey: string) => Promise<NWCResult>
+      >(),
    );
 
    /**
@@ -138,6 +181,8 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    useEffect(() => {
       // Initialize or update the map; this effect runs only when handlers change
       requestHandlers.current.set(NWCMethods.payInvoice, payInvoice);
+      requestHandlers.current.set(NWCMethods.getInfo, getInfo);
+      requestHandlers.current.set(NWCMethods.getBalance, getBalance);
    }, [payInvoice]); // Ensure this runs when handlers are re-created
 
    /**
@@ -225,19 +270,19 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
          const parsedRequest = JSON.parse(decrypted);
 
          // make sure we have a method and params
-         if (!parsedRequest.method || !parsedRequest.params) {
+         if (!parsedRequest.method) {
             throw new NWCError(ErrorCodes.OTHER, 'Invalid NWC request');
          }
 
          // validate the params agains the method
          switch (parsedRequest.method) {
             case NWCMethods.payInvoice:
-               if (!parsedRequest.params.invoice) {
-                  throw new NWCError(ErrorCodes.OTHER, 'Invalid NWC request');
+               if (!parsedRequest.params?.invoice) {
+                  throw new NWCError(ErrorCodes.OTHER, 'Invalid NWC request, missing invoice');
                }
                break;
             default:
-               throw new NWCError(ErrorCodes.NOT_IMPLEMENTED, 'Method not implemented');
+               break;
          }
 
          const method = parsedRequest.method as NWCMethods;
@@ -263,7 +308,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
          if (!connection.permissions.includes(request.method)) {
             console.warn('## Connection permissions: ', connection.permissions, request.method);
-            throw new NWCError(ErrorCodes.RESTRICTED, 'Method not allowed');
+            throw new NWCError(ErrorCodes.RESTRICTED, `Method ${request.method} not allowed`);
          }
 
          if (connection.expiry && Date.now() / 1000 > connection.expiry) {
@@ -286,7 +331,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
                console.log(
                   `## AMOUNT USD: ${amountUsd / 100}\n## REMAINING BUDGET: ${connection.budget - connection.spent}`,
                );
-               throw new NWCError(ErrorCodes.QUOTA_EXCEEDED);
+               throw new NWCError(ErrorCodes.QUOTA_EXCEEDED, 'Connection budget exceeded');
             }
 
             console.log('## AMOUNT USD: ', amountUsd);
@@ -304,8 +349,9 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
       async (event: NDKEvent) => {
          if (seenEventIds.current.has(event.id)) return;
          seenEventIds.current.add(event.id);
+
          dispatch(setLastNwcReqTimestamp(event.created_at!));
-         dispatch(setSending('Processing payment...'));
+
          const request = await decryptNwcRequest(event.pubkey, event.content);
 
          console.log(`============PROCESSING NWC REQUEST===============\n ## REQUEST: ${request}`);
@@ -321,7 +367,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
                throw new NWCError(ErrorCodes.NOT_IMPLEMENTED, 'Method not implemented');
             }
 
-            const result = await handler(request.params);
+            const result = await handler(request.params, event.pubkey);
 
             await sendNwcResponse(request.method, event, result);
          } catch (e: any) {

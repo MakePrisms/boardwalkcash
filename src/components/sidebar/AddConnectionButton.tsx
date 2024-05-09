@@ -38,9 +38,9 @@ const AddConnectionButton = ({ keysets }: { keysets: { [key: string]: Wallet } }
          budget: parseFloat(budget),
          expiry: Math.floor(new Date(expiry).getTime() / 1000),
          spent: 0,
-         permissions: [NWCMethods.payInvoice],
+         permissions: [NWCMethods.getInfo, NWCMethods.payInvoice, NWCMethods.getBalance],
          mintUrl,
-         createdAt: Date.now(),
+         createdAt: Math.floor(Date.now() / 1000),
       };
 
       dispatch(
@@ -90,11 +90,25 @@ const AddConnectionButton = ({ keysets }: { keysets: { [key: string]: Wallet } }
                <div>
                   <Label>Expiry</Label>
                   <Datepicker
-                     minDate={new Date()}
+                     minDate={new Date(new Date().getTime() + 24 * 60 * 60 * 1000)} // one day from now
                      value={expiry}
+                     title='Connection Expiry Date'
+                     showClearButton={false}
+                     showTodayButton={false}
                      onSelectedDateChanged={date => setExpiry(date.toLocaleDateString())}
-                     helperText='When the connection will expire. Leave empty for never.'
                   />
+
+                  <p className='text-gray-500 text-sm'>
+                     When the connection will expire.{' '}
+                     {expiry !== 'never' && (
+                        <button
+                           className='underline text-gray-500 text-sm'
+                           onClick={() => setExpiry('never')}
+                        >
+                           Reset
+                        </button>
+                     )}
+                  </p>
                </div>
                <Button
                   className='max-w-fit bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none self-end'

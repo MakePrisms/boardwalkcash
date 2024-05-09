@@ -468,6 +468,7 @@ export const useCashu = () => {
       console.log(`## GOT MELT QUOTE:`, meltQuote);
 
       dispatch(lockBalance());
+      dispatch(setSending('Processing payment...'));
 
       const proofs = getNeededProofs(meltQuote.amount + meltQuote.fee_reserve, activeWallet.id);
 
