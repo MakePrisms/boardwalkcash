@@ -2,8 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface NwcConnection {
    pubkey: string;
-   budget: number;
-   expiry: number;
+   budget?: number;
+   expiry?: number;
    spent: number;
    appName: string;
    permissions: string[];

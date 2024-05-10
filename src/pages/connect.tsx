@@ -1,21 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import Disclaimer from '@/components/Disclaimer';
 import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from '@/redux/slices/UserSlice';
 import { Spinner } from 'flowbite-react';
-import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
+import { nip04 } from 'nostr-tools';
 import { assembleLightningAddress } from '@/utils/lud16';
 import { NWAEventContent } from '@/types';
 import { useRouter } from 'next/router';
+import { NostrEvent } from '@nostr-dev-kit/ndk';
+import { useNDK } from '@/hooks/useNDK';
+import { addNwcConnection } from '@/redux/slices/NwcSlice';
+import { NWCMethods } from '@/hooks/useNwc2';
 
 export default function Home() {
    const router = useRouter();
    const { query } = router;
 
+   const { publishNostrEvent } = useNDK();
+
    const dispatch = useAppDispatch();
 
    // implements nip67 https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md
-   const handleNwa = async () => {
+   const handleNwa = useCallback(async () => {
       await dispatch(initializeUser());
 
       let params = new URL(document.location.href).searchParams;
@@ -50,61 +56,67 @@ export default function Home() {
             throw new Error('No secret found');
          }
 
-         const relay = await Relay.connect(appRelay);
-
-         let nwaSecretKey = generateSecretKey();
-         let nwaPubkey = getPublicKey(nwaSecretKey);
-         // encode secret as hex
-         const hexEncodedSecretKey = Buffer.from(nwaSecretKey).toString('hex');
-         // save appPublicKey to localStorage
-         window.localStorage.setItem('appPublicKey', appPublicKey);
-         // save nwa object wth appPublicKey pk and sk to localStorage
-         window.localStorage.setItem(
-            'nwa',
-            JSON.stringify({ appPublicKey, nwaPubkey, nwaSecretKey: hexEncodedSecretKey }),
-         );
-
          const pubkey = window.localStorage.getItem('pubkey');
+         const privkey = window.localStorage.getItem('privkey');
+
+         if (!pubkey || !privkey) {
+            throw new Error('No pubkey or privkey found in localStorage');
+         }
 
          const content: NWAEventContent = {
             secret: secret,
             commands: [...requiredCommands.split(',')],
             relay: appRelay,
+            lud16: `${assembleLightningAddress(pubkey, window.location.host)}`,
          };
 
-         if (pubkey) {
-            content.lud16 = `${assembleLightningAddress(pubkey, window.location.host)}`;
-         }
-
          const encryptedContent = await nip04.encrypt(
-            nwaSecretKey,
+            privkey,
             appPublicKey,
             JSON.stringify(content),
          );
 
-         let eventTemplate = {
+         let eventTemplate: NostrEvent = {
             kind: 33194,
             created_at: Math.floor(Date.now() / 1000),
             tags: [['d', appPublicKey]],
             content: encryptedContent,
+            pubkey,
          };
 
-         // this assigns the pubkey, calculates the event id and signs the event in a single step
-         const signedEvent = finalizeEvent(eventTemplate, nwaSecretKey);
-         await relay.publish(signedEvent);
+         await publishNostrEvent(eventTemplate, [appRelay]);
 
-         relay.close();
+         const connection = {
+            pubkey: appPublicKey,
+            appName: 'Zap Bot',
+            budget: undefined,
+            expiry: undefined,
+            // expiry: Math.floor(new Date(expiry).getTime() / 1000),
+            spent: 0,
+            permissions: [NWCMethods.getInfo, NWCMethods.payInvoice, NWCMethods.getBalance],
+            // mintUrl,
+            createdAt: Math.floor(Date.now() / 1000),
+         };
+
+         console.log('## CREATING CONNECTION: ', connection);
+
+         dispatch(
+            addNwcConnection({
+               connection,
+               pubkey: appPublicKey,
+            }),
+         );
 
          // redirect to home page
          router.push('/wallet?just_connected=true');
       }
-   };
+   }, [dispatch, publishNostrEvent, router]);
 
    useEffect(() => {
       const keysets = window.localStorage.getItem('keysets');
 
       if (keysets) {
-         handleNwa();
+         handleNwa().catch(e => console.error(e));
          return;
       }
 
@@ -125,9 +137,7 @@ export default function Home() {
          pathname: '/setup',
          query,
       });
-
-      // handleNwa();
-   }, [query]);
+   }, [handleNwa, query, router]);
 
    return (
       <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
