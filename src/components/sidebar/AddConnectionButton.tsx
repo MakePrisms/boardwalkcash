@@ -4,15 +4,19 @@ import { Wallet } from '@/types';
 import { generateKeyPair } from '@/utils/crypto';
 import { Button, Datepicker, Label, TextInput } from 'flowbite-react';
 import { useEffect, useState } from 'react';
-import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { NWCMethods } from '@/hooks/useNwc2';
 
-const AddConnectionButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
+interface AddConnectionButtonProps {
+   keysets: { [key: string]: Wallet };
+   nwcUri: string;
+   setNwcUri: (uri: string) => void;
+}
+
+const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButtonProps) => {
    const [activeWallet, setActiveWallet] = useState<Wallet | null>(null);
    const [appName, setAppName] = useState('');
    const [budget, setBudget] = useState('');
    const [expiry, setExpiry] = useState<string>('never');
-   const [nwcUri, setNwcUri] = useState('');
 
    const dispatch = useAppDispatch();
 
@@ -50,24 +54,16 @@ const AddConnectionButton = ({ keysets }: { keysets: { [key: string]: Wallet } }
          }),
       );
 
-      setNwcUri(
-         `nostr+walletconnect://${window.localStorage.getItem('pubkey')}?relay=${encodeURIComponent('wss://relay.mutinywallet.com')}&secret=${privkey}&pubkey=${pubkey}`,
-      );
-   };
+      const newUri = `nostr+walletconnect://${window.localStorage.getItem('pubkey')}?relay=${encodeURIComponent('wss://relay.mutinywallet.com')}&secret=${privkey}&pubkey=${pubkey}`;
 
-   if (nwcUri) {
-      return (
-         <div>
-            <ClipboardButton toCopy={nwcUri} toShow={'Copy Wallet Connection'} />
-         </div>
-      );
-   }
+      setNwcUri(newUri);
+   };
 
    return (
       <>
          <form onSubmit={handleSubmit}>
-            <div className='flex flex-col justify-around space-y-3'>
-               <h3 className='text-black text-lg mb-2'>Connect an App</h3>
+            <div className='flex flex-col justify-around space-y-3 ml-5'>
+               <h3 className='text-black text-lg mb-2'>New Connection</h3>
                <div>
                   <Label>App Name</Label>
                   <TextInput
