@@ -3,6 +3,8 @@ import NDK, {
    NDKEvent,
    NDKFilter,
    NDKPrivateKeySigner,
+   NDKRelay,
+   NDKRelaySet,
    NDKSubscriptionOptions,
    NostrEvent,
 } from '@nostr-dev-kit/ndk';
@@ -27,7 +29,7 @@ type NDKContextType = {
       handler: (event: NDKEvent) => void,
       opts?: NDKSubscriptionOptions,
    ) => void;
-   publishNostrEvent: (event: NostrEvent) => Promise<void>;
+   publishNostrEvent: (event: NostrEvent, relays?: string[]) => Promise<void>;
 };
 
 // define this outside of the below NDKProvider component so that it is in scope for useNDK()
@@ -78,12 +80,20 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
       [],
    );
 
-   const publishNostrEvent = async (event: NostrEvent) => {
+   const publishNostrEvent = async (event: NostrEvent, relays?: string[]) => {
       ndk.current.assertSigner();
 
       const e = new NDKEvent(ndk.current, event);
 
-      await e.publish();
+      if (relays) {
+         const relaySet = new NDKRelaySet(new Set(relays.map(r => new NDKRelay(r))), ndk.current);
+         for await (const r of relaySet.relays) {
+            await r.connect();
+         }
+         await e.publish(relaySet);
+      } else {
+         await e.publish();
+      }
    };
 
    // Define what will be returned by useNDK();
