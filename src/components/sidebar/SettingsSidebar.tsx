@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { Button, Sidebar } from 'flowbite-react';
+import { Modal, Sidebar } from 'flowbite-react';
 import MintSidebarItem from './MintSidebarItem';
 import AddMintButton from './AddMintButton';
 import NwcSidebarItem from './NwcSidebarItem';
 import AddConnectionButton from './AddConnectionButton';
+import ClipboardButton from '../buttons/utility/ClipboardButton';
 
 const SettingsCog = () => (
    <svg
@@ -42,6 +43,7 @@ export const SettingsSidebar = () => {
    const [hidden, sethidden] = useState(true);
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
+   const [nwcUri, setNwcUri] = useState('');
 
    return (
       <>
@@ -52,34 +54,58 @@ export const SettingsSidebar = () => {
          </div>
          <Sidebar
             aria-label='Settings Sidebar'
-            className={`fixed right-0 top-0 h-full min-w-96 bg-gray-100 shadow-lg z-10 ${hidden ? 'hidden' : ''}`}
+            className={`fixed right-0 top-0 h-full w-full md:w-96 max-w-screen-sm bg-gray-100 shadow-lg z-10 ${hidden ? 'hidden' : ''}`}
          >
+            <button className='hover:cursor-pointer p-3' onClick={() => sethidden(true)}>
+               <XMark />
+            </button>
+            <div className='flex align-middle items-center justify-around'>
+               <Sidebar.Logo
+                  className='text-black'
+                  href='#'
+                  img='/favicon.ico'
+                  imgAlt='Boardwalkcash logo'
+               >
+                  Boardwalk Cash
+               </Sidebar.Logo>
+            </div>
             <Sidebar.Items>
-               <button className='hover:cursor-pointer' onClick={() => sethidden(true)}>
-                  <XMark />
-               </button>
                <Sidebar.ItemGroup>
-                  <Sidebar.Collapse open={true} label='Mints'>
+                  <Sidebar.Collapse className='text-lg' label='Mints'>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
                      ))}
+                     <Sidebar.ItemGroup>
+                        <AddMintButton keysets={keysets} />
+                     </Sidebar.ItemGroup>
                   </Sidebar.Collapse>
                </Sidebar.ItemGroup>
                <Sidebar.ItemGroup>
-                  <AddMintButton keysets={keysets} />
-               </Sidebar.ItemGroup>
-               <Sidebar.ItemGroup>
-                  <Sidebar.Collapse label='Connections'>
+                  <Sidebar.Collapse className='text-lg' label='Connections'>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
                      ))}
+                     <Sidebar.ItemGroup>
+                        <AddConnectionButton
+                           keysets={keysets}
+                           nwcUri={nwcUri}
+                           setNwcUri={setNwcUri}
+                        />
+                     </Sidebar.ItemGroup>
                   </Sidebar.Collapse>
-               </Sidebar.ItemGroup>
-               <Sidebar.ItemGroup>
-                  <AddConnectionButton keysets={keysets} />
                </Sidebar.ItemGroup>
             </Sidebar.Items>
          </Sidebar>
+         <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')}>
+            <Modal.Header>New Wallet Connection</Modal.Header>
+            <Modal.Body className='flex flex-col space-y-3'>
+               <p className='text-black text-md mb-2'>
+                  Paste your connection into any app that supports NWC to enable sending from your
+                  Boardwalk Cash wallet. Currently, funds will only be sent from your main mint.
+               </p>
+               <ClipboardButton className='self-end' toCopy={nwcUri} toShow={'Copy Connection'} />
+            </Modal.Body>
+         </Modal>
       </>
    );
 };
