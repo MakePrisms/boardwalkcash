@@ -8,7 +8,7 @@ import { nip04 } from 'nostr-tools';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useExchangeRate } from './useExchangeRate';
 import { useCashu } from './useCashu';
-import { setError, setSending } from '@/redux/slices/ActivitySlice';
+import { setError } from '@/redux/slices/ActivitySlice';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -101,6 +101,8 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    const seenEventIds = useRef<Set<string>>(new Set());
 
    const balance = useSelector((state: RootState) => state.wallet.balance.usd);
+   const balanceRef = useRef(balance);
+   balanceRef.current = balance;
 
    const nwcState = useSelector((state: RootState) => state.nwc);
    const nwcStateRef = useRef(nwcState);
@@ -125,11 +127,10 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
          const result = await cashuPayInvoice(invoice);
 
-         // TODO
          dispatch(
             incrementConnectionSpent({
                pubkey: connectionPubkey,
-               spent: Number((result.amountUsd / 100).toFixed(2)),
+               spent: Number(result.amountUsd.toFixed(2)),
             }),
          );
 
@@ -162,7 +163,17 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    );
 
    const getBalance = useCallback(async (params: NWCRequestParams, connectionPubkey: string) => {
-      const balanceSats = await unitToSats(balance / 100, 'usd');
+      const connection = nwcStateRef.current.connections[connectionPubkey];
+
+      const remainingBudget = connection.budget ? connection.budget - connection.spent : undefined;
+
+      // use smaller of remaining budget or current balance
+      const balanceToUse =
+         remainingBudget !== undefined
+            ? Math.min(remainingBudget, balanceRef.current)
+            : balanceRef.current;
+
+      const balanceSats = await unitToSats(balanceToUse / 100, 'usd');
       const balanceMsats = Math.floor(balanceSats * 1000);
       return { balance: balanceMsats };
    }, []);
@@ -222,7 +233,6 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
          console.log('## SENDING NWC RESPONSE: ', content);
 
-         // TODO: use nip04 to encrypt the content with app's pubkey and our private key
          const encryptedResponse = await nip04.encrypt(
             privkey!,
             appPubkey,
@@ -327,22 +337,22 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
             console.log('## AMOUNT SATS: ', amount);
 
             const amountUsd = await satsToUnit(amount, 'usd');
-            if (connection.budget && amountUsd / 100 > connection.budget - connection.spent) {
+            if (connection.budget && amountUsd > connection.budget - connection.spent) {
                console.log(
-                  `## AMOUNT USD: ${amountUsd / 100}\n## REMAINING BUDGET: ${connection.budget - connection.spent}`,
+                  `## AMOUNT USD: ${amountUsd}\n## REMAINING BUDGET: ${connection.budget - connection.spent}`,
                );
                throw new NWCError(ErrorCodes.QUOTA_EXCEEDED, 'Connection budget exceeded');
             }
 
             console.log('## AMOUNT USD: ', amountUsd);
 
-            if (amountUsd / 100 > balance) {
-               console.log(`## CURRENT BALANCE: ${balance}`);
+            if (amountUsd / 100 > balanceRef.current) {
+               console.log(`## CURRENT BALANCE: $${balanceRef.current / 100}`);
                throw new NWCError(ErrorCodes.INSUFFICIENT_BALANCE);
             }
          }
       },
-      [balance, satsToUnit, nwcStateRef],
+      [balanceRef, satsToUnit, nwcStateRef],
    );
 
    const handleNwcRequest = useCallback(

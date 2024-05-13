@@ -38,10 +38,12 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
                </div>
                {showDetails && (
                   <>
-                     <div className='text-black text-sm'>${connection.spent.toFixed(2)} spent</div>
+                     <div className='text-black text-sm'>
+                        ${(connection.spent / 100).toFixed(2)} spent
+                     </div>
                      <div className='text-black text-sm'>
                         {connection.budget
-                           ? `$${(connection.budget - connection.spent).toFixed(2)} remaining`
+                           ? `$${((connection.budget - connection.spent) / 100).toFixed(2)} remaining`
                            : ''}
                      </div>
                      <div className='text-sm'>
