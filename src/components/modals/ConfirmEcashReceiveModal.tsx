@@ -215,7 +215,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
             <Modal.Body className='text-black'>
                <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>
-               <div>
+               <div className='space-y-4'>
+                  <p className='text-xs text-center'>From: {mintUrl}</p>
                   <div className='flex flex-row justify-center mb-4'>
                      <p className='text-center text-sm mb-2 mr-3'>
                         <a
@@ -233,31 +234,12 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                            <span className='text-red-500'>Not Trusted</span>
                         )}
                      </p>
-                     {/* <p className='text-xs'>From: {mintUrl}</p> */}
                   </div>
 
-                  {/* <p>Supported Units: {supportedUnits.join(', ')}</p> */}
-                  {/* <p>
-                  Boarwalk cash supports this mint?{' '}
-                  {!loadingUnits ? (
-                     supportedUnits.includes('usd') ? (
-                        <span className='text-green-500'>Yes</span>
-                     ) : (
-                        <span className='text-red-500'>No</span>
-                     )
-                  ) : (
-                     <Spinner />
-                  )}
-               </p> */}
                   <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                     <SwapToMainButton
-                        swapToMainOpen={swapToMainOpen}
-                        mintUrl={mintUrl}
-                        setSwapToMainOpen={setSwapToMainOpen}
-                        handleSwapToMain={handleSwapToMain}
-                        className='text-lg mb-0'
-                        isToMainMint={fromActiveMint}
-                     />
+                     <button onClick={handleSwapToMain} className='mr-3 underline text-lg mb-0'>
+                        {fromActiveMint ? 'Claim' : 'Swap to Main'}
+                     </button>
                      <button
                         className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
                         onClick={handleAddMint}
