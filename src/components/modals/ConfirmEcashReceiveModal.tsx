@@ -192,7 +192,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const receiveAmountString = () => {
       const symbol = tokenUnit !== 'usd' ? '~' : '';
       const total = amountUsd;
-      return `${symbol}$${total}`;
+      return `${symbol}$${total?.toFixed(2)}`;
    };
 
    if (loadingUnits) {

@@ -100,7 +100,7 @@ const Receive = () => {
             setIsReceiveModalOpen(false);
             setInvoiceToPay('');
             setAmount('');
-            dispatch(setSuccess(`Received $${amount}!`));
+            dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
          }
       } catch (error) {
          console.error(error);
