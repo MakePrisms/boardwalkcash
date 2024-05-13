@@ -36,10 +36,12 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
 
       const { pubkey, privkey } = generateKeyPair();
 
+      const budgetCents = budget ? parseFloat((parseFloat(budget) * 100).toFixed(2)) : undefined;
+
       const connection = {
          pubkey,
          appName,
-         budget: parseFloat(budget),
+         budget: budgetCents,
          expiry: Math.floor(new Date(expiry).getTime() / 1000),
          spent: 0,
          permissions: [NWCMethods.getInfo, NWCMethods.payInvoice, NWCMethods.getBalance],
