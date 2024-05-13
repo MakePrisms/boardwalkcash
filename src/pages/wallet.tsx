@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/Balance';
 import Receive from '@/components/buttons/lightning/Receive';
 import Send from '@/components/buttons/lightning/Send';
@@ -8,45 +8,99 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from '@/redux/slices/UserSlice';
-import { initializeKeysets } from '@/redux/slices/Wallet.slice';
+import { addKeyset, initializeKeysets } from '@/redux/slices/Wallet.slice';
 import Disclaimer from '@/components/Disclaimer';
 import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
-import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Token, getDecodedToken } from '@cashu/cashu-ts';
 import useNwc2 from '@/hooks/useNwc2';
+import { useRouter } from 'next/router';
+import { useToast } from '@/hooks/useToast';
+import ProcessingSwapModal from '@/components/sidebar/ProcessingSwapModal';
+import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 
 export default function Home() {
-   const [showZapBotButton, setShowZapBotButton] = useState(false);
+   const newUser = useRef(false);
+   const [swapping, setSwapping] = useState(false);
+   const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
+   const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
+   const router = useRouter();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
+   const { addToast } = useToast();
 
-   const { updateProofsAndBalance, checkProofsValid } = useCashu();
+   const { updateProofsAndBalance, checkProofsValid, swapToMain } = useCashu();
 
    useEffect(() => {
+      if (!router.isReady) return;
+      const { token } = router.query;
       const localKeysets = window.localStorage.getItem('keysets');
 
-      if (!localKeysets) {
-         window.location.href = '/setup';
+      const handleTokenQuery = async (token: string) => {
+         const decoded = getDecodedToken(token);
+
+         if (decoded.token.length !== 1) {
+            throw new Error(
+               `We do not support multiple tokens in a single token yet. Got ${decoded.token.length} tokens`,
+            );
+         }
+
+         setTokenDecoded(decoded);
+
+         const url = decoded.token[0].mint;
+
+         if (!localKeysets) {
+            newUser.current = true;
+            try {
+               const mint = new CashuMint(url);
+
+               const { keysets } = await mint.getKeys();
+
+               const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
+
+               if (!usdKeyset) {
+                  addToast("Mint doesn't support USD", 'error');
+                  return;
+               }
+
+               dispatch(addKeyset({ keyset: usdKeyset, url: url, active: true }));
+
+               addToast('Mint added successfully', 'success');
+
+               await dispatch(initializeUser());
+               setEcashReceiveModalOpen(true);
+            } catch (error) {
+               console.error(error);
+            }
+         } else {
+            if (newUser.current === true) return;
+            dispatch(initializeKeysets());
+            dispatch(initializeUser());
+
+            setEcashReceiveModalOpen(true);
+         }
+      };
+
+      if (token) {
+         handleTokenQuery(token as string);
+      } else if (!localKeysets) {
+         router.push('/setup');
       } else {
          dispatch(initializeUser());
          dispatch(initializeKeysets());
 
-         if (!window.localStorage.getItem('nwa')) {
-            setShowZapBotButton(true);
-         }
-
          let params = new URL(document.location.href).searchParams;
          if (params.get('just_connected') === 'true') {
             dispatch(setSuccess('Connected to Zap Bot!'));
-            setShowZapBotButton(false);
          }
       }
-   }, [dispatch]);
+   }, [router.isReady]);
 
    useEffect(() => {
+      if (tokenDecoded) return;
       let intervalCount = 0;
 
       // updateProofsAndBalance();
@@ -70,13 +124,12 @@ export default function Home() {
       return () => {
          clearInterval(intervalId);
       };
-   }, [dispatch]);
+   }, [dispatch, tokenDecoded]);
 
    const balance = useSelector((state: RootState) => state.wallet.balance);
 
    useNwc();
    useNwc2({ privkey: user.privkey, pubkey: user.pubkey });
-   useCashu();
 
    return (
       <>
@@ -90,11 +143,22 @@ export default function Home() {
                </div>
             </div>
             <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center'>
-               {/* {showZapBotButton && <ZapBotButton />} */}
                <Disclaimer />
             </footer>
          </main>
          <SettingsSidebar />
+         <ProcessingSwapModal isSwapping={swapping} />
+         {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
+            <ConfirmEcashReceiveModal
+               token={tokenDecoded}
+               isOpen={ecashReceiveModalOpen}
+               onClose={() => {
+                  setEcashReceiveModalOpen(false);
+                  setTokenDecoded(null);
+                  router.push('/wallet');
+               }}
+            />
+         )}
       </>
    );
 }
