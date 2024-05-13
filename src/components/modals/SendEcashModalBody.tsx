@@ -102,9 +102,15 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
                <div className='flex flex-col justify-center items-center my-8 text-black space-y-3'>
                   {encodedToken && (
                      <>
-                        <AnimatedQRCode text={`${encodedToken}`} chunkSize={250} />
+                        {/* <AnimatedQRCode text={`${encodedToken}`} chunkSize={250} /> */}
                         <p> Token: {`${encodedToken.slice(0, 12)}...${encodedToken.slice(-5)}`}</p>
-                        <ClipboardButton toCopy={encodedToken} toShow={`Copy`} />
+                        <div className='flex space-x-3'>
+                           <ClipboardButton toCopy={encodedToken} toShow={`Copy Token`} />
+                           <ClipboardButton
+                              toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${encodedToken}`}
+                              toShow={`Copy Link`}
+                           />
+                        </div>
                      </>
                   )}
                </div>

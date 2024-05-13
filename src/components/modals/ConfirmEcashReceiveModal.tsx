@@ -216,7 +216,6 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             <Modal.Body className='text-black'>
                <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>
                <div className='space-y-4'>
-                  <p className='text-xs text-center'>From: {mintUrl}</p>
                   <div className='flex flex-row justify-center mb-4'>
                      <p className='text-center text-sm mb-2 mr-3'>
                         <a
