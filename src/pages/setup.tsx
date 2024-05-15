@@ -279,12 +279,12 @@ export default function Home() {
                      >
                         bitcoinmints.com
                      </a>{' '}
-                     for a Cashu mint that supports USD. Or{' '}
+                     for a Cashu mint that supports USD, or{' '}
                      <button
                         className='underline hover:cursor-pointer'
                         onClick={() => setMintUrl('https://stablenut.umint.cash')}
                      >
-                        add the top mint
+                        add the top-rated mint
                      </button>
                      .{/* </p> */}
                   </>
