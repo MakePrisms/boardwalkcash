@@ -7,8 +7,9 @@ import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
-import SendEcashButton from '../buttons/ecash/SendEcashButton';
 import SendEcashModalBody from './SendEcashModalBody';
+import Html5QrcodePlugin from '../QRReader';
+import { getAmountFromInvoice } from '@/utils/bolt11';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -32,6 +33,8 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
    const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
+   const [showQRScanner, setShowQRScanner] = useState(false);
+   const [scanError, setScanError] = useState<string | null>(null);
 
    const { addToast } = useToast();
    const { handlePayInvoice } = useCashu();
@@ -122,6 +125,20 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       resetModalState();
    };
 
+   const handleQRResult = (decodedText: string) => {
+      if (decodedText.toLowerCase().includes('lightning:')) {
+         setDestination(decodedText.toLowerCase().split('lightning:')[1]);
+      } else if (decodedText.toLowerCase().includes('lnbc')) {
+         setDestination(decodedText.toLowerCase());
+      } else {
+         setScanError('Invalid QR code. Please scan a valid Lightning invoice.');
+         setTimeout(() => {
+            setScanError(null);
+         }, 6000);
+      }
+      setShowQRScanner(false);
+   };
+
    const handleLightningAddress = async () => {
       if (!amountSat) {
          addToast('Please enter an amount.', 'warning');
@@ -149,6 +166,16 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
 
       if (destination.startsWith('lnbc')) {
+         const amount = getAmountFromInvoice(destination);
+
+         if (isNaN(amount)) {
+            setScanError('Invoice must have an amount.');
+            setTimeout(() => {
+               setScanError(null);
+            }, 6000);
+            return;
+         }
+
          setInvoice(destination);
          await estimateFee(destination);
          setCurrentTab(Tabs.Fee);
@@ -178,7 +205,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                         value={destination}
                         onChange={e => setDestination(e.target.value)}
                      />
-                     <div className='flex justify-end'>
+                     {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
+                     <div className='flex justify-around'>
+                        <Button onClick={() => setShowQRScanner(true)}>Scan</Button>
+
                         <Button color='info' onClick={handleDestination}>
                            Continue
                         </Button>
@@ -247,15 +277,26 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    };
 
    return (
-      <Modal show={isSendModalOpen} onClose={resetModalState}>
-         <Modal.Header>Send</Modal.Header>
-         {isProcessing ? (
-            <div className='flex justify-center items-center my-8'>
-               <Spinner size='xl' />
-            </div>
-         ) : (
-            renderTab()
-         )}
-      </Modal>
+      <>
+         <Modal show={isSendModalOpen} onClose={resetModalState}>
+            <Modal.Header>Send</Modal.Header>
+            {isProcessing ? (
+               <div className='flex justify-center items-center my-8'>
+                  <Spinner size='xl' />
+               </div>
+            ) : (
+               renderTab()
+            )}
+         </Modal>
+         <Modal show={showQRScanner} onClose={() => setShowQRScanner(false)}>
+            <Modal.Header>Scan QR Code</Modal.Header>
+            <Modal.Body>
+               <Html5QrcodePlugin qrCodeSuccessCallback={handleQRResult} />
+            </Modal.Body>
+            <Modal.Footer>
+               <Button onClick={() => setShowQRScanner(false)}>Close</Button>
+            </Modal.Footer>
+         </Modal>
+      </>
    );
 };

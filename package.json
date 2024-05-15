@@ -23,6 +23,7 @@
       "cors": "^2.8.5",
       "elliptic": "^6.5.4",
       "flowbite-react": "^0.7.2",
+      "html5-qrcode": "^2.3.8",
       "light-bolt11-decoder": "^3.0.0",
       "next": "14.1.0",
       "nostr-tools": "^2.1.5",
