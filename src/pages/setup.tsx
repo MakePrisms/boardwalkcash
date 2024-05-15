@@ -279,18 +279,18 @@ export default function Home() {
                      >
                         bitcoinmints.com
                      </a>{' '}
-                     for a Cashu mint that supports USD, or{' '}
+                     for a Cashu mint that supports USD, or add the{' '}
                      <button
-                        className='underline hover:cursor-pointer'
+                        className='ml-1 font-medium hover:underline text-cyan-teal'
                         onClick={() => setMintUrl('https://stablenut.umint.cash')}
                      >
-                        add the top-rated mint
+                        top-rated mint
                      </button>
                      .{/* </p> */}
                   </>
                }
             />
-            <div className='flex justify-between items-center'>
+            <div className='flex justify-between items-center mt-3'>
                {' '}
                <div></div> {/* Empty div for spacing */}
                <Button isProcessing={addingMint} type='submit'>
