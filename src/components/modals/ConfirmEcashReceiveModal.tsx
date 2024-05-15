@@ -95,14 +95,25 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       } else {
          setFromActiveMint(false);
       }
-      new CashuMint(mintUrl).getKeys().then(({ keysets }) => {
+
+      setLoadingUnits(true);
+
+      const mint = new CashuMint(mintUrl);
+
+      new CashuWallet(mint).checkProofsSpent(proofs).then(spent => {
+         if (spent.length > 0) {
+            addToast('Proofs already claimed', 'error');
+            onClose();
+         }
+      });
+
+      mint.getKeys().then(({ keysets }) => {
          const units = new Set<string>();
          keysets.forEach(keyset => units.add(keyset.unit));
 
          setSupportedUnits(Array.from(units));
       });
 
-      setLoadingUnits(true);
       fetchUnitFromProofs(mintUrl, proofs)
          .then(unit => {
             setTokenUnit(unit);
