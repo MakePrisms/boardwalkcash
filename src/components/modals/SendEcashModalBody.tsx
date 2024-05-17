@@ -9,9 +9,11 @@ import {
    getEncodedToken,
 } from '@cashu/cashu-ts';
 import { Modal, Spinner } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AnimatedQRCode from '../AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
+import QRCode from 'qrcode.react';
+import CustomCarousel from '../Carousel/CustomCarousel';
 
 interface SendEcashModalBodyProps {
    amountUsd: number;
@@ -25,7 +27,7 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
       wallet: CashuWallet;
    } | null>(null);
    const [encodedToken, setEncodedToken] = useState<string | null>(null);
-   const [urFragment, setURFragment] = useState<string | null>(null);
+   const [carouselSlides, setCarouselSlides] = useState<React.ReactNode[]>([]);
 
    const { addToast } = useToast();
    const { swapToSend } = useCashu();
@@ -90,6 +92,27 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
       };
       handleSendEcash().finally(() => setSending(false));
    }, [amountUsd]);
+
+   useEffect(() => {
+      if (!encodedToken) return;
+      setCarouselSlides([
+         <div className='text-black text-center space-y-2 ml-2' key='1'>
+            <h2 className='text-xl'>Shareable Boardwalk Cash Link</h2>
+            <QRCode
+               value={`${window.location.protocol}//${window.location.host}/wallet?token=${encodedToken}`}
+               size={window.innerWidth < 768 ? 275 : 400}
+            />
+            <p> Link: {`boardwalkcash.com...`}</p>
+         </div>,
+         <div className='text-black text-center space-y-2' key='2'>
+            <h2 className='text-xl'>Ecash Token</h2>
+            <AnimatedQRCode encodedToken={`Token:${encodedToken}`} />
+            <p> Token: {`${encodedToken.slice(0, 12)}...${encodedToken.slice(-5)}`}</p>
+         </div>,
+      ]);
+      return () => {};
+   }, [encodedToken]);
+
    return (
       <>
          <Modal.Body>
@@ -99,17 +122,18 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
                   <div className='text-black'>Creating sendable tokens...</div>
                </div>
             ) : (
-               <div className='flex flex-col justify-center items-center my-8 text-black space-y-3'>
+               <div className='flex flex-col justify-center items-center text-black space-y-3'>
                   {encodedToken && (
                      <>
-                        {/* <AnimatedQRCode text={`${encodedToken}`} chunkSize={250} /> */}
-                        <p> Token: {`${encodedToken.slice(0, 12)}...${encodedToken.slice(-5)}`}</p>
+                        <div className='max-w-full'>
+                           <CustomCarousel slides={carouselSlides} />
+                        </div>
                         <div className='flex space-x-3'>
-                           <ClipboardButton toCopy={encodedToken} toShow={`Copy Token`} />
                            <ClipboardButton
                               toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${encodedToken}`}
                               toShow={`Copy Link`}
                            />
+                           <ClipboardButton toCopy={`${encodedToken}`} toShow={`Copy Token`} />
                         </div>
                      </>
                   )}

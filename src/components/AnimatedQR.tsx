@@ -1,71 +1,89 @@
-import { useEffect, useState } from 'react';
+// components/AnimatedQRCode.js
+
+import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode.react';
+import { UREncoder } from '@gandlaf21/bc-ur';
+import { Buffer } from 'buffer';
 
-function splitData(data: string, chunkSize: number) {
-   const numChunks = Math.ceil(data.length / chunkSize);
-   let chunks = [];
+type FragmentSpeed = 'fast' | 'medium' | 'slow';
+type FragmentLength = 'short' | 'medium' | 'long';
 
-   for (let i = 0, o = 0; i < numChunks; ++i, o += chunkSize) {
-      chunks.push(data.substr(o, chunkSize));
-   }
+const fragmentIntervals: Record<FragmentSpeed, number> = {
+   fast: 150,
+   medium: 250,
+   slow: 500,
+};
 
-   return chunks;
-}
+const fragmentLengths: Record<FragmentLength, number> = {
+   short: 50,
+   medium: 100,
+   long: 150,
+};
 
-const AnimatedMultiQRCode = ({ text, chunkSize = 250 }: { text: string; chunkSize?: number }) => {
-   const chunks = splitData(text, chunkSize);
-   const [currentPart, setCurrentPart] = useState(0);
+const AnimatedQRCode: React.FC<{ encodedToken: string }> = ({ encodedToken }) => {
+   const [qrCodeFragment, setQrCodeFragment] = useState('');
+   const [encoder, setEncoder] = useState<UREncoder | null>(null);
+   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+
+   const [currentFragmentLength, setCurrentFragmentLength] = useState(fragmentLengths.long);
+   const [currentFragmentInterval, setCurrentFragmentInterval] = useState(fragmentIntervals.medium);
 
    useEffect(() => {
-      const interval = setInterval(() => {
-         setCurrentPart(prevPart => (prevPart + 1) % chunks.length);
-      }, 700);
+      if (encodedToken.length === 0) {
+         return;
+      }
 
-      return () => clearInterval(interval);
-   }, [chunks.length]);
+      let newIntervalId: NodeJS.Timeout;
+
+      if (typeof window !== 'undefined') {
+         import('@gandlaf21/bc-ur').then(module => {
+            const messageBuffer = Buffer.from(encodedToken);
+            const ur = module.UR.fromBuffer(messageBuffer);
+            const initialEncoder = new module.UREncoder(ur, currentFragmentLength, 0);
+            setEncoder(initialEncoder);
+
+            newIntervalId = setInterval(() => {
+               setQrCodeFragment(initialEncoder.nextPart());
+            }, currentFragmentInterval);
+
+            setIntervalId(newIntervalId);
+         });
+      }
+
+      return () => clearInterval(newIntervalId);
+   }, [encodedToken, currentFragmentLength, currentFragmentInterval]);
+
+   const changeSpeed = () => {
+      const speeds: FragmentSpeed[] = ['fast', 'medium', 'slow'];
+      const currentSpeedIndex = speeds.findIndex(
+         speed => fragmentIntervals[speed] === currentFragmentInterval,
+      );
+      const nextSpeed = speeds[(currentSpeedIndex + 1) % speeds.length];
+      setCurrentFragmentInterval(fragmentIntervals[nextSpeed]);
+   };
+
+   const changeSize = () => {
+      const sizes: FragmentLength[] = ['short', 'medium', 'long'];
+      const currentSizeIndex = sizes.findIndex(
+         size => fragmentLengths[size] === currentFragmentLength,
+      );
+      const nextSize = sizes[(currentSizeIndex + 1) % sizes.length];
+      setCurrentFragmentLength(fragmentLengths[nextSize]);
+   };
 
    return (
-      <div>
-         <QRCode value={chunks[currentPart]} size={256} level='H' includeMargin={true} />
+      <div className='text-center'>
+         {qrCodeFragment && (
+            <div>
+               <QRCode value={qrCodeFragment} size={window.innerWidth < 768 ? 275 : 400} />
+               {/* <div>
+                  <button onClick={changeSpeed}>Change Speed</button>
+                  <button onClick={changeSize}>Change Size</button>
+               </div> */}
+            </div>
+         )}
       </div>
    );
 };
-export default AnimatedMultiQRCode;
 
-// import { useState, useEffect } from 'react';
-// import cborg from 'cborg';
-// const { UR, UREncoder } = require('@gandlaf21/bc-ur');
-// import QRCode from 'qrcode.react';
-
-// const AnimatedQRCode = ({ encodedToken }: { encodedToken: string }) => {
-//    const messageBuffer = Buffer.from(encodedToken); // Directly use the encoded token string
-//    const ur = UR.fromBuffer(messageBuffer);
-
-//    const maxFragmentLength = 200;
-//    const firstSeqNum = 0;
-
-//    const [currentQR, setCurrentQR] = useState('');
-//    const [encoder, setEncoder] = useState(new UREncoder(ur, maxFragmentLength, firstSeqNum));
-
-//    useEffect(() => {
-//       const timer = setInterval(() => {
-//          const part = encoder.nextPart();
-//          if (part) {
-//             const encoded = encoder.nextPart();
-//             setCurrentQR(encoded);
-//          } else {
-//             clearInterval(timer); // Stop the interval when there are no more parts
-//          }
-//       }, 1000); // Update the QR code every second
-
-//       return () => clearInterval(timer); // Clean up the interval on component unmount
-//    }, [encoder]);
-
-//    return (
-//       <div className='App'>
-//          {currentQR ? <QRCode size={256} value={currentQR} /> : <p>No QR Code available</p>}
-//       </div>
-//    );
-// };
-
-// export default AnimatedQRCode;
+export default AnimatedQRCode;
