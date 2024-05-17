@@ -22,6 +22,7 @@
       "base64url": "^3.0.1",
       "cors": "^2.8.5",
       "elliptic": "^6.5.4",
+      "embla-carousel-react": "^8.1.0",
       "flowbite-react": "^0.7.2",
       "light-bolt11-decoder": "^3.0.0",
       "next": "14.1.0",

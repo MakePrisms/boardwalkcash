@@ -31,3 +31,63 @@ body {
       text-wrap: balance;
    }
 }
+
+.embla {
+   /* position: relative; */
+   max-width: 100%;
+}
+
+.embla__viewport {
+   overflow: hidden;
+   width: 100%;
+}
+
+.embla__container {
+   display: flex;
+}
+
+.embla__slide {
+   position: relative;
+   min-width: 100%;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.embla__button {
+   position: absolute;
+   top: 50%;
+   transform: translateY(-50%);
+   background-color: rgba(0, 0, 0, 0.5);
+   color: white;
+   border: none;
+   cursor: pointer;
+   z-index: 10;
+}
+
+.embla__button--prev {
+   left: 10px;
+}
+
+.embla__button--next {
+   right: 10px;
+}
+
+.embla__dots {
+   display: flex;
+   justify-content: center;
+   padding-top: 10px;
+}
+
+.embla__dot {
+   width: 10px;
+   height: 10px;
+   margin: 0 5px;
+   background-color: gray;
+   border-radius: 50%;
+   cursor: pointer;
+}
+
+.embla__dot.is-selected {
+   background-color: black;
+}
