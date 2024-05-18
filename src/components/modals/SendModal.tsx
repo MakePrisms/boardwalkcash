@@ -130,8 +130,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const handleQRResult = (decodedText: string) => {
       if (decodedText.toLowerCase().includes('lightning:')) {
          setDestination(decodedText.toLowerCase().split('lightning:')[1]);
+         handleDestination(decodedText.toLowerCase().split('lightning:')[1]);
       } else if (decodedText.toLowerCase().includes('lnbc')) {
          setDestination(decodedText.toLowerCase());
+         handleDestination(decodedText.toLowerCase());
       } else {
          setScanError('Invalid QR code. Please scan a valid Lightning invoice.');
          setTimeout(() => {
@@ -161,7 +163,24 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       }
    };
 
-   const handleDestination = async () => {
+   const handleDestination = async (invoice?: string) => {
+      if (invoice) {
+         const amount = getAmountFromInvoice(invoice);
+
+         if (isNaN(amount)) {
+            setScanError('Invoice must have an amount.');
+            setTimeout(() => {
+               setScanError(null);
+            }, 6000);
+            return;
+         }
+
+         setInvoice(invoice);
+         await estimateFee(invoice);
+         setCurrentTab(Tabs.Fee);
+         return;
+      }
+
       if (!destination) {
          addToast('Please enter a destination.', 'warning');
          return;
@@ -209,11 +228,16 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                      />
                      {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                      <div className='flex justify-between mx-3'>
-                        <button onClick={() => setShowQRScanner(true)}>
+                        <button
+                           onClick={() => {
+                              setShowQRScanner(true);
+                              setDestination('');
+                           }}
+                        >
                            <QrCodeIcon className='text-gray-500 size-8 p-0 m-0' />
                         </button>
 
-                        <Button color='info' onClick={handleDestination}>
+                        <Button color='info' onClick={() => handleDestination()}>
                            Continue
                         </Button>
                      </div>
