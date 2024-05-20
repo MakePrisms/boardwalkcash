@@ -96,7 +96,7 @@ export const useCashu = () => {
       }
 
       const invoiceAmount = meltQuote.amount;
-      const proofs = getNeededProofs(invoiceAmount + estimatedFee);
+      const proofs = getNeededProofs(invoiceAmount + estimatedFee, keyset.id);
       let amountToPay = invoiceAmount + estimatedFee;
 
       const balance = proofs.reduce((acc: number, proof: Proof) => acc + proof.amount, 0);
