@@ -133,16 +133,19 @@ export default function Home() {
 
    return (
       <>
-         <main className='flex flex-col items-center justify-center mx-auto min-h-screen'>
+         <main
+            className='flex flex-col items-center justify-center mx-auto'
+            style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+         >
             <Balance balance={balance.usd} />
             <ActivityIndicator />
-            <div className='py-8 w-full'>
+            <div className=' flex flex-col justify-center py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto'>
                   <Receive />
                   <Send />
                </div>
             </div>
-            <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex  flex-col items-center justify-center'>
+            <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex flex-col items-center justify-center'>
                <Disclaimer />
             </footer>
          </main>

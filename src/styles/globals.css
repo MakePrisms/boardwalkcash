@@ -27,6 +27,10 @@ body {
    ); */
    background-color: #0f3470;
 }
+
+/* styles/globals.css */
+body {
+   height: calc(var(--vh, 1vh) * 100);
 }
 
 @layer utilities {

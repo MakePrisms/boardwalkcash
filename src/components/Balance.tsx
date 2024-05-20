@@ -36,7 +36,7 @@ const Balance = ({ balance }: { balance: number }) => {
    };
 
    return (
-      <div className='flex flex-col items-center justify-center w-full h-full mb-14'>
+      <div className='flex flex-col items-center justify-center w-full  mb-14'>
          <h1 className='mb-4'>
             <span className='font-teko text-6xl font-bold'>
                {/* {unit === 'sats' ? balance : usdBalance} */}
