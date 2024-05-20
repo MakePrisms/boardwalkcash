@@ -12,6 +12,7 @@ import QRCode from 'qrcode.react';
 import { RootState } from '@/redux/store';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { Token } from '@cashu/cashu-ts';
+import QRScannerButton from '../QRScannerButton';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -27,6 +28,23 @@ const Receive = () => {
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
+   const getTokenFromUrl = (url: string) => {
+      try {
+         const urlObj = new URL(url);
+         const params = new URLSearchParams(urlObj.search);
+         const token = params.get('token');
+
+         if (token && token.startsWith('cashu')) {
+            return token;
+         }
+
+         return null;
+      } catch (error) {
+         console.error('Invalid URL:', error);
+         return null;
+      }
+   };
+
    useEffect(() => {
       // timeout for the pubKey to be set in localStorage on first load
       setTimeout(() => {
@@ -40,9 +58,20 @@ const Receive = () => {
    }, []);
 
    useEffect(() => {
-      const decoded = decodeToken(amount);
+      let decoded: Token | undefined = undefined;
+      if (amount.includes('http')) {
+         const encoded = getTokenFromUrl(amount);
+         if (encoded) {
+            decoded = decodeToken(encoded);
+         }
+      } else {
+         decoded = decodeToken(amount.includes('Token:') ? amount.replace('Token:', '') : amount);
+         console.log('decoded', decoded);
+      }
 
       if (!decoded) return;
+
+      console.log('decoded', decoded);
 
       setToken(decoded);
       setShowEcashReceiveModal(true);
@@ -164,6 +193,9 @@ const Receive = () => {
                               >
                                  &nbsp;&nbsp;Generate Invoice&nbsp;
                               </Button>
+                              <div className='mb-3 md:mb-0'>
+                                 <QRScannerButton onScan={setAmount} />
+                              </div>
                               <Tooltip content='Copy lightning address'>
                                  <ClipboardButton
                                     onClick={handleModalClose}

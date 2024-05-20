@@ -11,6 +11,7 @@ import { useExchangeRate } from '@/hooks/useExchangeRate';
 import SendEcashModalBody from './SendEcashModalBody';
 import QrReaderComponent from '../QRReader';
 import { getAmountFromInvoice } from '@/utils/bolt11';
+import QRScannerButton from '../buttons/QRScannerButton';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -34,9 +35,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
    const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
-   const [showQRScanner, setShowQRScanner] = useState(false);
    const [scanError, setScanError] = useState<string | null>(null);
-   const qrReaderRef = useRef<any>(null);
 
    const { addToast } = useToast();
    const { handlePayInvoice } = useCashu();
@@ -140,7 +139,6 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             setScanError(null);
          }, 6000);
       }
-      setShowQRScanner(false);
    };
 
    const handleLightningAddress = async () => {
@@ -228,14 +226,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                      />
                      {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                      <div className='flex justify-between mx-3'>
-                        <button
-                           onClick={() => {
-                              setShowQRScanner(true);
-                              setDestination('');
-                           }}
-                        >
-                           <QrCodeIcon className='text-gray-500 size-8 p-0 m-0' />
-                        </button>
+                        <QRScannerButton onScan={handleQRResult} />
 
                         <Button color='info' onClick={() => handleDestination()}>
                            Continue
@@ -315,22 +306,6 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             ) : (
                renderTab()
             )}
-         </Modal>
-         <Modal show={showQRScanner} onClose={() => setShowQRScanner(false)}>
-            <Modal.Header>Scan QR Code</Modal.Header>
-            <Modal.Body>
-               <QrReaderComponent ref={qrReaderRef} onDecode={handleQRResult} />
-            </Modal.Body>
-            <Modal.Footer>
-               <Button
-                  onClick={() => {
-                     setShowQRScanner(false);
-                     qrReaderRef.current.stopScanner();
-                  }}
-               >
-                  Close
-               </Button>
-            </Modal.Footer>
          </Modal>
       </>
    );

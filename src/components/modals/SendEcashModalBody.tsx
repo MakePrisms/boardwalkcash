@@ -106,7 +106,7 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
          </div>,
          <div className='text-black text-center space-y-2' key='2'>
             <h2 className='text-xl'>Ecash Token</h2>
-            <AnimatedQRCode encodedToken={`Token:${encodedToken}`} />
+            <AnimatedQRCode encodedToken={`${encodedToken}`} />
             <p> Token: {`${encodedToken.slice(0, 12)}...${encodedToken.slice(-5)}`}</p>
          </div>,
       ]);
