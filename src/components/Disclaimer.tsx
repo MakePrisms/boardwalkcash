@@ -13,7 +13,7 @@ const Disclaimer = () => {
                >
                   open source
                </a>{' '}
-               and still{' '}
+               and{' '}
                <Link className='hover:underline text-cyan-teal' href={'/warning'} target='_blank'>
                   experimental
                </Link>

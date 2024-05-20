@@ -7,8 +7,11 @@ import { ToastProvider } from '@/hooks/useToast';
 import Head from 'next/head';
 import { Analytics } from '@vercel/analytics/react';
 import { NDKProvider } from '@/hooks/useNDK';
+import useViewportHeight from '@/hooks/useViewportHeigh';
 
 export default function App({ Component, pageProps }: AppProps) {
+   useViewportHeight();
+
    return (
       <>
          <Head>
