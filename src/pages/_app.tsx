@@ -17,7 +17,7 @@ export default function App({ Component, pageProps }: AppProps) {
          <Head>
             <title>Boardwalk Cash</title>
             <link rel='manifest' href='/manifest.json' />
-            <meta name='theme-color' content='#0a1f44' />
+            <meta name='theme-color' content='#0f3470' />
             <link rel='icon' href='/favicon.ico' />
             <meta
                name='viewport'
