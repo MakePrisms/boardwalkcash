@@ -6,12 +6,13 @@ import { useToast } from '@/hooks/useToast';
 import { CashuMint, CashuWallet, MeltQuoteResponse, Proof } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import SendEcashModalBody from './SendEcashModalBody';
 import QrReaderComponent from '../QRReader';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -41,6 +42,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const { handlePayInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const dispatch = useDispatch();
 
    const resetModalState = () => {
       setCurrentTab(Tabs.Destination);
@@ -115,8 +117,26 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       const activeWallet = Object.values(wallets).find(w => w.active);
       if (!activeWallet) throw new Error('no active wallet');
 
+      console.log('using active wallet', activeWallet);
+
       try {
-         await handlePayInvoice(invoice, meltQuote, estimatedFee as number, activeWallet);
+         await handlePayInvoice(invoice, meltQuote, estimatedFee as number, activeWallet).then(
+            () => {
+               dispatch(
+                  addTransaction({
+                     type: 'lightning',
+                     transaction: {
+                        amount: meltQuote!.amount,
+                        unit: 'usd',
+                        mint: activeWallet.url,
+                        status: TxStatus.PAID,
+                        date: new Date().toLocaleString(),
+                        quote: meltQuote!.quote,
+                     },
+                  }),
+               );
+            },
+         );
       } catch (error) {
          console.error(error);
          addToast('An error occurred while paying the invoice.', 'error');

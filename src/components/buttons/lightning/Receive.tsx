@@ -13,6 +13,7 @@ import { RootState } from '@/redux/store';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from '../QRScannerButton';
+import { TxStatus, addTransaction, updateTransactionStatus } from '@/redux/slices/HistorySlice';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -114,6 +115,20 @@ const Receive = () => {
             mintUrl: activeWallet.url,
          });
 
+         // Add transaction to history as pending
+         dispatch(
+            addTransaction({
+               type: 'lightning',
+               transaction: {
+                  amount: amountUsdCents,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PENDING,
+                  mint: activeWallet.url,
+                  quote,
+               },
+            }),
+         );
+
          const pollingResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
             {
@@ -130,6 +145,7 @@ const Receive = () => {
             setInvoiceToPay('');
             setAmount('');
             dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
+            dispatch(updateTransactionStatus({ type: 'lightning', quote, status: TxStatus.PAID }));
          }
       } catch (error) {
          console.error(error);

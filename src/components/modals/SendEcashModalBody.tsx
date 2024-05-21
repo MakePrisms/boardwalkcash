@@ -14,6 +14,8 @@ import AnimatedQRCode from '../AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import CustomCarousel from '../Carousel/CustomCarousel';
+import { useDispatch } from 'react-redux';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 interface SendEcashModalBodyProps {
    amountUsd: number;
@@ -28,6 +30,8 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
    } | null>(null);
    const [encodedToken, setEncodedToken] = useState<string | null>(null);
    const [carouselSlides, setCarouselSlides] = useState<React.ReactNode[]>([]);
+
+   const dispatch = useDispatch();
 
    const { addToast } = useToast();
    const { swapToSend } = useCashu();
@@ -53,6 +57,20 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
 
       setEncodedToken(encodedToken.replace('Token:', ''));
       setSending(false);
+
+      dispatch(
+         addTransaction({
+            type: 'ecash',
+            transaction: {
+               token: encodedToken,
+               amount: -amountUsd,
+               unit: 'usd',
+               mint: tokenEntryData.wallet.mint.mintUrl,
+               status: TxStatus.PENDING,
+               date: new Date().toLocaleString(),
+            },
+         }),
+      );
    }, [tokenEntryData]);
 
    useEffect(() => {
