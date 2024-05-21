@@ -33,6 +33,14 @@ body {
    height: calc(var(--vh, 1vh) * 100);
 }
 
+.qr-video {
+   width: auto;
+   height: auto;
+   max-width: 100%;
+   max-height: 100%;
+   object-fit: cover; /* This ensures the video scales correctly within the element */
+}
+
 @layer utilities {
    .text-balance {
       text-wrap: balance;

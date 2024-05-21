@@ -10,13 +10,13 @@ import React, {
    useImperativeHandle,
 } from 'react';
 import QrScanner from 'qr-scanner';
-// import { URDecoder } from '@gandlaf21/bc-ur';
+import { URDecoder } from '@gandlaf21/bc-ur';
 
 const QrReaderComponent = forwardRef(
    ({ onDecode }: { onDecode: (decodedText: string) => void }, ref) => {
       const videoRef = useRef<HTMLVideoElement>(null);
       const [qrScanner, setQrScanner] = useState<QrScanner | null>(null);
-      // const [urDecoder, setUrDecoder] = useState<URDecoder | null>(null);
+      const urDecoder = useRef<URDecoder | null>(null);
       const [urDecoderProgress, setUrDecoderProgress] = useState<number>(0);
 
       useEffect(() => {
@@ -31,9 +31,13 @@ const QrReaderComponent = forwardRef(
                   onDecodeError: () => {},
                },
             );
+            if (typeof window !== undefined) {
+               import('@gandlaf21/bc-ur').then(module => {
+                  urDecoder.current = new module.URDecoder();
+               });
+            }
             qrScannerInstance.start();
             setQrScanner(qrScannerInstance);
-            // setUrDecoder(new URDecoder());
 
             return () => {
                console.log('Destroying QR scanner');
@@ -51,23 +55,24 @@ const QrReaderComponent = forwardRef(
 
       const handleResult = useCallback(
          (result: QrScanner.ScanResult) => {
-            // if (result.data.toLowerCase().startsWith('ur:')) {
-            //   urDecoder?.receivePart(result.data);
-            //   setUrDecoderProgress(urDecoder?.estimatedPercentComplete() || 0);
+            if (result.data.toLowerCase().startsWith('ur:')) {
+               if (!urDecoder.current) return;
+               urDecoder.current.receivePart(result.data);
+               setUrDecoderProgress(urDecoder.current.estimatedPercentComplete() || 0);
 
-            //   if (urDecoder?.isComplete() && urDecoder?.isSuccess()) {
-            //     const ur = urDecoder?.resultUR();
-            //     const decoded = ur.decodeCBOR();
-            //     onDecode(decoded.toString());
-            //     qrScanner?.stop();
-            //     setUrDecoderProgress(0);
-            //   }
-            // } else {
-            onDecode(result.data);
-            qrScanner?.stop();
-            // }
+               if (urDecoder.current.isComplete() && urDecoder.current.isSuccess()) {
+                  const ur = urDecoder.current.resultUR();
+                  const decoded = ur.decodeCBOR();
+                  onDecode(decoded.toString());
+                  qrScanner?.stop();
+                  setUrDecoderProgress(0);
+               }
+            } else {
+               onDecode(result.data);
+               qrScanner?.stop();
+            }
          },
-         [qrScanner, onDecode],
+         [qrScanner, onDecode, urDecoder],
       );
 
       const pasteToParseDialog = useCallback(() => {
@@ -85,15 +90,15 @@ const QrReaderComponent = forwardRef(
          navigator.clipboard.readText;
 
       return (
-         <div className='bg-white shadow rounded p-4'>
+         <div className='bg-white shadow rounded p-2'>
             <div className='text-center'>
                <div>
-                  <video ref={videoRef} className='w-full'></video>
+                  <video ref={videoRef} className='qr-video'></video>
                </div>
                <div>
-                  <div className='flex justify-center mt-4'>
+                  <div className='flex justify-center mt-2'>
                      {urDecoderProgress > 0 && (
-                        <div className='w-full bg-gray-200 rounded h-8 relative'>
+                        <div className='w-full bg-gray-500 rounded relative'>
                            <div
                               className='bg-secondary h-8 rounded'
                               style={{ width: `${urDecoderProgress * 100}%` }}
