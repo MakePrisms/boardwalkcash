@@ -9,8 +9,8 @@ export const ToastProvider = ({ children }) => {
 
    const addToast = useCallback((message, type = 'info') => {
       const id = Math.random().toString(36).substring(2, 9);
-      setToastList(prev => [...prev, { id, message, type }]);
-      setTimeout(() => removeToast(id), 8000); // Auto-dismiss after 8 seconds
+      setToastList(prev => [{ id, message, type }]);
+      setTimeout(() => removeToast(id), 4000); // Auto-dismiss after 8 seconds
    }, []);
 
    const removeToast = useCallback(id => {
@@ -57,17 +57,17 @@ export const ToastProvider = ({ children }) => {
    return (
       <ToastContext.Provider value={contextValue}>
          {children}
-         <div className='toast-container space-y-4'>
+         <div className='toast-container space-y-2'>
             {toastList.map(toast => {
                const { icon, bgColor, textColor } = getToastStyle(toast.type);
                return (
-                  <Toast key={toast.id}>
+                  <Toast key={toast.id} className='toast-slide-in'>
                      <div
-                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${bgColor} text-cyan-500 dark:${bgColor} dark:${textColor}`}
+                        className={`inline-flex shrink-0 items-center justify-center rounded-lg ${bgColor} text-cyan-500 dark:${bgColor} dark:${textColor}`}
                      >
                         {icon}
                      </div>
-                     <div className={`ml-3 text-xs font-normal ${textColor}`}>{toast.message}</div>
+                     <div className={`ml-3 text-sm font-normal ${textColor}`}>{toast.message}</div>
                      <Toast.Toggle onClick={() => removeToast(toast.id)} />
                   </Toast>
                );

@@ -47,14 +47,27 @@ body {
    }
 }
 
+@keyframes slide-in {
+   from {
+      transform: translateX(-100%);
+      opacity: 0;
+   }
+   to {
+      transform: translateX(0);
+      opacity: 1;
+   }
+}
+
 .toast-container {
    position: fixed;
-   top: 5%;
+   bottom: 5%;
    left: 5%;
-   /* transform: translateX(50%); */
    z-index: 1000; /* Ensure the container is above all other elements */
 }
 
+.toast-slide-in {
+   animation: slide-in 0.2s ease-out;
+}
 .embla {
    /* position: relative; */
    max-width: 100%;

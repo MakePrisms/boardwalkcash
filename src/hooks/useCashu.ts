@@ -425,8 +425,6 @@ export const useCashu = () => {
 
       addBalance(returnChange);
 
-      addToast(`Preparing to send: swapped $${(amount / 100).toFixed(2)}`, 'success');
-
       return { proofs: send, wallet };
    };
 
