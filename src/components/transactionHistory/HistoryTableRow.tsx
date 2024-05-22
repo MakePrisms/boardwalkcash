@@ -6,15 +6,18 @@ import {
    isEcashTransaction,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
+import { RootState } from '@/redux/store';
 import { addBalance } from '@/utils/cashu';
 import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
 import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const [reclaiming, setReclaiming] = useState(false);
+
+   const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
@@ -40,14 +43,25 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    };
 
    const handleReclaim = async (transaction: EcashTransaction) => {
-      // TODO: initialize with keyset
-      const wallet = new CashuWallet(new CashuMint(transaction.mint));
+      const keyset = Object.values(wallets).find(keyset => keyset.url === transaction.mint);
+      if (!keyset) {
+         addToast('Keyset not found', 'error');
+         return;
+      }
+
+      const wallet = new CashuWallet(new CashuMint(transaction.mint), { ...keyset });
 
       const proofs = getDecodedToken(transaction.token).token[0].proofs;
 
       setReclaiming(true);
 
-      const spent = await wallet.checkProofsSpent(proofs);
+      const spent = await wallet.checkProofsSpent(proofs).catch(e => {
+         addToast('Failed to check token status', 'error');
+         console.error(e);
+         setReclaiming(false);
+      });
+
+      if (!spent) return;
 
       console.log('Spent tokens', spent);
 
