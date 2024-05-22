@@ -44,7 +44,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             type: 'ecash',
             transaction: {
                token: getEncodedToken(token),
-               amount: amountUsd,
+               amount: amountUsd * 100,
                mint: mintUrl,
                date: new Date().toLocaleString(),
                status,
