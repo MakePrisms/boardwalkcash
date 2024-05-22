@@ -308,7 +308,12 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             );
 
          case Tabs.Ecash:
-            return <SendEcashModalBody amountUsd={parseFloat(destination) * 100} />;
+            return (
+               <SendEcashModalBody
+                  amountUsd={parseFloat(destination) * 100}
+                  onClose={resetModalState}
+               />
+            );
 
          default:
             return null;
