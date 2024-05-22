@@ -26,6 +26,8 @@ export interface LightningTransaction {
    appName?: string;
 }
 
+export type Transaction = EcashTransaction | LightningTransaction;
+
 interface HistoryState {
    ecash: EcashTransaction[];
    lightning: LightningTransaction[];
@@ -36,13 +38,13 @@ const initialState: HistoryState = {
    lightning: [],
 };
 
-const isEcashTransaction = (
+export const isEcashTransaction = (
    transaction: LightningTransaction | EcashTransaction,
 ): transaction is EcashTransaction => {
    return (transaction as EcashTransaction).token !== undefined;
 };
 
-const isLightningTransaction = (
+export const isLightningTransaction = (
    transaction: LightningTransaction | EcashTransaction,
 ): transaction is LightningTransaction => {
    return (transaction as LightningTransaction).quote !== undefined;
