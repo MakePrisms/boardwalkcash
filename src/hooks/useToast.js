@@ -57,7 +57,7 @@ export const ToastProvider = ({ children }) => {
    return (
       <ToastContext.Provider value={contextValue}>
          {children}
-         <div className='fixed bottom-5 right-5 space-y-4 z-10'>
+         <div className='toast-container space-y-4'>
             {toastList.map(toast => {
                const { icon, bgColor, textColor } = getToastStyle(toast.type);
                return (
@@ -67,7 +67,8 @@ export const ToastProvider = ({ children }) => {
                      >
                         {icon}
                      </div>
-                     <div className={`ml-3 text-sm font-normal ${textColor}`}>{toast.message}</div>
+                     <div className={`ml-3 text-xs font-normal ${textColor}`}>{toast.message}</div>
+                     <Toast.Toggle onClick={() => removeToast(toast.id)} />
                   </Toast>
                );
             })}

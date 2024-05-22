@@ -47,6 +47,14 @@ body {
    }
 }
 
+.toast-container {
+   position: fixed;
+   top: 5%;
+   left: 5%;
+   /* transform: translateX(50%); */
+   z-index: 1000; /* Ensure the container is above all other elements */
+}
+
 .embla {
    /* position: relative; */
    max-width: 100%;
