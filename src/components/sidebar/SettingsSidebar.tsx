@@ -54,7 +54,7 @@ export const SettingsSidebar = () => {
          </div>
          <Sidebar
             aria-label='Settings Sidebar'
-            className={`fixed right-0 top-0 h-full w-full md:w-96 max-w-screen-sm bg-gray-100 shadow-lg z-10 ${hidden ? 'hidden' : ''}`}
+            className={`fixed right-0 top-0 h-full w-full md:w-96 max-w-screen-sm bg-[#0f1f41ff] shadow-lg z-10 ${hidden ? 'hidden' : ''}`}
          >
             <button className='hover:cursor-pointer p-3' onClick={() => sethidden(true)}>
                <XMark />

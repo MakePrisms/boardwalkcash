@@ -32,7 +32,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const formatAmount = (amount: number) => {
       let color;
       if (amount < 0) {
-         color = 'text-red-500';
+         color = 'text-white';
       } else {
          color = 'text-green-500';
       }
@@ -95,8 +95,8 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    };
    return (
       <Table.Row>
-         <Table.Cell className='pe-0'>{formatDate(tx.date)}</Table.Cell>
-         <Table.Cell className='pe-0'>{formatAmount(tx.amount)}</Table.Cell>
+         <Table.Cell className='pe-0 md:pe-6'>{formatDate(tx.date)}</Table.Cell>
+         <Table.Cell className='pe-0 md:pe-6'>{formatAmount(tx.amount)}</Table.Cell>
          <Table.Cell className='flex justify-center'>
             {tx.status === TxStatus.PENDING && isEcashTransaction(tx) ? (
                reclaiming ? (
