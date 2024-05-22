@@ -61,14 +61,8 @@ const historySlice = createSlice({
       ) => {
          const { type, transaction } = action.payload;
          if (type === 'ecash' && isEcashTransaction(transaction)) {
-            if (state.ecash.find(t => t.token === transaction.token)) {
-               return;
-            }
             state.ecash.push(transaction);
          } else if (type === 'lightning' && isLightningTransaction(transaction)) {
-            if (state.lightning.find(t => t.quote === transaction.quote)) {
-               return;
-            }
             state.lightning.push(transaction);
          }
       },
