@@ -28,11 +28,27 @@ const ClockIcon = () => {
    );
 };
 
+const XMark = () => (
+   <svg
+      xmlns='http://www.w3.org/2000/svg'
+      fill='none'
+      viewBox='0 0 24 24'
+      strokeWidth={1.5}
+      stroke='white'
+      className='w-7 h-7'
+   >
+      <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
+   </svg>
+);
+
 const customTheme = {
    header: {
       inner: {
          titleText:
-            'mb-4 inline-flex items-center text-base font-semibold text-gray-200 dark:text-gray-400',
+            'mb-4 text-xl inline-flex items-center text-base font-semibold text-gray-200 dark:text-gray-400',
+         closeButton:
+            'absolute end-6 top-8 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white',
+         closeIcon: 'h-4 w-4',
       },
    },
 };
@@ -65,7 +81,7 @@ const TransactionHistoryDrawer = () => {
 
    return (
       <>
-         <button className='fixed right-10 top-0 m-4 p-2 z-10' onClick={() => setHidden(!hidden)}>
+         <button className='fixed right-12 top-0 m-4 p-2 z-10' onClick={() => setHidden(!hidden)}>
             <ClockIcon />
          </button>
          <Drawer
@@ -76,7 +92,12 @@ const TransactionHistoryDrawer = () => {
             className='md:min-w-fit min-w-full bg-[#0f1f41ff] text-white flex flex-col'
             theme={customTheme}
          >
-            <Drawer.Header title='Activity' titleIcon={NoIcon} className='mt-5' />
+            <Drawer.Header
+               title='Activity'
+               titleIcon={NoIcon}
+               className='mt-11'
+               closeIcon={XMark}
+            />
             <Drawer.Items className='flex-grow'>
                <div className='flex flex-col h-full'>
                   {allTransactions.length > 0 ? (
@@ -84,7 +105,7 @@ const TransactionHistoryDrawer = () => {
                   ) : (
                      <div className='flex justify-center mt-4'>No transactions</div>
                   )}
-                  <div className='flex justify-center'>
+                  <div className='flex justify-center mt-4'>
                      {allTransactions.length > 10 && (
                         <Pagination
                            layout='navigation'
