@@ -14,12 +14,15 @@ import AnimatedQRCode from '../AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import CustomCarousel from '../Carousel/CustomCarousel';
+import { useDispatch } from 'react-redux';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 interface SendEcashModalBodyProps {
    amountUsd: number;
+   onClose: () => void;
 }
 
-const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
+const SendEcashModalBody = ({ amountUsd, onClose }: SendEcashModalBodyProps) => {
    const [sending, setSending] = useState(false);
    const [sendAmount, setSendAmount] = useState('');
    const [tokenEntryData, setTokenEntryData] = useState<{
@@ -28,6 +31,8 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
    } | null>(null);
    const [encodedToken, setEncodedToken] = useState<string | null>(null);
    const [carouselSlides, setCarouselSlides] = useState<React.ReactNode[]>([]);
+
+   const dispatch = useDispatch();
 
    const { addToast } = useToast();
    const { swapToSend } = useCashu();
@@ -53,6 +58,20 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
 
       setEncodedToken(encodedToken.replace('Token:', ''));
       setSending(false);
+
+      dispatch(
+         addTransaction({
+            type: 'ecash',
+            transaction: {
+               token: encodedToken,
+               amount: -amountUsd,
+               unit: 'usd',
+               mint: tokenEntryData.wallet.mint.mintUrl,
+               status: TxStatus.PENDING,
+               date: new Date().toLocaleString(),
+            },
+         }),
+      );
    }, [tokenEntryData]);
 
    useEffect(() => {
@@ -131,9 +150,14 @@ const SendEcashModalBody = ({ amountUsd }: SendEcashModalBodyProps) => {
                         <div className='flex space-x-3'>
                            <ClipboardButton
                               toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${encodedToken}`}
-                              toShow={`Copy Link`}
+                              toShow={`Link`}
+                              onClick={onClose}
                            />
-                           <ClipboardButton toCopy={`${encodedToken}`} toShow={`Copy Token`} />
+                           <ClipboardButton
+                              toCopy={`${encodedToken}`}
+                              toShow={`Token`}
+                              onClick={onClose}
+                           />
                         </div>
                      </>
                   )}

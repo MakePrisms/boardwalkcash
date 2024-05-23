@@ -19,6 +19,7 @@ import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '@/components/sidebar/ProcessingSwapModal';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
+import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 
 export default function Home() {
    const newUser = useRef(false);
@@ -150,6 +151,7 @@ export default function Home() {
             </footer>
          </main>
          <SettingsSidebar />
+         <TransactionHistoryDrawer />
          <ProcessingSwapModal isSwapping={swapping} />
          {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
             <ConfirmEcashReceiveModal

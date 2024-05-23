@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { CashuMint, CashuWallet, Proof, Token } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -9,6 +9,7 @@ import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -35,6 +36,24 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
 
+   const addEcashTransaction = (status: TxStatus) => {
+      if (!token) return;
+      if (!amountUsd) return;
+      dispatch(
+         addTransaction({
+            type: 'ecash',
+            transaction: {
+               token: getEncodedToken(token),
+               amount: amountUsd * 100,
+               mint: mintUrl,
+               date: new Date().toLocaleString(),
+               status,
+               unit: 'usd',
+            },
+         }),
+      );
+   };
+
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
       console.log('Token', token);
@@ -47,6 +66,9 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          { unit: tokenUnit, id: tokens[0].proofs[0].id, url: tokens[0].mint },
          tokens[0].proofs,
       )
+         .then(() => {
+            addEcashTransaction(TxStatus.PAID);
+         })
          .catch(() => {
             addToast('Failed to swap to main mint', 'error');
          })
@@ -186,7 +208,9 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             proofs,
             new CashuWallet(swapFromMint, { unit: tokenUnit! }), // swap from
             new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset }), // swap to
-         );
+         ).then(() => {
+            addEcashTransaction(TxStatus.PAID);
+         });
 
          onClose();
       } catch (e) {
