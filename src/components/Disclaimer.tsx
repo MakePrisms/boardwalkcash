@@ -3,7 +3,7 @@ import Link from 'next/link';
 const Disclaimer = () => {
    return (
       <div>
-         <div className='flex items-center justify-center space-x-2'>
+         <div className='flex items-center justify-center space-x-2 mb-4'>
             <p>
                Boardwalk Cash is{' '}
                <a
