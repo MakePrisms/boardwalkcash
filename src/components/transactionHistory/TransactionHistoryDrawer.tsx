@@ -45,8 +45,8 @@ const TransactionHistoryDrawer = () => {
    const [currentPage, setCurrentPage] = useState(1);
 
    // Calculate start and end indexes based on current page
-   const startIndex = (currentPage - 1) * 10;
-   const endIndex = currentPage * 10;
+   const startIndex = (currentPage - 1) * 8;
+   const endIndex = currentPage * 8;
 
    const history = useSelector((state: RootState) => state.history);
 
@@ -78,18 +78,18 @@ const TransactionHistoryDrawer = () => {
          >
             <Drawer.Header title='Activity' titleIcon={NoIcon} className='mt-5' />
             <Drawer.Items className='flex-grow'>
-               <div className='flex flex-col justify-between h-full'>
+               <div className='flex flex-col h-full'>
                   {allTransactions.length > 0 ? (
                      <HistoryTable history={allTransactions.slice(startIndex, endIndex)} />
                   ) : (
                      <div className='flex justify-center mt-4'>No transactions</div>
                   )}
-                  <div className='flex justify-center mb-2'>
+                  <div className='flex justify-center'>
                      {allTransactions.length > 10 && (
                         <Pagination
                            layout='navigation'
                            currentPage={currentPage}
-                           totalPages={Math.ceil(allTransactions.length / 10)}
+                           totalPages={Math.ceil(allTransactions.length / 8)}
                            onPageChange={setCurrentPage}
                         />
                      )}
