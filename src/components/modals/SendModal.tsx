@@ -126,7 +126,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                   addTransaction({
                      type: 'lightning',
                      transaction: {
-                        amount: meltQuote!.amount,
+                        amount: -meltQuote!.amount,
                         unit: 'usd',
                         mint: activeWallet.url,
                         status: TxStatus.PAID,
