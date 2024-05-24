@@ -425,6 +425,9 @@ export const useCashu = () => {
 
       addBalance(returnChange);
 
+      const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
+      dispatch(setBalance({ usd: newBalance }));
+
       return { proofs: send, wallet };
    };
 
