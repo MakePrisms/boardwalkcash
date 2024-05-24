@@ -97,7 +97,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
       <Table.Row>
          <Table.Cell className='pe-0 md:pe-6'>{formatDate(tx.date)}</Table.Cell>
          <Table.Cell className='pe-0 md:pe-6'>{formatAmount(tx.amount)}</Table.Cell>
-         <Table.Cell className='flex justify-center'>
+         <Table.Cell className='flex justify-center min-w-[116px]'>
             {tx.status === TxStatus.PENDING && isEcashTransaction(tx) ? (
                reclaiming ? (
                   <Spinner size={'sm'} />
