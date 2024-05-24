@@ -10,6 +10,8 @@ import { ComponentProps, FC, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
 import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
+import { customDrawerTheme } from '@/themes/drawerTheme';
+import BWCLogoIcon from '../BWCLogoIcon';
 
 type NewType = FC<ComponentProps<'svg'>>;
 
@@ -34,7 +36,7 @@ const ClockIcon = () => {
    );
 };
 
-const XMark = () => (
+export const XMark = () => (
    <svg
       xmlns='http://www.w3.org/2000/svg'
       fill='none'
@@ -46,18 +48,6 @@ const XMark = () => (
       <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
    </svg>
 );
-
-const customTheme = {
-   header: {
-      inner: {
-         titleText:
-            'mb-4 text-xl inline-flex items-center text-base font-semibold text-gray-200 dark:text-gray-400',
-         closeButton:
-            'absolute end-6 top-8 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white',
-         closeIcon: 'h-4 w-4',
-      },
-   },
-};
 
 const TransactionHistoryDrawer = () => {
    const [hidden, setHidden] = useState(true);
@@ -155,13 +145,11 @@ const TransactionHistoryDrawer = () => {
             onClose={() => setHidden(true)}
             edge={false}
             position='right'
-            className='md:min-w-fit min-w-full bg-[#0f1f41ff] text-white flex flex-col'
-            theme={customTheme}
+            theme={customDrawerTheme}
          >
             <Drawer.Header
                title='Activity'
-               titleIcon={NoIcon}
-               className='mt-11'
+               titleIcon={() => <BWCLogoIcon className='w-[40px] h-auto' />}
                closeIcon={XMark}
             />
             <Drawer.Items className='flex-grow'>

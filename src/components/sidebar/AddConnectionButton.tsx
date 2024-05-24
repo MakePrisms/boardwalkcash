@@ -65,9 +65,9 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
       <>
          <form onSubmit={handleSubmit}>
             <div className='flex flex-col justify-around space-y-3 ml-5'>
-               <h3 className='text-black text-lg mb-2'>New Connection</h3>
+               <h3 className='text-lg mb-2'>New Connection</h3>
                <div>
-                  <Label>App Name</Label>
+                  <Label className='text-white'>App Name</Label>
                   <TextInput
                      placeholder='My app'
                      value={appName}
@@ -76,7 +76,7 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
                   />
                </div>
                <div>
-                  <Label>Budget</Label>
+                  <Label className='text-white'>Budget</Label>
                   <TextInput
                      type='number'
                      placeholder='Budget (eg. 0.21 USD)'
@@ -86,7 +86,7 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
                   />
                </div>
                <div>
-                  <Label>Expiry</Label>
+                  <Label className='text-white'>Expiry</Label>
                   <Datepicker
                      minDate={new Date(new Date().getTime() + 24 * 60 * 60 * 1000)} // one day from now
                      value={expiry}
@@ -96,7 +96,7 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
                      onSelectedDateChanged={date => setExpiry(date.toLocaleDateString())}
                   />
 
-                  <p className='text-gray-500 text-sm'>
+                  <p className='text-gray-500 text-sm mt-2'>
                      When the connection will expire.{' '}
                      {expiry !== 'never' && (
                         <button

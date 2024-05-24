@@ -81,7 +81,8 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
    return (
       <>
          <ProcessingSwapModal isSwapping={swapping} />
-         <Sidebar.Item className='w-full'>
+         <>
+            {/* <Sidebar.Item className='w-full'> */}
             <div className='flex flex-col justify-between min-w-full'>
                <div className='flex justify-between'>
                   {formattedMintUrl()} <Badge>${mintBalance}</Badge>
@@ -116,7 +117,8 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                   )}
                </div>
             </div>
-         </Sidebar.Item>
+            {/* </Sidebar.Item> */}
+         </>
       </>
    );
 };

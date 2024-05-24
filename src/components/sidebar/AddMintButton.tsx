@@ -63,7 +63,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
    return (
       <>
          <div className='flex flex-col justify-around'>
-            <h3 className='text-black text-lg mb-2'>Add a Mint</h3>
+            <h3 className='text-lg mb-2'>Add a Mint</h3>
             <TextInput
                placeholder='Mint URL'
                value={mintUrl}
