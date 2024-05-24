@@ -1,9 +1,15 @@
-import { EcashTransaction, LightningTransaction } from '@/redux/slices/HistorySlice';
+import {
+   EcashTransaction,
+   LightningTransaction,
+   TxStatus,
+   updateTransactionStatus,
+} from '@/redux/slices/HistorySlice';
 import { RootState } from '@/redux/store';
 import { Drawer, Pagination } from 'flowbite-react';
 import { ComponentProps, FC, useCallback, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
+import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
 
 type NewType = FC<ComponentProps<'svg'>>;
 
@@ -60,6 +66,8 @@ const TransactionHistoryDrawer = () => {
    >([]);
    const [currentPage, setCurrentPage] = useState(1);
 
+   const dispatch = useDispatch();
+
    // Calculate start and end indexes based on current page
    const startIndex = (currentPage - 1) * 8;
    const endIndex = currentPage * 8;
@@ -74,6 +82,64 @@ const TransactionHistoryDrawer = () => {
       });
       return merged;
    }, [history]);
+
+   useEffect(() => {
+      const groupTransactionsByMint = (transactions: EcashTransaction[]) => {
+         return transactions.reduce(
+            (acc, tx) => {
+               if (!acc[tx.mint]) {
+                  acc[tx.mint] = [];
+               }
+               acc[tx.mint].push(tx);
+               return acc;
+            },
+            {} as Record<string, EcashTransaction[]>,
+         );
+      };
+
+      const extractProofs = (transactions: EcashTransaction[]) => {
+         return transactions.flatMap(({ token }) => {
+            const decoded = getDecodedToken(token);
+            return decoded.token[0].proofs;
+         });
+      };
+
+      const checkAndUpdatePending = async () => {
+         const pendingEcash = history.ecash.filter(tx => tx.status === TxStatus.PENDING);
+         const groupedByMint = groupTransactionsByMint(pendingEcash);
+
+         for (const mint in groupedByMint) {
+            const mintTransactions = groupedByMint[mint];
+            const proofs = extractProofs(mintTransactions);
+
+            const spent = await new CashuWallet(new CashuMint(mint)).checkProofsSpent(proofs);
+
+            if (spent.length > 0) {
+               const spentSecrets = spent.map(s => s.secret);
+
+               mintTransactions.forEach(tx => {
+                  const decoded = getDecodedToken(tx.token);
+                  const txSecrets = decoded.token[0].proofs.map(p => p.secret);
+
+                  const isSpent = txSecrets.some(secret => spentSecrets.includes(secret));
+                  console.log('isSpent', isSpent);
+
+                  if (isSpent) {
+                     dispatch(
+                        updateTransactionStatus({
+                           type: 'ecash',
+                           token: tx.token,
+                           status: TxStatus.PAID,
+                        }),
+                     );
+                  }
+               });
+            }
+         }
+      };
+
+      checkAndUpdatePending();
+   }, [history.ecash, dispatch]);
 
    useEffect(() => {
       setAllTransactions(mergeAndSortHistory());
