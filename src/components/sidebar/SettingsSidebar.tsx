@@ -9,8 +9,7 @@ import AddConnectionButton from './AddConnectionButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { XMark } from '../transactionHistory/TransactionHistoryDrawer';
-import BWCLogoIcon from '../BWCLogoIcon';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 
 const SettingsCog = () => (
    <svg
@@ -55,7 +54,7 @@ export const SettingsSidebar = () => {
                title='Settings'
                titleIcon={() => null}
                className='drawer-header'
-               closeIcon={XMark}
+               closeIcon={() => <XMarkIcon className='h-6 w-6' />}
             />
             <Drawer.Items className='md:w-96 max-w-screen-sm'>
                <div className='flex align-middle items-center justify-around '></div>

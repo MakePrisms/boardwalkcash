@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
 import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
 import { customDrawerTheme } from '@/themes/drawerTheme';
-import BWCLogoIcon from '../BWCLogoIcon';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 
 type NewType = FC<ComponentProps<'svg'>>;
 
@@ -35,18 +35,6 @@ const ClockIcon = () => {
       </svg>
    );
 };
-
-export const XMark = () => (
-   <svg
-      xmlns='http://www.w3.org/2000/svg'
-      fill='none'
-      viewBox='0 0 24 24'
-      strokeWidth={1.5}
-      stroke='white'
-   >
-      <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
-   </svg>
-);
 
 const TransactionHistoryDrawer = () => {
    const [hidden, setHidden] = useState(true);
@@ -151,7 +139,7 @@ const TransactionHistoryDrawer = () => {
                className='drawer-header'
                title='Activity'
                titleIcon={() => null}
-               closeIcon={XMark}
+               closeIcon={() => <XMarkIcon className='h-6 w-6' />}
             />
             <Drawer.Items className='flex-grow'>
                <div className='flex flex-col h-full'>
