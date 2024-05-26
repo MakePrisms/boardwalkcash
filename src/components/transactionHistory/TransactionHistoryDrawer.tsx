@@ -43,7 +43,6 @@ export const XMark = () => (
       viewBox='0 0 24 24'
       strokeWidth={1.5}
       stroke='white'
-      className='w-7 h-7'
    >
       <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
    </svg>
@@ -148,8 +147,9 @@ const TransactionHistoryDrawer = () => {
             theme={customDrawerTheme}
          >
             <Drawer.Header
+               className='drawer-header'
                title='Activity'
-               titleIcon={() => <BWCLogoIcon className='w-[40px] h-auto' />}
+               titleIcon={() => null}
                closeIcon={XMark}
             />
             <Drawer.Items className='flex-grow'>

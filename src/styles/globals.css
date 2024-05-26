@@ -65,6 +65,19 @@ body {
    z-index: 1000; /* Ensure the container is above all other elements */
 }
 
+.drawer-header {
+   margin-top: 40px;
+}
+
+.drawer-header h5 {
+   @apply text-xl;
+}
+
+.drawer-header button {
+   margin-top: 20px;
+   margin-right: 24px;
+}
+
 .toast-slide-in {
    animation: slide-in 0.2s ease-out;
 }

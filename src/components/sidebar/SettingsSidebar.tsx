@@ -59,7 +59,8 @@ export const SettingsSidebar = () => {
             </button> */}
             <Drawer.Header
                title='Settings'
-               titleIcon={() => <BWCLogoIcon className='w-[40px] h-auto' />}
+               titleIcon={() => null}
+               className='drawer-header'
                closeIcon={XMark}
             />
             <Drawer.Items>
