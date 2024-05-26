@@ -15,9 +15,8 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
    return (
       <>
          {connection && (
-            // <Sidebar.Item>
-            <>
-               <div className=' text-lg  mb-1 flex justify-between'>
+            <div className='ms-10'>
+               <div className=' text-lg mb-4  flex justify-between'>
                   <h4 className='flex underline'>
                      {connection.appName}{' '}
                      <button className='ml-2' onClick={() => setShowDetails(!showDetails)}>
@@ -57,8 +56,7 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
                      </div>
                   </>
                )}
-               {/* // </Sidebar.Item> */}
-            </>
+            </div>
          )}
       </>
    );

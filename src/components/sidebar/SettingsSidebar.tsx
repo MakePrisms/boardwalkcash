@@ -43,74 +43,51 @@ export const SettingsSidebar = () => {
                {hidden && <SettingsCog />}
             </button>
          </div>
-         {/* <Sidebar
-            aria-label='Settings Sidebar'
-            className={`fixed right-0 top-0 h-full w-full md:w-96 max-w-screen-sm bg-[#0f1f41ff] shadow-lg z-10 ${hidden ? 'hidden' : ''}`}
-         > */}
          <Drawer
             open={!hidden}
             onClose={() => setHidden(true)}
             edge={false}
             position='right'
+            className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
             theme={customDrawerTheme}
          >
-            {/* <button className='hover:cursor-pointer p-3' onClick={() => sethidden(true)}>
-               <XMark />
-            </button> */}
             <Drawer.Header
                title='Settings'
                titleIcon={() => null}
                className='drawer-header'
                closeIcon={XMark}
             />
-            <Drawer.Items>
-               <div className='flex align-middle items-center justify-around '>
-                  {/* <Sidebar.Logo
-                     className='text-black'
-                     href='#'
-                     img='/favicon.ico'
-                     imgAlt='Boardwalkcash logo'
-                  >
-                     Boardwalk Cash
-                  </Sidebar.Logo> */}
-               </div>
-               {/* <Sidebar.Items> */}
-               {/* <Sidebar.ItemGroup> */}
-               {/* <Sidebar.Collapse className='text-lg' label='Mints'> */}
+            <Drawer.Items className='md:w-96 max-w-screen-sm'>
+               <div className='flex align-middle items-center justify-around '></div>
 
-               <div className=' mt-4 space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-700'>
+               <div className=' mt-4 space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-800'>
                   <DrawerCollapse label='Mints'>
                      <div className='text-lg mb-2'></div>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
                      ))}
-                     {/* <Sidebar.ItemGroup> */}
-                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-700'>
+                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-800'>
                         <AddMintButton keysets={keysets} />
-                        {/* </Sidebar.ItemGroup> */}
                      </div>
                   </DrawerCollapse>
                </div>
-               {/* </Sidebar.Collapse> */}
-               {/* </Sidebar.ItemGroup> */}
-               {/* <Sidebar.ItemGroup> */}
-               {/* <Sidebar.Collapse className='text-lg' label='Connections'> */}
-               <div className='"mt-4 space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-700'>
+               <div className='mt-4 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-800'>
                   <DrawerCollapse label='Connections'>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
                      ))}
-                     {/* <Sidebar.ItemGroup> */}
-                     <AddConnectionButton keysets={keysets} nwcUri={nwcUri} setNwcUri={setNwcUri} />
-                     {/* </Sidebar.ItemGroup> */}
+                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-800'>
+                        <AddConnectionButton
+                           keysets={keysets}
+                           nwcUri={nwcUri}
+                           setNwcUri={setNwcUri}
+                        />
+                     </div>
                   </DrawerCollapse>
                </div>
-               {/* </Sidebar.Collapse> */}
-               {/* </Sidebar.ItemGroup> */}
-               {/* </Sidebar.Items> */}
             </Drawer.Items>
          </Drawer>
-         <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')}>
+         <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')} className='text-black'>
             <Modal.Header>New Wallet Connection</Modal.Header>
             <Modal.Body className='flex flex-col space-y-3'>
                <p className='text-md mb-2'>

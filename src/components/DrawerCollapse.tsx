@@ -14,7 +14,7 @@ const DrawerCollapse: FC<SimpleDrawerCollapseProps> = ({ label, children }) => {
          <button
             type='button'
             onClick={() => setIsOpen(!isOpen)}
-            className='flex items-center rounded-lg justify-between w-full p-2 text-left text-white  hover:bg-[#0f3470] mb-6'
+            className='flex items-center justify-between w-full p-2 text-left text-white  hover:bg-[#0f3470] mb-6'
          >
             <span className='text-xl'>{label}</span>
             <HiChevronDown

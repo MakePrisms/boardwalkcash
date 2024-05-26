@@ -144,6 +144,7 @@ const TransactionHistoryDrawer = () => {
             onClose={() => setHidden(true)}
             edge={false}
             position='right'
+            className='md:min-w-fit min-w-full bg-[#0f1f41ff] text-white flex flex-col'
             theme={customDrawerTheme}
          >
             <Drawer.Header
