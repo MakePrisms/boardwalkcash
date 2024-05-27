@@ -46,7 +46,7 @@ const EcashTapButton = () => {
             return;
          }
 
-         window.navigator.clipboard
+         navigator.clipboard
             .writeText(token)
             .then(() =>
                addToast(`$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`, 'success'),
