@@ -8,6 +8,7 @@ import walletReducer from '@/redux/slices/Wallet.slice';
 import userReducer from '@/redux/slices/UserSlice';
 import nwcReducer from '@/redux/slices/NwcSlice';
 import historyReducer from '@/redux/slices/HistorySlice';
+import settingsReducer from '@/redux/slices/SettingsSlice';
 
 const rootReducer = combineReducers({
    wallet: walletReducer,
@@ -15,12 +16,13 @@ const rootReducer = combineReducers({
    user: userReducer,
    nwc: nwcReducer,
    history: historyReducer,
+   settings: settingsReducer,
 });
 
 const persistConfig = {
    key: 'root',
    storage,
-   whitelist: ['nwc', 'history'],
+   whitelist: ['nwc', 'history', 'settings'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
