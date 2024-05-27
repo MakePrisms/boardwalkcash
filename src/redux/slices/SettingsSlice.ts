@@ -7,7 +7,7 @@ interface SettingsState {
 
 const initialState: SettingsState = {
    ecashTapsEnabled: false,
-   defaultTapAmount: 1,
+   defaultTapAmount: 0,
 };
 
 const SettingsSlice = createSlice({
