@@ -10,6 +10,8 @@ import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
 import { BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { BanknoteIcon } from '../EcashTapButton';
+import EcashTapsSettings from './EcashTapsSettings';
 
 const SettingsCog = () => (
    <svg
@@ -70,7 +72,7 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div>
-               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
@@ -82,6 +84,11 @@ export const SettingsSidebar = () => {
                            setNwcUri={setNwcUri}
                         />
                      </div>
+                  </DrawerCollapse>
+               </div>
+               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
+                     <EcashTapsSettings />
                   </DrawerCollapse>
                </div>
             </Drawer.Items>

@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '@/components/sidebar/ProcessingSwapModal';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
+import EcashTapButton from '@/components/EcashTapButton';
 
 export default function Home() {
    const newUser = useRef(false);
@@ -152,6 +153,7 @@ export default function Home() {
          </main>
          <SettingsSidebar />
          <TransactionHistoryDrawer />
+         <EcashTapButton />
          <ProcessingSwapModal isSwapping={swapping} />
          {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
             <ConfirmEcashReceiveModal
