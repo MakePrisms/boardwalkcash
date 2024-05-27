@@ -51,7 +51,7 @@ const EcashTapButton = () => {
             .then(() =>
                addToast(`$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`, 'success'),
             )
-            .catch(() => addToast('Error copying token to clipboard', 'error'));
+            .catch(e => addToast('Error copying token to clipboard' + e.message, 'error'));
       } catch (e: any) {
          addToast(`Error creating tap token: ${e.message && e.message}`, 'error');
       } finally {
