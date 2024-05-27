@@ -226,7 +226,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
          console.log('AMount entered as destination');
          setAmountSat(destination);
          const wallet = getActiveWallet();
-         const token = await createSendableEcashToken(parseFloat(destination) * 100, wallet);
+         const token = await createSendableEcashToken(
+            Math.floor(parseFloat(destination) * 100),
+            wallet,
+         );
          if (!token) {
             addToast('Error creating token', 'error');
             return;
