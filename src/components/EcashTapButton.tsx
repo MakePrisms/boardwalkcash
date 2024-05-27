@@ -2,8 +2,10 @@ import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
 import { useWallet } from '@/hooks/useWallet';
 import { RootState } from '@/redux/store';
+import { Modal } from 'flowbite-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
+import SendEcashModalBody from './modals/SendEcashModalBody';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
    <svg
@@ -22,8 +24,13 @@ export const BanknoteIcon = ({ className }: { className?: string }) => (
    </svg>
 );
 
-const EcashTapButton = () => {
+interface EcashTapButtonProps {
+   isMobile: boolean;
+}
+
+const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
    const [creatingToken, setCreatingToken] = useState(false);
+   const [tokenToSend, setTokenToSend] = useState<string | null>(null);
 
    const { createSendableEcashToken } = useCashu();
    const { ecashTapsEnabled, defaultTapAmount } = useSelector((state: RootState) => state.settings);
@@ -46,12 +53,22 @@ const EcashTapButton = () => {
             return;
          }
 
-         navigator.clipboard
-            .writeText(`${window.location.protocol}//${window.location.host}/wallet?token=${token}`)
-            .then(() =>
-               addToast(`$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`, 'success'),
-            )
-            .catch(e => addToast('Error copying token to clipboard' + e.message, 'error'));
+         if (isMobile) {
+            console.log('Sending token to mobile');
+            setTokenToSend(token);
+         } else {
+            navigator.clipboard
+               .writeText(
+                  `${window.location.protocol}//${window.location.host}/wallet?token=${token}`,
+               )
+               .then(() =>
+                  addToast(
+                     `$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`,
+                     'success',
+                  ),
+               )
+               .catch(e => addToast('Error copying token to clipboard' + e.message, 'error'));
+         }
       } catch (e: any) {
          addToast(`Error creating tap token: ${e.message && e.message}`, 'error');
       } finally {
@@ -60,13 +77,23 @@ const EcashTapButton = () => {
    };
 
    return (
-      <button
-         disabled={creatingToken}
-         onClick={handleEcashTapClicked}
-         className='fixed left-0 top-0 m-4 p-2 z-10'
-      >
-         <BanknoteIcon className='size-6' />
-      </button>
+      <>
+         <button
+            disabled={creatingToken}
+            onClick={handleEcashTapClicked}
+            className='fixed left-0 top-0 m-4 p-2 z-10'
+         >
+            <BanknoteIcon className='size-6' />
+         </button>
+         {tokenToSend && (
+            <Modal show={tokenToSend ? true : false} onClose={() => setTokenToSend(null)}>
+               <Modal.Header>
+                  <h2>Send Ecash</h2>
+               </Modal.Header>
+               <SendEcashModalBody token={tokenToSend} onClose={() => setTokenToSend(null)} />
+            </Modal>
+         )}
+      </>
    );
 };
 
