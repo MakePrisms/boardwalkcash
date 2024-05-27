@@ -47,7 +47,7 @@ const EcashTapButton = () => {
          }
 
          navigator.clipboard
-            .writeText(token)
+            .writeText(`${window.location.protocol}//${window.location.host}/wallet?token=${token}`)
             .then(() =>
                addToast(`$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`, 'success'),
             )
