@@ -9,7 +9,7 @@ import AddConnectionButton from './AddConnectionButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { XMarkIcon } from '@heroicons/react/20/solid';
+import { BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 const SettingsCog = () => (
    <svg
@@ -59,23 +59,23 @@ export const SettingsSidebar = () => {
             <Drawer.Items className='md:w-96 max-w-screen-sm'>
                <div className='flex align-middle items-center justify-around '></div>
 
-               <div className=' mt-4 space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-800'>
-                  <DrawerCollapse label='Mints'>
+               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
+                  <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='h-4 w-4' />}>
                      <div className='text-lg mb-2'></div>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
                      ))}
-                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-800'>
+                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-white'>
                         <AddMintButton keysets={keysets} />
                      </div>
                   </DrawerCollapse>
                </div>
-               <div className='mt-4 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-800'>
-                  <DrawerCollapse label='Connections'>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
+                  <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
                      ))}
-                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-800'>
+                     <div className=' space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-white'>
                         <AddConnectionButton
                            keysets={keysets}
                            nwcUri={nwcUri}

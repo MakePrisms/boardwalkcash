@@ -63,7 +63,7 @@ const AddConnectionButton = ({ keysets, nwcUri, setNwcUri }: AddConnectionButton
 
    return (
       <>
-         <form onSubmit={handleSubmit}>
+         <form onSubmit={handleSubmit} className='mb-5'>
             <div className='flex flex-col justify-around space-y-3 ml-5'>
                <h3 className='text-lg mb-2'>New Connection</h3>
                <div>
