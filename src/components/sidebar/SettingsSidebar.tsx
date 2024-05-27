@@ -59,23 +59,23 @@ export const SettingsSidebar = () => {
             <Drawer.Items className='md:w-96 max-w-screen-sm'>
                <div className='flex align-middle items-center justify-around '></div>
 
-               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
+               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='h-4 w-4' />}>
                      <div className='text-lg mb-2'></div>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
                      ))}
-                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-white'>
+                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
                         <AddMintButton keysets={keysets} />
                      </div>
                   </DrawerCollapse>
                </div>
-               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
+               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
                      ))}
-                     <div className=' space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-white'>
+                     <div className=' space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
                         <AddConnectionButton
                            keysets={keysets}
                            nwcUri={nwcUri}
