@@ -70,7 +70,7 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div>
-               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
+               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-white'>
                   <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
