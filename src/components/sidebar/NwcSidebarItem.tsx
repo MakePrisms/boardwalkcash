@@ -1,4 +1,4 @@
-import { Button, Sidebar } from 'flowbite-react';
+import { Button } from 'flowbite-react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/20/solid';
 import { NwcConnection, deleteNwcConnection } from '@/redux/slices/NwcSlice';
 import { useAppDispatch } from '@/redux/store';
@@ -15,8 +15,8 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
    return (
       <>
          {connection && (
-            <Sidebar.Item>
-               <div className='text-black text-lg  mb-1 flex justify-between'>
+            <div className='ms-10'>
+               <div className=' text-lg mb-4  flex justify-between'>
                   <h4 className='flex underline'>
                      {connection.appName}{' '}
                      <button className='ml-2' onClick={() => setShowDetails(!showDetails)}>
@@ -38,10 +38,8 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
                </div>
                {showDetails && (
                   <>
-                     <div className='text-black text-sm'>
-                        ${(connection.spent / 100).toFixed(2)} spent
-                     </div>
-                     <div className='text-black text-sm'>
+                     <div className='text-sm'>${(connection.spent / 100).toFixed(2)} spent</div>
+                     <div className='text-sm'>
                         {connection.budget
                            ? `$${((connection.budget - connection.spent) / 100).toFixed(2)} remaining`
                            : ''}
@@ -52,13 +50,13 @@ const NwcSidebarItem = ({ connection }: { connection: NwcConnection }) => {
                            ? new Date(connection.expiry * 1000).toLocaleString().split(',')[0]
                            : 'never'}
                      </div>
-                     <div className='text-black text-sm'>
+                     <div className=' text-sm'>
                         Created:{' '}
                         {new Date(connection.createdAt * 1000).toLocaleString().split(',')[0]}
                      </div>
                   </>
                )}
-            </Sidebar.Item>
+            </div>
          )}
       </>
    );

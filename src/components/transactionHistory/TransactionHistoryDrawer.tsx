@@ -10,6 +10,8 @@ import { ComponentProps, FC, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
 import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
+import { customDrawerTheme } from '@/themes/drawerTheme';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 
 type NewType = FC<ComponentProps<'svg'>>;
 
@@ -32,31 +34,6 @@ const ClockIcon = () => {
          />
       </svg>
    );
-};
-
-const XMark = () => (
-   <svg
-      xmlns='http://www.w3.org/2000/svg'
-      fill='none'
-      viewBox='0 0 24 24'
-      strokeWidth={1.5}
-      stroke='white'
-      className='w-7 h-7'
-   >
-      <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
-   </svg>
-);
-
-const customTheme = {
-   header: {
-      inner: {
-         titleText:
-            'mb-4 text-xl inline-flex items-center text-base font-semibold text-gray-200 dark:text-gray-400',
-         closeButton:
-            'absolute end-6 top-8 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white',
-         closeIcon: 'h-4 w-4',
-      },
-   },
 };
 
 const TransactionHistoryDrawer = () => {
@@ -156,13 +133,13 @@ const TransactionHistoryDrawer = () => {
             edge={false}
             position='right'
             className='md:min-w-fit min-w-full bg-[#0f1f41ff] text-white flex flex-col'
-            theme={customTheme}
+            theme={customDrawerTheme}
          >
             <Drawer.Header
+               className='drawer-header'
                title='Activity'
-               titleIcon={NoIcon}
-               className='mt-11'
-               closeIcon={XMark}
+               titleIcon={() => null}
+               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
             <Drawer.Items className='flex-grow'>
                <div className='flex flex-col h-full'>

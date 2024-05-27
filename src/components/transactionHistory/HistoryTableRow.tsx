@@ -6,9 +6,10 @@ import {
    isEcashTransaction,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
+import { setBalance } from '@/redux/slices/Wallet.slice';
 import { RootState } from '@/redux/store';
 import { addBalance } from '@/utils/cashu';
-import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useState } from 'react';
@@ -89,6 +90,13 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
                status: TxStatus.PAID,
             }),
          );
+
+         const newBalance = (JSON.parse(localStorage.getItem('proofs') || '[]') as Proof[]).reduce(
+            (a, b) => a + b.amount,
+            0,
+         );
+
+         dispatch(setBalance({ usd: newBalance }));
       }
 
       setReclaiming(false);

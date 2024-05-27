@@ -62,15 +62,15 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
 
    return (
       <>
-         <div className='flex flex-col justify-around'>
-            <h3 className='text-black text-lg mb-2'>Add a Mint</h3>
+         <form className='flex flex-col justify-around mb-5'>
+            <h3 className='text-lg mb-2'>Add a Mint</h3>
             <TextInput
-               placeholder='Mint URL'
+               placeholder='Mint URL (https://...)'
                value={mintUrl}
                onChange={e => setMintUrl(e.target.value)}
                helperText={
                   <>
-                     Enter the URL of the mint you would like to add. Search at{' '}
+                     Search at{' '}
                      <a
                         className='underline text-cyan-teal'
                         href='https://bitcoinmints.com?show=cashu&units=usd'
@@ -93,7 +93,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
             >
                Add
             </Button>
-         </div>
+         </form>
       </>
    );
 };

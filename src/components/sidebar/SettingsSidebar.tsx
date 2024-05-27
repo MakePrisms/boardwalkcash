@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { Modal, Sidebar } from 'flowbite-react';
+import { Drawer, Modal, Sidebar } from 'flowbite-react';
 import MintSidebarItem from './MintSidebarItem';
 import AddMintButton from './AddMintButton';
 import NwcSidebarItem from './NwcSidebarItem';
 import AddConnectionButton from './AddConnectionButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
+import { customDrawerTheme } from '@/themes/drawerTheme';
+import DrawerCollapse from '../DrawerCollapse';
+import { BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 const SettingsCog = () => (
    <svg
@@ -26,21 +29,8 @@ const SettingsCog = () => (
    </svg>
 );
 
-const XMark = () => (
-   <svg
-      xmlns='http://www.w3.org/2000/svg'
-      fill='none'
-      viewBox='0 0 24 24'
-      strokeWidth={1.5}
-      stroke='black'
-      className='w-6 h-6'
-   >
-      <path strokeLinecap='round' strokeLinejoin='round' d='M6 18 18 6M6 6l12 12' />
-   </svg>
-);
-
 export const SettingsSidebar = () => {
-   const [hidden, sethidden] = useState(true);
+   const [hidden, setHidden] = useState(true);
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
@@ -48,58 +38,58 @@ export const SettingsSidebar = () => {
    return (
       <>
          <div className={`${hidden ? '' : hidden}`}>
-            <button className='fixed right-0 top-0 m-4 p-2 z-10' onClick={() => sethidden(!hidden)}>
+            <button className='fixed right-0 top-0 m-4 p-2 z-10' onClick={() => setHidden(!hidden)}>
                {hidden && <SettingsCog />}
             </button>
          </div>
-         <Sidebar
-            aria-label='Settings Sidebar'
-            className={`fixed right-0 top-0 h-full w-full md:w-96 max-w-screen-sm bg-[#0f1f41ff] shadow-lg z-20 ${hidden ? 'hidden' : ''}`}
+         <Drawer
+            open={!hidden}
+            onClose={() => setHidden(true)}
+            edge={false}
+            position='right'
+            className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
+            theme={customDrawerTheme}
          >
-            <button className='hover:cursor-pointer p-3' onClick={() => sethidden(true)}>
-               <XMark />
-            </button>
-            <div className='flex align-middle items-center justify-around'>
-               <Sidebar.Logo
-                  className='text-black'
-                  href='#'
-                  img='/favicon.ico'
-                  imgAlt='Boardwalkcash logo'
-               >
-                  Boardwalk Cash
-               </Sidebar.Logo>
-            </div>
-            <Sidebar.Items>
-               <Sidebar.ItemGroup>
-                  <Sidebar.Collapse className='text-lg' label='Mints'>
+            <Drawer.Header
+               title='Settings'
+               titleIcon={() => null}
+               className='drawer-header'
+               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
+            />
+            <Drawer.Items className='md:w-96 max-w-screen-sm'>
+               <div className='flex align-middle items-center justify-around '></div>
+
+               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='h-4 w-4' />}>
+                     <div className='text-lg mb-2'></div>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
                      ))}
-                     <Sidebar.ItemGroup>
+                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
                         <AddMintButton keysets={keysets} />
-                     </Sidebar.ItemGroup>
-                  </Sidebar.Collapse>
-               </Sidebar.ItemGroup>
-               <Sidebar.ItemGroup>
-                  <Sidebar.Collapse className='text-lg' label='Connections'>
+                     </div>
+                  </DrawerCollapse>
+               </div>
+               <div className='mb-12 mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
                      ))}
-                     <Sidebar.ItemGroup>
+                     <div className=' space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
                         <AddConnectionButton
                            keysets={keysets}
                            nwcUri={nwcUri}
                            setNwcUri={setNwcUri}
                         />
-                     </Sidebar.ItemGroup>
-                  </Sidebar.Collapse>
-               </Sidebar.ItemGroup>
-            </Sidebar.Items>
-         </Sidebar>
-         <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')}>
+                     </div>
+                  </DrawerCollapse>
+               </div>
+            </Drawer.Items>
+         </Drawer>
+         <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')} className='text-black'>
             <Modal.Header>New Wallet Connection</Modal.Header>
             <Modal.Body className='flex flex-col space-y-3'>
-               <p className='text-black text-md mb-2'>
+               <p className='text-md mb-2'>
                   Paste your connection into any app that supports NWC to enable sending from your
                   Boardwalk Cash wallet. Currently, funds will only be sent from your main mint.
                </p>
