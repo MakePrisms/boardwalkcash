@@ -2,6 +2,7 @@ import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
 import { useWallet } from '@/hooks/useWallet';
 import { RootState } from '@/redux/store';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
@@ -22,6 +23,8 @@ export const BanknoteIcon = ({ className }: { className?: string }) => (
 );
 
 const EcashTapButton = () => {
+   const [creatingToken, setCreatingToken] = useState(false);
+
    const { createSendableEcashToken } = useCashu();
    const { ecashTapsEnabled, defaultTapAmount } = useSelector((state: RootState) => state.settings);
 
@@ -34,6 +37,8 @@ const EcashTapButton = () => {
       try {
          const wallet = getActiveWallet();
 
+         setCreatingToken(true);
+
          const token = await createSendableEcashToken(defaultTapAmount, wallet);
 
          if (!token) {
@@ -45,14 +50,21 @@ const EcashTapButton = () => {
             .writeText(token)
             .then(() =>
                addToast(`$${(defaultTapAmount / 100).toFixed(2)} copied to clipboard`, 'success'),
-            );
+            )
+            .catch(() => addToast('Error copying token to clipboard', 'error'));
       } catch (e: any) {
          addToast(`Error creating tap token: ${e.message && e.message}`, 'error');
+      } finally {
+         setCreatingToken(false);
       }
    };
 
    return (
-      <button onClick={handleEcashTapClicked} className='fixed left-0 top-0 m-4 p-2 z-10'>
+      <button
+         disabled={creatingToken}
+         onClick={handleEcashTapClicked}
+         className='fixed left-0 top-0 m-4 p-2 z-10'
+      >
          <BanknoteIcon className='size-6' />
       </button>
    );
