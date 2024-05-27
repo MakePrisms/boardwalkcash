@@ -54,7 +54,7 @@ export const SettingsSidebar = () => {
                title='Settings'
                titleIcon={() => null}
                className='drawer-header'
-               closeIcon={() => <XMarkIcon className='h-6 w-6' />}
+               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
             <Drawer.Items className='md:w-96 max-w-screen-sm'>
                <div className='flex align-middle items-center justify-around '></div>

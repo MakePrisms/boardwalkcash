@@ -15,9 +15,7 @@ export const customDrawerTheme: DeepPartial<FlowbiteDrawerTheme> = {
          titleText:
             'mb-4 text-xl inline-flex items-center text-base font-semibold text-gray-200 dark:text-gray-400',
          closeButton:
-            'absolute  end-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-white',
-
-         closeIcon: 'h-4 w-4',
+            'absolute  end-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-transparent text-sm text-white',
       },
    },
 };

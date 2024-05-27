@@ -139,7 +139,7 @@ const TransactionHistoryDrawer = () => {
                className='drawer-header'
                title='Activity'
                titleIcon={() => null}
-               closeIcon={() => <XMarkIcon className='h-6 w-6' />}
+               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
             <Drawer.Items className='flex-grow'>
                <div className='flex flex-col h-full'>
