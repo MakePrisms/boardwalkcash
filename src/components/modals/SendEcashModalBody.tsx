@@ -16,7 +16,7 @@ const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
    useEffect(() => {
       if (!token) return;
       setCarouselSlides([
-         <div className='text-black text-center space-y-2 ml-2' key='1'>
+         <div className='text-black text-center space-y-2 ml-3' key='1'>
             <h2 className='text-xl'>Shareable Boardwalk Cash Link</h2>
             <QRCode
                value={`${window.location.protocol}//${window.location.host}/wallet?token=${token}`}
