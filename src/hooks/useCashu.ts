@@ -473,7 +473,7 @@ export const useCashu = () => {
       console.log('swapToSend.proofs', proofs);
 
       if (proofs.length === 0) {
-         addToast('Insufficient balance', 'warning');
+         addToast('Insufficient balance in active mint', 'warning');
          throw new Error('Insufficient balance');
       }
 
