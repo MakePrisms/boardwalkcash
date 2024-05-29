@@ -9,10 +9,10 @@ import { RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import SendEcashModalBody from './SendEcashModalBody';
-import QrReaderComponent from '../QRReader';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
+import { useWallet } from '@/hooks/useWallet';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -37,9 +37,11 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
    const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
    const [scanError, setScanError] = useState<string | null>(null);
+   const [tokenToSend, setTokenToSend] = useState<string | null>(null);
 
    const { addToast } = useToast();
-   const { handlePayInvoice } = useCashu();
+   const { handlePayInvoice, createSendableEcashToken } = useCashu();
+   const { getActiveWallet } = useWallet();
    const { unitToSats } = useExchangeRate();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const dispatch = useDispatch();
@@ -223,6 +225,16 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       } else if (!isNaN(parseFloat(destination))) {
          console.log('AMount entered as destination');
          setAmountSat(destination);
+         const wallet = getActiveWallet();
+         const token = await createSendableEcashToken(
+            Math.floor(parseFloat(destination) * 100),
+            wallet,
+         );
+         if (!token) {
+            addToast('Error creating token', 'error');
+            return;
+         }
+         setTokenToSend(token);
          setCurrentTab(Tabs.Ecash);
       }
    };
@@ -309,12 +321,13 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
 
          case Tabs.Ecash:
             return (
-               <SendEcashModalBody
-                  amountUsd={parseFloat(destination) * 100}
-                  onClose={resetModalState}
-               />
+               <>
+                  {tokenToSend && (
+                     <SendEcashModalBody token={tokenToSend} onClose={resetModalState} />
+                  )}
+                  ;
+               </>
             );
-
          default:
             return null;
       }

@@ -20,8 +20,10 @@ import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '@/components/sidebar/ProcessingSwapModal';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
+import EcashTapButton from '@/components/EcashTapButton';
+import { GetServerSideProps } from 'next';
 
-export default function Home() {
+export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
    const [swapping, setSwapping] = useState(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
@@ -32,7 +34,6 @@ export default function Home() {
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
-
    const { updateProofsAndBalance, checkProofsValid, swapToMain } = useCashu();
 
    useEffect(() => {
@@ -152,6 +153,7 @@ export default function Home() {
          </main>
          <SettingsSidebar />
          <TransactionHistoryDrawer />
+         <EcashTapButton isMobile={isMobile} />
          <ProcessingSwapModal isSwapping={swapping} />
          {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
             <ConfirmEcashReceiveModal
@@ -167,3 +169,14 @@ export default function Home() {
       </>
    );
 }
+
+export const getServerSideProps: GetServerSideProps = async ({ req }: any) => {
+   const userAgent = req.headers['user-agent'];
+   const isMobile = /mobile/i.test(userAgent);
+
+   return {
+      props: {
+         isMobile,
+      },
+   };
+};

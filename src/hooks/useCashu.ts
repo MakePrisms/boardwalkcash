@@ -18,12 +18,14 @@ import {
    MintQuoteResponse,
    Proof,
    getDecodedToken,
+   getEncodedToken,
 } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
 import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cashu';
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 export const useCashu = () => {
    const dispatch = useDispatch();
@@ -254,6 +256,68 @@ export const useCashu = () => {
       }
    };
 
+   const createSendableEcashToken = async (amount: number, wallet: CashuWallet) => {
+      console.log('Send Ecash', amount);
+      if (amount <= 0) {
+         addToast('Enter an amount to send', 'error');
+         return;
+      }
+
+      console.log(
+         'TOtal balance. About to send',
+         (JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[]).reduce(
+            (a, b) => a + b.amount,
+            0,
+         ),
+      );
+
+      // TODO: make is so that I can use CashuWallet directly
+      const keyset: Wallet = {
+         id: wallet.keys.id,
+         url: wallet.mint.mintUrl,
+         proofs: [],
+         keys: wallet.keys,
+         active: true,
+      };
+
+      const { proofs: newProofs } = await swapToSend(amount, keyset);
+
+      console.log(
+         'Balance after sending',
+         (JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[]).reduce(
+            (a, b) => a + b.amount,
+            0,
+         ),
+      );
+
+      console.log('Send Ecash', newProofs);
+
+      if (!newProofs) {
+         return;
+      }
+
+      const token = getEncodedToken({
+         token: [{ proofs: newProofs, mint: keyset.url }],
+         unit: 'usd',
+      });
+
+      dispatch(
+         addTransaction({
+            type: 'ecash',
+            transaction: {
+               token: token,
+               amount: -amount,
+               unit: 'usd',
+               mint: keyset.url,
+               status: TxStatus.PENDING,
+               date: new Date().toLocaleString(),
+            },
+         }),
+      );
+
+      return token;
+   };
+
    const swapToMain = async (
       keyset: { id: string; url: string; unit: string; keys?: MintKeys },
       proofs?: Proof[],
@@ -409,7 +473,7 @@ export const useCashu = () => {
       console.log('swapToSend.proofs', proofs);
 
       if (proofs.length === 0) {
-         addToast('Insufficient balance', 'warning');
+         addToast('Insufficient balance in active mint', 'warning');
          throw new Error('Insufficient balance');
       }
 
@@ -522,5 +586,6 @@ export const useCashu = () => {
       updateProofsAndBalance,
       checkProofsValid,
       payInvoice,
+      createSendableEcashToken,
    };
 };
