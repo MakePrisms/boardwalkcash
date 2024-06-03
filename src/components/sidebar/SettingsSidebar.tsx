@@ -12,7 +12,7 @@ import DrawerCollapse from '../DrawerCollapse';
 import { BoltIcon, BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './EcashTapsSettings';
-import ConnectWalletSetting from './ConnectWalletSetting';
+import ConnectWalletSetting from './ConnectReserveSetting';
 
 const SettingsCog = () => (
    <svg
@@ -88,10 +88,7 @@ export const SettingsSidebar = () => {
                   </DrawerCollapse>
                </div>
                <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse
-                     label='Connect to Lightning'
-                     icon={<BoltIcon className='size-4' />}
-                  >
+                  <DrawerCollapse label={'Reserve'} icon={<BoltIcon className='size-4' />}>
                      <ConnectWalletSetting />
                   </DrawerCollapse>
                </div>

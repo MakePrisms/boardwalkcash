@@ -99,7 +99,12 @@ export const walletSlice = createSlice({
       },
       addKeyset: (
          state,
-         action: PayloadAction<{ keyset: MintKeys; url: string; active?: boolean }>,
+         action: PayloadAction<{
+            keyset: MintKeys;
+            url: string;
+            active?: boolean;
+            isReserve?: boolean;
+         }>,
       ) => {
          const { keyset, url } = action.payload;
          const toAdd: Wallet = {
@@ -108,6 +113,7 @@ export const walletSlice = createSlice({
             proofs: [],
             url,
             active: action.payload.active || false,
+            isReserve: action.payload.isReserve || false,
          };
          const newKeysetState = { ...state.keysets, [keyset.id]: toAdd };
          state.keysets = newKeysetState;

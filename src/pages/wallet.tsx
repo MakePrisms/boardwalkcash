@@ -22,7 +22,6 @@ import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveMod
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps } from 'next';
-import { useRemoteMintSigner } from '@/hooks/useRemoteMintSigner';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
@@ -36,7 +35,6 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
    const { updateProofsAndBalance, checkProofsValid, swapToMain } = useCashu();
-   const { subscribeAndHandleRemoteSignerRequests } = useRemoteMintSigner();
 
    useEffect(() => {
       if (!router.isReady) return;
@@ -131,11 +129,6 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    }, [dispatch, tokenDecoded]);
 
    const balance = useSelector((state: RootState) => state.wallet.balance);
-
-   useEffect(() => {
-      subscribeAndHandleRemoteSignerRequests();
-      return () => {};
-   }, [user]);
 
    useNwc();
    useNwc2({ privkey: user.privkey, pubkey: user.pubkey });

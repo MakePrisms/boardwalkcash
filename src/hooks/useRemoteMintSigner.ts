@@ -1,235 +1,109 @@
-import {
-   RemoteMintSignerState,
-   SignerConnection,
-   addRemoteMintSigner,
-} from '@/redux/slices/RemoteMintSignerSlice';
-import { RootState } from '@/redux/store';
 import { Proof, SerializedBlindedMessage, SerializedBlindedSignature } from '@cashu/cashu-ts';
-import { pointFromHex, serializeMintKeys } from '@cashu/crypto/modules/common';
-import { createBlindSignature, createNewMintKeys, verifyProof } from '@cashu/crypto/modules/mint';
 import NDK, { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
-import { generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
-import { useCallback, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNDK } from './useNDK';
+import { nip04 } from 'nostr-tools';
 
-const relays = ['wss://relay.primal.net'];
+export const useRemoteSigner = () => {
+   const parseUri = (uri: string) => {
+      const url = uri.replace('bunker://', 'https://');
+      const urlParts = new URL(url);
 
-export const useRemoteMintSigner = () => {
-   const dispatch = useDispatch();
+      const privateKey = urlParts.searchParams.get('secret');
 
-   const connections = useSelector((state: RootState) => state.remoteMintSigner.connections);
-   const connectionsRef = useRef(connections);
-   connectionsRef.current = connections;
-   const { privkey: walletPrivateKey, pubkey: walletPublicKey } = useSelector(
-      (state: RootState) => state.user,
-   );
+      if (!privateKey) {
+         throw new Error('Private key not found in connection URI');
+      }
 
-   const { subscribeAndHandle, publishNostrEvent } = useNDK();
+      const signerPubkey = urlParts.hostname;
 
-   const createSigner = () => {
-      if (!walletPublicKey) throw new Error('Wallet keypair not initialized');
+      if (!signerPubkey) {
+         throw new Error('Signer pubkey not found in connection URI');
+      }
 
-      const { id, privateKeys, publicKeys } = createKeyset('usd');
+      const relays = urlParts.searchParams.getAll('relay');
 
-      const { connectionToken, authorizedPubkey } = createConnectionToken(walletPublicKey, relays);
+      if (!relays || relays.length === 0) {
+         throw new Error('Relays not found in connection URI');
+      }
 
-      console.log('Creating signer', { id, privateKeys, connectionToken });
+      return { privateKey, relays, signerPubkey };
+   };
 
-      dispatch(
-         addRemoteMintSigner({
-            keysetId: id,
-            privateKeys,
-            publicKeys,
-            authorizedPubkey,
-         }),
+   const sendRequest = async <T>(uri: string, method: string, params: any): Promise<T> => {
+      const { privateKey, relays, signerPubkey } = parseUri(uri);
+
+      const ndk = new NDK({ explicitRelayUrls: relays });
+      ndk.signer = new NDKPrivateKeySigner(privateKey);
+
+      await ndk.connect().then(() => console.log('Connected to NDK'));
+
+      const requestContent = {
+         id: Math.floor(Math.random() * 1000000).toString(),
+         method,
+         params,
+      };
+
+      const encryptedContent = await nip04.encrypt(
+         privateKey,
+         signerPubkey,
+         JSON.stringify(requestContent),
       );
 
-      return { connectionToken, keysetId: id, publicKeys };
-   };
+      const requestEvent = new NDKEvent(ndk, {
+         kind: NDKKind.NostrConnect,
+         content: encryptedContent,
+         tags: [['p', signerPubkey]],
+      } as NostrEvent);
 
-   // connection token: bunker://<remote-user-pubkey>?relay=<wss://relay-to-connect-on>&relay=<wss://another-relay-to-connect-on>&secret=<optional-secret-value>
-   const createConnectionToken = (remotePubkey: string, relays: string[]) => {
-      const secretBytes = generateSecretKey();
-      const pubkeyHex = getPublicKey(secretBytes);
-      const secret = Buffer.from(secretBytes).toString('hex');
-      const connectionToken = `bunker://${remotePubkey}?${relays.map(relay => `relay=${relay}`).join('&')}&secret=${secret}`;
-      return { connectionToken, authorizedPubkey: pubkeyHex };
-   };
+      await requestEvent.sign();
 
-   const createKeyset = (unit: 'sat' | 'usd') => {
-      const pow2height = 64;
-      const seed = generateSecretKey(); // TODO : store seed in localstorage so that the same keyset can be recreated
+      const sub = ndk.subscribe({
+         kinds: [NDKKind.NostrConnect],
+         '#p': [requestEvent.pubkey],
+         authors: [signerPubkey],
+         since: requestEvent.created_at || 0,
+      });
 
-      const { keysetId, privKeys, pubKeys } = createNewMintKeys(pow2height, seed);
+      return new Promise(async (resolve, reject) => {
+         sub.on('event', async event => {
+            try {
+               const decryptedContent = await nip04.decrypt(
+                  privateKey,
+                  event.pubkey,
+                  event.content,
+               );
 
-      const privKeyStrings = serializeMintKeys(privKeys);
+               const response = JSON.parse(decryptedContent);
 
-      const pubKeyStrings = serializeMintKeys(pubKeys);
+               if (response.id !== requestContent.id) {
+                  return;
+               }
 
-      return { id: keysetId, privateKeys: privKeyStrings, publicKeys: pubKeyStrings };
-   };
+               resolve(response.result as T);
 
-   const requestHandlers = useRef(
-      new Map<
-         'cashu_verify' | 'cashu_sign',
-         (params: any, connection: SignerConnection) => Promise<any>
-      >(),
-   );
-
-   useEffect(() => {
-      requestHandlers.current.set('cashu_verify', cashuVerify);
-      requestHandlers.current.set('cashu_sign', cashuSign);
-   }, []);
-
-   const deserializeProof = (proof: Proof) => {
-      return {
-         ...proof,
-         secret: new TextEncoder().encode(proof.secret),
-         C: pointFromHex(proof.C),
-      };
-   };
-
-   const cashuVerify = useCallback(
-      async (proofs: Proof[] | Proof, connection: SignerConnection) => {
-         // Ensure proofs is an array
-         const proofsArray = Array.isArray(proofs) ? proofs : [proofs];
-
-         const keysetId = proofsArray[0].id;
-
-         // Ensure all proofs are for the same keyset
-         if (proofsArray.some(proof => proof.id !== keysetId)) {
-            throw new Error('All proofs must be for the same keyset');
-         }
-
-         let allValid = true;
-         for (const proof of proofsArray) {
-            const privateKeyString = connection.privateKeys[proof.amount];
-            const privateKey = Buffer.from(privateKeyString, 'hex');
-
-            const valid = verifyProof(deserializeProof(proof), privateKey);
-            if (!valid) {
-               console.error('Invalid proof:', proof);
-               allValid = false;
-               break;
+               sub.stop();
+            } catch (error) {
+               reject(error);
             }
-         }
-
-         return allValid;
-      },
-      [],
-   );
-
-   const cashuSign = useCallback(
-      async (
-         outputs: SerializedBlindedMessage[],
-         connection: SignerConnection,
-      ): Promise<SerializedBlindedSignature[]> => {
-         const blindedSigPromises = outputs.map(async output => {
-            const keysetId = output.id;
-            const B_ = pointFromHex(output.B_);
-            const privateKeyString = connection.privateKeys[output.amount];
-            const privateKey = Buffer.from(privateKeyString, 'hex');
-            const { C_ } = createBlindSignature(B_, privateKey, output.amount, output.id);
-            return { id: output.id, C_: C_.toHex(true), amount: output.amount };
          });
 
-         const blindedSigs = await Promise.all(blindedSigPromises);
-         return blindedSigs;
-      },
-      [],
-   );
-
-   const validateConnection = useCallback(
-      (event: NDKEvent, method: string, params: any) => {
-         const connection = connectionsRef.current[event.pubkey];
-
-         if (!connection) {
-            console.error('Invalid connection');
-            return;
+         try {
+            await requestEvent.publish();
+         } catch (error) {
+            reject(error);
          }
-
-         const keysetId = Array.isArray(params) ? params[0].id : params.id;
-
-         if (keysetId !== connection.keysetId) {
-            console.error('Invalid keyset ID');
-            return;
-         }
-
-         return connection;
-      },
-      [connectionsRef],
-   );
-
-   const handleRequest = useCallback(
-      async (event: NDKEvent, walletPrivateKey: string) => {
-         const decrypted = await nip04.decrypt(walletPrivateKey, event.pubkey, event.content);
-
-         if (!decrypted) {
-            console.error('Failed to decrypt');
-            return;
-         }
-
-         console.log('Decrypted:', decrypted);
-
-         const request = JSON.parse(decrypted);
-
-         console.log('Response:', request);
-
-         const { id, method, params } = request;
-
-         const handler = requestHandlers.current.get(method);
-
-         if (!handler) {
-            console.error('Invalid signer method');
-            return;
-         }
-
-         const connection = validateConnection(event, method, params);
-
-         if (!connection) {
-            console.error('Invalid connection');
-            return;
-         }
-
-         const response = await handler(params, connection);
-
-         console.log('Response:', response);
-
-         const encryptedResponse = await nip04.encrypt(
-            walletPrivateKey,
-            event.pubkey,
-            JSON.stringify({ id, result: response }),
-         );
-
-         const responseEvent = {
-            kind: NDKKind.NostrConnect,
-            pubkey: walletPublicKey,
-            content: encryptedResponse,
-            tags: [['p', event.pubkey]],
-         } as NostrEvent;
-
-         await publishNostrEvent(responseEvent);
-      },
-      [walletPublicKey, publishNostrEvent, validateConnection],
-   );
-
-   const subscribeAndHandleRemoteSignerRequests = async () => {
-      if (!walletPrivateKey || !walletPublicKey) return;
-
-      const filter = {
-         kinds: [NDKKind.NostrConnect],
-         '#p': [walletPublicKey],
-         since: Math.floor(Date.now() / 1000),
-      };
-
-      await subscribeAndHandle(
-         filter,
-         (event: NDKEvent) => handleRequest(event, walletPrivateKey),
-         undefined,
-         relays,
-      );
+      });
    };
 
-   return { createSigner, subscribeAndHandleRemoteSignerRequests };
+   const requestSignatures = async (
+      uri: string,
+      blindedMessages: SerializedBlindedMessage[],
+   ): Promise<SerializedBlindedSignature[]> => {
+      return sendRequest<SerializedBlindedSignature[]>(uri, 'cashu_sign', blindedMessages);
+   };
+
+   const requestVerification = async (uri: string, proof: Proof): Promise<boolean> => {
+      return sendRequest<boolean>(uri, 'cashu_verify', proof);
+   };
+
+   return { requestSignatures, requestVerification };
 };
