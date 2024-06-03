@@ -2,7 +2,7 @@ import { useState, FC, ReactNode } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 
 interface SimpleDrawerCollapseProps {
-   label: string;
+   label: string | ReactNode;
    icon?: JSX.Element;
    children: ReactNode;
 }

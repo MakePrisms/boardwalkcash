@@ -22,4 +22,5 @@ export type Wallet = {
    proofs: Proof[];
    url: string;
    active: boolean;
+   isReserve: boolean;
 };

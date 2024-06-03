@@ -2,14 +2,17 @@ import React, { useCallback, useEffect } from 'react';
 import NDK, {
    NDKEvent,
    NDKFilter,
+   NDKKind,
    NDKPrivateKeySigner,
    NDKRelay,
    NDKRelaySet,
+   NDKSubscription,
    NDKSubscriptionOptions,
    NostrEvent,
 } from '@nostr-dev-kit/ndk';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
+import { calculateSha256 } from '@/utils/crypto';
 
 // Find relays at https://nostr.watch
 const defaultRelays = [
@@ -28,8 +31,14 @@ type NDKContextType = {
       filter: NDKFilter,
       handler: (event: NDKEvent) => void,
       opts?: NDKSubscriptionOptions,
-   ) => void;
+      relays?: string[],
+   ) => Promise<void>;
    publishNostrEvent: (event: NostrEvent, relays?: string[]) => Promise<void>;
+   generateNip98Header: (
+      requestUrl: string,
+      httpMethod: string,
+      blob: Blob | undefined,
+   ) => Promise<string>;
 };
 
 // define this outside of the below NDKProvider component so that it is in scope for useNDK()
@@ -57,6 +66,10 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
       ndk.current.signer = signer;
    }, [privkey]);
 
+   const relaySetFromStrings = (relays: string[]) => {
+      return new NDKRelaySet(new Set(relays.map(r => new NDKRelay(r))), ndk.current);
+   };
+
    /**
     *
     * @param filter An NDKFilter for specific events
@@ -64,10 +77,22 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
     * @param opts Optional NDKSubscriptionOptions. Set `{closeOnEose: false}` to keep subscriptions open after eose
     */
    const subscribeAndHandle = useCallback(
-      (filter: NDKFilter, handler: (event: NDKEvent) => void, opts?: NDKSubscriptionOptions) => {
-         // subscribe to the filter
-         const sub = ndk.current.subscribe(filter, opts);
-
+      async (
+         filter: NDKFilter,
+         handler: (event: NDKEvent) => void,
+         opts?: NDKSubscriptionOptions,
+         relays?: string[],
+      ) => {
+         let sub: NDKSubscription;
+         if (relays) {
+            const relaySet = relaySetFromStrings(relays);
+            for await (const r of relaySet.relays) {
+               r.connect();
+            }
+            sub = ndk.current.subscribe(filter, opts, relaySet);
+         } else {
+            sub = ndk.current.subscribe(filter, opts);
+         }
          // `sub` emits 'event' events when a new nostr event is received
          // our handler then processes the event
          sub.on('event', (e: NDKEvent) => {
@@ -80,7 +105,7 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
       [],
    );
 
-   const publishNostrEvent = async (event: NostrEvent, relays?: string[]) => {
+   const publishNostrEvent = useCallback(async (event: NostrEvent, relays?: string[]) => {
       ndk.current.assertSigner();
 
       const e = new NDKEvent(ndk.current, event);
@@ -94,6 +119,29 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
          await e.publish();
       }
+   }, []);
+
+   const generateNip98Header = async (
+      requestUrl: string,
+      httpMethod: string,
+      blob: Blob | undefined,
+   ): Promise<string> => {
+      const event = new NDKEvent(ndk.current, {
+         kind: NDKKind.HttpAuth,
+         tags: [
+            ['u', requestUrl],
+            ['method', httpMethod],
+         ],
+      } as NostrEvent);
+
+      if (['POST', 'PUT', 'PATCH'].includes(httpMethod) && blob) {
+         const sha256Hash = await calculateSha256(blob);
+         event.tags.push(['payload', sha256Hash]);
+      }
+
+      await event.sign();
+      const encodedEvent = btoa(JSON.stringify(event.rawEvent()));
+      return `Nostr ${encodedEvent}`;
    };
 
    // Define what will be returned by useNDK();
@@ -101,6 +149,7 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
       ndk: ndk.current,
       subscribeAndHandle,
       publishNostrEvent,
+      generateNip98Header,
    };
 
    // create a new context with the contextValue
