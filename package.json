@@ -10,6 +10,7 @@
    },
    "dependencies": {
       "@cashu/cashu-ts": "github:gudnuf/cashu-ts#compiled",
+      "@cashu/crypto": "^0.2.6",
       "@gandlaf21/bc-ur": "^1.1.12",
       "@heroicons/react": "^2.1.1",
       "@noble/curves": "^1.3.0",

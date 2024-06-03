@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/Wallet.slice';
@@ -31,6 +31,7 @@ export const useCashu = () => {
    const dispatch = useDispatch();
    const { addToast } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
+   const [reserveKeyset, setReserveKeyset] = useState<Wallet | null>(null);
 
    const getProofs = (keysetId?: string) => {
       const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
@@ -39,6 +40,16 @@ export const useCashu = () => {
    };
    const wallet = useSelector((state: RootState) => state.wallet);
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+
+   useEffect(() => {
+      const reserveKeyset = Object.values(wallets).find(w => w.isReserve);
+
+      if (reserveKeyset) {
+         setReserveKeyset(reserveKeyset);
+      } else {
+         setReserveKeyset(null);
+      }
+   }, [wallets]);
 
    useEffect(() => {
       const localProofs = getProofs();
@@ -278,6 +289,7 @@ export const useCashu = () => {
          proofs: [],
          keys: wallet.keys,
          active: true,
+         isReserve: false,
       };
 
       const { proofs: newProofs } = await swapToSend(amount, keyset);
@@ -587,5 +599,6 @@ export const useCashu = () => {
       checkProofsValid,
       payInvoice,
       createSendableEcashToken,
+      reserveKeyset,
    };
 };

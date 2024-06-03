@@ -1,6 +1,11 @@
 import { ec as EC } from 'elliptic';
 import { randomBytes } from 'crypto';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
+import { bytesToNumber, splitAmount } from '@cashu/cashu-ts/dist/lib/es5/utils';
+import { BlindedMessage } from '@cashu/cashu-ts/dist/lib/es5/model/BlindedMessage';
+import { BlindedMessageData, SerializedBlindedMessage } from '@cashu/cashu-ts';
+import { bytesToHex } from '@noble/curves/abstract/utils';
+import { blindMessage } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 
 const ec = new EC('secp256k1');
 
@@ -13,27 +18,23 @@ function getCurvePointFromX(x: string) {
 }
 
 // Generate a blinded message for a given amount
-export function generateBlindedMessagesForAmount(amount: number, keysetId: string) {
-   const x = randomBytes(32).toString('hex');
-   const Y = getCurvePointFromX(x);
+export function createBlindedMessages(amount: number, keysetId: string): BlindedMessageData {
+   const amounts = splitAmount(amount);
+   const blindedMessages: Array<SerializedBlindedMessage> = [];
+   const secrets: Array<Uint8Array> = [];
+   const rs: Array<bigint> = [];
+   for (let i = 0; i < amounts.length; i++) {
+      const secretBytes = new TextEncoder().encode(bytesToHex(randomBytes(32)));
 
-   // Generate a new key pair for blinding factor 'r'
-   const rKeyPair = ec.genKeyPair();
-   const r = rKeyPair.getPrivate();
+      secrets.push(secretBytes);
 
-   const G = ec.g;
-   const rG = G.mul(r);
-   const B_ = Y.add(rG);
+      const { B_, r } = blindMessage(secretBytes);
+      rs.push(r);
 
-   // Return blinded message and the blinding factor 'r'
-   return {
-      blindedMessage: {
-         amount,
-         id: keysetId,
-         B_: B_.encode('hex', false),
-      },
-      blindingFactor: r.toString(16), // Return 'r' as a hex string
-   };
+      const blindedMessage = new BlindedMessage(amounts[i], B_, keysetId);
+      blindedMessages.push(blindedMessage.getSerializedBlindedMessage());
+   }
+   return { blindedMessages, rs, secrets };
 }
 
 export function unblindSignature(
@@ -74,4 +75,12 @@ export const generateKeyPair = () => {
       pubkey,
       privkey,
    };
+};
+
+export const calculateSha256 = async (blob: Blob): Promise<string> => {
+   const buffer = await blob.arrayBuffer();
+   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+   const hashArray = Array.from(new Uint8Array(hashBuffer));
+   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+   return hashHex;
 };
