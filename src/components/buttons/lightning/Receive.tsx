@@ -148,9 +148,8 @@ const Receive = () => {
             dispatch(updateTransactionStatus({ type: 'lightning', quote, status: TxStatus.PAID }));
          }
       } catch (error) {
-         console.error(error);
-         dispatch(setError('An error occurred.'));
-         dispatch(resetStatus());
+         console.error('Error receiving ', error);
+         handleModalClose();
       }
    };
 

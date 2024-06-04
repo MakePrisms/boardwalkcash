@@ -28,7 +28,7 @@ const ActivityIndicator = () => {
    }, [status, data]);
 
    return (
-      <div className='flex flex-row justify-around mb-10'>
+      <div className='flex flex-row justify-around mx-10 mb-10 items-center text-center'>
          {processing ? (
             <>
                <p className='mt-1'>{data.message}&nbsp;</p>
