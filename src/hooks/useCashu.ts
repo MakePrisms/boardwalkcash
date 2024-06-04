@@ -85,9 +85,14 @@ export const useCashu = () => {
    ) => {
       const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
 
-      const { quote, request } = await wallet.getMintQuote(amount);
+      try {
+         const { quote, request } = await wallet.getMintQuote(amount);
 
-      return { quote, request };
+         return { quote, request };
+      } catch (error: any) {
+         dispatch(setError('Error: main mint is offline or minting is disabled'));
+         throw error;
+      }
    };
 
    const handlePayInvoice = async (
