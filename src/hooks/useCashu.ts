@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/Wallet.slice';
+import { lockBalance, setBalance, unlockBalance, updateKeysetStatus } from '@/redux/slices/Wallet.slice';
 import {
    setError,
    setSending,
@@ -50,6 +50,15 @@ export const useCashu = () => {
          setReserveKeyset(null);
       }
    }, [wallets]);
+
+   const setKeysetNotReserve = () => {
+      if (!reserveKeyset) {
+         return;
+      }
+
+      dispatch(updateKeysetStatus({ id: reserveKeyset.id, isReserve: false }));
+   }
+
 
    useEffect(() => {
       const localProofs = getProofs();
@@ -605,5 +614,6 @@ export const useCashu = () => {
       payInvoice,
       createSendableEcashToken,
       reserveKeyset,
+      setKeysetNotReserve
    };
 };

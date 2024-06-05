@@ -8,7 +8,7 @@ import { normalizeUrl } from '@/utils/url';
 import { CashuMint, Proof } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import { Badge, Button, Label, TextInput } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 const ConnectWalletSetting = () => {
@@ -20,7 +20,15 @@ const ConnectWalletSetting = () => {
    const dispatch = useDispatch();
    const { requestSignatures } = useRemoteSigner();
    const { addToast } = useToast();
-   const { reserveKeyset } = useCashu();
+   const { reserveKeyset, setKeysetNotReserve } = useCashu();
+
+   useEffect(() => {
+      if (reserveKeyset !== null) {
+         setConnected(true);
+      } else {
+         setConnected(false);
+      }
+   }, [reserveKeyset]);
 
    useEffect(() => {
       const timer = setTimeout(() => {
@@ -99,12 +107,11 @@ const ConnectWalletSetting = () => {
             'error',
          );
       } finally {
-         setConnected(true);
          setFetchingMint(false);
       }
    };
 
-   const handleMintEcash = async (amount: number) => {
+   const handleMintEcash = useCallback(async (amount: number) => {
       if (!reserveKeyset) {
          addToast('No reserve keyset found', 'error');
          return;
@@ -127,12 +134,12 @@ const ConnectWalletSetting = () => {
       const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
 
       dispatch(setBalance({ usd: newBalance }));
-   };
+   }, [connectionString, reserveKeyset, requestSignatures])
 
    const handleDisconnect = () => {
       localStorage.removeItem('reserve');
-      setConnected(false);
       setConnectionString('');
+      setKeysetNotReserve();
    };
 
    const mintAmounts = [
