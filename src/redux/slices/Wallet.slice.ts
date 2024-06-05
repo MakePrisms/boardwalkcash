@@ -69,20 +69,28 @@ export const setMainKeyset = createAsyncThunk(
    },
 );
 
-interface UpdateKeysetActiveStatusPayload {
+interface UpdateKeysetStatusPayload {
    id: string;
-   active: boolean;
+   active?: boolean;
+   isReserve?: boolean;
 }
 
 export const walletSlice = createSlice({
    name: 'walletSlice',
    initialState,
    reducers: {
-      updateKeysetActiveStatus: (state, action: PayloadAction<UpdateKeysetActiveStatusPayload>) => {
-         const { id, active } = action.payload;
+      updateKeysetStatus: (state, action: PayloadAction<UpdateKeysetStatusPayload>) => {
+         const { id, active, isReserve } = action.payload;
          const keyset = state.keysets[id];
-         if (keyset) {
+         if (!keyset) {
+            throw new Error("Keyset doesn't exist.");
+            
+         }
+         if (active !== undefined) {
             keyset.active = active;
+         }
+         if (isReserve !== undefined) {
+            keyset.isReserve = isReserve;
          }
       },
       setBalance: (state, action: PayloadAction<{ [unit: string]: number }>) => {
@@ -152,7 +160,7 @@ export const walletSlice = createSlice({
    },
 });
 
-export const { setBalance, lockBalance, unlockBalance, addKeyset, updateKeysetActiveStatus } =
+export const { setBalance, lockBalance, unlockBalance, addKeyset, updateKeysetStatus } =
    walletSlice.actions;
 
 export default walletSlice.reducer;
