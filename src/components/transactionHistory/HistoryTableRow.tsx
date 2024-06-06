@@ -28,7 +28,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const getIcon = (tx: Transaction) => {
       if (isEcashTransaction(tx) && tx.isReserve) {
          console.log('Reserve transaction', tx);
-         return <VaultIcon className='h-7 w-7' />;
+         return <VaultIcon className='h-5 w-5' fill={true} />;
       }
 
       if (isEcashTransaction(tx)) {

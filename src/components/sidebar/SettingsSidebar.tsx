@@ -89,10 +89,7 @@ export const SettingsSidebar = () => {
                   </DrawerCollapse>
                </div>
                <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse
-                     label={'Reserve'}
-                     icon={<VaultIcon className='size-7 place-self-end' />}
-                  >
+                  <DrawerCollapse label={'Reserve'} icon={<VaultIcon className='size-4' />}>
                      <ConnectWalletSetting />
                   </DrawerCollapse>
                </div>
