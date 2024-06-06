@@ -13,6 +13,7 @@ import { BoltIcon, BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/r
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './EcashTapsSettings';
 import ConnectWalletSetting from './ConnectReserveSetting';
+import VaultIcon from '../icons/VaultIcon';
 
 const SettingsCog = () => (
    <svg
@@ -63,7 +64,7 @@ export const SettingsSidebar = () => {
                <div className='flex align-middle items-center justify-around '></div>
 
                <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='h-4 w-4' />}>
+                  <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='size-4' />}>
                      <div className='text-lg mb-2'></div>
                      {Object.keys(keysets).map((id, idx) => (
                         <MintSidebarItem keyset={keysets[id]} key={idx} />
@@ -88,7 +89,10 @@ export const SettingsSidebar = () => {
                   </DrawerCollapse>
                </div>
                <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse label={'Reserve'} icon={<BoltIcon className='size-4' />}>
+                  <DrawerCollapse
+                     label={'Reserve'}
+                     icon={<VaultIcon className='size-7 place-self-end' />}
+                  >
                      <ConnectWalletSetting />
                   </DrawerCollapse>
                </div>
