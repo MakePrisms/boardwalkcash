@@ -4,6 +4,7 @@ import {
    Transaction,
    TxStatus,
    isEcashTransaction,
+   isLightningTransaction,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
 import { setBalance } from '@/redux/slices/Wallet.slice';
@@ -14,6 +15,7 @@ import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import VaultIcon from '../icons/VaultIcon';
 
 const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const [reclaiming, setReclaiming] = useState(false);
@@ -22,6 +24,19 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
+
+   const getIcon = (tx: Transaction) => {
+      if (isEcashTransaction(tx) && tx.isReserve) {
+         console.log('Reserve transaction', tx);
+         return <VaultIcon className='h-7 w-7' />;
+      }
+
+      if (isEcashTransaction(tx)) {
+         return <BanknotesIcon className='h-5 w-5' />;
+      } else if (isLightningTransaction(tx)) {
+         return <BoltIcon className='h-5 w-5' />;
+      }
+   };
 
    const formatDate = (date: string) => {
       const [datePart, timePart] = date.split(', ');
@@ -114,10 +129,8 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
                      Reclaim
                   </button>
                )
-            ) : isEcashTransaction(tx) ? (
-               <BanknotesIcon className='h-5 w-5' />
             ) : (
-               <BoltIcon className='h-5 w-5' />
+               getIcon(tx)
             )}
          </Table.Cell>
       </Table.Row>

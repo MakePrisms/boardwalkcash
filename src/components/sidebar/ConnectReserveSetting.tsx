@@ -1,11 +1,12 @@
 import { useCashu } from '@/hooks/useCashu';
 import { useRemoteSigner } from '@/hooks/useRemoteMintSigner';
 import { useToast } from '@/hooks/useToast';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { addKeyset, setBalance } from '@/redux/slices/Wallet.slice';
 import { addBalance } from '@/utils/cashu';
 import { createBlindedMessages } from '@/utils/crypto';
 import { normalizeUrl } from '@/utils/url';
-import { CashuMint, Proof } from '@cashu/cashu-ts';
+import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import { Badge, Button, Label, TextInput } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -111,30 +112,52 @@ const ConnectWalletSetting = () => {
       }
    };
 
-   const handleMintEcash = useCallback(async (amount: number) => {
-      if (!reserveKeyset) {
-         addToast('No reserve keyset found', 'error');
-         return;
-      } else {
-         console.log('Reserve keyset:', reserveKeyset);
-      }
+   const handleMintEcash = useCallback(
+      async (amount: number) => {
+         if (!reserveKeyset) {
+            addToast('No reserve keyset found', 'error');
+            return;
+         } else {
+            console.log('Reserve keyset:', reserveKeyset);
+         }
 
-      setMintingAmount(amount);
+         setMintingAmount(amount);
 
-      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, reserveKeyset.keys.id);
+         const { blindedMessages, secrets, rs } = createBlindedMessages(
+            amount,
+            reserveKeyset.keys.id,
+         );
 
-      const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
+         const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
 
-      const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
-      console.log('Proofs:', proofs);
+         const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
+         console.log('Proofs:', proofs);
 
-      addBalance(proofs);
+         addBalance(proofs);
 
-      const newProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-      const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+         const newProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+         const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
 
-      dispatch(setBalance({ usd: newBalance }));
-   }, [connectionString, reserveKeyset, requestSignatures])
+         dispatch(setBalance({ usd: newBalance }));
+
+         const token = getEncodedToken({ token: [{ proofs: proofs, mint: reserveKeyset.url }] });
+
+         dispatch(
+            addTransaction({
+               type: 'reserve',
+               transaction: {
+                  token,
+                  amount,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PAID,
+                  unit: 'usd',
+                  mint: reserveKeyset.url,
+               },
+            }),
+         );
+      },
+      [connectionString, reserveKeyset, requestSignatures],
+   );
 
    const handleDisconnect = () => {
       localStorage.removeItem('reserve');
