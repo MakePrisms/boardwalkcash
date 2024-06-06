@@ -14,6 +14,7 @@ export interface EcashTransaction {
    status: TxStatus;
    unit: 'sat' | 'usd';
    appName?: string;
+   isReserve?: boolean;
 }
 
 export interface LightningTransaction {
@@ -57,7 +58,7 @@ const historySlice = createSlice({
       addTransaction: (
          state,
          action: PayloadAction<{
-            type: 'ecash' | 'lightning';
+            type: 'ecash' | 'lightning' | 'reserve';
             transaction: LightningTransaction | EcashTransaction;
          }>,
       ) => {
@@ -66,6 +67,9 @@ const historySlice = createSlice({
             state.ecash.push(transaction);
          } else if (type === 'lightning' && isLightningTransaction(transaction)) {
             state.lightning.push(transaction);
+         } else if (type === 'reserve' && isEcashTransaction(transaction)) {
+            console.log('Adding reserve transaction', transaction);
+            state.ecash.push({ ...transaction, isReserve: true });
          }
       },
       updateTransactionStatus: (
