@@ -37,7 +37,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
    const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
    const [scanError, setScanError] = useState<string | null>(null);
-   const [tokenToSend, setTokenToSend] = useState<string | null>(null);
+   const [tokenToSend, setTokenToSend] = useState<string | undefined>();
 
    const { addToast } = useToast();
    const { handlePayInvoice, createSendableEcashToken } = useCashu();
@@ -54,6 +54,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       setEstimatedFee(null);
       setMeltQuote(null);
       setIsSendModalOpen(false);
+      setTokenToSend(undefined);
    };
 
    const handleBackClick = () => {
@@ -223,6 +224,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       } else if (destination.includes('@')) {
          setCurrentTab(Tabs.Amount);
       } else if (!isNaN(parseFloat(destination))) {
+         setCurrentTab(Tabs.Ecash);
          console.log('AMount entered as destination');
          setAmountSat(destination);
          const wallet = getActiveWallet();
@@ -235,7 +237,6 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             return;
          }
          setTokenToSend(token);
-         setCurrentTab(Tabs.Ecash);
       }
    };
 
@@ -322,10 +323,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
          case Tabs.Ecash:
             return (
                <>
-                  {tokenToSend && (
-                     <SendEcashModalBody token={tokenToSend} onClose={resetModalState} />
-                  )}
-                  ;
+                  <SendEcashModalBody token={tokenToSend} onClose={resetModalState} />
                </>
             );
          default:
