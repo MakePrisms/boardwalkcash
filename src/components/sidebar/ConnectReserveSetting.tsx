@@ -8,7 +8,7 @@ import { createBlindedMessages } from '@/utils/crypto';
 import { normalizeUrl } from '@/utils/url';
 import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
-import { Badge, Button, Label, TextInput } from 'flowbite-react';
+import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
@@ -187,11 +187,20 @@ const ConnectWalletSetting = () => {
                   <h3 className='mb-3'>Tap to mint ecash</h3>
                   <div className='flex justify-around mb-4'>
                      {mintAmounts.map((tap, idx) => (
-                        <button key={idx} onClick={() => handleMintEcash(tap.value)}>
-                           <Badge color={`${mintingAmount === tap.value ? 'success' : 'dark'}`}>
-                              {tap.name}
-                           </Badge>
-                        </button>
+                        <div key={idx} className='flex items-center justify-center w-32'>
+                           {' '}
+                           {/* Set width to match the largest content */}
+                           {mintingAmount === tap.value ? (
+                              <Spinner size='sm' className='flex items-center justify-center' />
+                           ) : (
+                              <button
+                                 onClick={() => handleMintEcash(tap.value)}
+                                 className='flex items-center justify-center w-full'
+                              >
+                                 <Badge color='dark'>{tap.name}</Badge>
+                              </button>
+                           )}
+                        </div>
                      ))}
                   </div>
                </div>
