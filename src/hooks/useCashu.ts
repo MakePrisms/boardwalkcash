@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { lockBalance, setBalance, unlockBalance, updateKeysetStatus } from '@/redux/slices/Wallet.slice';
+import {
+   lockBalance,
+   setBalance,
+   unlockBalance,
+   updateKeysetStatus,
+} from '@/redux/slices/Wallet.slice';
 import {
    setError,
    setSending,
@@ -57,8 +62,7 @@ export const useCashu = () => {
       }
 
       dispatch(updateKeysetStatus({ id: reserveKeyset.id, isReserve: false }));
-   }
-
+   };
 
    useEffect(() => {
       const localProofs = getProofs();
@@ -172,6 +176,8 @@ export const useCashu = () => {
                   feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';
 
                dispatch(setSuccess(`Sent $${invoiceAmount / 100}!`));
+               dispatch(unlockBalance());
+               dispatch(setBalance({ usd: newBalance }));
             }
          }
       } catch (error) {
@@ -350,49 +356,48 @@ export const useCashu = () => {
       swapFrom?: CashuWallet,
       swapTo?: CashuWallet,
    ) => {
-   
       let calledGetProofs = false;
       if (!proofs) {
          proofs = getProofs(keyset.id);
          calledGetProofs = true;
       }
-   
+
       if (proofs.length === 0) {
          addToast('No balance to swap', 'warning');
          return;
       }
-   
+
       if (!swapFrom) {
          swapFrom = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
       }
-   
+
       const mainWallet = Object.values(wallets).find(w => w.active);
       if (!swapTo) {
          if (!mainWallet) {
             addToast('No main wallet found', 'error');
             return;
          }
-   
+
          swapTo = new CashuWallet(new CashuMint(mainWallet.url), { ...mainWallet, unit: 'usd' });
       }
-   
+
       console.log('## Swapping from', swapFrom?.mint.mintUrl);
       console.log('## Swapping to', swapTo?.mint.mintUrl);
-   
+
       try {
          let totalProofAmount = proofs.reduce((a, b) => a + b.amount, 0);
          let amountToMint = totalProofAmount;
-   
+
          let fee_reserve = Infinity;
-   
+
          let mintQuoteRes;
          let meltQuote;
          let amountUsd;
-   
+
          const shouldSwapInstead = proofs[0].id === swapTo.keys.id;
-   
+
          if (!shouldSwapInstead) {
-            // loop until melt/melt total amount is less than totalProofAmount 
+            // loop until melt/melt total amount is less than totalProofAmount
             while (fee_reserve + amountToMint > totalProofAmount) {
                if (keyset.unit === 'sat') {
                   amountUsd = await satsToUnit(amountToMint, 'usd');
@@ -402,21 +407,20 @@ export const useCashu = () => {
                }
 
                try {
-                  
                   mintQuoteRes = await swapTo.getMintQuote(amountUsd);
                } catch (e) {
                   throw new Error('main mint is offline or minting is disabled');
                }
-   
+
                meltQuote = await swapFrom.getMeltQuote(mintQuoteRes.request);
-   
+
                if (!meltQuote) {
                   addToast('Failed to get melt quote', 'error');
                   return;
                }
-   
+
                fee_reserve = meltQuote.fee_reserve;
-   
+
                if (keyset.unit === 'sat') {
                   amountToMint = totalProofAmount - fee_reserve;
                   amountUsd = await satsToUnit(amountToMint, 'usd');
@@ -424,28 +428,28 @@ export const useCashu = () => {
                   amountToMint = amountUsd - fee_reserve;
                }
             }
-   
+
             if (!mintQuoteRes || !meltQuote || !amountUsd) {
                throw new Error('Failed to get mint or melt quote');
             }
             await swapFrom.meltTokens(meltQuote, proofs, { keysetId: keyset.id });
-   
+
             const { proofs: newProofs } = await swapTo.mintTokens(amountUsd, mintQuoteRes?.quote);
-   
+
             if (calledGetProofs) {
                console.log('dangerously setting all proofs to newProofs');
                const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
                updatedProofs.push(...newProofs);
-   
+
                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
             } else {
                addBalance(newProofs);
             }
-   
+
             const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
-   
+
             dispatch(setBalance({ usd: newBalance }));
-   
+
             let successMsg = '';
             if (swapTo.mint.mintUrl === mainWallet?.url) {
                successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to your main mint`;
@@ -454,26 +458,29 @@ export const useCashu = () => {
                formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
                successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to ${formattedUrl}`;
             }
-   
+
             addToast(successMsg, 'success');
          } else {
             // Use swap function directly
-            const swapRes = await swapTo.receiveTokenEntry({proofs: proofs, mint: swapTo.mint.mintUrl});
+            const swapRes = await swapTo.receiveTokenEntry({
+               proofs: proofs,
+               mint: swapTo.mint.mintUrl,
+            });
 
             if (calledGetProofs) {
                console.log('dangerously setting all proofs to newProofs');
                const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
                updatedProofs.push(...swapRes.proofs);
-   
+
                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
             } else {
                addBalance(swapRes.proofs);
             }
-   
+
             const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
-   
+
             dispatch(setBalance({ usd: newBalance }));
-   
+
             let successMsg = '';
             const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
             if (swapTo.mint.mintUrl === mainWallet?.url) {
@@ -483,7 +490,7 @@ export const useCashu = () => {
                formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
                successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to ${formattedUrl}`;
             }
-   
+
             addToast(successMsg, 'success');
          }
       } catch (e: any) {
@@ -630,6 +637,6 @@ export const useCashu = () => {
       payInvoice,
       createSendableEcashToken,
       reserveKeyset,
-      setKeysetNotReserve
+      setKeysetNotReserve,
    };
 };
