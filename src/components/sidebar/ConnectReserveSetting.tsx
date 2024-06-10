@@ -167,8 +167,8 @@ const ConnectWalletSetting = () => {
    };
 
    const mintAmounts = [
-      { name: '1 ¢', value: 1 },
-      { name: '5 ¢', value: 5 },
+      { name: '1¢', value: 1 },
+      { name: '5¢', value: 5 },
       { name: '$1', value: 100 },
       { name: '$5', value: 500 },
       { name: '$25', value: 2500 },
@@ -177,7 +177,7 @@ const ConnectWalletSetting = () => {
    return (
       <>
          {connected ? (
-            <div>
+            <div className='mb-9 space-y-6'>
                <div className='flex justify-between mb-2'>
                   <div>Connected &#x2705;</div>
                   <Button size='xs' color={'failure'} onClick={handleDisconnect}>
@@ -185,7 +185,7 @@ const ConnectWalletSetting = () => {
                   </Button>
                </div>
                <div>
-                  <h3 className='mb-3'>Tap to mint ecash</h3>
+                  <h3 className='mb-9'>Tap to mint ecash</h3>
                   <div className='flex justify-around mb-4'>
                      {mintAmounts.map((tap, idx) => (
                         <div key={idx} className='flex items-center justify-center w-32'>
@@ -214,18 +214,19 @@ const ConnectWalletSetting = () => {
                      <a
                         className='underline text-cyan-teal'
                         target='_blank'
-                        href='https://pierreserve.com'
+                        href='https://peerreserve.com'
                      >
-                        PierReserve.com
+                        PeerReserve.com
                      </a>
                   </Label>
                   <TextInput
                      placeholder='Enter a reserve key...'
                      onChange={e => setConnectionString(e.target.value)}
                      value={connectionString}
+                     className='mt-1'
                   />
                </div>
-               <div>
+               <div className='self-end mt-2'>
                   <Button
                      className='mt-2 max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
                      onClick={handleConnect}
