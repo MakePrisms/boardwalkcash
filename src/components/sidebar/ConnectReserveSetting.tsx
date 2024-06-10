@@ -1,6 +1,7 @@
 import { useCashu } from '@/hooks/useCashu';
 import { useRemoteSigner } from '@/hooks/useRemoteMintSigner';
 import { useToast } from '@/hooks/useToast';
+import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { addKeyset, setBalance, setMainKeyset } from '@/redux/slices/Wallet.slice';
 import { useAppDispatch } from '@/redux/store';
@@ -156,6 +157,7 @@ const ConnectWalletSetting = () => {
                },
             }),
          );
+         dispatch(setSuccess(`Received $${(amount / 100).toFixed(2)}`));
       },
       [connectionString, reserveKeyset, requestSignatures],
    );
