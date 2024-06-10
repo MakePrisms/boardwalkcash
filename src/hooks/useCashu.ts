@@ -620,6 +620,10 @@ export const useCashu = () => {
       addToast('Payment successful', 'success');
 
       dispatch(unlockBalance());
+
+      const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
+      dispatch(setBalance({ usd: newBalance }));
+
       dispatch(setSuccess(`Sent $${(meltQuote.amount / 100).toFixed(2)}`));
 
       return { preimage: preimage || '', amountUsd: meltQuote.amount };
