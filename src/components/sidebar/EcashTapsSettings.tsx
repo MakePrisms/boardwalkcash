@@ -21,22 +21,24 @@ const EcashTapsSettings = () => {
 
    const tapAmounts = [
       { name: 'off', value: 0 },
-      { name: '1 ¢', value: 1 },
-      { name: '5 ¢', value: 5 },
-      { name: '25 ¢', value: 25 },
+      { name: '1¢', value: 1 },
+      { name: '5¢', value: 5 },
+      { name: '25¢', value: 25 },
       { name: '$1', value: 100 },
    ];
 
    return (
       <div>
-         <div className='text-lg mb-9'>Create one-tap sharable ecash</div>
+         <div className='mb-9'>Create one-tap sharable ecash</div>
          <div className='flex justify-around mb-4'>
             {tapAmounts.map((tap, idx) => (
-               <button key={idx} onClick={() => handleSetTapAmount(tap.value)}>
-                  <Badge color={`${defaultTapAmount === tap.value ? 'success' : 'dark'}`}>
-                     {tap.name}
-                  </Badge>
-               </button>
+               <div key={idx} className='flex items-center justify-center max-w-32'>
+                  <button onClick={() => handleSetTapAmount(tap.value)}>
+                     <Badge color={`${defaultTapAmount === tap.value ? 'success' : 'dark'}`}>
+                        {tap.name}
+                     </Badge>
+                  </button>
+               </div>
             ))}
          </div>
       </div>
