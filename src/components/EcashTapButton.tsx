@@ -1,11 +1,12 @@
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
 import { useWallet } from '@/hooks/useWallet';
-import { RootState } from '@/redux/store';
+import { RootState, useAppDispatch } from '@/redux/store';
 import { Modal } from 'flowbite-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import SendEcashModalBody from './modals/SendEcashModalBody';
+import { resetStatus, setSending } from '@/redux/slices/ActivitySlice';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
    <svg
@@ -30,7 +31,9 @@ interface EcashTapButtonProps {
 
 const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
    const [creatingToken, setCreatingToken] = useState(false);
-   const [tokenToSend, setTokenToSend] = useState<string | null>(null);
+   const [tokenToSend, setTokenToSend] = useState<string | undefined>(undefined);
+   const [showEcashTapModal, setShowEcashTapModal] = useState(false);
+   const dispatch = useAppDispatch();
 
    const { createSendableEcashToken } = useCashu();
    const { ecashTapsEnabled, defaultTapAmount } = useSelector((state: RootState) => state.settings);
@@ -41,6 +44,11 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
    if (!ecashTapsEnabled) return null;
 
    const handleEcashTapClicked = async () => {
+      if (isMobile) {
+         setShowEcashTapModal(true);
+      } else {
+         dispatch(setSending('Creating tap token...'));
+      }
       try {
          const wallet = getActiveWallet();
 
@@ -73,6 +81,7 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
          addToast(`Error creating tap token: ${e.message && e.message}`, 'error');
       } finally {
          setCreatingToken(false);
+         dispatch(resetStatus());
       }
    };
 
@@ -85,14 +94,24 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
          >
             <BanknoteIcon className='size-6' />
          </button>
-         {tokenToSend && (
-            <Modal show={tokenToSend ? true : false} onClose={() => setTokenToSend(null)}>
-               <Modal.Header>
-                  <h2>Send Ecash</h2>
-               </Modal.Header>
-               <SendEcashModalBody token={tokenToSend} onClose={() => setTokenToSend(null)} />
-            </Modal>
-         )}
+         <Modal
+            show={showEcashTapModal}
+            onClose={() => {
+               setTokenToSend(undefined);
+               setShowEcashTapModal(false);
+            }}
+         >
+            <Modal.Header>
+               <h2>Send Ecash</h2>
+            </Modal.Header>
+            <SendEcashModalBody
+               token={tokenToSend}
+               onClose={() => {
+                  setTokenToSend(undefined);
+                  setShowEcashTapModal(false);
+               }}
+            />
+         </Modal>
       </>
    );
 };

@@ -1,4 +1,4 @@
-import { Modal } from 'flowbite-react';
+import { Modal, Spinner } from 'flowbite-react';
 import React, { useEffect, useState } from 'react';
 import AnimatedQRCode from '../AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
@@ -7,7 +7,7 @@ import CustomCarousel from '../Carousel/CustomCarousel';
 import ErrorBoundary from '../ErrorBoundary';
 
 interface SendEcashModalBodyProps {
-   token: string;
+   token?: string;
    onClose: () => void;
 }
 
@@ -54,25 +54,34 @@ const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
       return () => {};
    }, [token]);
 
+   if (!token) {
+      return (
+         <Modal.Body>
+            <div className='flex flex-col items-center justify-center space-y-3'>
+               <Spinner size='lg' />
+               <p className='text-black'>Creating sendable token...</p>
+            </div>
+         </Modal.Body>
+      );
+   }
+
    return (
       <>
          <Modal.Body>
             <div className='flex flex-col justify-center items-center text-black space-y-3'>
-               {token && (
-                  <>
-                     <div className='max-w-full'>
-                        <CustomCarousel slides={carouselSlides} />
-                     </div>
-                     <div className='flex space-x-3'>
-                        <ClipboardButton
-                           toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${token}`}
-                           toShow={`Link`}
-                           onClick={onClose}
-                        />
-                        <ClipboardButton toCopy={`${token}`} toShow={`Token`} onClick={onClose} />
-                     </div>
-                  </>
-               )}
+               <>
+                  <div className='max-w-full'>
+                     <CustomCarousel slides={carouselSlides} />
+                  </div>
+                  <div className='flex space-x-3'>
+                     <ClipboardButton
+                        toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${token}`}
+                        toShow={`Link`}
+                        onClick={onClose}
+                     />
+                     <ClipboardButton toCopy={`${token}`} toShow={`Token`} onClick={onClose} />
+                  </div>
+               </>
             </div>
          </Modal.Body>
       </>

@@ -68,7 +68,6 @@ const historySlice = createSlice({
          } else if (type === 'lightning' && isLightningTransaction(transaction)) {
             state.lightning.push(transaction);
          } else if (type === 'reserve' && isEcashTransaction(transaction)) {
-            console.log('Adding reserve transaction', transaction);
             state.ecash.push({ ...transaction, isReserve: true });
          }
       },
