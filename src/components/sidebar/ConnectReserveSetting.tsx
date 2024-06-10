@@ -2,7 +2,8 @@ import { useCashu } from '@/hooks/useCashu';
 import { useRemoteSigner } from '@/hooks/useRemoteMintSigner';
 import { useToast } from '@/hooks/useToast';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { addKeyset, setBalance } from '@/redux/slices/Wallet.slice';
+import { addKeyset, setBalance, setMainKeyset } from '@/redux/slices/Wallet.slice';
+import { useAppDispatch } from '@/redux/store';
 import { addBalance } from '@/utils/cashu';
 import { createBlindedMessages } from '@/utils/crypto';
 import { normalizeUrl } from '@/utils/url';
@@ -10,7 +11,6 @@ import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
 
 const ConnectWalletSetting = () => {
    const [connectionString, setConnectionString] = useState('');
@@ -18,7 +18,7 @@ const ConnectWalletSetting = () => {
    const [mintingAmount, setMintingAmount] = useState<undefined | number>();
    const [fetchingMint, setFetchingMint] = useState(false);
 
-   const dispatch = useDispatch();
+   const dispatch = useAppDispatch();
    const { requestSignatures } = useRemoteSigner();
    const { addToast } = useToast();
    const { reserveKeyset, setKeysetNotReserve } = useCashu();
@@ -99,6 +99,7 @@ const ConnectWalletSetting = () => {
          }
 
          dispatch(addKeyset({ keyset: usdKeyset, url, isReserve: true }));
+         dispatch(setMainKeyset(usdKeyset.id));
 
          addToast('Mint added successfully', 'success');
       } catch (e) {
