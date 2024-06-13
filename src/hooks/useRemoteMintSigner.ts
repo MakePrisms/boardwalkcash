@@ -4,7 +4,7 @@ import { nip04 } from 'nostr-tools';
 
 export const useRemoteSigner = () => {
    const parseUri = (uri: string) => {
-      const url = uri.replace('bunker://', 'https://');
+      const url = uri.replace('nostr+mintconnect://', 'https://');
       const urlParts = new URL(url);
 
       const privateKey = urlParts.searchParams.get('secret');
