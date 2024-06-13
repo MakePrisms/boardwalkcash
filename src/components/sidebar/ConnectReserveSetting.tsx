@@ -1,5 +1,5 @@
 import { useCashu } from '@/hooks/useCashu';
-import { useRemoteSigner } from '@/hooks/useRemoteMintSigner';
+import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { useToast } from '@/hooks/useToast';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
@@ -20,7 +20,7 @@ const ConnectWalletSetting = () => {
    const [fetchingMint, setFetchingMint] = useState(false);
 
    const dispatch = useAppDispatch();
-   const { requestSignatures } = useRemoteSigner();
+   const { requestSignatures } = useNostrMintConnect();
    const { addToast } = useToast();
    const { reserveKeyset, setKeysetNotReserve } = useCashu();
 

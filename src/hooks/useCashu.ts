@@ -31,7 +31,7 @@ import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cas
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useRemoteSigner } from './useRemoteMintSigner';
+import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { createBlindedMessages } from '@/utils/crypto';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 
@@ -40,7 +40,7 @@ export const useCashu = () => {
    const { addToast } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [reserveKeyset, setReserveKeyset] = useState<Wallet | null>(null);
-   const { requestDeposit, requestSignatures } = useRemoteSigner();
+   const { requestDeposit, requestSignatures } = useNostrMintConnect();
 
    const getProofs = (keysetId?: string) => {
       const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
