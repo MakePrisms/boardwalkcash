@@ -37,12 +37,19 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
 
       setSwapToMainOpen(false);
 
-      swapToMain({
-         id: keyset.id,
-         url: keyset.url,
-         unit: keyset.keys.unit,
-         keys: keyset.keys,
-      }).finally(() => {
+      const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+
+      const proofsForThisKeyset = proofs.filter((proof: any) => proof.id === keyset.id);
+
+      swapToMain(
+         {
+            id: keyset.id,
+            url: keyset.url,
+            unit: keyset.keys.unit,
+            keys: keyset.keys,
+         },
+         proofsForThisKeyset,
+      ).finally(() => {
          setSwapping(false);
       });
    };

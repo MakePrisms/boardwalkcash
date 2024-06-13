@@ -372,7 +372,7 @@ export const useCashu = () => {
 
    const swapToMain = async (
       keyset: { id: string; url: string; unit: string; keys?: MintKeys },
-      proofs?: Proof[],
+      proofs: Proof[],
       swapFrom?: CashuWallet,
       swapTo?: CashuWallet,
    ) => {
@@ -417,6 +417,7 @@ export const useCashu = () => {
          const shouldSwapInstead = proofs[0].id === swapTo.keys.id;
 
          if (!shouldSwapInstead && mainWallet?.isReserve) {
+            console.log('Swapping to reserve');
             const connectionUri = localStorage.getItem('reserve');
 
             if (!connectionUri) {
@@ -465,9 +466,13 @@ export const useCashu = () => {
 
                const blindSignatures = await requestSignatures(connectionUri, blindedMessages);
 
-               const proofs = constructProofs(blindSignatures, rs, secrets, mainWallet.keys);
+               const newProofs = constructProofs(blindSignatures, rs, secrets, mainWallet.keys);
 
-               addBalance(proofs);
+               const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
+
+               updatedProofs.push(...newProofs);
+
+               window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
                const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
 
