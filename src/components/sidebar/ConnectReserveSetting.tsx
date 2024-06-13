@@ -59,7 +59,7 @@ const ConnectWalletSetting = () => {
 
       let valid = true;
 
-      if (!connectionString.trim().startsWith('bunker://')) {
+      if (!connectionString.trim().startsWith('nostr+mintconnect://')) {
          valid = false;
       }
       if (!connectionString.includes('secret')) {
