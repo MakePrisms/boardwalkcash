@@ -31,12 +31,16 @@ import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cas
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
+import { useRemoteSigner } from './useRemoteMintSigner';
+import { createBlindedMessages } from '@/utils/crypto';
+import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 
 export const useCashu = () => {
    const dispatch = useDispatch();
    const { addToast } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [reserveKeyset, setReserveKeyset] = useState<Wallet | null>(null);
+   const { requestDeposit, requestSignatures } = useRemoteSigner();
 
    const getProofs = (keysetId?: string) => {
       const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
@@ -396,7 +400,66 @@ export const useCashu = () => {
 
          const shouldSwapInstead = proofs[0].id === swapTo.keys.id;
 
-         if (!shouldSwapInstead) {
+         if (!shouldSwapInstead && mainWallet?.isReserve) {
+            const connectionUri = localStorage.getItem('reserve');
+
+            if (!connectionUri) {
+               addToast('ERROR: No reserve connection found', 'error');
+               return;
+            }
+
+            let invoice: string;
+            while (amountToMint + fee_reserve > totalProofAmount) {
+               const invoice = await requestDeposit(connectionUri, amountToMint);
+
+               console.log('depositInvoice', invoice);
+
+               if (!invoice) {
+                  addToast('Failed to invoice from reserve', 'error');
+                  return;
+               }
+
+               meltQuote = await swapFrom.getMeltQuote(invoice);
+
+               console.log('meltQuote', meltQuote);
+
+               if (!meltQuote) {
+                  addToast('Failed to get melt quote', 'error');
+                  return;
+               }
+
+               fee_reserve = meltQuote.fee_reserve;
+               amountToMint = totalProofAmount - fee_reserve;
+            }
+
+            if (!meltQuote) {
+               throw new Error('Failed to get melt quote');
+            }
+
+            const { preimage, isPaid } = await swapFrom.meltTokens(meltQuote, proofs, {
+               keysetId: keyset.id,
+            });
+
+            if (preimage || isPaid) {
+               console.log('Melted tokens successfully and paid reserve deposit');
+               const { blindedMessages, secrets, rs } = createBlindedMessages(
+                  amountToMint,
+                  mainWallet.id,
+               );
+
+               const blindSignatures = await requestSignatures(connectionUri, blindedMessages);
+
+               const proofs = constructProofs(blindSignatures, rs, secrets, mainWallet.keys);
+
+               addBalance(proofs);
+
+               const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
+
+               dispatch(setBalance({ usd: newBalance }));
+
+               addToast(`Swapped $${(amountToMint / 100).toFixed(2)} to reserve`, 'success');
+            }
+         } else if (!shouldSwapInstead) {
             // loop until melt/melt total amount is less than totalProofAmount
             while (fee_reserve + amountToMint > totalProofAmount) {
                if (keyset.unit === 'sat') {
