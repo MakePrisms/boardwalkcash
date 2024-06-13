@@ -427,7 +427,7 @@ export const useCashu = () => {
 
             let invoice: string;
             while (amountToMint + fee_reserve > totalProofAmount) {
-               const invoice = await requestDeposit(connectionUri, amountToMint);
+               const { invoice } = await requestDeposit(connectionUri, amountToMint);
 
                console.log('depositInvoice', invoice);
 

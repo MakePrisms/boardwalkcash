@@ -1,4 +1,7 @@
+import { Wallet } from '@/types';
+import { createBlindedMessages } from '@/utils/crypto';
 import { Proof, SerializedBlindedMessage, SerializedBlindedSignature } from '@cashu/cashu-ts';
+import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import NDK, { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
@@ -85,9 +88,44 @@ export const useNostrMintConnect = () => {
       return sendRequest<boolean>(uri, 'cashu_verify', proof);
    };
 
-   const requestDeposit = async (uri: string, amount: number, unit = 'usd'): Promise<string> => {
-      return sendRequest<string>(uri, 'deposit', { amount, unit });
+   const requestDeposit = async (
+      uri: string,
+      amount: number,
+      unit = 'usd',
+   ): Promise<{ invoice: string; payment_hash: string }> => {
+      return sendRequest<{ invoice: string; payment_hash: string }>(uri, 'deposit', {
+         amount,
+         unit,
+      });
    };
 
-   return { requestSignatures, requestVerification, requestDeposit };
+   const checkDeposit = async (uri: string, paymentHash: string): Promise<boolean> => {
+      const { paid } = await sendRequest<{ paid: boolean }>(uri, 'deposit_status', {
+         payment_hash: paymentHash,
+      });
+
+      return paid;
+   };
+
+   const createProofsFromReserve = async (
+      uri: string,
+      amount: number,
+      keyset: Wallet,
+   ): Promise<Proof[]> => {
+      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, keyset.keys.id);
+
+      const blindedSignatures = await requestSignatures(uri, blindedMessages);
+
+      const proofs = constructProofs(blindedSignatures, rs, secrets, keyset.keys);
+
+      return proofs;
+   };
+
+   return {
+      requestSignatures,
+      requestVerification,
+      requestDeposit,
+      checkDeposit,
+      createProofsFromReserve,
+   };
 };
