@@ -85,8 +85,8 @@ export const useNostrMintConnect = () => {
       return sendRequest<boolean>(uri, 'cashu_verify', proof);
    };
 
-   const requestDeposit = async (uri: string, amount: number): Promise<string> => {
-      return sendRequest<string>(uri, 'deposit', { amount });
+   const requestDeposit = async (uri: string, amount: number, unit = 'usd'): Promise<string> => {
+      return sendRequest<string>(uri, 'deposit', { amount, unit });
    };
 
    return { requestSignatures, requestVerification, requestDeposit };
