@@ -200,7 +200,7 @@ export const useCashu = () => {
    };
 
    const checkProofsValid = async (wallet: CashuWallet) => {
-      const localProofs = getProofs();
+      const localProofs = getProofs().filter(proof => proof.id === wallet.keys.id);
 
       if (localProofs.length === 0) {
          return;
@@ -208,7 +208,23 @@ export const useCashu = () => {
 
       try {
          // Call the check method
-         const spentProofs = await wallet.checkProofsSpent(localProofs);
+         const chunkArray = <T>(array: T[], chunkSize: number) => {
+            const chunks = [];
+            for (let i = 0; i < array.length; i += chunkSize) {
+               chunks.push(array.slice(i, i + chunkSize));
+            }
+            return chunks;
+         };
+
+         // Process in batches of 10
+         const batchSize = 10;
+         const proofChunks = chunkArray(localProofs, batchSize);
+         const spentProofs: Proof[] = [];
+
+         for await (const chunk of proofChunks) {
+            const spent = await wallet.checkProofsSpent(chunk);
+            spentProofs.push(...spent);
+         }
 
          if (spentProofs.length > 0) {
             // Filter out non-spendable proofs

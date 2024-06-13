@@ -105,7 +105,17 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
       if (tokenDecoded) return;
       let intervalCount = 0;
 
-      // updateProofsAndBalance();
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+      const checkProofsSequentially = async () => {
+         for (const w of Object.values(wallets)) {
+            const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
+            await checkProofsValid(wallet);
+
+            // Wait 1 second between each check (adjust as needed)
+            await delay(10000);
+         }
+      };
 
       const intervalId = setInterval(() => {
          updateProofsAndBalance();
@@ -113,12 +123,9 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
          // Increment the counter
          intervalCount += 1;
 
-         // Every fourth interval, call checkProofsValid
+         // Every eighth interval, call checkProofsValid
          if (intervalCount >= 8) {
-            Object.values(wallets).forEach(async w => {
-               const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-               await checkProofsValid(wallet);
-            });
+            checkProofsSequentially();
             intervalCount = 0;
          }
       }, 3000); // Poll every 3 seconds
