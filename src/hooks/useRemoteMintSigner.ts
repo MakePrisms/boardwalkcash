@@ -49,22 +49,27 @@ export const useRemoteSigner = () => {
       );
 
       const requestEvent = new NDKEvent(ndk, {
-         kind: NDKKind.NostrConnect,
+         kind: 23294,
          content: encryptedContent,
          tags: [['p', signerPubkey]],
       } as NostrEvent);
 
       await requestEvent.sign();
 
-      const sub = ndk.subscribe({
-         kinds: [NDKKind.NostrConnect],
+      const filter = {
+         kinds: [23295 as unknown as NDKKind],
          '#p': [requestEvent.pubkey],
          authors: [signerPubkey],
          since: requestEvent.created_at || 0,
-      });
+      };
+
+      console.log('response filter', filter);
+
+      const sub = ndk.subscribe(filter);
 
       return new Promise(async (resolve, reject) => {
          sub.on('event', async event => {
+            console.log('received event', event.rawEvent());
             try {
                const decryptedContent = await nip04.decrypt(
                   privateKey,
@@ -73,6 +78,8 @@ export const useRemoteSigner = () => {
                );
 
                const response = JSON.parse(decryptedContent);
+
+               console.log('decrypted response', response);
 
                if (response.id !== requestContent.id) {
                   return;
@@ -98,12 +105,16 @@ export const useRemoteSigner = () => {
       uri: string,
       blindedMessages: SerializedBlindedMessage[],
    ): Promise<SerializedBlindedSignature[]> => {
-      return sendRequest<SerializedBlindedSignature[]>(uri, 'cashu_sign', blindedMessages);
+      return sendRequest<SerializedBlindedSignature[]>(uri, 'issue_tokens', blindedMessages);
    };
 
    const requestVerification = async (uri: string, proof: Proof): Promise<boolean> => {
       return sendRequest<boolean>(uri, 'cashu_verify', proof);
    };
 
-   return { requestSignatures, requestVerification };
+   const requestDeposit = async (uri: string, amount: number): Promise<string> => {
+      return sendRequest<string>(uri, 'deposit', { amount });
+   };
+
+   return { requestSignatures, requestVerification, requestDeposit };
 };
