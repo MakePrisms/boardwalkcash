@@ -432,7 +432,7 @@ export const useCashu = () => {
                console.log('depositInvoice', invoice);
 
                if (!invoice) {
-                  addToast('Failed to invoice from reserve', 'error');
+                  addToast('Failed to get invoice from reserve', 'error');
                   return;
                }
 
