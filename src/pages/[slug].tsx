@@ -22,7 +22,7 @@ const UserProfilePage = () => {
    return (
       <>
          <Head>
-            <title>{username} - Profile</title>
+            <title>{username + "'s"} Boardwalk</title>
             <meta name='description' content={'This is the profile page for ' + username + '.'} />
             <meta property='og:title' content={`${username}'s Boardwalk`} />
             <meta property='og:description' content={`${username}'s Boardwalk`} />
