@@ -2,10 +2,11 @@ import { Mint } from '@prisma/client';
 import { findOrCreateMint } from './mintModels';
 import prisma from '@/lib/prisma';
 
-async function createUser(pubkey: string, defaultMint: Mint) {
+async function createUser(pubkey: string, defaultMint: Mint, username?: string) {
    const user = await prisma.user.create({
       data: {
          pubkey,
+         username,
          defaultMint: {
             connect: {
                url: defaultMint.url,
@@ -67,14 +68,19 @@ async function updateUser(
       };
    }
 
+   const payload: any = {
+      ...updates,
+   };
+
+   if (defaultMint) {
+      payload.defaultMint = defaultMint;
+   }
+
    const user = await prisma.user.update({
       where: {
          pubkey,
       },
-      data: {
-         ...updates,
-         defaultMint,
-      },
+      data: payload,
    });
    return user;
 }

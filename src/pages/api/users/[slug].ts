@@ -24,9 +24,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'PUT':
          try {
             const { pubkey, username, mintUrl } = req.body;
-            const updatedUser = await updateUser(pubkey, { username, mintUrl });
+            let updates = {};
+            if (username) {
+               updates = { ...updates, username };
+            }
+            if (mintUrl) {
+               updates = { ...updates, mintUrl };
+            }
+            const updatedUser = await updateUser(pubkey, updates);
             return res.status(200).json(updatedUser);
          } catch (error: any) {
+            console.log('Error:', error);
             return res.status(500).json({ message: error.message });
          }
 

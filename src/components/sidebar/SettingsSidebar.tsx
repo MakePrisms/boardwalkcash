@@ -9,11 +9,12 @@ import AddConnectionButton from './AddConnectionButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { BoltIcon, BuildingLibraryIcon, LinkIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { BuildingLibraryIcon, LinkIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './EcashTapsSettings';
 import ConnectWalletSetting from './ConnectReserveSetting';
 import VaultIcon from '../icons/VaultIcon';
+import ProfileSettings from './ProfileSetting';
 
 const SettingsCog = () => (
    <svg
@@ -91,6 +92,11 @@ export const SettingsSidebar = () => {
                <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label={'Reserve'} icon={<VaultIcon className='size-4' />}>
                      <ConnectWalletSetting />
+                  </DrawerCollapse>
+               </div>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
+                     <ProfileSettings />
                   </DrawerCollapse>
                </div>
                <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
