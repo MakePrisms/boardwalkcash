@@ -5,6 +5,7 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools';
 interface UserState {
    pubkey?: string;
    privkey?: string;
+   username?: string;
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
 }
@@ -15,7 +16,7 @@ const initialState: UserState = {
 };
 
 export const initializeUser = createAsyncThunk<
-   { pubkey: string; privkey: string } | undefined, // Type of the return value from the thunk
+   { pubkey: string; privkey: string; username: string } | undefined, // Type of the return value from the thunk
    void, // First argument of the payload creator
    { rejectValue: string } // Types for ThunkAPI parameters
 >('user/initializeUser', async (_, { rejectWithValue }) => {
@@ -43,19 +44,32 @@ export const initializeUser = createAsyncThunk<
 
          const defaultMintUrl = keysets[0].url;
 
-         await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
+         const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
+
+         const user = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
             pubkey: newPubKey,
             mintUrl: defaultMintUrl,
+            username: placeholderUsername,
          });
 
-         return { pubkey: newPubKey, privkey: Buffer.from(newSecretKey).toString('hex') };
+         const { username } = user.data;
+
+         return { pubkey: newPubKey, privkey: Buffer.from(newSecretKey).toString('hex'), username };
       } else {
          const user = await axios.get(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
          );
 
-         // console.log('User:', user.data);
-         return { pubkey: storedPubKey, privkey: storedPrivKey };
+         let { username } = user.data;
+
+         if (!username) {
+            username = `user-${storedPubKey.slice(0, 5)}`;
+            const updatedUser = await axios.put(
+               `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
+               { username, pubkey: storedPubKey },
+            );
+         }
+         return { pubkey: storedPubKey, privkey: storedPrivKey, username };
       }
    } catch (error) {
       return rejectWithValue('Error initializing user');
@@ -73,11 +87,17 @@ const userSlice = createSlice({
          })
          .addCase(
             initializeUser.fulfilled,
-            (state, action: PayloadAction<{ pubkey: string; privkey: string } | undefined>) => {
+            (
+               state,
+               action: PayloadAction<
+                  { pubkey: string; privkey: string; username: string } | undefined
+               >,
+            ) => {
                state.status = 'succeeded';
                if (action.payload) {
                   state.pubkey = action.payload.pubkey;
                   state.privkey = action.payload.privkey;
+                  state.username = action.payload.username;
                }
             },
          )
