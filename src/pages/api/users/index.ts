@@ -5,7 +5,7 @@ import { findOrCreateMint } from '@/lib/mintModels';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    if (req.method === 'POST') {
       try {
-         const { pubkey, mintUrl } = req.body;
+         const { pubkey, mintUrl, username } = req.body;
 
          if (!pubkey) {
             return res.status(400).json({ message: 'Pubkey is required' });
@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
          const mintLocal = await findOrCreateMint(mintUrl);
 
-         const user = await createUser(pubkey, mintLocal);
+         const user = await createUser(pubkey, mintLocal, username);
 
          return res.status(200).json(user);
       } catch (error: any) {
