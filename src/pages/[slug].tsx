@@ -1,6 +1,6 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { Button } from 'flowbite-react';
-import next from 'next';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode.react';
 import React from 'react';
@@ -20,16 +20,24 @@ const UserProfilePage = () => {
    }
 
    return (
-      <main
-         className='flex flex-col items-center justify-center mx-auto space-y-5'
-         style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
-      >
-         <h1 className='text-3xl'>{username}</h1>
-         <QRCode value={`${window.location.href}`} size={128} />
-         <div>
-            <ClipboardButton toCopy={username!} toShow='Username' />
-         </div>
-      </main>
+      <>
+         <Head>
+            <title>{username} - Profile</title>
+            <meta name='description' content={'This is the profile page for ' + username + '.'} />
+            <meta property='og:title' content={`${username}'s Boardwalk`} />
+            <meta property='og:description' content={`${username}'s Boardwalk`} />
+         </Head>
+         <main
+            className='flex flex-col items-center justify-center mx-auto space-y-5'
+            style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+         >
+            <h1 className='text-3xl'>{username}</h1>
+            <QRCode value={`${window.location.href}`} size={128} />
+            <div>
+               <ClipboardButton toCopy={username!} toShow='Username' />
+            </div>
+         </main>
+      </>
    );
 };
 
