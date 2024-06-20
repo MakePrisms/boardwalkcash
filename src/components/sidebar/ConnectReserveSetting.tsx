@@ -33,17 +33,6 @@ const ConnectWalletSetting = () => {
    }, [reserveKeyset]);
 
    useEffect(() => {
-      const timer = setTimeout(() => {
-         if (mintingAmount !== undefined) {
-            setMintingAmount(undefined);
-         }
-      }, 500);
-      return () => {
-         clearTimeout(timer);
-      };
-   }, [mintingAmount]);
-
-   useEffect(() => {
       const reserve = localStorage.getItem('reserve');
 
       if (reserve) {
@@ -116,6 +105,9 @@ const ConnectWalletSetting = () => {
 
    const handleMintEcash = useCallback(
       async (amount: number) => {
+         if (mintingAmount !== undefined) {
+            return;
+         }
          if (!reserveKeyset) {
             addToast('No reserve keyset found', 'error');
             return;
@@ -130,34 +122,41 @@ const ConnectWalletSetting = () => {
             reserveKeyset.keys.id,
          );
 
-         const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
+         try {
+            const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
 
-         const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
-         console.log('Proofs:', proofs);
+            const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
+            console.log('Proofs:', proofs);
 
-         addBalance(proofs);
+            addBalance(proofs);
 
-         const newProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-         const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
+            const newProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+            const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
 
-         dispatch(setBalance({ usd: newBalance }));
+            dispatch(setBalance({ usd: newBalance }));
 
-         const token = getEncodedToken({ token: [{ proofs: proofs, mint: reserveKeyset.url }] });
+            const token = getEncodedToken({ token: [{ proofs: proofs, mint: reserveKeyset.url }] });
 
-         dispatch(
-            addTransaction({
-               type: 'reserve',
-               transaction: {
-                  token,
-                  amount,
-                  date: new Date().toLocaleString(),
-                  status: TxStatus.PAID,
-                  unit: 'usd',
-                  mint: reserveKeyset.url,
-               },
-            }),
-         );
-         dispatch(setSuccess(`Received $${(amount / 100).toFixed(2)}`));
+            dispatch(
+               addTransaction({
+                  type: 'reserve',
+                  transaction: {
+                     token,
+                     amount,
+                     date: new Date().toLocaleString(),
+                     status: TxStatus.PAID,
+                     unit: 'usd',
+                     mint: reserveKeyset.url,
+                  },
+               }),
+            );
+            dispatch(setSuccess(`Received $${(amount / 100).toFixed(2)}`));
+            setMintingAmount(undefined);
+         } catch (e: any) {
+            console.error(e);
+            addToast(`Failed to mint ${e.message ? `- ${e.message}` : ''}`, 'error');
+            setMintingAmount(undefined);
+         }
       },
       [connectionString, reserveKeyset, requestSignatures],
    );
