@@ -135,6 +135,33 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
       };
    }, [dispatch, tokenDecoded]);
 
+   useEffect(() => {
+      // uses session storage to identify the tab so we can ignore incoming messages from the same tab
+      if (!sessionStorage.getItem('tabId')) {
+         sessionStorage.setItem(
+            'tabId',
+            Math.random().toString(36).substring(2) + new Date().getTime().toString(36),
+         );
+         console.log('Tab ID set to ' + sessionStorage.getItem('tabId'));
+      }
+      const tabId = sessionStorage.getItem('tabId');
+      const channel = new BroadcastChannel('app_channel');
+      channel.postMessage({ type: 'new_tab_opened', senderId: tabId });
+      channel.onmessage = async event => {
+         // console.log("Received message in tab " + tabId, event.data);
+         if (event.data.senderId === tabId) {
+            return; // Ignore the message if it comes from the same tab
+         }
+         if (event.data.type == 'new_tab_opened') {
+            channel.postMessage({ type: 'already_running', senderId: tabId });
+         } else if (event.data.type == 'already_running') {
+            console.log('already running');
+            window.location.href = '/already-running';
+         }
+      };
+      return () => {};
+   }, []);
+
    const balance = useSelector((state: RootState) => state.wallet.balance);
 
    useNwc();
