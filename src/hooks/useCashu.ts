@@ -27,7 +27,7 @@ import {
 } from '@cashu/cashu-ts';
 import { useToast } from './useToast';
 import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
-import { getNeededProofs, addBalance, customMintQuoteRequest } from '@/utils/cashu';
+import { getNeededProofs, addBalance, customMintQuoteRequest, removeProofs } from '@/utils/cashu';
 import { RootState } from '@/redux/store';
 import { useExchangeRate } from './useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
@@ -613,13 +613,7 @@ export const useCashu = () => {
 
       const wallet = new CashuWallet(new CashuMint(keyset.url), { ...keyset });
 
-      const proofs = getNeededProofs(amount, keyset.id);
-
-      const storedProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-      console.log(
-         'swapToSend.storedProfos',
-         storedProofs.reduce((a, b) => a + b.amount, 0),
-      );
+      const proofs = getNeededProofs(amount, keyset.id, false);
 
       console.log('swapToSend.proofs', proofs);
 
@@ -640,6 +634,7 @@ export const useCashu = () => {
          }
 
          addBalance(returnChange);
+         removeProofs(proofs);
 
          const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
          dispatch(setBalance({ usd: newBalance }));
