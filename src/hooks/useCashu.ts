@@ -566,7 +566,7 @@ export const useCashu = () => {
 
             if (swapRes.proofsWithError) {
                addToast('Failed to claim proofs', 'error');
-               return;
+               throw new Error();
             }
 
             if (calledGetProofs) {
@@ -598,6 +598,7 @@ export const useCashu = () => {
       } catch (e: any) {
          console.error('Failed to swap proofs:', e);
          addToast(`Failed to swap proofs - ${e.message && e.message}`, 'error');
+         throw e;
       }
    };
 
