@@ -57,8 +57,7 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
          const token = await createSendableEcashToken(defaultTapAmount, wallet);
 
          if (!token) {
-            addToast('Error creating tap token', 'error');
-            return;
+            throw new Error('Error creating tap token');
          }
 
          if (isMobile) {
@@ -78,7 +77,8 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
                .catch(e => addToast('Error copying token to clipboard' + e.message, 'error'));
          }
       } catch (e: any) {
-         addToast(`Error creating tap token: ${e.message && e.message}`, 'error');
+         console.error(e);
+         // addToast(`Error creating tap token: ${e.detail && e.detail}`, 'error');
       } finally {
          setCreatingToken(false);
          dispatch(resetStatus());

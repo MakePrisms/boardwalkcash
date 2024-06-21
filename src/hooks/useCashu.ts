@@ -107,6 +107,10 @@ export const useCashu = () => {
 
          return { quote, request };
       } catch (error: any) {
+         if (error.message) {
+            dispatch(setError(error.message));
+            throw new Error('Error getting mint quote', error.message);
+         }
          dispatch(setError('Error: main mint is offline or minting is disabled'));
          throw error;
       }
@@ -492,7 +496,11 @@ export const useCashu = () => {
 
                try {
                   mintQuoteRes = await swapTo.getMintQuote(amountUsd);
-               } catch (e) {
+               } catch (e: any) {
+                  console.error('Failed to get mint quote:', e.detail);
+                  if (e.message) {
+                     throw new Error(e.message);
+                  }
                   throw new Error('main mint is offline or minting is disabled');
                }
 
@@ -550,6 +558,11 @@ export const useCashu = () => {
                proofs: proofs,
                mint: swapTo.mint.mintUrl,
             });
+
+            if (swapRes.proofsWithError) {
+               addToast('Failed to claim proofs', 'error');
+               return;
+            }
 
             if (calledGetProofs) {
                console.log('dangerously setting all proofs to newProofs');
@@ -610,22 +623,29 @@ export const useCashu = () => {
          throw new Error('Insufficient balance');
       }
 
-      const { returnChange, send } = await wallet.send(amount, proofs);
+      try {
+         const { returnChange, send } = await wallet.send(amount, proofs);
 
-      console.log('swapToSend.send', send);
-      console.log('swapToSend.returnChange', returnChange);
+         console.log('swapToSend.send', send);
+         console.log('swapToSend.returnChange', returnChange);
 
-      if (!send) {
-         addToast('Failed to send', 'error');
-         throw new Error('Failed to send');
+         if (!send) {
+            addToast('Failed to send', 'error');
+            throw new Error('Failed to send');
+         }
+
+         addBalance(returnChange);
+
+         const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
+         dispatch(setBalance({ usd: newBalance }));
+
+         return { proofs: send, wallet };
+      } catch (e: any) {
+         console.log('swapToSend.error', e.message);
+         const msg = e.message ? e.message : 'Failed to swap to send';
+         addToast(msg, 'error');
+         throw new Error(msg);
       }
-
-      addBalance(returnChange);
-
-      const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);
-      dispatch(setBalance({ usd: newBalance }));
-
-      return { proofs: send, wallet };
    };
 
    const fetchUnitFromProofs = async (mintUrl: string, proofs: Proof[]) => {

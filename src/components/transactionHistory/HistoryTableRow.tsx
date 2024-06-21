@@ -90,8 +90,15 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
             }),
          );
       } else {
-         const newTokens = await wallet.receive(transaction.token);
-         const newProofs = newTokens.token.token[0].proofs;
+         const { token, tokensWithErrors } = await wallet.receive(transaction.token);
+
+         if (tokensWithErrors !== undefined) {
+            addToast('Failed to reclaim tokens', 'error');
+            setReclaiming(false);
+            return;
+         }
+
+         const newProofs = token.token[0].proofs;
          addBalance(newProofs);
          addToast(
             `Reclaimed $${(newProofs.reduce((a, b) => (a += b.amount), 0) / 100).toFixed(2)}`,

@@ -224,6 +224,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       } else if (destination.includes('@')) {
          setCurrentTab(Tabs.Amount);
       } else if (!isNaN(parseFloat(destination))) {
+         // user inputed amount so we create token
          setCurrentTab(Tabs.Ecash);
          console.log('AMount entered as destination');
          setAmountSat(destination);
@@ -231,9 +232,9 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
          const token = await createSendableEcashToken(
             Math.floor(parseFloat(destination) * 100),
             wallet,
-         );
+         ).catch(resetModalState);
          if (!token) {
-            addToast('Error creating token', 'error');
+            console.error('Failed to create ecash token');
             return;
          }
          setTokenToSend(token);
