@@ -74,7 +74,12 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
                      'success',
                   ),
                )
-               .catch(e => addToast('Error copying token to clipboard' + e.message, 'error'));
+               .catch(e => {
+                  addToast(
+                     'Error copying token to clipboard. Reclaim in transaction history.',
+                     'error',
+                  );
+               });
          }
       } catch (e: any) {
          console.error(e);

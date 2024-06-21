@@ -1,11 +1,11 @@
-import { CashuWallet, MintQuoteResponse, Proof } from '@cashu/cashu-ts';
+import { CashuWallet, MintQuoteResponse, Proof, getDecodedToken } from '@cashu/cashu-ts';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
  * @param amount Amount in satoshis we want to get proofs for
  * @returns Array of proofs or empty array if not enough proofs
  */
-export const getNeededProofs = (amount: number, keysetId?: string) => {
+export const getNeededProofs = (amount: number, keysetId?: string, update = true) => {
    const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
 
    let amountCollected: number = 0;
@@ -21,15 +21,30 @@ export const getNeededProofs = (amount: number, keysetId?: string) => {
       }
    }
 
-   if (amountCollected < amount) {
+   if (amountCollected < amount && update) {
       // put everything back
       window.localStorage.setItem('proofs', JSON.stringify([...proofsToPutBack, ...proofsToSend]));
       return [];
-   } else {
+   } else if (update) {
       // just put change back
       window.localStorage.setItem('proofs', JSON.stringify([...proofsToPutBack]));
       return proofsToSend;
+   } else {
+      return proofsToSend;
    }
+};
+
+/**
+ * Removes proofs from local storage
+ * @param proofsToRemove Array of proofs to remove
+ */
+export const removeProofs = (proofsToRemove: Proof[]) => {
+   const proofs: Proof[] = JSON.parse(window.localStorage.getItem('proofs') || '[]');
+
+   const updatedProofs = proofs.filter(
+      proof => !proofsToRemove.some(p => p.secret === proof.secret),
+   );
+   window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 };
 
 export const addBalance = (proofsToAdd: Proof[]) => {
