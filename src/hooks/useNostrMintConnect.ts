@@ -69,7 +69,9 @@ export const useNostrMintConnect = () => {
       });
 
       if (!res.ok) {
-         throw new Error(`Request failed with status ${res.status}`);
+         const error = await res.text();
+         const errMsg = JSON.parse(error).error || error;
+         throw new Error(`${errMsg}`);
       }
 
       const response = await res.json();
