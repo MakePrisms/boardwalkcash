@@ -208,11 +208,16 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             proofs,
             new CashuWallet(swapFromMint, { unit: tokenUnit! }), // swap from
             new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset }), // swap to
-         ).then(() => {
-            addEcashTransaction(TxStatus.PAID);
-         });
-
-         onClose();
+         )
+            .then(() => {
+               addEcashTransaction(TxStatus.PAID);
+            })
+            .catch(e => {
+               console.error('Failed to swap', e);
+            })
+            .finally(() => {
+               onClose();
+            });
       } catch (e) {
          console.error(e);
          addToast(
