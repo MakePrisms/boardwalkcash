@@ -8,8 +8,7 @@ const AlreadyRunning = () => {
       >
          <h1 className='text-3xl'>Already Running</h1>
          <p className='text-center'>
-            It looks like you already have BoardwalkCash running in another tab. Close one and
-            retry.
+            It looks like you already have Boardwalk running in another tab. Close one and retry.
          </p>
          <Button onClick={() => (window.location.href = '/wallet')}>Retry</Button>
       </main>
