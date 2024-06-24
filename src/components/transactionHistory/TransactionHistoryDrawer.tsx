@@ -9,7 +9,7 @@ import { Drawer, Pagination } from 'flowbite-react';
 import { ComponentProps, FC, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
-import { CashuMint, CashuWallet, getDecodedToken } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 
@@ -89,7 +89,12 @@ const TransactionHistoryDrawer = () => {
             const mintTransactions = groupedByMint[mint];
             const proofs = extractProofs(mintTransactions);
 
-            const spent = await new CashuWallet(new CashuMint(mint)).checkProofsSpent(proofs);
+            let spent: Proof[] = [];
+            try {
+               spent = await new CashuWallet(new CashuMint(mint)).checkProofsSpent(proofs);
+            } catch {
+               spent = [];
+            }
 
             if (spent.length > 0) {
                const spentSecrets = spent.map(s => s.secret);
