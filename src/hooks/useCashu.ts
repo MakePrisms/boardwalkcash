@@ -247,7 +247,7 @@ export const useCashu = () => {
             }
          }
       } catch (error) {
-         console.error('Failed to check proofs:', error);
+         // console.error('Failed to check proofs:', error);
       }
    };
 

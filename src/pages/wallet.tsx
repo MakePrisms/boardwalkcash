@@ -108,14 +108,17 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
       const checkProofsSequentially = async () => {
-         for (const w of Object.values(wallets)) {
+         await delay(6000);
+         for await (const w of Object.values(wallets)) {
             const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-            await checkProofsValid(wallet);
+            await checkProofsValid(wallet).catch();
 
             // Wait 1 second between each check (adjust as needed)
             await delay(10000);
          }
       };
+
+      checkProofsSequentially();
 
       const intervalId = setInterval(() => {
          updateProofsAndBalance();
@@ -125,7 +128,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
          // Every eighth interval, call checkProofsValid
          if (intervalCount >= 8) {
-            checkProofsSequentially();
+            // checkProofsSequentially();
             intervalCount = 0;
          }
       }, 3000); // Poll every 3 seconds
