@@ -1,4 +1,5 @@
 import { useCashu } from '@/hooks/useCashu';
+import { useNDK } from '@/hooks/useNDK';
 import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { useToast } from '@/hooks/useToast';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
@@ -23,6 +24,7 @@ const ConnectWalletSetting = () => {
    const { requestSignatures } = useNostrMintConnect();
    const { addToast } = useToast();
    const { reserveKeyset, setKeysetNotReserve } = useCashu();
+   const { generateNip98Header } = useNDK();
 
    useEffect(() => {
       if (reserveKeyset !== null) {
@@ -48,36 +50,76 @@ const ConnectWalletSetting = () => {
 
       let valid = true;
 
-      if (!connectionString.trim().startsWith('nostr+mintconnect://')) {
-         valid = false;
-      }
-      if (!connectionString.includes('secret')) {
-         valid = false;
-      }
+      const createMintPayload = {
+         nwc: connectionString,
+         // mint_max_balance=random.randint(1, 1000),
+         // mint_max_peg_in=random.randint(1, 1000),
+         // mint_max_peg_out=random.randint(1, 1000),
+         // mint_peg_out_only=random.choice([True, False]),
+         mint_name: 'A cool mint',
+         mint_description: "A mint's description",
+         mint_description_long: "A mint's long description",
+      };
 
-      let mintUrl = connectionString.split('mintUrl=')[1];
-      if (mintUrl.includes('&')) {
-         mintUrl = mintUrl.split('&')[0];
-      }
+      const mintProviderUrl = 'https://reserve.boardwalkcash.com';
 
-      console.log('mintUrl', mintUrl);
-
-      if (mintUrl === undefined) {
-         valid = false;
-      }
-
-      if (!valid) {
-         addToast('Invalid connection string', 'error');
-         return;
-      }
-
-      localStorage.setItem('reserve', connectionString);
-
-      const url = normalizeUrl(mintUrl);
-      const mint = new CashuMint(url);
+      const authHeader = await generateNip98Header(
+         `${mintProviderUrl}/user/mints`,
+         'POST',
+         undefined,
+      );
 
       try {
+         const response = await fetch(`${mintProviderUrl}/user/mints`, {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+               Authorization: authHeader,
+            },
+            body: JSON.stringify(createMintPayload),
+         });
+
+         if (!response.ok) {
+            throw new Error('Failed to create mint');
+         }
+
+         const mintData = await response.json();
+
+         console.log('Mint data:', mintData);
+         console.log('## MINT URL:', `${mintProviderUrl}/${mintData.id}`);
+
+         // // if (!connectionString.trim().startsWith('nostr+mintconnect://')) {
+         // //    valid = false;
+         // // }
+         // // if (!connectionString.includes('secret')) {
+         // //    valid = false;
+         // // }
+
+         // // let mintUrl = connectionString.split('mintUrl=')[1];
+         // // if (mintUrl.includes('&')) {
+         // //    mintUrl = mintUrl.split('&')[0];
+         // // }
+
+         // // console.log('mintUrl', mintUrl);
+
+         // // if (mintUrl === undefined) {
+         // //    valid = false;
+         // // }
+
+         // // if (!valid) {
+         // //    addToast('Invalid connection string', 'error');
+         // //    return;
+         // // }
+
+         // localStorage.setItem('reserve', connectionString);
+
+         // const url = normalizeUrl(mintUrl);
+         // const mint = new CashuMint(url);
+
          setFetchingMint(true);
+
+         const url = `${mintProviderUrl}/${mintData.id}`;
+         const mint = new CashuMint(url);
 
          const { keysets } = await mint.getKeys();
 
@@ -221,7 +263,7 @@ const ConnectWalletSetting = () => {
                      </a>
                   </Label>
                   <TextInput
-                     placeholder='Enter a reserve key...'
+                     placeholder='Enter NWC'
                      onChange={e => setConnectionString(e.target.value)}
                      value={connectionString}
                      className='mt-1'
