@@ -61,7 +61,7 @@ const ConnectWalletSetting = () => {
          mint_description_long: "A mint's long description",
       };
 
-      const mintProviderUrl = 'https://reserve.boardwalkcash.com';
+      const mintProviderUrl = process.env.NEXT_PUBLIC_MINT_PROVIDER_URL;
 
       const authHeader = await generateNip98Header(
          `${mintProviderUrl}/user/mints`,
@@ -130,6 +130,21 @@ const ConnectWalletSetting = () => {
             return;
          }
 
+         const createConnectionRes = await fetch(`${url}/nostr-mint-connect`, {
+            headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+            method: 'POST',
+         });
+
+         if (!createConnectionRes.ok) {
+            throw new Error('Failed to create connection');
+         }
+
+         const connectionData = await createConnectionRes.json();
+         let token = connectionData.connectionToken;
+         token = `${token}&mintUrl=${url}`;
+         localStorage.setItem('reserve', token);
+         setConnectionString(token);
+
          dispatch(addKeyset({ keyset: usdKeyset, url, isReserve: true }));
          dispatch(setMainKeyset(usdKeyset.id));
 
@@ -165,6 +180,7 @@ const ConnectWalletSetting = () => {
          );
 
          try {
+            console.log('CONNECTION STRING', connectionString);
             const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
 
             const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
