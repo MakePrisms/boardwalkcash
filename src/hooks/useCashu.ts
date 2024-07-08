@@ -167,9 +167,10 @@ export const useCashu = () => {
             let invoiceResponse: MeltTokensResponse;
             try {
                invoiceResponse = await wallet.payLnInvoice(invoice, sendResponse.send, meltQuote);
-            } catch (e) {
-               console.error('error paying invoice', e);
-               dispatch(setError('Payment failed'));
+            } catch (e: any) {
+               console.error('error paying invoice', e.message);
+               console.log(e.detail);
+               dispatch(setError(e.message || 'Payment failed'));
                dispatch(unlockBalance());
                addBalance(sendResponse.send);
                return;
@@ -434,35 +435,62 @@ export const useCashu = () => {
                return;
             }
 
-            let invoice: string;
-            while (amountToMint + fee_reserve > totalProofAmount) {
-               const { invoice } = await requestDeposit(connectionUri, amountToMint);
+            // let invoice: string;
+            let meltQuote: MeltQuoteResponse | undefined; // Define the correct type here
+            let attempts = 0;
+            const MAX_ATTEMPTS = 10; // Set a maximum number of attempts to prevent infinite loops
 
-               console.log('depositInvoice', invoice);
+            while (attempts < MAX_ATTEMPTS) {
+               attempts++;
 
-               if (!invoice) {
-                  addToast('Failed to get invoice from reserve', 'error');
+               try {
+                  const { invoice } = await requestDeposit(connectionUri, amountToMint);
+                  console.log('depositInvoice', invoice);
+
+                  if (!invoice) {
+                     addToast('Failed to get invoice from reserve', 'error');
+                     return;
+                  }
+
+                  meltQuote = await swapFrom.getMeltQuote(invoice);
+                  console.log('meltQuote', meltQuote);
+
+                  if (!meltQuote) {
+                     addToast('Failed to get melt quote', 'error');
+                     return;
+                  }
+
+                  if (meltQuote.amount + meltQuote.fee_reserve <= totalProofAmount) {
+                     // We've found a suitable amount, break the loop
+                     break;
+                  }
+
+                  // Adjust amountToMint for the next iteration
+                  amountToMint = totalProofAmount - meltQuote.fee_reserve - 1; // Subtract 1 to ensure it's less
+               } catch (error) {
+                  console.error('Error in swap attempt:', error);
+                  addToast('Error occurred during swap attempt', 'error');
                   return;
                }
-
-               meltQuote = await swapFrom.getMeltQuote(invoice);
-
-               console.log('meltQuote', meltQuote);
-
-               if (!meltQuote) {
-                  addToast('Failed to get melt quote', 'error');
-                  return;
-               }
-
-               fee_reserve = meltQuote.fee_reserve;
-               amountToMint = totalProofAmount - fee_reserve;
             }
+
+            if (!meltQuote) {
+               addToast('Failed to get melt quote', 'error');
+               return;
+            }
+
+            if (attempts >= MAX_ATTEMPTS) {
+               addToast('Failed to find suitable amount after maximum attempts', 'error');
+               return;
+            }
+
+            fee_reserve = meltQuote.fee_reserve;
 
             if (!meltQuote) {
                throw new Error('Failed to get melt quote');
             }
 
-            const { preimage, isPaid } = await swapFrom.meltTokens(meltQuote, proofs, {
+            const { preimage, isPaid, change } = await swapFrom.meltTokens(meltQuote, proofs, {
                keysetId: keyset.id,
             });
 
@@ -479,7 +507,7 @@ export const useCashu = () => {
 
                const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
 
-               updatedProofs.push(...newProofs);
+               updatedProofs.push(...newProofs, ...change);
 
                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
 
@@ -490,8 +518,11 @@ export const useCashu = () => {
                addToast(`Swapped $${(amountToMint / 100).toFixed(2)} to reserve`, 'success');
             }
          } else if (!shouldSwapInstead) {
-            // loop until melt/melt total amount is less than totalProofAmount
-            while (fee_reserve + amountToMint > totalProofAmount) {
+            let attempts = 0;
+            const MAX_ATTEMPTS = 10; // Set a maximum number of attempts to prevent infinite loops
+
+            while (attempts < MAX_ATTEMPTS) {
+               attempts++;
                if (keyset.unit === 'sat') {
                   amountUsd = await satsToUnit(amountToMint, 'usd');
                   console.log('amountUsd:', amountUsd);
@@ -516,6 +547,16 @@ export const useCashu = () => {
                   return;
                }
 
+               if (attempts >= MAX_ATTEMPTS) {
+                  addToast('Failed to find suitable amount after maximum attempts', 'error');
+                  return;
+               }
+
+               if (meltQuote.amount + meltQuote.fee_reserve <= totalProofAmount) {
+                  // We've found a suitable amount, break the loop
+                  break;
+               }
+
                fee_reserve = meltQuote.fee_reserve;
 
                if (keyset.unit === 'sat') {
@@ -529,18 +570,20 @@ export const useCashu = () => {
             if (!mintQuoteRes || !meltQuote || !amountUsd) {
                throw new Error('Failed to get mint or melt quote');
             }
-            await swapFrom.meltTokens(meltQuote, proofs, { keysetId: keyset.id });
+            const { change } = await swapFrom.meltTokens(meltQuote, proofs, {
+               keysetId: keyset.id,
+            });
 
             const { proofs: newProofs } = await swapTo.mintTokens(amountUsd, mintQuoteRes?.quote);
 
             if (calledGetProofs) {
                console.log('dangerously setting all proofs to newProofs');
                const updatedProofs = getProofs().filter(proof => proof.id !== swapFrom.keys.id);
-               updatedProofs.push(...newProofs);
+               updatedProofs.push(...newProofs, ...change);
 
                window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
             } else {
-               addBalance(newProofs);
+               addBalance([...newProofs, ...change]);
             }
 
             const newBalance = getProofs().reduce((a, b) => a + b.amount, 0);

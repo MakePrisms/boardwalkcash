@@ -1,6 +1,6 @@
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { setMainKeyset } from '@/redux/slices/Wallet.slice';
+import { setBalance, setMainKeyset } from '@/redux/slices/Wallet.slice';
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Wallet } from '@/types';
 import { Proof } from '@cashu/cashu-ts';
@@ -49,9 +49,19 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
             keys: keyset.keys,
          },
          proofsForThisKeyset,
-      ).finally(() => {
-         setSwapping(false);
-      });
+      )
+         .then(() => {
+            console.log('Swapped to main');
+            const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+            const newProofs = proofs.filter(
+               p => !proofsForThisKeyset.some(p2 => p2.secret === p.secret),
+            );
+            window.localStorage.setItem('proofs', JSON.stringify(newProofs));
+            dispatch(setBalance({ usd: newProofs.reduce((acc, p) => acc + p.amount, 0) }));
+         })
+         .finally(() => {
+            setSwapping(false);
+         });
    };
 
    const handleCopy = () => {
