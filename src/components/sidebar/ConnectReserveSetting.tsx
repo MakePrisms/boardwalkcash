@@ -1,6 +1,6 @@
 import { useCashu } from '@/hooks/useCashu';
 import { useNDK } from '@/hooks/useNDK';
-import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
+import { MetricsResponse, useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { useToast } from '@/hooks/useToast';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
@@ -11,6 +11,8 @@ import { createBlindedMessages } from '@/utils/crypto';
 import { normalizeUrl } from '@/utils/url';
 import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
+import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
+import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
 import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -19,9 +21,14 @@ const ConnectWalletSetting = () => {
    const [connected, setConnected] = useState(false);
    const [mintingAmount, setMintingAmount] = useState<undefined | number>();
    const [fetchingMint, setFetchingMint] = useState(false);
+   const [showMetrics, setShowMetrics] = useState(false);
+   const [metrics, setMetrics] = useState<MetricsResponse>({
+      backend_balance: 0,
+      mint_balance: 0,
+   });
 
    const dispatch = useAppDispatch();
-   const { requestSignatures } = useNostrMintConnect();
+   const { requestSignatures, reserveMetrics } = useNostrMintConnect();
    const { addToast } = useToast();
    const { reserveKeyset, setKeysetNotReserve } = useCashu();
    const { generateNip98Header } = useNDK();
@@ -44,6 +51,20 @@ const ConnectWalletSetting = () => {
          setConnected(false);
       }
    }, []);
+
+   useEffect(() => {
+      if (!connectionString) return;
+      handleGetReserveMetrics();
+      return () => {};
+   }, [connectionString]);
+
+   const handleGetReserveMetrics = async () => {
+      if (!connectionString) {
+         addToast('No reserve connection string found', 'error');
+      }
+      const metrics = await reserveMetrics(connectionString);
+      setMetrics(metrics);
+   };
 
    const handleConnect = async () => {
       console.log('Connect to', connectionString);
@@ -180,7 +201,6 @@ const ConnectWalletSetting = () => {
          );
 
          try {
-            console.log('CONNECTION STRING', connectionString);
             const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
 
             const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
@@ -210,6 +230,7 @@ const ConnectWalletSetting = () => {
             );
             dispatch(setSuccess(`Received $${(amount / 100).toFixed(2)}`));
             setMintingAmount(undefined);
+            handleGetReserveMetrics().catch(e => console.error(e));
          } catch (e: any) {
             console.error(e);
             addToast(`Failed to mint ${e.message ? `- ${e.message}` : ''}`, 'error');
@@ -233,16 +254,42 @@ const ConnectWalletSetting = () => {
       { name: '$25', value: 2500 },
    ];
 
+   const formatCents = (cents: number) => {
+      return `$${(cents / 100).toFixed(2)}`;
+   };
+
    return (
       <>
          {connected ? (
             <div className='mb-9 space-y-6'>
                <div className='flex justify-between mb-2'>
-                  <div>Connected &#x2705;</div>
+                  <div>
+                     Connected{' '}
+                     <span>
+                        <button className='ml-2' onClick={() => setShowMetrics(!showMetrics)}>
+                           {showMetrics ? (
+                              <EyeSlashIcon className='size-4' />
+                           ) : (
+                              <EyeIcon className='size-4' />
+                           )}
+                        </button>
+                     </span>{' '}
+                  </div>
                   <Button size='xs' color={'failure'} onClick={handleDisconnect}>
                      Disconnect
                   </Button>
                </div>
+               {showMetrics && (
+                  <div className='text-sm'>
+                     <div>
+                        Wallet Balance:{' '}
+                        {metrics.backend_balance && formatCents(metrics.backend_balance)}
+                     </div>
+                     <div>
+                        Issued Tokens: {metrics.mint_balance && formatCents(metrics.mint_balance)}
+                     </div>
+                  </div>
+               )}
                <div>
                   <h3 className='mb-9'>Tap to mint ecash</h3>
                   <div className='flex justify-around mb-4'>
