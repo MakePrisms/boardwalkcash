@@ -5,6 +5,20 @@ import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import NDK, { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
+export type MetricsResponse = {
+   backend_balance: number;
+   mint_balance: number;
+};
+
+export type DepositResponse = {
+   invoice: string;
+   payment_hash: string;
+};
+
+export type DepositStatusResponse = {
+   paid: boolean;
+};
+
 export const useNostrMintConnect = () => {
    const parseUri = (uri: string) => {
       const url = uri.replace('nostr+mintconnect://', 'https://');
@@ -109,6 +123,10 @@ export const useNostrMintConnect = () => {
       return paid;
    };
 
+   const reserveMetrics = async (uri: string): Promise<MetricsResponse> => {
+      return sendRequest<MetricsResponse>(uri, 'metrics', {});
+   };
+
    const createProofsFromReserve = async (
       uri: string,
       amount: number,
@@ -128,6 +146,7 @@ export const useNostrMintConnect = () => {
       requestVerification,
       requestDeposit,
       checkDeposit,
+      reserveMetrics,
       createProofsFromReserve,
    };
 };
