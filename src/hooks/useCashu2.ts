@@ -4,11 +4,14 @@ import {
    MintQuoteResponse,
    Proof,
    ApiError as CashuApiError,
+   getEncodedToken,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from './useNostrMintConnect';
 import { useCashuContext } from '@/contexts/cashuContext';
 import { useToast } from './useToast';
+import { useAppDispatch } from '@/redux/store';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 
 const isCashuApiError = (error: any): error is CashuApiError => {
    if (error.detail && typeof error.detail === 'string') {
@@ -72,6 +75,8 @@ export const useCashu2 = () => {
    const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
       useNostrMintConnect();
    const { addToast } = useToast();
+
+   const dispatch = useAppDispatch();
 
    const getMintQuote = async (wallet: CashuWallet, amount: number): Promise<MintQuoteResponse> => {
       if (reserveWallet?.keys.id === wallet.keys.id) {
@@ -283,6 +288,69 @@ export const useCashu2 = () => {
       }
    };
 
+   // TODO: how to make sure the `send` tokens don't get lost
+   const getProofsToSend = async (amount: number, wallet: CashuWallet) => {
+      const proofs = getProofsByAmount(amount, wallet.keys.id);
+
+      if (!proofs || proofs.length === 0) {
+         throw new InsufficientBalanceError(wallet.mint.mintUrl);
+      }
+
+      const { send, returnChange } = await wallet.send(amount, proofs, {
+         keysetId: wallet.keys.id,
+      });
+
+      addProofs(returnChange);
+      removeProofs(proofs);
+
+      return send;
+   };
+
+   const createSendableToken = async (amount: number, wallet?: CashuWallet) => {
+      if (!wallet) {
+         if (!activeWallet) {
+            throw new Error('No active wallet set');
+         }
+         wallet = activeWallet;
+      }
+
+      try {
+         const proofs = await getProofsToSend(amount, wallet);
+
+         const token = getEncodedToken({
+            token: [{ proofs, mint: wallet.mint.mintUrl }],
+            unit: 'usd',
+         });
+
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  token: token,
+                  amount: -amount,
+                  unit: 'usd',
+                  mint: wallet.mint.mintUrl,
+                  status: TxStatus.PENDING,
+                  date: new Date().toLocaleString(),
+               },
+            }),
+         );
+
+         return token;
+      } catch (error) {
+         let errMsg = '';
+         if (isCashuApiError(error)) {
+            errMsg = error.detail || error.error || '';
+         } else if (error instanceof Error) {
+            errMsg = error.message;
+         }
+         if (errMsg === '') {
+            errMsg = 'An unknown error occurred while sending tokens.';
+         }
+         addToast(errMsg, 'error');
+      }
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -291,5 +359,6 @@ export const useCashu2 = () => {
       getWallet,
       balanceByWallet,
       getMint,
+      createSendableToken,
    };
 };
