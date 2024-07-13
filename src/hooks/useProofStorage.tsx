@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Proof } from '@cashu/cashu-ts';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 type ProofContextType = {
    balance: number;
@@ -54,6 +55,8 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    const [isLoading, setIsLoading] = useState(true);
    const [isLocked, setIsLocked] = useState(false);
 
+   const { wallets } = useCashuContext();
+
    useEffect(() => {
       setProofs(getStoredProofs());
       setIsLoading(false);
@@ -67,11 +70,15 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    useEffect(() => {
       // Update balance by wallet
       const newBalanceByWallet: Record<string, number> = {};
+      const walletIds = Array.from(wallets.keys());
       proofs.forEach(proof => {
+         if (!walletIds.includes(proof.id)) {
+            return;
+         }
          newBalanceByWallet[proof.id] = (newBalanceByWallet[proof.id] || 0) + proof.amount;
       });
       setBalanceByWallet(newBalanceByWallet);
-   }, [proofs]);
+   }, [proofs, wallets]);
    useEffect(() => {
       console.log('Balance changed:', balance);
    }, [balance]);
