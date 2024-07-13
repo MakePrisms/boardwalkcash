@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { CashuMint, CashuWallet, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -32,7 +33,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
    const dispatch = useAppDispatch();
 
-   const { swapToMain, fetchUnitFromProofs } = useCashu();
+   const { fetchUnitFromProofs } = useCashu();
+   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu2();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
 
@@ -62,21 +64,18 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
       setSwapping(true);
 
-      await swapToMain(
-         { unit: tokenUnit, id: tokens[0].proofs[0].id, url: tokens[0].mint },
-         tokens[0].proofs,
-      )
-         .then(() => {
-            addEcashTransaction(TxStatus.PAID);
-         })
-         .catch(() => {
-            addToast('Failed to swap to main mint', 'error');
-         })
-         .finally(() => {
-            setSwapToMainOpen(false);
-            onClose();
-            setSwapping(false);
-         });
+      const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
+      const usdKeyset = await getUsdKeyset(swapFromMint);
+
+      await swapToActiveWallet(
+         new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
+         { proofs },
+      );
+
+      addEcashTransaction(TxStatus.PAID);
+      setSwapToMainOpen(false);
+      onClose();
+      setSwapping(false);
    };
 
    useEffect(() => {
@@ -168,65 +167,70 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       );
    }
 
+   const getUsdKeyset = async (mint: CashuMint) => {
+      let keysets: MintKeys[] = [];
+      try {
+         const res = await mint.getKeys();
+         keysets = res.keysets;
+      } catch (e: any) {
+         let errMsg = '';
+         if (e.detail || e.error) {
+            errMsg = e.detail || e.error;
+         }
+         addToast(`Failed to get keys from ${mint.mintUrl}: ${errMsg}`, 'error');
+         return;
+      }
+
+      const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
+
+      if (!usdKeyset) {
+         addToast("Mint doesn't support USD", 'error');
+         return;
+      }
+
+      return usdKeyset;
+   };
+
+   const addUsdKeysetAndGetWallet = async (url: string) => {
+      const swapFromMint = getMint(url) || new CashuMint(url);
+      const usdKeyset = await getUsdKeyset(swapFromMint);
+
+      if (!usdKeyset) {
+         addToast("Mint doesn't support USD", 'error');
+         return;
+      }
+
+      // this means we haven't added the mint yet
+      if (!mintTrusted) {
+         console.log("Mint isn't trusted. Adding it: ", url);
+         dispatch(addKeyset({ keyset: usdKeyset, url: url }));
+
+         addToast('Mint added successfully', 'success');
+      }
+
+      return new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset });
+   };
+
+   // trust and claim or claim to source mint
    const handleAddMint = async () => {
       console.log('Adding mint', mintUrl);
-      try {
-         const swapFromMint = new CashuMint(mintUrl);
-         const { keysets } = await swapFromMint.getKeys();
-         const activeWallet = Object.values(wallet.keysets).find(w => w.active);
+      let wallet = getWallet(proofs[0].id);
 
-         if (!activeWallet) {
-            addToast('No active wallet found', 'error');
+      // if we don't have the wallet, make sure it supports usd, then add keyset
+      if (!wallet) {
+         wallet = await addUsdKeysetAndGetWallet(mintUrl);
+         if (!wallet) {
             return;
          }
-
-         setSwapping(true);
-
-         const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-         if (!usdKeyset) {
-            addToast("Mint doesn't support USD", 'error');
-            return;
-         }
-
-         console.log('Tokens keysetId', usdKeyset.id);
-
-         // this means we haven't added the mint yet
-         if (!mintTrusted) {
-            console.log("Mint isn't trusted. Adding it: ", mintUrl);
-            dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl }));
-
-            addToast('Mint added successfully', 'success');
-         }
-
-         console.log('Swapping');
-
-         console.log('Active Wallet', activeWallet);
-
-         await swapToMain(
-            { unit: tokenUnit!, id: proofs[0].id, url: mintUrl },
-            proofs,
-            new CashuWallet(swapFromMint, { unit: tokenUnit! }), // swap from
-            new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset }), // swap to
-         )
-            .then(() => {
-               addEcashTransaction(TxStatus.PAID);
-            })
-            .catch(e => {
-               console.error('Failed to swap', e);
-            })
-            .finally(() => {
-               onClose();
-            });
-      } catch (e) {
-         console.error(e);
-         addToast(
-            'Failed to add mint. Make sure the mint you are using supports Cashu V1',
-            'error',
-         );
-      } finally {
-         setSwapping(false);
       }
+      console.log('Swapping');
+
+      await swapToClaimProofs(wallet, proofs);
+
+      // TOOD: move to cashu2
+      addEcashTransaction(TxStatus.PAID);
+
+      onClose();
    };
 
    const receiveAmountString = () => {

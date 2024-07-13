@@ -8,6 +8,8 @@ import Head from 'next/head';
 import { Analytics } from '@vercel/analytics/react';
 import { NDKProvider } from '@/hooks/useNDK';
 import useViewportHeight from '@/hooks/useViewportHeigh';
+import { ProofProvider } from '@/hooks/useProofStorage';
+import { CashuProvider } from '@/contexts/cashuContext';
 
 export default function App({ Component, pageProps }: AppProps) {
    useViewportHeight();
@@ -32,8 +34,12 @@ export default function App({ Component, pageProps }: AppProps) {
             <PersistGate persistor={persistor} loading={null}>
                <ToastProvider>
                   <NDKProvider>
-                     <Analytics />
-                     <Component {...pageProps} />
+                     <CashuProvider>
+                        <ProofProvider>
+                           <Analytics />
+                           <Component {...pageProps} />
+                        </ProofProvider>
+                     </CashuProvider>
                   </NDKProvider>
                </ToastProvider>
             </PersistGate>

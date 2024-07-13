@@ -22,6 +22,7 @@ import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveMod
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps } from 'next';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
@@ -29,6 +30,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
+   const { balance } = useCashu2();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -165,8 +167,6 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
       return () => {};
    }, []);
 
-   const balance = useSelector((state: RootState) => state.wallet.balance);
-
    useNwc();
    useNwc2({ privkey: user.privkey, pubkey: user.pubkey });
 
@@ -176,7 +176,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
             className='flex flex-col items-center justify-center mx-auto'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Balance balance={balance.usd} />
+            <Balance balance={balance} />
             <ActivityIndicator />
             <div className=' flex flex-col justify-center py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto'>

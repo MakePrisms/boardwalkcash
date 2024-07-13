@@ -1,15 +1,13 @@
-import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { setBalance, setMainKeyset } from '@/redux/slices/Wallet.slice';
-import { RootState, useAppDispatch } from '@/redux/store';
+import { setMainKeyset } from '@/redux/slices/Wallet.slice';
+import { useAppDispatch } from '@/redux/store';
 import { Wallet } from '@/types';
-import { Proof } from '@cashu/cashu-ts';
 import { Badge, Button, Popover, Sidebar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import ProcessingSwapModal from './ProcessingSwapModal';
 import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 interface MintSidebarItemProps {
    keyset: Wallet;
@@ -21,10 +19,9 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
    const [setMainOpen, setSetMainOpen] = useState(false);
    const [swapping, setSwapping] = useState(false);
 
-   const { swapToMain } = useCashu();
+   const { swapToActiveWallet, getWallet, balanceByWallet } = useCashu2();
    const { addToast } = useToast();
    const dispatch = useAppDispatch();
-   const balance = useSelector((state: RootState) => state.wallet.balance);
 
    const handleSetMain = async () => {
       await dispatch(setMainKeyset(keyset.id));
@@ -37,31 +34,15 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
 
       setSwapToMainOpen(false);
 
-      const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
+      // TODO: I should be able to pass the wallet into this component
+      const thisWallet = getWallet(keyset.id);
 
-      const proofsForThisKeyset = proofs.filter((proof: any) => proof.id === keyset.id);
+      if (!thisWallet) {
+         addToast('Failed to find wallet for keyset', 'error');
+         return;
+      }
 
-      swapToMain(
-         {
-            id: keyset.id,
-            url: keyset.url,
-            unit: keyset.keys.unit,
-            keys: keyset.keys,
-         },
-         proofsForThisKeyset,
-      )
-         .then(() => {
-            console.log('Swapped to main');
-            const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-            const newProofs = proofs.filter(
-               p => !proofsForThisKeyset.some(p2 => p2.secret === p.secret),
-            );
-            window.localStorage.setItem('proofs', JSON.stringify(newProofs));
-            dispatch(setBalance({ usd: newProofs.reduce((acc, p) => acc + p.amount, 0) }));
-         })
-         .finally(() => {
-            setSwapping(false);
-         });
+      swapToActiveWallet(thisWallet, { max: true }).finally(() => setSwapping(false));
    };
 
    const handleCopy = () => {
@@ -75,19 +56,12 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
    };
 
    useEffect(() => {
-      const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-
-      const thisProofs = allProofs.filter((proof: any) => proof.id === keyset.id);
-
-      const thisBalanceCents = thisProofs.reduce(
-         (acc: number, proof: any) => acc + proof.amount,
-         0,
-      );
+      const thisBalanceCents = balanceByWallet[keyset.id] || 0;
 
       const thisBalance = (thisBalanceCents / 100).toFixed(2);
 
-      setMintBalance(thisBalance);
-   }, [keyset, balance]);
+      setMintBalance(thisBalance.toString());
+   }, [keyset, balanceByWallet]);
 
    const formattedMintUrl = () => {
       const mintHostDomain = keyset.url.replace('https://', '');
