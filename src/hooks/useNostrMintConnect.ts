@@ -1,6 +1,11 @@
 import { Wallet } from '@/types';
 import { createBlindedMessages } from '@/utils/crypto';
-import { Proof, SerializedBlindedMessage, SerializedBlindedSignature } from '@cashu/cashu-ts';
+import {
+   MintKeys,
+   Proof,
+   SerializedBlindedMessage,
+   SerializedBlindedSignature,
+} from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import NDK, { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
@@ -82,6 +87,7 @@ export const useNostrMintConnect = () => {
          body: JSON.stringify(requestEvent.rawEvent()),
       });
 
+      // TOOD: Handle errors
       if (!res.ok) {
          const error = await res.text();
          const errMsg = JSON.parse(error).error || error;
@@ -130,15 +136,25 @@ export const useNostrMintConnect = () => {
    const createProofsFromReserve = async (
       uri: string,
       amount: number,
-      keyset: Wallet,
+      keys: MintKeys,
    ): Promise<Proof[]> => {
-      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, keyset.keys.id);
+      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, keys.id);
 
       const blindedSignatures = await requestSignatures(uri, blindedMessages);
 
-      const proofs = constructProofs(blindedSignatures, rs, secrets, keyset.keys);
+      const proofs = constructProofs(blindedSignatures, rs, secrets, keys);
 
       return proofs;
+   };
+
+   const getReserveUri = (): string => {
+      const storedUri = localStorage.getItem('reserve');
+
+      if (!storedUri) {
+         throw new Error('Reserve URI not found');
+      }
+
+      return storedUri;
    };
 
    return {
@@ -148,5 +164,6 @@ export const useNostrMintConnect = () => {
       checkDeposit,
       reserveMetrics,
       createProofsFromReserve,
+      getReserveUri,
    };
 };

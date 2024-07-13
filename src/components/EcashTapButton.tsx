@@ -1,12 +1,11 @@
-import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { useWallet } from '@/hooks/useWallet';
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Modal } from 'flowbite-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import SendEcashModalBody from './modals/SendEcashModalBody';
 import { resetStatus, setSending } from '@/redux/slices/ActivitySlice';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
    <svg
@@ -35,10 +34,9 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
    const [showEcashTapModal, setShowEcashTapModal] = useState(false);
    const dispatch = useAppDispatch();
 
-   const { createSendableEcashToken } = useCashu();
+   const { createSendableToken } = useCashu2();
    const { ecashTapsEnabled, defaultTapAmount } = useSelector((state: RootState) => state.settings);
 
-   const { getActiveWallet } = useWallet();
    const { addToast } = useToast();
 
    if (!ecashTapsEnabled) return null;
@@ -50,11 +48,9 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
          dispatch(setSending('Creating tap token...'));
       }
       try {
-         const wallet = getActiveWallet();
-
          setCreatingToken(true);
 
-         const token = await createSendableEcashToken(defaultTapAmount, wallet);
+         const token = await createSendableToken(defaultTapAmount);
 
          if (!token) {
             throw new Error('Error creating tap token');
