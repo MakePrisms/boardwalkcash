@@ -99,7 +99,9 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const mint = mints.get(mintUrl) || new CashuMint(mintUrl);
       const wallet = new CashuWallet(mint, { keys: usdKeyset });
       setWallets(new Map(wallets.set(usdKeyset.id, wallet)));
-      setActiveWallet(wallet);
+      if (opts?.active) {
+         setActiveWallet(wallet);
+      }
       dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl, active: opts?.active || false }));
    };
 
