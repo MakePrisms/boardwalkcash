@@ -7,8 +7,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { nip04 } from 'nostr-tools';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useExchangeRate } from './useExchangeRate';
-import { useCashu } from './useCashu';
 import { setError } from '@/redux/slices/ActivitySlice';
+import { useCashu2 } from './useCashu2';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -109,7 +109,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    nwcStateRef.current = nwcState;
 
    const { subscribeAndHandle, publishNostrEvent } = useNDK();
-   const { payInvoice: cashuPayInvoice } = useCashu();
+   const { payInvoice: cashuPayInvoice } = useCashu2();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const dispatch = useAppDispatch();
 
@@ -127,6 +127,10 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
 
          const result = await cashuPayInvoice(invoice);
 
+         if (!result) {
+            throw new NWCError(ErrorCodes.OTHER, 'Failed to pay invoice');
+         }
+
          dispatch(
             incrementConnectionSpent({
                pubkey: connectionPubkey,
@@ -134,7 +138,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
             }),
          );
 
-         return { preimage: result.preimage };
+         return { preimage: result.preimage || '' };
       },
       [cashuPayInvoice],
    );

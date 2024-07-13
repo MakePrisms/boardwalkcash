@@ -5,6 +5,7 @@ import {
    Proof,
    ApiError as CashuApiError,
    getEncodedToken,
+   getDecodedToken,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from './useNostrMintConnect';
@@ -12,6 +13,7 @@ import { useCashuContext } from '@/contexts/cashuContext';
 import { useToast } from './useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
+import { setError, setSuccess } from '@/redux/slices/ActivitySlice';
 
 const isCashuApiError = (error: any): error is CashuApiError => {
    if (error.detail && typeof error.detail === 'string') {
@@ -189,7 +191,9 @@ export const useCashu2 = () => {
          const { preimage, isPaid, change } = await from.meltTokens(meltQuote, proofsToMelt, {
             keysetId: from.keys.id,
          });
-         if (!isPaid || !preimage) {
+
+         // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
+         if (!isPaid) {
             throw new TransactionError('Melt failed');
          }
          // TODO: what happens if this fails
@@ -235,6 +239,15 @@ export const useCashu2 = () => {
    const swapToActiveWallet = async (from: CashuWallet, opts: CrossMintSwapOpts) => {
       if (!activeWallet) {
          throw new Error('No active wallet set');
+      }
+      if (from.mint.mintUrl === activeWallet.mint.mintUrl) {
+         // TODO: consider other units
+         if (!opts.proofs) {
+            // could change this, just lazy
+            throw new Error('this function requires proofs to be passed in');
+         }
+
+         return await swapToClaimProofs(from, opts.proofs);
       }
       return await crossMintSwap(from, activeWallet, opts);
    };
@@ -351,6 +364,128 @@ export const useCashu2 = () => {
       }
    };
 
+   const getMeltQuote = async (invoice: string, wallet?: CashuWallet) => {
+      if (!wallet) {
+         if (!activeWallet) {
+            throw new Error('No active wallet set');
+         }
+         wallet = activeWallet;
+      }
+      try {
+         const quote = await wallet.getMeltQuote(invoice);
+
+         const { amount, fee_reserve } = await quote;
+
+         if (amount + fee_reserve > balanceByWallet[wallet.keys.id]) {
+            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+         }
+
+         return quote;
+      } catch (error) {
+         let errMsg = '';
+         if (isCashuApiError(error)) {
+            errMsg = error.detail || error.error || '';
+         } else if (error instanceof Error) {
+            errMsg = error.message;
+         }
+         if (errMsg === '') {
+            errMsg = 'An unknown error occurred while getting melt quote.';
+         }
+         addToast(errMsg, 'error');
+      }
+   };
+
+   const payInvoice = async (
+      invoice: string,
+      meltQuote?: MeltQuoteResponse,
+      wallet?: CashuWallet,
+   ) => {
+      if (!wallet) {
+         if (!activeWallet) {
+            throw new Error('No active wallet set');
+         }
+         wallet = activeWallet;
+      }
+      if (!meltQuote) {
+         meltQuote = await getMeltQuote(invoice, wallet);
+         if (!meltQuote) {
+            // getMeltQuote will handle the error gracefully
+            return;
+         }
+      }
+
+      try {
+         const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
+
+         const { preimage, isPaid, change } = await wallet.meltTokens(meltQuote, proofsToSend, {
+            keysetId: wallet.keys.id,
+         });
+
+         // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
+         if (!isPaid) {
+            throw new TransactionError('Melt failed');
+         }
+
+         addProofs(change);
+
+         const feePaid = meltQuote.fee_reserve - change.reduce((acc, p) => acc + p.amount, 0);
+         const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';
+
+         dispatch(setSuccess(`Sent $${meltQuote.amount / 100}!`));
+         return { preimage, amountUsd: meltQuote.amount, feePaid };
+      } catch (error) {
+         let errMsg = '';
+         if (isCashuApiError(error)) {
+            errMsg = error.detail || error.error || '';
+         } else if (error instanceof Error) {
+            errMsg = error.message;
+         }
+         if (errMsg === '') {
+            errMsg = 'An unknown error occurred while paying invoice.';
+         }
+         addToast(errMsg, 'error');
+      }
+   };
+
+   const requestMintInvoice = async (amount: number, wallet?: CashuWallet) => {
+      if (!wallet) {
+         if (!activeWallet) {
+            throw new Error('No active wallet set');
+         }
+         wallet = activeWallet;
+      }
+
+      if (wallet.mint.mintUrl === reserveWallet?.mint.mintUrl) {
+         addToast('Cannot mint to reserve wallet', 'error');
+         throw new Error('Cannot mint to reserve wallet');
+      }
+
+      try {
+         const { quote, request } = await getMintQuote(wallet, amount);
+
+         return { quote, request };
+      } catch (error: any) {
+         console.error('Failed to get mint quote:', error);
+         if (error.message) {
+            if (error.message === 'Bad Request') {
+               dispatch(setError('Error: minting is probably disabled'));
+            } else {
+               dispatch(setError(error.message));
+            }
+            throw new Error('Error getting mint quote', error);
+         }
+         dispatch(setError('Error: main mint is offline or minting is disabled'));
+         throw error;
+      }
+   };
+
+   const decodeToken = (token: string) => {
+      try {
+         const decodedToken = getDecodedToken(token);
+         return decodedToken;
+      } catch (e) {}
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -360,5 +495,9 @@ export const useCashu2 = () => {
       balanceByWallet,
       getMint,
       createSendableToken,
+      getMeltQuote,
+      payInvoice,
+      requestMintInvoice,
+      decodeToken,
    };
 };

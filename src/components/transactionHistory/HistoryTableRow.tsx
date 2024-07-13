@@ -9,18 +9,19 @@ import {
 } from '@/redux/slices/HistorySlice';
 import { setBalance } from '@/redux/slices/Wallet.slice';
 import { RootState } from '@/redux/store';
-import { addBalance } from '@/utils/cashu';
 import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
+import { useProofStorage } from '@/hooks/useProofStorage';
 
 const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const { addProofs } = useProofStorage();
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
@@ -99,7 +100,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
          }
 
          const newProofs = token.token[0].proofs;
-         addBalance(newProofs);
+         addProofs(newProofs);
          addToast(
             `Reclaimed $${(newProofs.reduce((a, b) => (a += b.amount), 0) / 100).toFixed(2)}`,
             'success',

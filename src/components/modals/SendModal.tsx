@@ -1,9 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
-import { QrCodeIcon } from '@heroicons/react/20/solid';
-import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import { CashuMint, CashuWallet, MeltQuoteResponse, Proof } from '@cashu/cashu-ts';
+import { MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,7 +10,7 @@ import SendEcashModalBody from './SendEcashModalBody';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useWallet } from '@/hooks/useWallet';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -40,8 +38,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [tokenToSend, setTokenToSend] = useState<string | undefined>();
 
    const { addToast } = useToast();
-   const { handlePayInvoice, createSendableEcashToken } = useCashu();
-   const { getActiveWallet } = useWallet();
+   const { createSendableToken, getMeltQuote, payInvoice } = useCashu2();
    const { unitToSats } = useExchangeRate();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const dispatch = useDispatch();
@@ -70,28 +67,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    };
 
    const estimateFee = async (invoice: string) => {
-      const activeWallet = Object.values(wallets).find(w => w.active);
-      if (!activeWallet) throw new Error('No active wallets');
-
-      const proofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-      const activeBalance = proofs.reduce((acc: number, proof: Proof) => {
-         if (proof.id === activeWallet.id) {
-            acc += proof.amount;
-         }
-         return acc;
-      }, 0);
-
-      const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
-
       try {
-         const quote = await wallet.getMeltQuote(invoice);
+         const quote = await getMeltQuote(invoice);
 
-         if (activeBalance < quote.fee_reserve + quote.amount) {
-            addToast(
-               'Insufficient balance to pay the invoice. If you have funds on another mint, please swap them to your main mint.',
-               'error',
-            );
-            resetModalState();
+         if (!quote) {
             return;
          }
 
@@ -123,23 +102,21 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       console.log('using active wallet', activeWallet);
 
       try {
-         await handlePayInvoice(invoice, meltQuote, estimatedFee as number, activeWallet).then(
-            () => {
-               dispatch(
-                  addTransaction({
-                     type: 'lightning',
-                     transaction: {
-                        amount: -meltQuote!.amount,
-                        unit: 'usd',
-                        mint: activeWallet.url,
-                        status: TxStatus.PAID,
-                        date: new Date().toLocaleString(),
-                        quote: meltQuote!.quote,
-                     },
-                  }),
-               );
-            },
-         );
+         await payInvoice(invoice, meltQuote).then(() => {
+            dispatch(
+               addTransaction({
+                  type: 'lightning',
+                  transaction: {
+                     amount: -meltQuote!.amount,
+                     unit: 'usd',
+                     mint: activeWallet.url,
+                     status: TxStatus.PAID,
+                     date: new Date().toLocaleString(),
+                     quote: meltQuote!.quote,
+                  },
+               }),
+            );
+         });
       } catch (error) {
          console.error(error);
          addToast('An error occurred while paying the invoice.', 'error');
@@ -228,11 +205,9 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
          setCurrentTab(Tabs.Ecash);
          console.log('AMount entered as destination');
          setAmountSat(destination);
-         const wallet = getActiveWallet();
-         const token = await createSendableEcashToken(
-            Math.floor(parseFloat(destination) * 100),
-            wallet,
-         ).catch(resetModalState);
+         const token = await createSendableToken(Math.floor(parseFloat(destination) * 100)).catch(
+            resetModalState,
+         );
          if (!token) {
             console.error('Failed to create ecash token');
             return;

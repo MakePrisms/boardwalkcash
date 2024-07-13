@@ -3,14 +3,13 @@ import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from 
 import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import SwapToMainButton from '../sidebar/SwapToMainButton';
 import { useCashu } from '@/hooks/useCashu';
-import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -35,6 +34,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
    const { fetchUnitFromProofs } = useCashu();
    const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu2();
+   const { addWallet } = useCashuContext();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
 
@@ -203,8 +203,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       // this means we haven't added the mint yet
       if (!mintTrusted) {
          console.log("Mint isn't trusted. Adding it: ", url);
-         dispatch(addKeyset({ keyset: usdKeyset, url: url }));
-
+         addWallet(usdKeyset, url);
          addToast('Mint added successfully', 'success');
       }
 

@@ -1,6 +1,4 @@
 import { useToast } from '@/hooks/useToast';
-import { setMainKeyset } from '@/redux/slices/Wallet.slice';
-import { useAppDispatch } from '@/redux/store';
 import { Wallet } from '@/types';
 import { Badge, Button, Popover, Sidebar } from 'flowbite-react';
 import { useEffect, useState } from 'react';
@@ -8,6 +6,7 @@ import ProcessingSwapModal from './ProcessingSwapModal';
 import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
 import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 interface MintSidebarItemProps {
    keyset: Wallet;
@@ -21,10 +20,10 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
 
    const { swapToActiveWallet, getWallet, balanceByWallet } = useCashu2();
    const { addToast } = useToast();
-   const dispatch = useAppDispatch();
+   const { setToMain } = useCashuContext();
 
    const handleSetMain = async () => {
-      await dispatch(setMainKeyset(keyset.id));
+      setToMain(keyset.id);
 
       setSetMainOpen(false);
    };

@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Disclaimer from '@/components/Disclaimer';
 import { Button, Label, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
 import { useToast } from '@/hooks/useToast';
-import { useDispatch } from 'react-redux';
-import { addKeyset } from '@/redux/slices/Wallet.slice';
 import Image from 'next/image';
 import { NWAEventContent } from '@/types';
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
@@ -13,6 +10,7 @@ import { initializeUser } from '@/redux/slices/UserSlice';
 import { useAppDispatch } from '@/redux/store';
 import { assembleLightningAddress } from '@/utils/lud16';
 import { normalizeUrl } from '@/utils/url';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
    return (
@@ -91,6 +89,7 @@ export default function Home() {
    const dispatch = useAppDispatch();
    const router = useRouter();
    const { addToast } = useToast();
+   const { addWallet } = useCashuContext();
 
    const handleSubmit = async (event: React.FormEvent) => {
       event.preventDefault();
@@ -111,7 +110,7 @@ export default function Home() {
             return;
          }
 
-         dispatch(addKeyset({ keyset: usdKeyset, url: url, active: true }));
+         addWallet(usdKeyset, url, { active: true });
 
          addToast('Mint added successfully', 'success');
 
