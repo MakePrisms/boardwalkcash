@@ -137,7 +137,7 @@ export const useCashu2 = () => {
             console.log('Found valid quotes');
             return { mintQuote, meltQuote, amountToMint };
          }
-         amountToMint = amountToMint - meltQuote.fee_reserve;
+         amountToMint = amountToMint - meltQuote.fee_reserve - 1;
       }
 
       throw new Error('Failed to find valid quotes after maximum attempts');
