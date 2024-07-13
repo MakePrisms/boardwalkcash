@@ -31,7 +31,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance } = useCashu2();
+   const { balanceByWallet } = useCashu2();
    const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
@@ -171,6 +171,8 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
    useNwc();
    useNwc2({ privkey: user.privkey, pubkey: user.pubkey });
+
+   const balance = Object.values(balanceByWallet).reduce((acc, b) => acc + b, 0);
 
    return (
       <>
