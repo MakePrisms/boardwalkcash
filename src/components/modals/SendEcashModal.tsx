@@ -1,13 +1,6 @@
-import { useCashu } from '@/hooks/useCashu';
+import { useCashu2 } from '@/hooks/useCashu2';
 import { useToast } from '@/hooks/useToast';
-import {
-   Proof,
-   getEncodedToken,
-   Token,
-   TokenEntry,
-   CashuWallet,
-   getDecodedToken,
-} from '@cashu/cashu-ts';
+import { Proof } from '@cashu/cashu-ts';
 import { Button, Modal } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
@@ -19,15 +12,11 @@ interface SendEcashModalProps {
 export const SendEcashModal = ({ showModal, closeModal }: SendEcashModalProps) => {
    const [sending, setSending] = useState(false);
    const [sendAmount, setSendAmount] = useState('');
-   const [tokenEntryData, setTokenEntryData] = useState<{
-      proofs: Proof[];
-      wallet: CashuWallet;
-   } | null>(null);
    const [encodedToken, setEncodedToken] = useState<string | null>(null);
    const [urFragment, setURFragment] = useState<string | null>(null);
 
    const { addToast } = useToast();
-   const { swapToSend } = useCashu();
+   const { createSendableToken } = useCashu2();
    const handleSendEcash = async () => {
       if (parseFloat(sendAmount) <= 0) {
          addToast('Enter an amount to send', 'error');
@@ -43,46 +32,14 @@ export const SendEcashModal = ({ showModal, closeModal }: SendEcashModalProps) =
          ),
       );
 
-      const { proofs: newProofs, wallet } = await swapToSend(parseFloat(sendAmount) * 100);
+      const token = await createSendableToken(parseFloat(sendAmount) * 100);
 
-      console.log(
-         'Balance after sending',
-         (JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[]).reduce(
-            (a, b) => a + b.amount,
-            0,
-         ),
-      );
-
-      console.log('Send Ecash', newProofs);
-
-      if (!newProofs) {
+      if (!token) {
          return;
       }
 
-      setTokenEntryData({ proofs: newProofs, wallet });
+      setEncodedToken(token.replace('Token:', ''));
    };
-
-   useEffect(() => {
-      if (!tokenEntryData) return;
-
-      const token: Token = {
-         token: [
-            {
-               proofs: tokenEntryData.proofs,
-               mint: tokenEntryData.wallet.mint.mintUrl,
-            } as TokenEntry,
-         ],
-         unit: 'usd',
-      };
-
-      const encodedToken = getEncodedToken(token);
-
-      console.log('Encoded Token', encodedToken);
-
-      console.log('DECODED', getDecodedToken(encodedToken));
-
-      setEncodedToken(encodedToken.replace('Token:', ''));
-   }, [tokenEntryData]);
 
    return (
       <Modal show={showModal} onClose={closeModal}>
