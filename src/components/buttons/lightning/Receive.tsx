@@ -3,9 +3,8 @@ import axios from 'axios';
 import { Button, Modal, Spinner, Tooltip } from 'flowbite-react';
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useDispatch, useSelector } from 'react-redux';
-import { resetStatus, setError, setSuccess } from '@/redux/slices/ActivitySlice';
+import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { useToast } from '@/hooks/useToast';
-import { useCashu } from '@/hooks/useCashu';
 import { assembleLightningAddress } from '@/utils/lud16';
 import ClipboardButton from '../utility/ClipboardButton';
 import QRCode from 'qrcode.react';
@@ -14,6 +13,7 @@ import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveMod
 import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from '../QRScannerButton';
 import { TxStatus, addTransaction, updateTransactionStatus } from '@/redux/slices/HistorySlice';
+import { useCashu2 } from '@/hooks/useCashu2';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -24,7 +24,7 @@ const Receive = () => {
    const [showEcashReceiveModal, setShowEcashReceiveModal] = useState(false);
    const [token, setToken] = useState<Token | null>(null);
 
-   const { requestMintInvoice, decodeToken } = useCashu();
+   const { requestMintInvoice, decodeToken } = useCashu2();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -59,6 +59,7 @@ const Receive = () => {
    }, []);
 
    useEffect(() => {
+      if (!amount) return;
       let decoded: Token | undefined = undefined;
       if (amount.includes('http')) {
          const encoded = getTokenFromUrl(amount);
@@ -101,10 +102,7 @@ const Receive = () => {
       }
 
       try {
-         const { quote, request } = await requestMintInvoice(
-            { unit: 'cent', amount: amountUsdCents },
-            activeWallet,
-         );
+         const { quote, request } = await requestMintInvoice(amountUsdCents);
          setInvoiceToPay(request);
 
          await axios.post('/api/quotes/mint', {

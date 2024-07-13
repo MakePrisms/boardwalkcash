@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Button, Sidebar, TextInput } from 'flowbite-react';
+import { Button, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
-import { useAppDispatch } from '@/redux/store';
-import { addKeyset } from '@/redux/slices/Wallet.slice';
 import { useToast } from '@/hooks/useToast';
 import { Wallet } from '@/types';
 import Link from 'next/link';
 import { normalizeUrl } from '@/utils/url';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
    const [fetchingMint, setFetchingMint] = useState(false);
@@ -15,7 +14,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
 
    const { addToast } = useToast();
 
-   const dispatch = useAppDispatch();
+   const { addWallet } = useCashuContext();
 
    useEffect(() => {
       setCurrentMints(Object.values(keysets).map(keyset => keyset.url));
@@ -44,7 +43,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
             return;
          }
 
-         dispatch(addKeyset({ keyset: usdKeyset, url }));
+         addWallet(usdKeyset, url);
 
          setMintUrl('');
 

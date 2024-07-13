@@ -1,14 +1,13 @@
+import { useCashuContext } from '@/contexts/cashuContext';
 import { useCashu } from '@/hooks/useCashu';
 import { useNDK } from '@/hooks/useNDK';
 import { MetricsResponse, useNostrMintConnect } from '@/hooks/useNostrMintConnect';
+import { useProofStorage } from '@/hooks/useProofStorage';
 import { useToast } from '@/hooks/useToast';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { addKeyset, setBalance, setMainKeyset } from '@/redux/slices/Wallet.slice';
 import { useAppDispatch } from '@/redux/store';
-import { addBalance } from '@/utils/cashu';
 import { createBlindedMessages } from '@/utils/crypto';
-import { normalizeUrl } from '@/utils/url';
 import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
@@ -26,20 +25,22 @@ const ConnectWalletSetting = () => {
       backend_balance: 0,
       mint_balance: 0,
    });
+   const [nwcUri, setNwcUri] = useState('');
 
    const dispatch = useAppDispatch();
    const { requestSignatures, reserveMetrics } = useNostrMintConnect();
    const { addToast } = useToast();
-   const { reserveKeyset, setKeysetNotReserve } = useCashu();
    const { generateNip98Header } = useNDK();
+   const { setKeysetNotReserve, reserveWallet, connectReserve } = useCashuContext();
+   const { addProofs } = useProofStorage();
 
    useEffect(() => {
-      if (reserveKeyset !== null) {
+      if (reserveWallet !== null) {
          setConnected(true);
       } else {
          setConnected(false);
       }
-   }, [reserveKeyset]);
+   }, [reserveWallet]);
 
    useEffect(() => {
       const reserve = localStorage.getItem('reserve');
@@ -67,12 +68,10 @@ const ConnectWalletSetting = () => {
    };
 
    const handleConnect = async () => {
-      console.log('Connect to', connectionString);
-
       let valid = true;
 
       const createMintPayload = {
-         nwc: connectionString,
+         nwc: nwcUri,
          // mint_max_balance=random.randint(1, 1000),
          // mint_max_peg_in=random.randint(1, 1000),
          // mint_max_peg_out=random.randint(1, 1000),
@@ -166,8 +165,7 @@ const ConnectWalletSetting = () => {
          localStorage.setItem('reserve', token);
          setConnectionString(token);
 
-         dispatch(addKeyset({ keyset: usdKeyset, url, isReserve: true }));
-         dispatch(setMainKeyset(usdKeyset.id));
+         connectReserve(usdKeyset, url);
 
          addToast('Mint added successfully', 'success');
       } catch (e) {
@@ -186,34 +184,29 @@ const ConnectWalletSetting = () => {
          if (mintingAmount !== undefined) {
             return;
          }
-         if (!reserveKeyset) {
-            addToast('No reserve keyset found', 'error');
+         if (!reserveWallet) {
+            addToast('No reserve found', 'error');
             return;
-         } else {
-            console.log('Reserve keyset:', reserveKeyset);
          }
 
          setMintingAmount(amount);
 
          const { blindedMessages, secrets, rs } = createBlindedMessages(
             amount,
-            reserveKeyset.keys.id,
+            reserveWallet.keys.id,
          );
 
          try {
             const blindedSignatures = await requestSignatures(connectionString, blindedMessages);
 
-            const proofs = constructProofs(blindedSignatures, rs, secrets, reserveKeyset.keys);
+            const proofs = constructProofs(blindedSignatures, rs, secrets, reserveWallet.keys);
             console.log('Proofs:', proofs);
 
-            addBalance(proofs);
+            addProofs(proofs);
 
-            const newProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
-            const newBalance = newProofs.reduce((acc: number, proof: any) => acc + proof.amount, 0);
-
-            dispatch(setBalance({ usd: newBalance }));
-
-            const token = getEncodedToken({ token: [{ proofs: proofs, mint: reserveKeyset.url }] });
+            const token = getEncodedToken({
+               token: [{ proofs: proofs, mint: reserveWallet.mint.mintUrl }],
+            });
 
             dispatch(
                addTransaction({
@@ -224,7 +217,7 @@ const ConnectWalletSetting = () => {
                      date: new Date().toLocaleString(),
                      status: TxStatus.PAID,
                      unit: 'usd',
-                     mint: reserveKeyset.url,
+                     mint: reserveWallet.mint.mintUrl,
                   },
                }),
             );
@@ -237,7 +230,7 @@ const ConnectWalletSetting = () => {
             setMintingAmount(undefined);
          }
       },
-      [connectionString, reserveKeyset, requestSignatures],
+      [connectionString, reserveWallet, requestSignatures],
    );
 
    const handleDisconnect = () => {
@@ -327,8 +320,8 @@ const ConnectWalletSetting = () => {
                   </Label>
                   <TextInput
                      placeholder='Enter NWC'
-                     onChange={e => setConnectionString(e.target.value)}
-                     value={connectionString}
+                     onChange={e => setNwcUri(e.target.value)}
+                     value={nwcUri}
                      className='mt-1'
                   />
                </div>
