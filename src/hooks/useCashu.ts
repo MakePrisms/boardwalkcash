@@ -60,14 +60,6 @@ export const useCashu = () => {
       }
    }, [wallets]);
 
-   const setKeysetNotReserve = () => {
-      if (!reserveKeyset) {
-         return;
-      }
-
-      dispatch(updateKeysetStatus({ id: reserveKeyset.id, isReserve: false }));
-   };
-
    useEffect(() => {
       const localProofs = getProofs();
       const balanceState = wallet.balance['usd'];
@@ -602,12 +594,16 @@ export const useCashu = () => {
             addToast(successMsg, 'success');
          } else {
             // Use swap function directly
+            console.log('Swapping proofs directly');
             const swapRes = await swapTo.receiveTokenEntry({
                proofs: proofs,
                mint: swapTo.mint.mintUrl,
             });
 
             if (swapRes.proofsWithError) {
+               if (swapRes.proofs) {
+                  addBalance(swapRes.proofs);
+               }
                addToast('Failed to claim proofs', 'error');
                throw new Error();
             }
@@ -789,6 +785,5 @@ export const useCashu = () => {
       payInvoice,
       createSendableEcashToken,
       reserveKeyset,
-      setKeysetNotReserve,
    };
 };

@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from '@/redux/slices/UserSlice';
-import { addKeyset, initializeKeysets } from '@/redux/slices/Wallet.slice';
+import { initializeKeysets } from '@/redux/slices/Wallet.slice';
 import Disclaimer from '@/components/Disclaimer';
 import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
@@ -23,6 +23,7 @@ import TransactionHistoryDrawer from '@/components/transactionHistory/Transactio
 import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps } from 'next';
 import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashuContext } from '@/contexts/cashuContext';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
@@ -31,6 +32,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
    const { balance } = useCashu2();
+   const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -70,7 +72,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
                   return;
                }
 
-               dispatch(addKeyset({ keyset: usdKeyset, url: url, active: true }));
+               addWallet(usdKeyset, url, { active: true });
 
                addToast('Mint added successfully', 'success');
 
