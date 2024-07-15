@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Toast } from 'flowbite-react';
 import { HiCheckCircle, HiExclamationCircle, HiXCircle, HiInformationCircle } from 'react-icons/hi';
-
+import { isCashuApiError } from '@/types';
 const ToastContext = createContext();
 
 export const ToastProvider = ({ children }) => {
@@ -13,11 +13,36 @@ export const ToastProvider = ({ children }) => {
       setTimeout(() => removeToast(id), 4000); // Auto-dismiss after 8 seconds
    }, []);
 
+   const toastSwapSuccess = (to, activeWallet, amountSwapped) => {
+      let successMsg = '';
+      if (to.mint.mintUrl === activeWallet?.mint.mintUrl) {
+         successMsg = `Received $${(amountSwapped / 100).toFixed(2)} to your main mint`;
+      } else {
+         let formattedUrl = to.mint.mintUrl.replace('https://', '').replace('http://', '');
+         formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
+         successMsg = `Received $${(amountSwapped / 100).toFixed(2)} to ${formattedUrl}`;
+      }
+      addToast(successMsg, 'success');
+   };
+
+   const toastSwapError = error => {
+      let errMsg = '';
+      if (isCashuApiError(error)) {
+         errMsg = error.detail || error.error || '';
+      } else if (error instanceof Error) {
+         errMsg = error.message;
+      }
+      if (errMsg === '') {
+         errMsg = 'An unknown error occurred while sending from one mint to the other.';
+      }
+      addToast(errMsg, 'error');
+   };
+
    const removeToast = useCallback(id => {
       setToastList(prev => prev.filter(toast => toast.id !== id));
    }, []);
 
-   const contextValue = { addToast };
+   const contextValue = { addToast, toastSwapSuccess, toastSwapError };
 
    const getToastStyle = type => {
       switch (type) {

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
-import ProcessingSwapModal from '../sidebar/ProcessingSwapModal';
+import ProcessingClaimModal from './ProcessingCashuSwap/ProcessingClaim';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu2 } from '@/hooks/useCashu2';
@@ -292,7 +292,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                </div>
             </Modal.Body>
          </Modal>
-         <ProcessingSwapModal isSwapping={swapping} />
+         <ProcessingClaimModal isSwapping={swapping} />
       </>
    );
 };

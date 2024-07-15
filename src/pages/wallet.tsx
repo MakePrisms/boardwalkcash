@@ -17,7 +17,6 @@ import { CashuMint, CashuWallet, Token, getDecodedToken } from '@cashu/cashu-ts'
 import useNwc2 from '@/hooks/useNwc2';
 import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/useToast';
-import ProcessingSwapModal from '@/components/sidebar/ProcessingSwapModal';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
@@ -27,7 +26,6 @@ import { useCashuContext } from '@/contexts/cashuContext';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
-   const [swapping, setSwapping] = useState(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
@@ -195,7 +193,6 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
          <SettingsSidebar />
          <TransactionHistoryDrawer />
          <EcashTapButton isMobile={isMobile} />
-         <ProcessingSwapModal isSwapping={swapping} />
          {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
             <ConfirmEcashReceiveModal
                token={tokenDecoded}

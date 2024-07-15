@@ -14,56 +14,12 @@ import { useToast } from './useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { setError, setSuccess } from '@/redux/slices/ActivitySlice';
-import { formatUrl } from '@/utils/url';
-
-const isCashuApiError = (error: any): error is CashuApiError => {
-   if (error.detail && typeof error.detail === 'string') {
-      return true;
-   }
-   if (error.code && typeof error.code === 'number') {
-      return true;
-   }
-   if (error.error && typeof error.error === 'string') {
-      return true;
-   }
-   return false;
-};
-
-class CashuError extends Error {
-   constructor(message: string) {
-      super(message);
-      this.name = 'CashuError';
-   }
-}
-
-class InsufficientBalanceError extends CashuError {
-   constructor(mintUrl: string, balance?: number) {
-      super(
-         `${formatUrl(mintUrl, 15)} has insufficient balance. ${balance ? `$${(balance / 100).toFixed(2)}` : ''}`,
-      );
-      this.name = 'InsufficientBalanceError';
-   }
-}
-
-class TransactionError extends CashuError {
-   constructor(txType: string, message?: string) {
-      super(`${txType} transaction failed: ${message}`);
-      this.name = 'TransactionError';
-   }
-}
-
-class ReserveError extends CashuError {
-   constructor(message?: string) {
-      super(`Reserve error: ${message}`);
-      this.name = 'ReserveError';
-   }
-}
-
-interface CrossMintQuoteResult {
-   mintQuote: MintQuoteResponse;
-   meltQuote: MeltQuoteResponse;
-   amountToMint: number;
-}
+import {
+   CrossMintQuoteResult,
+   InsufficientBalanceError,
+   ReserveError,
+   TransactionError,
+} from '@/types';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean };
 
@@ -81,7 +37,7 @@ export const useCashu2 = () => {
    } = useProofStorage();
    const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
       useNostrMintConnect();
-   const { addToast } = useToast();
+   const { addToast, toastSwapSuccess, toastSwapError } = useToast();
 
    const dispatch = useAppDispatch();
 
@@ -212,26 +168,9 @@ export const useCashu2 = () => {
             // this means we were not give then proofs to melt, so we need to remove the proofs from the storage
             await removeProofs(proofsToMelt);
          }
-         let successMsg = '';
-         if (to.mint.mintUrl === activeWallet?.mint.mintUrl) {
-            successMsg = `Swapped $${(amountToMint / 100).toFixed(2)} to your main mint`;
-         } else {
-            let formattedUrl = to.mint.mintUrl.replace('https://', '');
-            formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
-            successMsg = `Swapped $${(amountToMint / 100).toFixed(2)} to ${formattedUrl}`;
-         }
-         addToast(successMsg, 'success');
+         toastSwapSuccess(to, activeWallet, amountToMint);
       } catch (error) {
-         let errMsg = '';
-         if (isCashuApiError(error)) {
-            errMsg = error.detail || error.error || '';
-         } else if (error instanceof Error) {
-            errMsg = error.message;
-         }
-         if (errMsg === '') {
-            errMsg = 'An unknown error occurred while sending from one mint to the other.';
-         }
-         addToast(errMsg, 'error');
+         toastSwapError(error);
       } finally {
          unlockBalance();
       }
@@ -287,28 +226,10 @@ export const useCashu2 = () => {
 
          addProofs(swapRes.proofs);
 
-         let successMsg = '';
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
-         if (wallet.mint.mintUrl === activeWallet?.mint.mintUrl) {
-            successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to your main mint`;
-         } else {
-            let formattedUrl = wallet.mint.mintUrl.replace('https://', '');
-            formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
-            successMsg = `Swapped $${(amountUsd / 100).toFixed(2)} to ${formattedUrl}`;
-         }
-
-         addToast(successMsg, 'success');
+         toastSwapSuccess(wallet, activeWallet, amountUsd);
       } catch (error) {
-         let errMsg = '';
-         if (isCashuApiError(error)) {
-            errMsg = error.detail || error.error || '';
-         } else if (error instanceof Error) {
-            errMsg = error.message;
-         }
-         if (errMsg === '') {
-            errMsg = 'An unknown error occurred while claiming proofs.';
-         }
-         addToast(errMsg, 'error');
+         toastSwapError(error);
       } finally {
          unlockBalance();
       }
@@ -364,16 +285,7 @@ export const useCashu2 = () => {
 
          return token;
       } catch (error) {
-         let errMsg = '';
-         if (isCashuApiError(error)) {
-            errMsg = error.detail || error.error || '';
-         } else if (error instanceof Error) {
-            errMsg = error.message;
-         }
-         if (errMsg === '') {
-            errMsg = 'An unknown error occurred while sending tokens.';
-         }
-         addToast(errMsg, 'error');
+         toastSwapError(error);
       }
    };
 
@@ -398,16 +310,7 @@ export const useCashu2 = () => {
 
          return quote;
       } catch (error) {
-         let errMsg = '';
-         if (isCashuApiError(error)) {
-            errMsg = error.detail || error.error || '';
-         } else if (error instanceof Error) {
-            errMsg = error.message;
-         }
-         if (errMsg === '') {
-            errMsg = 'An unknown error occurred while getting melt quote.';
-         }
-         addToast(errMsg, 'error');
+         toastSwapError(error);
       }
    };
 
@@ -452,16 +355,7 @@ export const useCashu2 = () => {
          dispatch(setSuccess(`Sent $${meltQuote.amount / 100}!`));
          return { preimage, amountUsd: meltQuote.amount, feePaid };
       } catch (error) {
-         let errMsg = '';
-         if (isCashuApiError(error)) {
-            errMsg = error.detail || error.error || '';
-         } else if (error instanceof Error) {
-            errMsg = error.message;
-         }
-         if (errMsg === '') {
-            errMsg = 'An unknown error occurred while paying invoice.';
-         }
-         addToast(errMsg, 'error');
+         toastSwapError(error);
       } finally {
          unlockBalance();
       }

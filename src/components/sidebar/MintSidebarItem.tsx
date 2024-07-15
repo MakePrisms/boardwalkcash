@@ -1,8 +1,8 @@
 import { useToast } from '@/hooks/useToast';
 import { Wallet } from '@/types';
-import { Badge, Button, Popover, Sidebar } from 'flowbite-react';
+import { Badge } from 'flowbite-react';
 import { useEffect, useState } from 'react';
-import ProcessingSwapModal from './ProcessingSwapModal';
+import ProcessingSwapModal from '@/components/modals/ProcessingCashuSwap/ProcessingSwap';
 import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
 import { useCashu2 } from '@/hooks/useCashu2';
