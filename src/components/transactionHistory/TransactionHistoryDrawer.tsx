@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
 import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { customDrawerTheme } from '@/themes/drawerTheme';
-import { XMarkIcon } from '@heroicons/react/20/solid';
+import XMarkIcon from '@/components/icons/XMarkIcon';
 import ClockIcon from '@/components/icons/ClockIcon';
 
 type NewType = FC<ComponentProps<'svg'>>;
