@@ -77,26 +77,29 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                   {formattedMintUrl()} <Badge>${mintBalance}</Badge>
                </div>
                <div className='flex justify-between align-middle min-w-max'>
-                  <button onClick={handleCopy} className='text-xs underline mr-3'>
-                     Copy
-                  </button>
-                  {!keyset.active && (
-                     <>
-                        <SetMainButton
-                           keyset={keyset}
-                           setSetMainOpen={setSetMainOpen}
-                           setMainOpen={setMainOpen}
-                           handleSetMain={handleSetMain}
-                        />
-                        <SwapToMainButton
-                           swapToMainOpen={swapToMainOpen}
-                           mintUrl={keyset.url}
-                           setSwapToMainOpen={setSwapToMainOpen}
-                           handleSwapToMain={handleSwapToMain}
-                           className='text-xs'
-                        />
-                     </>
-                  )}
+                  <div className='flex space-x-4'>
+                     <button onClick={handleCopy} className='text-xs underline'>
+                        Copy
+                     </button>
+                     {!keyset.active && (
+                        <>
+                           <SetMainButton
+                              keyset={keyset}
+                              setSetMainOpen={setSetMainOpen}
+                              setMainOpen={setMainOpen}
+                              handleSetMain={handleSetMain}
+                           />
+                           <SwapToMainButton
+                              swapToMainOpen={swapToMainOpen}
+                              mintUrl={keyset.url}
+                              setSwapToMainOpen={setSwapToMainOpen}
+                              handleSwapToMain={handleSwapToMain}
+                              className='text-xs'
+                           />
+                        </>
+                     )}
+                  </div>
+
                   <div className='flex space-x-1'>
                      {keyset.active ? (
                         <Badge className='' color='success'>

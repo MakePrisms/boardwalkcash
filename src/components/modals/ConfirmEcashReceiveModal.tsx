@@ -280,7 +280,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
                   <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
                      <button onClick={handleSwapToMain} className='mr-3 underline text-lg mb-0'>
-                        {fromActiveMint ? 'Claim' : 'Swap to Main'}
+                        Claim
                      </button>
                      <button
                         className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}

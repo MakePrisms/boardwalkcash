@@ -8,7 +8,7 @@ const ProcessingSwapModal = ({ isSwapping }: ProcessingSwapModalProps) => {
    return (
       <ProcessingModal
          isSwapping={isSwapping}
-         title='Claiming'
+         title='Transfering'
          prompt='Please wait while we transfer your tokens.'
       />
    );

@@ -24,12 +24,12 @@ const SwapToMainButton = ({
          <div className='w-80 text-sm text-gray-400'>
             <div className='border-b border-gray-200 bg-gray-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700'>
                <h3 id='swap-popover' className='font-semibold text-gray-900 dark:text-white'>
-                  Swap to Main
+                  Transfer to Main
                </h3>
             </div>
             <div className='px-3 py-2'>
                <p className='whitespace-break-spaces break-words'>
-                  Swap all the funds from {mintUrl} to the main mint?
+                  Transfer all the funds from {mintUrl} to the main mint?
                </p>
             </div>
             <div className='flex justify-around mb-3 mr-3'>
@@ -47,7 +47,7 @@ const SwapToMainButton = ({
          onClick={() => setSwapToMainOpen(true)}
          className={`${className && className} mr-3 underline`}
       >
-         {isToMainMint ? 'Claim' : 'Swap to Main'}
+         {isToMainMint ? 'Claim' : 'Transfer to Main'}
       </button>
    </Popover>
 );
