@@ -34,6 +34,7 @@ import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { createBlindedMessages } from '@/utils/crypto';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
+import { useProofStorage } from './useProofStorage';
 
 export const useCashu = () => {
    const dispatch = useDispatch();
@@ -41,6 +42,7 @@ export const useCashu = () => {
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [reserveKeyset, setReserveKeyset] = useState<Wallet | null>(null);
    const { requestDeposit, requestSignatures } = useNostrMintConnect();
+   const { addProofs } = useProofStorage();
 
    const getProofs = (keysetId?: string) => {
       const allProofs = JSON.parse(window.localStorage.getItem('proofs') || '[]') as Proof[];
@@ -279,8 +281,7 @@ export const useCashu = () => {
 
          let updatedProofs;
          if (newProofs.length > 0) {
-            updatedProofs = [...localProofs, ...newProofs];
-            window.localStorage.setItem('proofs', JSON.stringify(updatedProofs));
+            addProofs(newProofs);
 
             const totalReceived = newProofs
                .map((proof: Proof) => proof.amount)
