@@ -113,20 +113,6 @@ const Receive = () => {
             mintUrl: activeWallet.url,
          });
 
-         // Add transaction to history as pending
-         dispatch(
-            addTransaction({
-               type: 'lightning',
-               transaction: {
-                  amount: amountUsdCents,
-                  date: new Date().toLocaleString(),
-                  status: TxStatus.PENDING,
-                  mint: activeWallet.url,
-                  quote,
-               },
-            }),
-         );
-
          const pollingResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
             {
@@ -143,7 +129,18 @@ const Receive = () => {
             setInvoiceToPay('');
             setAmount('');
             // dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
-            dispatch(updateTransactionStatus({ type: 'lightning', quote, status: TxStatus.PAID })); // TODO: move this to updateProofsAndBalance logic
+            dispatch(
+               addTransaction({
+                  type: 'lightning',
+                  transaction: {
+                     amount: amountUsdCents,
+                     date: new Date().toLocaleString(),
+                     status: TxStatus.PAID,
+                     mint: activeWallet.url,
+                     quote,
+                  },
+               }),
+            );
          }
       } catch (error) {
          console.error('Error receiving ', error);
