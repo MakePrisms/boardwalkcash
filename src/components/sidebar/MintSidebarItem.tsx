@@ -97,13 +97,20 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
                         />
                      </>
                   )}
-                  {keyset.active ? (
-                     <Badge className='' color='success'>
-                        Main
-                     </Badge>
-                  ) : (
-                     <div className='text-transparent'>Inacdve</div>
-                  )}
+                  <div className='flex space-x-1'>
+                     {keyset.active ? (
+                        <Badge className='' color='success'>
+                           Main
+                        </Badge>
+                     ) : (
+                        <div className='text-transparent'></div>
+                     )}
+                     {keyset.isReserve && (
+                        <Badge className='mr-2' color='purple'>
+                           Reserve
+                        </Badge>
+                     )}
+                  </div>
                </div>
             </div>
          </>
