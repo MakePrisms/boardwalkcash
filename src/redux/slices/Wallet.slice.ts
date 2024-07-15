@@ -84,7 +84,6 @@ export const walletSlice = createSlice({
          const keyset = state.keysets[id];
          if (!keyset) {
             throw new Error("Keyset doesn't exist.");
-            
          }
          if (active !== undefined) {
             keyset.active = active;
@@ -92,6 +91,7 @@ export const walletSlice = createSlice({
          if (isReserve !== undefined) {
             keyset.isReserve = isReserve;
          }
+         updateKeysetLocalStorage(state.keysets);
       },
       setBalance: (state, action: PayloadAction<{ [unit: string]: number }>) => {
          if (state.balanceLocked) {
