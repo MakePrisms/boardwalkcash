@@ -14,6 +14,7 @@ import { useToast } from './useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { setError, setSuccess } from '@/redux/slices/ActivitySlice';
+import { formatUrl } from '@/utils/url';
 
 const isCashuApiError = (error: any): error is CashuApiError => {
    if (error.detail && typeof error.detail === 'string') {
@@ -36,8 +37,10 @@ class CashuError extends Error {
 }
 
 class InsufficientBalanceError extends CashuError {
-   constructor(mintUrl: string) {
-      super(`Mint ${mintUrl} has insufficient balance to pay invoice`);
+   constructor(mintUrl: string, balance?: number) {
+      super(
+         `${formatUrl(mintUrl, 15)} has insufficient balance. ${balance ? `$${(balance / 100).toFixed(2)}` : ''}`,
+      );
       this.name = 'InsufficientBalanceError';
    }
 }
@@ -387,7 +390,10 @@ export const useCashu2 = () => {
          const { amount, fee_reserve } = await quote;
 
          if (amount + fee_reserve > balanceByWallet[wallet.keys.id]) {
-            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+            throw new InsufficientBalanceError(
+               wallet.mint.mintUrl,
+               balanceByWallet[wallet.keys.id],
+            );
          }
 
          return quote;
