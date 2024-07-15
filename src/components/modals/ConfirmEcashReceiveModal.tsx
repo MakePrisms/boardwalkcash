@@ -279,7 +279,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                   </div>
 
                   <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                     <button onClick={handleSwapToMain} className='mr-3 underline text-lg mb-0'>
+                     <button
+                        onClick={handleSwapToMain}
+                        className='mr-3 underline text-lg mb-3 md:mb-0'
+                     >
                         Claim
                      </button>
                      <button
