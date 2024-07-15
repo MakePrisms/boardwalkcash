@@ -12,29 +12,11 @@ import HistoryTable from './HistoryTable';
 import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import { XMarkIcon } from '@heroicons/react/20/solid';
+import ClockIcon from '@/components/icons/ClockIcon';
 
 type NewType = FC<ComponentProps<'svg'>>;
 
 const NoIcon: NewType = () => null;
-
-const ClockIcon = () => {
-   return (
-      <svg
-         xmlns='http://www.w3.org/2000/svg'
-         fill='none'
-         viewBox='0 0 24 24'
-         strokeWidth={1.5}
-         stroke='currentColor'
-         className='w-6 h-6'
-      >
-         <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            d='M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'
-         />
-      </svg>
-   );
-};
 
 const TransactionHistoryDrawer = () => {
    const [hidden, setHidden] = useState(true);
