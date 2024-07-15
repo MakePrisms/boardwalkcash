@@ -203,9 +203,8 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       } else if (!isNaN(parseFloat(destination))) {
          // user inputed amount so we create token
          setCurrentTab(Tabs.Ecash);
-         console.log('AMount entered as destination');
          setAmountSat(destination);
-         const token = await createSendableToken(Math.floor(parseFloat(destination) * 100)).catch(
+         const token = await createSendableToken(Math.round(parseFloat(destination) * 100)).catch(
             resetModalState,
          );
          if (!token) {
