@@ -309,13 +309,9 @@ const ConnectWalletSetting = () => {
             <form className='flex flex-col justify-around mb-5'>
                <div>
                   <Label className='text-white'>
-                     Connect a Reserve at{' '}
-                     <a
-                        className='underline text-cyan-teal'
-                        target='_blank'
-                        href='https://peerreserve.com'
-                     >
-                        PeerReserve.com
+                     Connect a Reserve. Learn{' '}
+                     <a className='underline text-cyan-teal' target='_blank' href='/docs/reserve'>
+                        more
                      </a>
                   </Label>
                   <TextInput
