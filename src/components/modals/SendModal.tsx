@@ -78,7 +78,6 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
 
          setAmountSat((quote.amount / 100).toFixed(2));
          setEstimatedFee(quote.fee_reserve);
-         addToast(`Estimated fee: ${quote.fee_reserve} sats`, 'info');
          setCurrentTab(Tabs.Fee);
       } catch (error) {
          console.error(error);
@@ -102,20 +101,22 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
       console.log('using active wallet', activeWallet);
 
       try {
-         await payInvoice(invoice, meltQuote).then(() => {
-            dispatch(
-               addTransaction({
-                  type: 'lightning',
-                  transaction: {
-                     amount: -meltQuote!.amount,
-                     unit: 'usd',
-                     mint: activeWallet.url,
-                     status: TxStatus.PAID,
-                     date: new Date().toLocaleString(),
-                     quote: meltQuote!.quote,
-                  },
-               }),
-            );
+         await payInvoice(invoice, meltQuote).then(res => {
+            if (res) {
+               dispatch(
+                  addTransaction({
+                     type: 'lightning',
+                     transaction: {
+                        amount: -meltQuote!.amount,
+                        unit: 'usd',
+                        mint: activeWallet.url,
+                        status: TxStatus.PAID,
+                        date: new Date().toLocaleString(),
+                        quote: meltQuote!.quote,
+                     },
+                  }),
+               );
+            }
          });
       } catch (error) {
          console.error(error);
@@ -273,9 +274,10 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             return (
                <Modal.Body>
                   <div className=' text-sm text-black mb-4'>
-                     Estimated Fee: ${estimatedFee}
+                     Estimated Fee: ${(estimatedFee! / 100).toFixed(2)}
                      <br />
-                     Total amount to pay: ${parseFloat(amountSat) + estimatedFee!}
+                     Total amount to pay: $
+                     {(parseFloat(amountSat) + estimatedFee! / 100).toFixed(2)}
                   </div>
                   <div className='flex justify-around'>
                      <Button color='failure' onClick={handleBackClick}>
