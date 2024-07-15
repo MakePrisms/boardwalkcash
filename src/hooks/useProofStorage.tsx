@@ -4,6 +4,8 @@ import { useCashuContext } from '@/contexts/cashuContext';
 
 type ProofContextType = {
    balance: number;
+   lockBalance: () => void;
+   unlockBalance: () => void;
    addProofs: (newProofs: Proof[]) => Promise<void>;
    removeProofs: (proofsToRemove: Proof[]) => Promise<void>;
    getProofsByAmount: (amount: number, keysetId?: string) => Proof[] | null;
@@ -55,6 +57,9 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    const [isLoading, setIsLoading] = useState(true);
    const [isLocked, setIsLocked] = useState(false);
 
+   // Lock balance when proofs are being added and removed consecutively to avoid flickering
+   const [lockedBalance, setLockedBalance] = useState<number | null>(null);
+
    const { wallets } = useCashuContext();
 
    useEffect(() => {
@@ -62,10 +67,21 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
       setIsLoading(false);
    }, []);
 
-   const balance = useMemo(
-      () => proofs.reduce((total, proof) => total + proof.amount, 0),
-      [proofs],
-   );
+   const balance = useMemo(() => {
+      if (lockedBalance !== null) {
+         return lockedBalance;
+      } else {
+         return proofs.reduce((acc, proof) => acc + proof.amount, 0);
+      }
+   }, [proofs, lockedBalance]);
+
+   const lockBalance = useCallback(() => {
+      setLockedBalance(balance);
+   }, [balance]);
+
+   const unlockBalance = useCallback(() => {
+      setLockedBalance(null);
+   }, []);
 
    useEffect(() => {
       // Update balance by wallet
@@ -79,9 +95,6 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
       });
       setBalanceByWallet(newBalanceByWallet);
    }, [proofs, wallets]);
-   useEffect(() => {
-      console.log('Balance changed:', balance);
-   }, [balance]);
 
    const lockOperation = useCallback(
       async (operation: () => void) => {
@@ -178,6 +191,8 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
          isLoading,
          getAllProofsByKeysetId,
          balanceByWallet,
+         lockBalance,
+         unlockBalance,
       }),
       [
          balance,
@@ -188,6 +203,8 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
          isLoading,
          getAllProofsByKeysetId,
          balanceByWallet,
+         lockBalance,
+         unlockBalance,
       ],
    );
 

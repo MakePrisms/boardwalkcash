@@ -73,6 +73,8 @@ export const useCashu2 = () => {
       getAllProofsByKeysetId,
       balanceByWallet,
       balance,
+      lockBalance,
+      unlockBalance,
    } = useProofStorage();
    const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
       useNostrMintConnect();
@@ -200,6 +202,8 @@ export const useCashu2 = () => {
          // What if we add the mintquote to tx history and give option to retry if mintQuote is not paid
          const newProofs = await mintTokens(to, amountToMint, mintQuote);
 
+         lockBalance();
+
          await addProofs([...newProofs, ...change]);
          if (opts.amount || opts.max) {
             // this means we were not give then proofs to melt, so we need to remove the proofs from the storage
@@ -225,6 +229,8 @@ export const useCashu2 = () => {
             errMsg = 'An unknown error occurred while sending from one mint to the other.';
          }
          addToast(errMsg, 'error');
+      } finally {
+         unlockBalance();
       }
    };
 
@@ -258,6 +264,8 @@ export const useCashu2 = () => {
     * @param {Proof[]} proofs - Proofs to claim
     */
    const swapToClaimProofs = async (wallet: CashuWallet, proofs: Proof[]) => {
+      lockBalance();
+
       try {
          const swapRes = await wallet.receiveTokenEntry({
             proofs: proofs,
@@ -298,6 +306,8 @@ export const useCashu2 = () => {
             errMsg = 'An unknown error occurred while claiming proofs.';
          }
          addToast(errMsg, 'error');
+      } finally {
+         unlockBalance();
       }
    };
 
@@ -414,6 +424,8 @@ export const useCashu2 = () => {
          }
       }
 
+      lockBalance();
+
       try {
          const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
 
@@ -444,6 +456,8 @@ export const useCashu2 = () => {
             errMsg = 'An unknown error occurred while paying invoice.';
          }
          addToast(errMsg, 'error');
+      } finally {
+         unlockBalance();
       }
    };
 
