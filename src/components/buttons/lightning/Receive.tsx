@@ -142,8 +142,8 @@ const Receive = () => {
             setIsReceiveModalOpen(false);
             setInvoiceToPay('');
             setAmount('');
-            dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
-            dispatch(updateTransactionStatus({ type: 'lightning', quote, status: TxStatus.PAID }));
+            // dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
+            dispatch(updateTransactionStatus({ type: 'lightning', quote, status: TxStatus.PAID })); // TODO: move this to updateProofsAndBalance logic
          }
       } catch (error) {
          console.error('Error receiving ', error);
