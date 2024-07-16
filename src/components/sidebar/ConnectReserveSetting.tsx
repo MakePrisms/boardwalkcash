@@ -77,9 +77,9 @@ const ConnectWalletSetting = () => {
          // mint_max_peg_in=random.randint(1, 1000),
          // mint_max_peg_out=random.randint(1, 1000),
          // mint_peg_out_only=random.choice([True, False]),
-         mint_name: 'A cool mint',
-         mint_description: "A mint's description",
-         mint_description_long: "A mint's long description",
+         mint_name: 'Boardwalk Reserve',
+         mint_description: 'Reserve created on boardwalkcash.com',
+         mint_description_long: 'This is a custom cashu mint that does not allow minting.',
       };
 
       const mintProviderUrl = process.env.NEXT_PUBLIC_MINT_PROVIDER_URL;
