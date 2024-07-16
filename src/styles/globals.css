@@ -140,3 +140,7 @@ body {
 .embla__dot.is-selected {
    background-color: black;
 }
+
+.link {
+   @apply underline text-cyan-teal;
+}
