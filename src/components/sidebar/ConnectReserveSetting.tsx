@@ -13,6 +13,7 @@ import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
 import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
 import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 const ConnectWalletSetting = () => {
@@ -309,14 +310,14 @@ const ConnectWalletSetting = () => {
             <form className='flex flex-col justify-around mb-5'>
                <div>
                   <Label className='text-white'>
-                     Connect a Reserve at{' '}
-                     <a
+                     Connect a Reserve. Learn{' '}
+                     <Link
                         className='underline text-cyan-teal'
                         target='_blank'
-                        href='https://peerreserve.com'
+                        href='/docs/reserve'
                      >
-                        PeerReserve.com
-                     </a>
+                        more
+                     </Link>
                   </Label>
                   <TextInput
                      placeholder='Enter NWC'
