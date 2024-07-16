@@ -53,7 +53,6 @@ const setStoredProofs = (proofs: Proof[]) => {
 
 export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
    const [proofs, setProofs] = useState<Proof[]>([]);
-   const [balanceByWallet, setBalanceByWallet] = useState<Record<string, number>>({});
    const [isLoading, setIsLoading] = useState(true);
    const [isLocked, setIsLocked] = useState(false);
 
@@ -67,13 +66,23 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
       setIsLoading(false);
    }, []);
 
-   const balance = useMemo(() => {
-      if (lockedBalance !== null) {
-         return lockedBalance;
-      } else {
-         return proofs.reduce((acc, proof) => acc + proof.amount, 0);
-      }
-   }, [proofs, lockedBalance]);
+   const { balance, balanceByWallet } = useMemo(() => {
+      const trustedIds = Array.from(wallets.keys());
+      let totalBalance = 0;
+      const newBalanceByWallet: Record<string, number> = {};
+
+      proofs.forEach(proof => {
+         if (trustedIds.includes(proof.id)) {
+            totalBalance += proof.amount;
+            newBalanceByWallet[proof.id] = (newBalanceByWallet[proof.id] || 0) + proof.amount;
+         }
+      });
+
+      return {
+         balance: lockedBalance !== null ? lockedBalance : totalBalance,
+         balanceByWallet: newBalanceByWallet,
+      };
+   }, [proofs, wallets, lockedBalance]);
 
    const lockBalance = useCallback(() => {
       setLockedBalance(balance);
@@ -82,19 +91,6 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    const unlockBalance = useCallback(() => {
       setLockedBalance(null);
    }, []);
-
-   useEffect(() => {
-      // Update balance by wallet
-      const newBalanceByWallet: Record<string, number> = {};
-      const walletIds = Array.from(wallets.keys());
-      proofs.forEach(proof => {
-         if (!walletIds.includes(proof.id)) {
-            return;
-         }
-         newBalanceByWallet[proof.id] = (newBalanceByWallet[proof.id] || 0) + proof.amount;
-      });
-      setBalanceByWallet(newBalanceByWallet);
-   }, [proofs, wallets]);
 
    const lockOperation = useCallback(
       async (operation: () => void) => {

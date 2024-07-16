@@ -13,7 +13,7 @@ import { useCashuContext } from '@/contexts/cashuContext';
 import { useToast } from './useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { setError, setSuccess } from '@/redux/slices/ActivitySlice';
+import { setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
 import {
    CrossMintQuoteResult,
    InsufficientBalanceError,
@@ -334,6 +334,7 @@ export const useCashu2 = () => {
       }
 
       lockBalance();
+      dispatch(setSending('Sending...'));
 
       try {
          const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
