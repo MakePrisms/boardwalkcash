@@ -13,6 +13,7 @@ import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
 import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
 import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 const ConnectWalletSetting = () => {
@@ -310,9 +311,13 @@ const ConnectWalletSetting = () => {
                <div>
                   <Label className='text-white'>
                      Connect a Reserve. Learn{' '}
-                     <a className='underline text-cyan-teal' target='_blank' href='/docs/reserve'>
+                     <Link
+                        className='underline text-cyan-teal'
+                        target='_blank'
+                        href='/docs/reserve'
+                     >
                         more
-                     </a>
+                     </Link>
                   </Label>
                   <TextInput
                      placeholder='Enter NWC'
