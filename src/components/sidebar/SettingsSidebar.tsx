@@ -12,7 +12,7 @@ import DrawerCollapse from '../DrawerCollapse';
 import { BuildingLibraryIcon, LinkIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './EcashTapsSettings';
-import ConnectWalletSetting from './ConnectReserveSetting';
+import ConnectWalletSetting from './Reserve/ConnectReserveSetting';
 import VaultIcon from '../icons/VaultIcon';
 import ProfileSettings from './ProfileSetting';
 
