@@ -59,8 +59,8 @@ const ConnectReserve = ({
       );
    } else {
       return (
-         <div className='mb-5'>
-            <div className='text-white mb-5'>
+         <div className='mb-4'>
+            <div className='text-white mb-3'>
                Create a Reserve. Learn{' '}
                <Link className='underline text-cyan-teal' target='_blank' href='/docs/reserve'>
                   more
@@ -72,14 +72,14 @@ const ConnectReserve = ({
                      <Button
                         onClick={() => handleNwaConnect(wallet)}
                         key={index}
-                        className='mt-2 max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
+                        className=' max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
                      >
                         {wallet.name}
                      </Button>
                   );
                })}
                <Button
-                  className='mt-2 max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
+                  className=' max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
                   onClick={toggleManualConnection}
                >
                   NWC
