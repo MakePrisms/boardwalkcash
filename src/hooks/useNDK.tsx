@@ -33,6 +33,11 @@ type NDKContextType = {
       opts?: NDKSubscriptionOptions,
       relays?: string[],
    ) => Promise<void>;
+   subscribe: (
+      filter: NDKFilter,
+      opts?: NDKSubscriptionOptions,
+      relays?: string[],
+   ) => Promise<NDKSubscription>;
    publishNostrEvent: (event: NostrEvent, relays?: string[]) => Promise<void>;
    generateNip98Header: (
       requestUrl: string,
@@ -83,6 +88,21 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
          opts?: NDKSubscriptionOptions,
          relays?: string[],
       ) => {
+         const sub = await subscribe(filter, opts, relays);
+         // `sub` emits 'event' events when a new nostr event is received
+         // our handler then processes the event
+         sub.on('event', (e: NDKEvent) => {
+            // console.log('Received event:', e.id);
+            // if (seenEventIds.has(e.id)) return;
+            // seenEventIds.add(e.id);
+            handler(e);
+         });
+      },
+      [],
+   );
+
+   const subscribe = useCallback(
+      async (filter: NDKFilter, opts?: NDKSubscriptionOptions, relays?: string[]) => {
          let sub: NDKSubscription;
          if (relays) {
             const relaySet = relaySetFromStrings(relays);
@@ -93,14 +113,7 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
          } else {
             sub = ndk.current.subscribe(filter, opts);
          }
-         // `sub` emits 'event' events when a new nostr event is received
-         // our handler then processes the event
-         sub.on('event', (e: NDKEvent) => {
-            // console.log('Received event:', e.id);
-            // if (seenEventIds.has(e.id)) return;
-            // seenEventIds.add(e.id);
-            handler(e);
-         });
+         return sub;
       },
       [],
    );
@@ -148,6 +161,7 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
    const contextValue = {
       ndk: ndk.current,
       subscribeAndHandle,
+      subscribe,
       publishNostrEvent,
       generateNip98Header,
    };
