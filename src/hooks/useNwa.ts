@@ -23,7 +23,7 @@ export type SupportedWallet = {
 
 const requiredNwcCommands = 'pay_invoice make_invoice lookup_invoice get_info get_balance';
 
-const nwaWrapperBase = 'https://nwa.makeprisms.com';
+const nwaWrapperBase = process.env.NEXT_PUBLIC_NWA_WRAPPER_BASE;
 
 const supportedWallets: SupportedWallet[] = [
    {
