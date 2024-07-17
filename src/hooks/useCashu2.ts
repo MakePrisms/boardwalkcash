@@ -13,7 +13,7 @@ import { useCashuContext } from '@/contexts/cashuContext';
 import { useToast } from './useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
+import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
 import {
    CrossMintQuoteResult,
    InsufficientBalanceError,
@@ -357,6 +357,7 @@ export const useCashu2 = () => {
          return { preimage, amountUsd: meltQuote.amount, feePaid };
       } catch (error) {
          toastSwapError(error);
+         dispatch(resetStatus());
       } finally {
          unlockBalance();
       }

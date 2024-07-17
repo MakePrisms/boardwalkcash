@@ -209,6 +209,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
             resetModalState,
          );
          if (!token) {
+            resetModalState();
             console.error('Failed to create ecash token');
             return;
          }
