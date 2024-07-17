@@ -70,7 +70,7 @@ export function unblindSignature(
 export const generateKeyPair = () => {
    const key: Uint8Array = generateSecretKey();
    const pubkey = getPublicKey(key);
-   const privkey = Buffer.from(key).toString('hex');
+   const privkey = Buffer.from(new Uint8Array(key)).toString('hex');
    return {
       pubkey,
       privkey,
@@ -83,4 +83,8 @@ export const calculateSha256 = async (blob: Blob): Promise<string> => {
    const hashArray = Array.from(new Uint8Array(hashBuffer));
    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
    return hashHex;
+};
+
+export const randomHex = (length: number) => {
+   return bytesToHex(randomBytes(length));
 };
