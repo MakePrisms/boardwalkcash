@@ -1,5 +1,4 @@
 import { useCashuContext } from '@/contexts/cashuContext';
-import { useCashu } from '@/hooks/useCashu';
 import { useNDK } from '@/hooks/useNDK';
 import { MetricsResponse, useNostrMintConnect } from '@/hooks/useNostrMintConnect';
 import { useProofStorage } from '@/hooks/useProofStorage';
@@ -8,13 +7,13 @@ import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
 import { createBlindedMessages } from '@/utils/crypto';
-import { CashuMint, Proof, getEncodedToken } from '@cashu/cashu-ts';
+import { CashuMint, getEncodedToken } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
 import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
-import { Badge, Button, Label, Spinner, TextInput } from 'flowbite-react';
-import Link from 'next/link';
+import { Badge, Button, Spinner } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
+import ConnectReserve from './ConnectReserve';
 
 const ConnectWalletSetting = () => {
    const [connectionString, setConnectionString] = useState('');
@@ -68,11 +67,13 @@ const ConnectWalletSetting = () => {
       setMetrics(metrics);
    };
 
-   const handleConnect = async () => {
+   const handleConnect = async (nwc?: string) => {
       let valid = true;
-
+      if (!nwc) {
+         nwc = nwcUri;
+      }
       const createMintPayload = {
-         nwc: nwcUri,
+         nwc,
          // mint_max_balance=random.randint(1, 1000),
          // mint_max_peg_in=random.randint(1, 1000),
          // mint_max_peg_out=random.randint(1, 1000),
@@ -109,34 +110,6 @@ const ConnectWalletSetting = () => {
          console.log('Mint data:', mintData);
          console.log('## MINT URL:', `${mintProviderUrl}/${mintData.id}`);
 
-         // // if (!connectionString.trim().startsWith('nostr+mintconnect://')) {
-         // //    valid = false;
-         // // }
-         // // if (!connectionString.includes('secret')) {
-         // //    valid = false;
-         // // }
-
-         // // let mintUrl = connectionString.split('mintUrl=')[1];
-         // // if (mintUrl.includes('&')) {
-         // //    mintUrl = mintUrl.split('&')[0];
-         // // }
-
-         // // console.log('mintUrl', mintUrl);
-
-         // // if (mintUrl === undefined) {
-         // //    valid = false;
-         // // }
-
-         // // if (!valid) {
-         // //    addToast('Invalid connection string', 'error');
-         // //    return;
-         // // }
-
-         // localStorage.setItem('reserve', connectionString);
-
-         // const url = normalizeUrl(mintUrl);
-         // const mint = new CashuMint(url);
-
          setFetchingMint(true);
 
          const url = `${mintProviderUrl}/${mintData.id}`;
@@ -167,6 +140,8 @@ const ConnectWalletSetting = () => {
          setConnectionString(token);
 
          connectReserve(usdKeyset, url);
+
+         setNwcUri('');
 
          addToast('Mint added successfully', 'success');
       } catch (e) {
@@ -290,7 +265,6 @@ const ConnectWalletSetting = () => {
                      {mintAmounts.map((tap, idx) => (
                         <div key={idx} className='flex items-center justify-center w-32'>
                            {' '}
-                           {/* Set width to match the largest content */}
                            {mintingAmount === tap.value ? (
                               <Spinner size='sm' className='flex items-center justify-center' />
                            ) : (
@@ -307,35 +281,12 @@ const ConnectWalletSetting = () => {
                </div>
             </div>
          ) : (
-            <form className='flex flex-col justify-around mb-5'>
-               <div>
-                  <Label className='text-white'>
-                     Connect a Reserve. Learn{' '}
-                     <Link
-                        className='underline text-cyan-teal'
-                        target='_blank'
-                        href='/docs/reserve'
-                     >
-                        more
-                     </Link>
-                  </Label>
-                  <TextInput
-                     placeholder='Enter NWC'
-                     onChange={e => setNwcUri(e.target.value)}
-                     value={nwcUri}
-                     className='mt-1'
-                  />
-               </div>
-               <div className='self-end mt-2'>
-                  <Button
-                     className='mt-2 max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
-                     onClick={handleConnect}
-                     isProcessing={fetchingMint}
-                  >
-                     Connect
-                  </Button>
-               </div>
-            </form>
+            <ConnectReserve
+               handleConnect={handleConnect}
+               fetchingMint={fetchingMint}
+               setNwcUri={setNwcUri}
+               nwcUri={nwcUri}
+            />
          )}
       </>
    );
