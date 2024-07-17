@@ -34,7 +34,7 @@ const ConnectReserve = ({
          <form className='flex flex-col justify-around mb-5'>
             <div>
                <Label className='text-white'>
-                  Connect a Reserve. Learn{' '}
+                  Create a Reserve. Learn{' '}
                   <Link className='underline text-cyan-teal' target='_blank' href='/docs/reserve'>
                      more
                   </Link>
@@ -52,7 +52,7 @@ const ConnectReserve = ({
                   onClick={() => handleConnect()}
                   isProcessing={fetchingMint}
                >
-                  Connect
+                  Create
                </Button>
             </div>
          </form>
@@ -61,7 +61,7 @@ const ConnectReserve = ({
       return (
          <div className='mb-5'>
             <div className='text-white mb-5'>
-               Connect a Reserve. Learn{' '}
+               Create a Reserve. Learn{' '}
                <Link className='underline text-cyan-teal' target='_blank' href='/docs/reserve'>
                   more
                </Link>
