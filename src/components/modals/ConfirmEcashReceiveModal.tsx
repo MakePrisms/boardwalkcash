@@ -3,12 +3,12 @@ import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from 
 import { Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useCashu } from '@/hooks/useCashu';
+import { useProofManager } from '@/hooks/useProofManager.ts';
 import { useToast } from '@/hooks/useToast';
 import ProcessingClaimModal from './ProcessingCashuSwap/ProcessingClaim';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 import { useCashuContext } from '@/contexts/cashuContext';
 
 interface ConfirmEcashReceiveModalProps {
@@ -32,8 +32,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
    const dispatch = useAppDispatch();
 
-   const { fetchUnitFromProofs } = useCashu();
-   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu2();
+   const { fetchUnitFromProofs } = useProofManager();
+   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu();
    const { addWallet } = useCashuContext();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();

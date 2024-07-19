@@ -8,7 +8,7 @@ import { nip04 } from 'nostr-tools';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useExchangeRate } from './useExchangeRate';
 import { setError } from '@/redux/slices/ActivitySlice';
-import { useCashu2 } from './useCashu2';
+import { useCashu } from './useCashu';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -109,7 +109,7 @@ const useNwc2 = ({ privkey, pubkey }: Nwc2Props) => {
    nwcStateRef.current = nwcState;
 
    const { subscribeAndHandle, publishNostrEvent } = useNDK();
-   const { payInvoice: cashuPayInvoice } = useCashu2();
+   const { payInvoice: cashuPayInvoice } = useCashu();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const dispatch = useAppDispatch();
 

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import SendEcashModalBody from './modals/SendEcashModalBody';
 import { resetStatus, setSending } from '@/redux/slices/ActivitySlice';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
    <svg
@@ -34,7 +34,7 @@ const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
    const [showEcashTapModal, setShowEcashTapModal] = useState(false);
    const dispatch = useAppDispatch();
 
-   const { createSendableToken } = useCashu2();
+   const { createSendableToken } = useCashu();
    const { ecashTapsEnabled, defaultTapAmount } = useSelector((state: RootState) => state.settings);
 
    const { addToast } = useToast();

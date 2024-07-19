@@ -10,7 +10,7 @@ import SendEcashModalBody from './SendEcashModalBody';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 
 interface SendModalProps {
    isSendModalOpen: boolean;
@@ -38,7 +38,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
    const [tokenToSend, setTokenToSend] = useState<string | undefined>();
 
    const { addToast } = useToast();
-   const { createSendableToken, getMeltQuote, payInvoice } = useCashu2();
+   const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const dispatch = useDispatch();
