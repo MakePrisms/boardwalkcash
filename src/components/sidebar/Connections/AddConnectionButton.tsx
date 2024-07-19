@@ -4,7 +4,7 @@ import { Wallet } from '@/types';
 import { generateKeyPair } from '@/utils/crypto';
 import { Button, Datepicker, Label, TextInput } from 'flowbite-react';
 import { useEffect, useState } from 'react';
-import { NWCMethods } from '@/hooks/useNwc2';
+import { NWCMethods } from '@/hooks/useNwc';
 
 interface AddConnectionButtonProps {
    keysets: { [key: string]: Wallet };

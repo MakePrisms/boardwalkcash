@@ -1,344 +1,422 @@
-import { useEffect, useState, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import NDK, { NDKEvent, NDKFilter, NDKKind } from '@nostr-dev-kit/ndk';
-import { setSending, setError, setSuccess } from '@/redux/slices/ActivitySlice';
-import { AmountPreference, CashuMint, CashuWallet, Proof, SendResponse } from '@cashu/cashu-ts';
-import { getNeededProofs, addBalance } from '@/utils/cashu';
-import { NIP47RequestProcessor } from '@/lib/nip47Processors';
-import { lockBalance, setBalance, unlockBalance } from '@/redux/slices/Wallet.slice';
-import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
+import { useNDK } from './useNDK';
+import { RootState, useAppDispatch } from '@/redux/store';
+import { incrementConnectionSpent, setLastNwcReqTimestamp } from '@/redux/slices/NwcSlice';
+import { NDKEvent, NDKFilter, NDKKind, NostrEvent } from '@nostr-dev-kit/ndk';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { nip04 } from 'nostr-tools';
+import { getAmountFromInvoice } from '@/utils/bolt11';
+import { useExchangeRate } from './useExchangeRate';
+import { setError } from '@/redux/slices/ActivitySlice';
+import { useCashu } from './useCashu';
 
-const defaultRelays = [
-   'wss://relay.getalby.com/v1',
-   'wss://nostr.mutinywallet.com/',
-   'wss://relay.mutinywallet.com',
-   'wss://relay.damus.io',
-   'wss://relay.snort.social',
-   'wss://relay.primal.net',
-];
+enum ErrorCodes {
+   NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
+   UNAUTHORIZED = 'UNAUTHORIZED',
+   INTERNAL = 'INTERNAL',
+   OTHER = 'OTHER',
+   RESTRICTED = 'RESTRICTED',
+   QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
+   INSUFFICIENT_BALANCE = 'INSUFFICIENT_BALANCE',
+   // TODO: add remaining nip47 error
+}
+
+export enum NWCMethods {
+   payInvoice = 'pay_invoice',
+   //  makeInvoice = 'make_invoice',
+   //  payKeysend = 'pay_keysend',
+   //  listTransactions = 'list_transactions',
+   //  lookupInvoice = 'lookup_invoice',
+   getBalance = 'get_balance',
+   getInfo = 'get_info',
+   //  multiPayInvoice = 'multi_pay_invoice',
+   //  multiPayKeysend = 'multi_pay_keysend',
+}
+
+type NWCPayResponse = {
+   preimage: string;
+};
+
+type NWCGetInfoResponse = {
+   alias: string;
+   color: string;
+   pubkey: string;
+   network: string;
+   block_height: number;
+   block_hash: string;
+   methods: string[];
+};
+
+type NWCGetBalanceResponse = {
+   balance: number; // msats
+};
+
+type NWCPayInvoiceRequest = {
+   invoice: string;
+   amount?: number; // msats
+};
+
+type NWCGetInfoRequest = {};
+
+type NWCGetBalanceRequest = {};
+
+type NWCRequestParams = NWCPayInvoiceRequest | NWCGetInfoRequest | NWCGetBalanceRequest;
+
+type NWCRequestContent = {
+   method: NWCMethods;
+   params: NWCRequestParams;
+};
+
+type NWCResult = NWCPayResponse | NWCGetInfoResponse | NWCGetBalanceResponse;
+
+type NWCResponseContent = {
+   result_type: NWCMethods;
+   result?: NWCResult;
+   error?: {
+      code: ErrorCodes;
+      message?: string;
+   };
+};
+
+export class NWCError extends Error {
+   constructor(
+      public readonly code: ErrorCodes,
+      message?: string,
+   ) {
+      super(message);
+   }
+}
+
 export interface NWA {
    nwaSecretKey: string;
    nwaPubkey: string;
    appPublicKey: string;
 }
 
-export const useNwc = () => {
-   const [queue, setQueue] = useState<{ events: NDKEvent[]; nwa: NWA }[]>([]);
-   const [isProcessing, setIsProcessing] = useState(false);
+interface NwcProps {
+   privkey?: string;
+   pubkey?: string;
+}
 
-   const ndk = useRef<NDK | null>(null);
-   const bufferTimer = useRef<NodeJS.Timeout | null>(null);
-   const eventBufferRef = useRef<NDKEvent[]>([]);
+const isPayInvoiceRequest = (params: NWCRequestParams): params is NWCPayInvoiceRequest => {
+   return 'invoice' in params;
+};
 
-   const dispatch = useDispatch();
+const useNwc = ({ privkey, pubkey }: NwcProps) => {
+   const [nip47RequestFilter, setNip47RequestFilter] = useState<NDKFilter | undefined>(undefined);
+   const seenEventIds = useRef<Set<string>>(new Set());
 
-   const wallets = useSelector((s: RootState) => s.wallet.keysets);
+   const balance = useSelector((state: RootState) => state.wallet.balance.usd);
+   const balanceRef = useRef(balance);
+   balanceRef.current = balance;
 
-   const setSince = (timestamp: number) => {
-      window.localStorage.setItem('latestEventTimestamp', timestamp.toString());
-   };
+   const nwcState = useSelector((state: RootState) => state.nwc);
+   const nwcStateRef = useRef(nwcState);
+   nwcStateRef.current = nwcState;
 
-   const getSince = () => {
-      let latestEventTimestamp = window.localStorage.getItem('latestEventTimestamp');
-      const nowTimestamp = Math.floor(Date.now() / 1000);
+   const { subscribeAndHandle, publishNostrEvent } = useNDK();
+   const { payInvoice: cashuPayInvoice } = useCashu();
+   const { satsToUnit, unitToSats } = useExchangeRate();
+   const dispatch = useAppDispatch();
 
-      if (!latestEventTimestamp) {
-         window.localStorage.setItem('latestEventTimestamp', nowTimestamp.toString());
-         latestEventTimestamp = nowTimestamp.toString();
-      }
-      return parseInt(latestEventTimestamp) + 1;
-   };
-
-   const setActivityMessage = () => {
-      if (eventBufferRef.current.length === 1) {
-         dispatch(setSending('Processing payment...'));
-      } else {
-         dispatch(setSending('Processing prism payment...'));
-      }
-   };
-
-   const processEventBuffer = (nwa: NWA) => {
-      console.log(`## Processing event buffer... ${eventBufferRef.current.length} requests`);
-
-      const events = [...eventBufferRef.current];
-      setQueue(prev => [...prev, { events, nwa: nwa }]);
-
-      eventBufferRef.current = [];
-      if (bufferTimer.current) {
-         clearTimeout(bufferTimer.current);
-         bufferTimer.current = null;
-      }
-   };
-
-   useEffect(() => {
-      const nwaAppPubkey = window.localStorage.getItem('appPublicKey');
-      const nwa: NWA = JSON.parse(window.localStorage.getItem('nwa')!);
-
-      const listen = async () => {
-         ndk.current = new NDK({ explicitRelayUrls: defaultRelays });
-         await ndk.current
-            .connect()
-            // .then(() => console.log('connected to NDK'))
-            .catch(e => console.error('Error connecting to NDK', e));
-
-         const filter: NDKFilter = {
-            kinds: [NDKKind.NostrWalletConnectReq],
-            authors: [nwaAppPubkey!],
-            since: getSince(),
-         };
-
-         // console.log('## Listening for events:', filter);
-
-         const sub = ndk.current.subscribe(filter);
-
-         sub.on('event', (event: NDKEvent) => {
-            if (!eventBufferRef.current.some(e => e.id === event.id)) {
-               // Add the event to the buffer if it's not already there
-               eventBufferRef.current.push(event);
-               setSince(event.created_at!);
-
-               console.log(`## ${eventBufferRef.current.length} requests in buffer:`);
-
-               setActivityMessage();
-            }
-
-            if (!bufferTimer.current) {
-               bufferTimer.current = setTimeout(() => {
-                  processEventBuffer(nwa); // Process and reset the buffer
-               }, 2500);
-            }
-         });
-      };
-
-      if (nwa && nwaAppPubkey) {
-         let isMounted = true;
-
-         if (isMounted) {
-            listen();
+   const payInvoice = useCallback(
+      async (params: NWCRequestParams, connectionPubkey: string): Promise<NWCPayResponse> => {
+         if (!isPayInvoiceRequest(params)) {
+            throw new NWCError(ErrorCodes.OTHER, 'Invalid request params');
          }
 
-         return () => {
-            isMounted = false;
+         const { invoice, amount } = params;
+
+         if (amount) {
+            throw new NWCError(ErrorCodes.NOT_IMPLEMENTED, 'Amount is not supported');
+         }
+
+         const result = await cashuPayInvoice(invoice);
+
+         if (!result) {
+            throw new NWCError(ErrorCodes.OTHER, 'Failed to pay invoice');
+         }
+
+         dispatch(
+            incrementConnectionSpent({
+               pubkey: connectionPubkey,
+               spent: Number(result.amountUsd.toFixed(2)),
+            }),
+         );
+
+         return { preimage: result.preimage || '' };
+      },
+      [cashuPayInvoice],
+   );
+
+   const getInfo = useCallback(
+      async (params: NWCRequestParams, connectionPubkey: string): Promise<NWCGetInfoResponse> => {
+         const isGetInfoRequest = (params: NWCRequestParams): params is NWCGetInfoRequest => {
+            return Object.keys(params).length === 0;
          };
-      }
+
+         if (!isGetInfoRequest(params)) {
+            throw new NWCError(ErrorCodes.OTHER, 'Invalid request params');
+         }
+
+         return {
+            alias: 'Boardwalk Cash',
+            color: '#000000',
+            pubkey: pubkey!,
+            network: 'mainnet',
+            methods: Array.from(requestHandlers.current.keys()),
+            block_height: 0,
+            block_hash: '',
+         };
+      },
+      [],
+   );
+
+   const getBalance = useCallback(async (params: NWCRequestParams, connectionPubkey: string) => {
+      const connection = nwcStateRef.current.connections[connectionPubkey];
+
+      const remainingBudget = connection.budget ? connection.budget - connection.spent : undefined;
+
+      // use smaller of remaining budget or current balance
+      const balanceToUse =
+         remainingBudget !== undefined
+            ? Math.min(remainingBudget, balanceRef.current)
+            : balanceRef.current;
+
+      const balanceSats = await unitToSats(balanceToUse / 100, 'usd');
+      const balanceMsats = Math.floor(balanceSats * 1000);
+      return { balance: balanceMsats };
    }, []);
 
-   class InsufficientFundsError extends Error {
-      constructor(totalToSend: number) {
-         super(`Insufficient funds. Trying to send ${totalToSend} cents total.`);
-         this.name = 'InsufficientFundsError';
-      }
-   }
+   // Store the handlers map in a ref to maintain a consistent reference across renders
+   const requestHandlers = useRef(
+      new Map<
+         NWCMethods,
+         (params: NWCRequestParams, connectionPubkey: string) => Promise<NWCResult>
+      >(),
+   );
 
-   const calcTokens = (processors: NIP47RequestProcessor[]) => {
-      let totalToSend = 0;
-      let preference: Array<AmountPreference> = [];
-      const denominationsNeeded = processors.reduce(
-         (acc, p) => {
-            const id = p.requestEvent.id;
-            const denoms: number[] = p.calcNeededDenominations();
-            if (!acc.has(id)) {
-               acc.set(id, []);
-            }
-            acc.get(id)!.push(...denoms);
-            totalToSend += denoms.reduce((a, b) => a + b, 0);
-            denoms.forEach(d => {
-               if (preference.some(p => p.amount === d)) {
-                  preference.find(p => p.amount === d)!.count += 1;
-               } else {
-                  preference.push({ amount: d, count: 1 });
-               }
-            });
-            return acc;
-         },
-         new Map() as Map<string, number[]>,
-      );
-
-      console.log('## Total to send:', totalToSend);
-      console.log('## Preferences:', preference);
-
-      const proofsToSwap = getNeededProofs(totalToSend);
-
-      console.log('## Proofs to swap:', proofsToSwap);
-
-      if (proofsToSwap.length === 0) {
-         throw new InsufficientFundsError(totalToSend);
-      }
-
-      return { denominations: denominationsNeeded, proofs: proofsToSwap, preference, totalToSend };
-   };
-
-   const initProcessors = (events: NDKEvent[], nwa: NWA) => {
-      const activeWallet = Object.values(wallets).find(w => w.active);
-      if (!activeWallet) throw new Error('No active wallet set');
-      const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
-
-      return events.map(e => new NIP47RequestProcessor(e, nwa, wallet, ndk.current!));
-   };
-
-   const failPayments = (processors: NIP47RequestProcessor[], code?: string) => {
-      processors.forEach(p => {
-         p.sendError(code || 'INTERNAL').catch(e => console.error('Error sending error', e));
-      });
-   };
-
-   const resetQueue = () => {
-      dispatch(unlockBalance());
-      setQueue(prev => prev.slice(1));
-      setIsProcessing(false);
-   };
-
-   const getProofsForProcessor = (allProofs: SendResponse, denominations: number[]) => {
-      const proofsToSend = [];
-      for (const denomination of denominations) {
-         const index = allProofs.send.findIndex(p => p.amount === denomination);
-         if (index === -1) {
-            throw new Error('Insufficient proofs for the required denomination');
-         }
-         proofsToSend.push(allProofs.send.splice(index, 1)[0]);
-      }
-      return proofsToSend;
-   };
-
-   const setFinalMessage = (results: { sent: number; fee: number }[]) => {
-      const [totalPaid, totalFee] = results.reduce(
-         (acc, res) => {
-            if (!res) return acc;
-            return [acc[0] + res.sent, acc[1] + res.fee];
-         },
-         [0, 0],
-      );
-
-      if (totalPaid === 0) {
-         dispatch(setError('Payment failed'));
-      } else {
-         dispatch(
-            setSuccess(
-               `Sent ${totalPaid} cent${totalPaid === 1 ? '' : 's'}${totalFee ? ` + ${totalFee} cent${totalFee > 1 ? 's' : ''} fees` : ''}`,
-            ),
-         );
-      }
-   };
-
-   // Effect to start processing when there are items in the queue
+   /**
+    * Init request handlers
+    */
    useEffect(() => {
-      const processQueue = async () => {
-         if (isProcessing) return;
-         if (queue.length === 0 || queue[0].events.length === 0) return;
+      // Initialize or update the map; this effect runs only when handlers change
+      requestHandlers.current.set(NWCMethods.payInvoice, payInvoice);
+      requestHandlers.current.set(NWCMethods.getInfo, getInfo);
+      requestHandlers.current.set(NWCMethods.getBalance, getBalance);
+   }, [payInvoice]); // Ensure this runs when handlers are re-created
 
-         console.log('Starting to process queue...', queue);
+   /**
+    * set the nwc request (kind 23194) filter
+    */
+   useEffect(() => {
+      if (!pubkey) return;
 
-         dispatch(lockBalance());
-         setIsProcessing(true);
-
-         const { events, nwa } = queue[0];
-
-         const processingMessage = `Processing ${events.length > 1 ? 'prism' : ''} payment...`;
-         dispatch(setSending(processingMessage));
-
-         const processors: NIP47RequestProcessor[] = initProcessors(events, nwa);
-
-         try {
-            // decrypt all the requests and set invoice + fee amounts
-            for await (const processor of processors) {
-               // one at a time otherwise mint gets sad
-               try {
-                  await processor.setUp();
-               } catch (e) {
-                  processor.sendError('INTERNAL');
-                  if (processors.length === 1) {
-                     dispatch(setError('Payment failed. Cannot send less than one cent'));
-                     return;
-                  } else {
-                     processors.splice(processors.indexOf(processor), 1);
-                  }
-               }
-            }
-
-            const { denominations, proofs, preference, totalToSend } = calcTokens(processors);
-
-            let swappedProofs: SendResponse;
-            try {
-               const activeWallet = Object.values(wallets).find(w => w.active);
-               if (!activeWallet) throw new Error('No active wallet set');
-               const wallet = new CashuWallet(new CashuMint(activeWallet.url), { ...activeWallet });
-
-               swappedProofs = await wallet.send(totalToSend, proofs, { preference });
-            } catch (e) {
-               console.error('Error swapping proofs', e);
-               dispatch(setError('Payment failed: error swapping proofs'));
-               addBalance([...proofs]);
-               failPayments(processors);
-               resetQueue();
-               return;
-            }
-
-            // add the change proofs back to what we have stored
-            addBalance([...swappedProofs.returnChange]);
-
-            // set the proofs to pay invoice for each processor
-            processors.forEach(p => {
-               const denoms = denominations.get(p.requestEvent.id);
-
-               if (!denoms) throw new Error('something went wrong. no denominations found');
-
-               const proofsToSend = getProofsForProcessor(swappedProofs, denoms);
-
-               console.log('## proofsToSend', proofsToSend);
-               p.proofs = [...proofsToSend];
-            });
-
-            let payCounter = 0;
-            if (processors.length === 1) {
-               dispatch(setSending('Paying invoice...'));
-            } else {
-               dispatch(setSending(`Paying invoice ${payCounter + 1} of ${processors.length}...`));
-            }
-
-            // execute the payment for each processor
-            const promises = processors.map(async p => {
-               try {
-                  const result = await p.process();
-
-                  payCounter++;
-
-                  const msg = `Paying invoice ${payCounter + 1} of ${processors.length}...`;
-                  dispatch(setSending(msg));
-
-                  console.log('## result', result);
-                  return result;
-               } catch (e) {
-                  console.error('Error processing payment', e);
-                  return undefined;
-               }
-            });
-
-            const results = await Promise.all(promises);
-
-            console.log('Results:', results);
-
-            resetQueue();
-
-            const newBalance = JSON.parse(localStorage.getItem('proofs') || '[]').reduce(
-               (acc: number, proof: Proof) => acc + proof.amount,
-               0,
-            );
-            dispatch(setBalance({ usd: newBalance }));
-
-            setFinalMessage(results);
-         } catch (e: any) {
-            if (e instanceof InsufficientFundsError) {
-               dispatch(setError(e.message));
-            } else {
-               console.error('Error setting up processors', e);
-               dispatch(setError(`Error sending payments${e.message ? ': ' + e.message : ''}`));
-            }
-            failPayments(processors);
-            resetQueue();
-            return;
-         }
+      const filter: NDKFilter = {
+         kinds: [NDKKind.NostrWalletConnectReq],
+         // authors: nwcState.allPubkeys,
+         '#p': [pubkey],
+         since: nwcStateRef.current.lastReqTimestamp + 1,
       };
 
-      processQueue();
-   }, [queue, isProcessing]);
+      console.log('Setting NIP47 Request Filter: ', filter);
+
+      setNip47RequestFilter(filter);
+   }, [pubkey]);
+
+   const sendNwcResponse = useCallback(
+      async (method: NWCMethods, requestEvent: NDKEvent, result?: NWCResult, error?: NWCError) => {
+         const requestId = requestEvent.id;
+         const appPubkey = requestEvent.pubkey;
+
+         const content: NWCResponseContent = {
+            result_type: method,
+         };
+
+         if (result) {
+            content['result'] = result;
+         } else if (error) {
+            content['error'] = { code: error.code, message: error.message };
+         } else {
+            throw new Error('sendNwcResponse requires a result or an NWCError');
+         }
+
+         console.log('## SENDING NWC RESPONSE: ', content);
+
+         const encryptedResponse = await nip04.encrypt(
+            privkey!,
+            appPubkey,
+            JSON.stringify(content),
+         );
+
+         // construct the kind 23195 response
+         const responseEvent: NostrEvent = {
+            kind: NDKKind.NostrWalletConnectRes,
+            tags: [
+               ['e', requestId],
+               ['p', appPubkey],
+            ],
+            content: encryptedResponse,
+            created_at: Math.floor(Date.now() / 1000),
+            pubkey: pubkey!,
+         };
+
+         try {
+            await publishNostrEvent(responseEvent).then(() => console.log('## RESPONSE PUBLISHED'));
+         } catch (e) {
+            console.error(
+               'Error publishing response event. Make sure your are signed in and connected to relays...',
+               e,
+            );
+         }
+      },
+      [privkey, pubkey, publishNostrEvent],
+   );
+
+   /**
+    * Use NIP04 to decrypt
+    * @param appPubkey The public key of the app the nwc connection was issued to
+    * @param encryptedContent Encrypted event content that contains nip47 request data
+    * @returns nip47 method and corresponding params
+    */
+   const decryptNwcRequest = useCallback(
+      async (appPubkey: string, encryptedContent: string): Promise<NWCRequestContent> => {
+         if (!privkey) throw new NWCError(ErrorCodes.INTERNAL, 'Failed to init');
+
+         // use NIP04 for decrypt with app's pubkey and OUR private key
+         const decrypted = await nip04.decrypt(privkey, appPubkey, encryptedContent);
+
+         // parse decrypted content
+         const parsedRequest = JSON.parse(decrypted);
+
+         // make sure we have a method and params
+         if (!parsedRequest.method) {
+            throw new NWCError(ErrorCodes.OTHER, 'Invalid NWC request');
+         }
+
+         // validate the params agains the method
+         switch (parsedRequest.method) {
+            case NWCMethods.payInvoice:
+               if (!parsedRequest.params?.invoice) {
+                  throw new NWCError(ErrorCodes.OTHER, 'Invalid NWC request, missing invoice');
+               }
+               break;
+            default:
+               break;
+         }
+
+         const method = parsedRequest.method as NWCMethods;
+         const params = parsedRequest.params;
+
+         // NOTE: if the request is bad just ignore it because we may not have method or even been able to decrypt
+
+         return { method, params };
+      },
+      [privkey],
+   );
+
+   const validateConnection = useCallback(
+      async (appPubkey: string, request: NWCRequestContent) => {
+         const currentState = nwcStateRef.current;
+
+         if (!currentState.allPubkeys.includes(appPubkey)) {
+            console.log('ALL PUBKEYS: ', currentState.allPubkeys);
+            throw new NWCError(ErrorCodes.UNAUTHORIZED, 'Unauthorized app');
+         }
+
+         const connection = currentState.connections[appPubkey];
+
+         if (!connection.permissions.includes(request.method)) {
+            console.warn('## Connection permissions: ', connection.permissions, request.method);
+            throw new NWCError(ErrorCodes.RESTRICTED, `Method ${request.method} not allowed`);
+         }
+
+         if (connection.expiry && Date.now() / 1000 > connection.expiry) {
+            console.log('## NOW: ', Date.now() / 1000, 'EXPIRY: ', connection.expiry);
+            throw new NWCError(ErrorCodes.UNAUTHORIZED, 'Connection expired');
+         }
+
+         if (request.method === NWCMethods.payInvoice && isPayInvoiceRequest(request.params)) {
+            let amount;
+            if (request.params.amount) {
+               amount = Math.floor(request.params.amount / 1000);
+            } else {
+               amount = getAmountFromInvoice(request.params.invoice);
+            }
+
+            console.log('## AMOUNT SATS: ', amount);
+
+            const amountUsd = await satsToUnit(amount, 'usd');
+            if (connection.budget && amountUsd > connection.budget - connection.spent) {
+               console.log(
+                  `## AMOUNT USD: ${amountUsd}\n## REMAINING BUDGET: ${connection.budget - connection.spent}`,
+               );
+               throw new NWCError(ErrorCodes.QUOTA_EXCEEDED, 'Connection budget exceeded');
+            }
+
+            console.log('## AMOUNT USD: ', amountUsd);
+
+            if (amountUsd / 100 > balanceRef.current) {
+               console.log(`## CURRENT BALANCE: $${balanceRef.current / 100}`);
+               throw new NWCError(ErrorCodes.INSUFFICIENT_BALANCE);
+            }
+         }
+      },
+      [balanceRef, satsToUnit, nwcStateRef],
+   );
+
+   const handleNwcRequest = useCallback(
+      async (event: NDKEvent) => {
+         if (seenEventIds.current.has(event.id)) return;
+         seenEventIds.current.add(event.id);
+
+         dispatch(setLastNwcReqTimestamp(event.created_at!));
+
+         const request = await decryptNwcRequest(event.pubkey, event.content);
+
+         console.log(`============PROCESSING NWC REQUEST===============\n ## REQUEST: ${request}`);
+
+         try {
+            await validateConnection(event.pubkey, request);
+
+            console.log('## CONNECTION IS VALID');
+
+            const handler = requestHandlers.current.get(request.method);
+
+            if (!handler) {
+               throw new NWCError(ErrorCodes.NOT_IMPLEMENTED, 'Method not implemented');
+            }
+
+            const result = await handler(request.params, event.pubkey);
+
+            await sendNwcResponse(request.method, event, result);
+         } catch (e: any) {
+            dispatch(setError(`Failed to process request: ${e.message}`));
+            if (e instanceof NWCError) {
+               sendNwcResponse(request.method, event, undefined, e);
+            } else {
+               console.error('Error processing NWC request', e);
+               sendNwcResponse(
+                  request.method,
+                  event,
+                  undefined,
+                  new NWCError(ErrorCodes.INTERNAL, 'Failed to process request'),
+               );
+            }
+         }
+      },
+      [sendNwcResponse, decryptNwcRequest, validateConnection, dispatch],
+   );
+
+   /**
+    * create a subscription for NIP47 requests and handle them
+    */
+   useEffect(() => {
+      if (nip47RequestFilter) {
+         console.log('Subscribing to NIP47 requests');
+         subscribeAndHandle(nip47RequestFilter, handleNwcRequest, { closeOnEose: false });
+      }
+   }, [nip47RequestFilter, subscribeAndHandle, handleNwcRequest]);
 };
+
+export default useNwc;

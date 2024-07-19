@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/Balance';
 import Receive from '@/components/buttons/lightning/Receive';
 import Send from '@/components/buttons/lightning/Send';
-import { useNwc } from '@/hooks/useNwc';
 import { useProofManager } from '@/hooks/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -14,7 +13,7 @@ import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
 import { CashuMint, CashuWallet, Token, getDecodedToken } from '@cashu/cashu-ts';
-import useNwc2 from '@/hooks/useNwc2';
+import useNwc from '@/hooks/useNwc';
 import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/useToast';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
@@ -167,8 +166,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
       return () => {};
    }, []);
 
-   useNwc();
-   useNwc2({ privkey: user.privkey, pubkey: user.pubkey });
+   useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
    return (
       <>
