@@ -1,4 +1,4 @@
-import useNwa, { SupportedWallet } from '@/hooks/useNwa';
+import useNwa, { SupportedWallet } from '@/hooks/nostr/useNwa';
 import { Button, Label, TextInput } from 'flowbite-react';
 import Link from 'next/link';
 import { useState } from 'react';

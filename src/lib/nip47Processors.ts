@@ -1,5 +1,5 @@
 import { NIP47Method, NIP47Request, NIP47Response, decryptEventContent } from '@/utils/nip47';
-import { NWA } from '@/hooks/useNwc';
+import { NWA } from '@/hooks/nostr/useNwc';
 import NDK, { NDKEvent } from '@nostr-dev-kit/ndk';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { CashuWallet, MeltTokensResponse, Proof } from '@cashu/cashu-ts';

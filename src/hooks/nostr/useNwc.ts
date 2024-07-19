@@ -6,9 +6,9 @@ import { NDKEvent, NDKFilter, NDKKind, NostrEvent } from '@nostr-dev-kit/ndk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nip04 } from 'nostr-tools';
 import { getAmountFromInvoice } from '@/utils/bolt11';
-import { useExchangeRate } from './useExchangeRate';
+import { useExchangeRate } from '../util/useExchangeRate';
 import { setError } from '@/redux/slices/ActivitySlice';
-import { useCashu } from './useCashu';
+import { useCashu } from '../cashu/useCashu';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',

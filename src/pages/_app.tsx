@@ -3,13 +3,13 @@ import type { AppProps } from 'next/app';
 import { PersistGate } from 'redux-persist/integration/react';
 import { Provider } from 'react-redux';
 import { store, persistor } from '@/redux/store';
-import { ToastProvider } from '@/hooks/useToast';
+import { ToastProvider } from '@/hooks/util/useToast';
 import Head from 'next/head';
 import { Analytics } from '@vercel/analytics/react';
-import { NDKProvider } from '@/hooks/useNDK';
-import useViewportHeight from '@/hooks/useViewportHeigh';
-import { ProofProvider } from '@/hooks/useProofStorage';
-import { CashuProvider } from '@/contexts/cashuContext';
+import { NDKProvider } from '@/hooks/nostr/useNDK';
+import useViewportHeight from '@/hooks/util/useViewportHeigh';
+import { ProofProvider } from '@/hooks/cashu/useProofStorage';
+import { CashuProvider } from '@/hooks/contexts/cashuContext';
 
 export default function App({ Component, pageProps }: AppProps) {
    useViewportHeight();

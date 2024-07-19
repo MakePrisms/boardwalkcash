@@ -1,12 +1,12 @@
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import { Wallet } from '@/types';
 import { Badge } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import ProcessingSwapModal from '@/components/modals/ProcessingCashuSwap/ProcessingSwap';
 import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
-import { useCashu } from '@/hooks/useCashu';
-import { useCashuContext } from '@/contexts/cashuContext';
+import { useCashu } from '@/hooks/cashu/useCashu';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface MintSidebarItemProps {
    keyset: Wallet;

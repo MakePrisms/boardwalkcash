@@ -8,9 +8,9 @@ import {
    getDecodedToken,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
-import { useNostrMintConnect } from './useNostrMintConnect';
-import { useCashuContext } from '@/contexts/cashuContext';
-import { useToast } from './useToast';
+import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { useToast } from '../util/useToast';
 import { useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';

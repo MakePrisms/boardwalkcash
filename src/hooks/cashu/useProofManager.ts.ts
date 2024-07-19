@@ -25,13 +25,13 @@ import {
    getDecodedToken,
    getEncodedToken,
 } from '@cashu/cashu-ts';
-import { useToast } from './useToast';
+import { useToast } from '../util/useToast';
 import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
 import { getNeededProofs, addBalance, customMintQuoteRequest, removeProofs } from '@/utils/cashu';
 import { RootState } from '@/redux/store';
-import { useExchangeRate } from './useExchangeRate';
+import { useExchangeRate } from '../util/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useNostrMintConnect } from '@/hooks/useNostrMintConnect';
+import { useNostrMintConnect } from '@/hooks/nostr/useNostrMintConnect';
 import { createBlindedMessages } from '@/utils/crypto';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import { useProofStorage } from './useProofStorage';

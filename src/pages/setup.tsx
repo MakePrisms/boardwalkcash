@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button, Label, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import Image from 'next/image';
 import { NWAEventContent } from '@/types';
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
@@ -10,7 +10,7 @@ import { initializeUser } from '@/redux/slices/UserSlice';
 import { useAppDispatch } from '@/redux/store';
 import { assembleLightningAddress } from '@/utils/lud16';
 import { normalizeUrl } from '@/utils/url';
-import { useCashuContext } from '@/contexts/cashuContext';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
    return (

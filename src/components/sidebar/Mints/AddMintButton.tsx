@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Button, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import { Wallet } from '@/types';
 import Link from 'next/link';
 import { normalizeUrl } from '@/utils/url';
-import { useCashuContext } from '@/contexts/cashuContext';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
    const [fetchingMint, setFetchingMint] = useState(false);

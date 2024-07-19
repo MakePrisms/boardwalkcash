@@ -1,5 +1,5 @@
-import { useCashu } from '@/hooks/useCashu';
-import { useToast } from '@/hooks/useToast';
+import { useCashu } from '@/hooks/cashu/useCashu';
+import { useToast } from '@/hooks/util/useToast';
 import { Proof } from '@cashu/cashu-ts';
 import { Button, Modal } from 'flowbite-react';
 import { useEffect, useState } from 'react';

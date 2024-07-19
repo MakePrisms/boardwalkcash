@@ -1,4 +1,4 @@
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import {
    EcashTransaction,
    Transaction,
@@ -15,7 +15,7 @@ import { Spinner, Table } from 'flowbite-react';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
-import { useProofStorage } from '@/hooks/useProofStorage';
+import { useProofStorage } from '@/hooks/cashu/useProofStorage';
 
 const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const [reclaiming, setReclaiming] = useState(false);

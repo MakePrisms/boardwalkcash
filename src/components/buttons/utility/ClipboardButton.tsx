@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import { Button } from 'flowbite-react';
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon } from '@heroicons/react/20/solid';
 

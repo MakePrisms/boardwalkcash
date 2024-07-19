@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Drawer, Modal } from 'flowbite-react';
-import MintSidebarItem from './MintSidebarItem';
-import AddMintButton from './AddMintButton';
+import MintSidebarItem from './Mints/MintSidebarItem';
+import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
 import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
-import EcashTapsSettings from './EcashTapsSettings';
+import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ConnectWalletSetting from './Reserve/ConnectReserveSetting';
 import VaultIcon from '../icons/VaultIcon';
-import ProfileSettings from './ProfileSetting';
+import ProfileSettings from './Profile/ProfileSetting';
 
 const SettingsCog = () => (
    <svg
