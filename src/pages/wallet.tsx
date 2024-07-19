@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/Balance';
 import Receive from '@/components/buttons/lightning/Receive';
 import Send from '@/components/buttons/lightning/Send';
-import { useProofManager } from '@/hooks/useProofManager.ts';
+import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
@@ -13,15 +13,15 @@ import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
 import { CashuMint, CashuWallet, Token, getDecodedToken } from '@cashu/cashu-ts';
-import useNwc from '@/hooks/useNwc';
+import useNwc from '@/hooks/nostr/useNwc';
 import { useRouter } from 'next/router';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps } from 'next';
-import { useCashu } from '@/hooks/useCashu';
-import { useCashuContext } from '@/contexts/cashuContext';
+import { useCashu } from '@/hooks/cashu/useCashu';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);

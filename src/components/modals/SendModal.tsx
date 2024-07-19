@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import { MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
-import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import SendEcashModalBody from './SendEcashModalBody';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useCashu } from '@/hooks/useCashu';
+import { useCashu } from '@/hooks/cashu/useCashu';
 
 interface SendModalProps {
    isSendModalOpen: boolean;

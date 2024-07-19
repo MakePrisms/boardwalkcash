@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Proof } from '@cashu/cashu-ts';
-import { useCashuContext } from '@/contexts/cashuContext';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 type ProofContextType = {
    balance: number;

@@ -1,4 +1,4 @@
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/util/useToast';
 import { RootState } from '@/redux/store';
 import { ShareIcon } from '@heroicons/react/20/solid';
 import { useSelector } from 'react-redux';

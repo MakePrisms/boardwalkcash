@@ -8,9 +8,9 @@ import { assembleLightningAddress } from '@/utils/lud16';
 import { NWAEventContent } from '@/types';
 import { useRouter } from 'next/router';
 import { NostrEvent } from '@nostr-dev-kit/ndk';
-import { useNDK } from '@/hooks/useNDK';
+import { useNDK } from '@/hooks/nostr/useNDK';
 import { addNwcConnection } from '@/redux/slices/NwcSlice';
-import { NWCMethods } from '@/hooks/useNwc';
+import { NWCMethods } from '@/hooks/nostr/useNwc';
 
 export default function Home() {
    const router = useRouter();

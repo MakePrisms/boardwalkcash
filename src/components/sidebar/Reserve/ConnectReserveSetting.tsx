@@ -1,8 +1,8 @@
-import { useCashuContext } from '@/contexts/cashuContext';
-import { useNDK } from '@/hooks/useNDK';
-import { MetricsResponse, useNostrMintConnect } from '@/hooks/useNostrMintConnect';
-import { useProofStorage } from '@/hooks/useProofStorage';
-import { useToast } from '@/hooks/useToast';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { useNDK } from '@/hooks/nostr/useNDK';
+import { MetricsResponse, useNostrMintConnect } from '@/hooks/nostr/useNostrMintConnect';
+import { useProofStorage } from '@/hooks/cashu/useProofStorage';
+import { useToast } from '@/hooks/util/useToast';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
