@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKFilter, NDKKind, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
+import NDK, { NDKEvent, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
 export enum NIP47Method {

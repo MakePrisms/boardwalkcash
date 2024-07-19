@@ -1,6 +1,6 @@
 import { EcashTransaction, LightningTransaction } from '@/redux/slices/HistorySlice';
-import { Table, Pagination } from 'flowbite-react';
-import React, { useState } from 'react';
+import { Table } from 'flowbite-react';
+import React from 'react';
 import HistoryTableRow from './HistoryTableRow';
 
 const customTheme = {

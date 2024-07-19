@@ -1,5 +1,4 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
-import { Button } from 'flowbite-react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode.react';

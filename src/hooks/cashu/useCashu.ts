@@ -3,7 +3,6 @@ import {
    MeltQuoteResponse,
    MintQuoteResponse,
    Proof,
-   ApiError as CashuApiError,
    getEncodedToken,
    getDecodedToken,
 } from '@cashu/cashu-ts';

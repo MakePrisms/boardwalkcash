@@ -2,38 +2,19 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-   lockBalance,
    setBalance,
-   unlockBalance,
-   updateKeysetStatus,
 } from '@/redux/slices/Wallet.slice';
 import {
-   setError,
-   setSending,
    setSuccess,
    setReceiving,
-   resetStatus,
    setNotReceiving,
 } from '@/redux/slices/ActivitySlice';
-import { ProofData, Wallet } from '@/types';
+import { ProofData } from '@/types';
 import {
-   MeltQuoteResponse,
-   MeltTokensResponse,
-   MintKeys,
-   MintQuoteResponse,
    Proof,
-   getDecodedToken,
-   getEncodedToken,
 } from '@cashu/cashu-ts';
-import { useToast } from '../util/useToast';
-import { CashuWallet, CashuMint, SendResponse } from '@cashu/cashu-ts';
-import { getNeededProofs, addBalance, customMintQuoteRequest, removeProofs } from '@/utils/cashu';
+import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
 import { RootState } from '@/redux/store';
-import { useExchangeRate } from '../util/useExchangeRate';
-import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useNostrMintConnect } from '@/hooks/nostr/useNostrMintConnect';
-import { createBlindedMessages } from '@/utils/crypto';
-import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
 import { useProofStorage } from './useProofStorage';
 
 export const useProofManager = () => {

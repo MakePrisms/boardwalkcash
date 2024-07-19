@@ -2,7 +2,7 @@ import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
 import { Proof } from '@cashu/cashu-ts';
 import { Button, Modal } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface SendEcashModalProps {
    showModal: boolean;

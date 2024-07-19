@@ -1,4 +1,4 @@
-import { CashuWallet, MintQuoteResponse, Proof, getDecodedToken } from '@cashu/cashu-ts';
+import { CashuWallet, MintQuoteResponse, Proof } from '@cashu/cashu-ts';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.

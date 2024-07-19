@@ -1,7 +1,7 @@
 import { ec as EC } from 'elliptic';
 import { randomBytes } from 'crypto';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
-import { bytesToNumber, splitAmount } from '@cashu/cashu-ts/dist/lib/es5/utils';
+import { splitAmount } from '@cashu/cashu-ts/dist/lib/es5/utils';
 import { BlindedMessage } from '@cashu/cashu-ts/dist/lib/es5/model/BlindedMessage';
 import { BlindedMessageData, SerializedBlindedMessage } from '@cashu/cashu-ts';
 import { bytesToHex } from '@noble/curves/abstract/utils';

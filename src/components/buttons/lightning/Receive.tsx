@@ -3,7 +3,6 @@ import axios from 'axios';
 import { Button, Modal, Spinner, Tooltip } from 'flowbite-react';
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { useToast } from '@/hooks/util/useToast';
 import { assembleLightningAddress } from '@/utils/lud16';
 import ClipboardButton from '../utility/ClipboardButton';
@@ -12,7 +11,7 @@ import { RootState } from '@/redux/store';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from '../QRScannerButton';
-import { TxStatus, addTransaction, updateTransactionStatus } from '@/redux/slices/HistorySlice';
+import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 
 const Receive = () => {

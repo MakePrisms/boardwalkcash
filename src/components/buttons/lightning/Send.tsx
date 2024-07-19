@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from 'flowbite-react';
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid';
 import { SendModal } from '@/components/modals/SendModal';
-import { CashuWallet } from '@cashu/cashu-ts';
 
 const Send = () => {
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);

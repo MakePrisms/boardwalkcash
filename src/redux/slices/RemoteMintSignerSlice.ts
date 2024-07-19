@@ -1,4 +1,3 @@
-import { MintKeys } from '@cashu/crypto/modules/common';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 export type SignerConnection = {
