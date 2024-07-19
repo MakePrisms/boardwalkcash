@@ -7,12 +7,9 @@ import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { BuildingLibraryIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
-import ConnectWalletSetting from './Reserve/ConnectReserveSetting';
-import VaultIcon from '../icons/VaultIcon';
-import ProfileSettings from './Profile/ProfileSetting';
 
 const SettingsCog = () => (
    <svg

@@ -1,4 +1,3 @@
-import { Wallet } from '@/types';
 import { createBlindedMessages } from '@/utils/crypto';
 import {
    MintKeys,
@@ -7,7 +6,7 @@ import {
    SerializedBlindedSignature,
 } from '@cashu/cashu-ts';
 import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
-import NDK, { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
 export type MetricsResponse = {

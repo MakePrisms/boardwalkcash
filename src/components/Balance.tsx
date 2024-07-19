@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/util/useToast';
-import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 
 const Balance = ({ balance }: { balance: number }) => {
    const [usdBtc, setUsdBtc] = useState(0);

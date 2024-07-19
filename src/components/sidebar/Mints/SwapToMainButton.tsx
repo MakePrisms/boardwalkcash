@@ -1,4 +1,3 @@
-import { Wallet } from '@/types';
 import { Button, Popover } from 'flowbite-react';
 
 interface SwapToMainButtonProps {

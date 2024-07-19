@@ -1,4 +1,4 @@
-import { NIP47Method, NIP47Request, NIP47Response, decryptEventContent } from '@/utils/nip47';
+import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NWA } from '@/hooks/nostr/useNwc';
 import NDK, { NDKEvent } from '@nostr-dev-kit/ndk';
 import { getAmountFromInvoice } from '@/utils/bolt11';
