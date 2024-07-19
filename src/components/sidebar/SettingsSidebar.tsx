@@ -87,11 +87,11 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div> */}
-               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+               {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
                      <ProfileSettings />
                   </DrawerCollapse>
-               </div>
+               </div> */}
                <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                   <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
                      <EcashTapsSettings />
