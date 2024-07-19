@@ -1,4 +1,4 @@
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 import { useToast } from '@/hooks/useToast';
 import { Proof } from '@cashu/cashu-ts';
 import { Button, Modal } from 'flowbite-react';
@@ -16,7 +16,7 @@ export const SendEcashModal = ({ showModal, closeModal }: SendEcashModalProps) =
    const [urFragment, setURFragment] = useState<string | null>(null);
 
    const { addToast } = useToast();
-   const { createSendableToken } = useCashu2();
+   const { createSendableToken } = useCashu();
    const handleSendEcash = async () => {
       if (parseFloat(sendAmount) <= 0) {
          addToast('Enter an amount to send', 'error');

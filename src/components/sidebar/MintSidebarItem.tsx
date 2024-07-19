@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import ProcessingSwapModal from '@/components/modals/ProcessingCashuSwap/ProcessingSwap';
 import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 import { useCashuContext } from '@/contexts/cashuContext';
 
 interface MintSidebarItemProps {
@@ -18,7 +18,7 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
    const [setMainOpen, setSetMainOpen] = useState(false);
    const [swapping, setSwapping] = useState(false);
 
-   const { swapToActiveWallet, getWallet, balanceByWallet } = useCashu2();
+   const { swapToActiveWallet, getWallet, balanceByWallet } = useCashu();
    const { addToast } = useToast();
    const { setToMain } = useCashuContext();
 

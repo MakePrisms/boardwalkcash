@@ -3,7 +3,7 @@ import Balance from '@/components/Balance';
 import Receive from '@/components/buttons/lightning/Receive';
 import Send from '@/components/buttons/lightning/Send';
 import { useNwc } from '@/hooks/useNwc';
-import { useCashu } from '@/hooks/useCashu';
+import { useProofManager } from '@/hooks/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
@@ -21,7 +21,7 @@ import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveMod
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps } from 'next';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 import { useCashuContext } from '@/contexts/cashuContext';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
@@ -29,14 +29,14 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance } = useCashu2();
+   const { balance } = useCashu();
    const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
-   const { updateProofsAndBalance, checkProofsValid, swapToMain } = useCashu();
+   const { updateProofsAndBalance, checkProofsValid } = useProofManager();
 
    useEffect(() => {
       if (!router.isReady) return;

@@ -13,7 +13,7 @@ import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveMod
 import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from '../QRScannerButton';
 import { TxStatus, addTransaction, updateTransactionStatus } from '@/redux/slices/HistorySlice';
-import { useCashu2 } from '@/hooks/useCashu2';
+import { useCashu } from '@/hooks/useCashu';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -24,7 +24,7 @@ const Receive = () => {
    const [showEcashReceiveModal, setShowEcashReceiveModal] = useState(false);
    const [token, setToken] = useState<Token | null>(null);
 
-   const { requestMintInvoice, decodeToken } = useCashu2();
+   const { requestMintInvoice, decodeToken } = useCashu();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
