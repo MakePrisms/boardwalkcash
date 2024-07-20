@@ -80,3 +80,9 @@ export const isCashuApiError = (error: any): error is CashuApiError => {
    }
    return false;
 };
+
+export type PublicContact = {
+   pubkey: string;
+   username: string | null;
+   createdAt: Date;
+};
