@@ -1,16 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { deleteUser, findUserByPubkey, updateUser } from '@/lib/userModels';
+import { addContactToUser, deleteUser, findUserByPubkey, updateUser } from '@/lib/userModels';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    const { slug } = req.query;
 
+   if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ message: 'Invalid slug' });
+   }
+
    switch (req.method) {
       case 'GET':
          try {
-            if (!slug || typeof slug !== 'string') {
-               return res.status(400).json({ message: 'Invalid slug' });
-            }
-
             const user = await findUserByPubkey(slug.toString());
             if (user) {
                return res.status(200).json(user);
@@ -23,6 +23,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'PUT':
          try {
+            if (req.body.contact) {
+               await addContactToUser(slug, req.body.contact);
+               return res.status(201).json({ message: 'Contact added' });
+            }
             const { pubkey, username, mintUrl } = req.body;
             let updates = {};
             if (username) {
@@ -31,8 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             if (mintUrl) {
                updates = { ...updates, mintUrl };
             }
-            const updatedUser = await updateUser(pubkey, updates);
-            return res.status(200).json(updatedUser);
+            if (Object.keys(updates).length > 0) {
+               const updatedUser = await updateUser(pubkey, updates);
+               return res.status(200).json(updatedUser);
+            }
          } catch (error: any) {
             console.log('Error:', error);
             return res.status(500).json({ message: error.message });

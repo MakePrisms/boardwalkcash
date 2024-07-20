@@ -12,7 +12,9 @@ model User {
   id             Int         @id @default(autoincrement())
   pubkey         String      @unique
   username       String?     @unique
-  proofs         Proof[] // Establishes a one-to-many relationship with the Proof model
+  contacts       Contact[]   @relation("UserContacts")
+  contactOf      Contact[]   @relation("ContactUser")
+  proofs         Proof[]
   mintQuotes     MintQuote[]
   defaultMint    Mint        @relation(fields: [defaultMintUrl], references: [url])
   defaultMintUrl String
@@ -20,6 +22,20 @@ model User {
   receiving      Boolean     @default(false)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+}
+
+model Contact {
+  id           Int      @id @default(autoincrement())
+  nickname     String?
+  phoneNumber  String?
+  email        String?
+  xHandle      String?
+  user         User     @relation("UserContacts", fields: [userId], references: [pubkey])
+  userId       String
+  linkedUser   User?    @relation("ContactUser", fields: [linkedUserId], references: [pubkey])
+  linkedUserId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Proof {
