@@ -7,9 +7,11 @@ import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { BuildingLibraryIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { BookOpenIcon, BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
+import ProfileSettings from './Profile/ProfileSetting';
+import ContactsDropdown from './Contacts/ContactsDropdown';
 
 const SettingsCog = () => (
    <svg
@@ -84,11 +86,16 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div> */}
-               {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
                      <ProfileSettings />
                   </DrawerCollapse>
-               </div> */}
+               </div>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse label='Contacts' icon={<BookOpenIcon className='size-4' />}>
+                     <ContactsDropdown />
+                  </DrawerCollapse>
+               </div>
                <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                   <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
                      <EcashTapsSettings />
