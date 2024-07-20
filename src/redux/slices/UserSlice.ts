@@ -1,3 +1,4 @@
+import { PublicContact } from '@/types';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
@@ -6,6 +7,7 @@ interface UserState {
    pubkey?: string;
    privkey?: string;
    username?: string;
+   contacts: PublicContact[];
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
 }
@@ -13,10 +15,11 @@ interface UserState {
 const initialState: UserState = {
    status: 'idle',
    error: null,
+   contacts: [],
 };
 
 export const initializeUser = createAsyncThunk<
-   { pubkey: string; privkey: string; username: string } | undefined, // Type of the return value from the thunk
+   { pubkey: string; privkey: string; username: string; contacts: PublicContact[] } | undefined, // Type of the return value from the thunk
    void, // First argument of the payload creator
    { rejectValue: string } // Types for ThunkAPI parameters
 >('user/initializeUser', async (_, { rejectWithValue }) => {
@@ -54,13 +57,18 @@ export const initializeUser = createAsyncThunk<
 
          const { username } = user.data;
 
-         return { pubkey: newPubKey, privkey: Buffer.from(newSecretKey).toString('hex'), username };
+         return {
+            pubkey: newPubKey,
+            privkey: Buffer.from(newSecretKey).toString('hex'),
+            username,
+            contacts: [],
+         };
       } else {
          const user = await axios.get(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
          );
 
-         let { username } = user.data;
+         let { username, contacts } = user.data;
 
          if (!username) {
             username = `user-${storedPubKey.slice(0, 5)}`;
@@ -69,7 +77,12 @@ export const initializeUser = createAsyncThunk<
                { username, pubkey: storedPubKey },
             );
          }
-         return { pubkey: storedPubKey, privkey: storedPrivKey, username };
+         return {
+            pubkey: storedPubKey,
+            privkey: storedPrivKey,
+            username,
+            contacts: contacts.map((c: any) => c.user),
+         };
       }
    } catch (error) {
       return rejectWithValue('Error initializing user');
@@ -90,7 +103,8 @@ const userSlice = createSlice({
             (
                state,
                action: PayloadAction<
-                  { pubkey: string; privkey: string; username: string } | undefined
+                  | { pubkey: string; privkey: string; username: string; contacts: PublicContact[] }
+                  | undefined
                >,
             ) => {
                state.status = 'succeeded';
@@ -98,6 +112,7 @@ const userSlice = createSlice({
                   state.pubkey = action.payload.pubkey;
                   state.privkey = action.payload.privkey;
                   state.username = action.payload.username;
+                  state.contacts = action.payload.contacts;
                }
             },
          )
