@@ -1,11 +1,13 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { useToast } from '@/hooks/util/useToast';
+import { RootState } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { Button } from 'flowbite-react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode.react';
 import React from 'react';
+import { useSelector } from 'react-redux';
 
 const UserProfilePage = () => {
    const [boardwalkInitialized, setBoardwalkInitialized] = React.useState(false);
@@ -13,6 +15,8 @@ const UserProfilePage = () => {
    const [isLoaded, setIsLoaded] = React.useState(false);
    const router = useRouter();
    const { addToast } = useToast();
+   const { user: activeUser } = useSelector((state: RootState) => state);
+
    React.useEffect(() => {
       const username = router.query.slug as string;
 
@@ -59,7 +63,7 @@ const UserProfilePage = () => {
          addToast('Setup Boardwalk at boarwalkcash.com', 'error');
       }
 
-      const res = await fetch(`/api/users/${user.pubkey}`, {
+      const res = await fetch(`/api/users/${activeUser.pubkey}`, {
          method: 'PUT',
          headers: {
             'Content-Type': 'application/json',
