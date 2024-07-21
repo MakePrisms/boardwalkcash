@@ -54,7 +54,7 @@ Before you begin, ensure you have the following tools installed and running:
 3. Update .env.example -> .env
 
    ```bash
-   cp .env.example -> .env
+   cp .env.example .env
    ```
 
 4. Use Docker Compose to build and run the containers:
