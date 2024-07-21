@@ -4,7 +4,7 @@ const RefreshSVG = () => (
    <svg
       xmlns='http://www.w3.org/2000/svg'
       fill='none'
-      viewBox="0 0 26 26"
+      viewBox="0 0 26 25"
       strokeWidth={1}
       stroke='currentColor'
       className='w-5 h-5'
@@ -24,7 +24,7 @@ export const RefreshButton = () => {
     return (
         <>
             <div className={`${hidden ? '' : hidden}`}>
-            <button className='fixed right-24 top-1 m-4 p-2 z-10' onClick={ () => {refreshPage()} }>
+            <button className='fixed right-24 top-1 m-4 p-2 z-10' style={{ padding: '0.45rem' }} onClick={ () => {refreshPage()} }>
                 {hidden && <RefreshSVG />}
             </button>
             </div>
