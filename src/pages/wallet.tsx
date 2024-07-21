@@ -13,6 +13,7 @@ import Disclaimer from '@/components/Disclaimer';
 import ActivityIndicator from '@/components/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
+import RefreshButton from '@/components/buttons/utility/RefreshButton';
 import { CashuMint, CashuWallet, Token, getDecodedToken } from '@cashu/cashu-ts';
 import useNwc2 from '@/hooks/useNwc2';
 import { useRouter } from 'next/router';
@@ -153,6 +154,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
          </main>
          <SettingsSidebar />
          <TransactionHistoryDrawer />
+         <RefreshButton />
          <EcashTapButton isMobile={isMobile} />
          <ProcessingSwapModal isSwapping={swapping} />
          {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
