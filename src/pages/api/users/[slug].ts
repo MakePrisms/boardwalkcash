@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                updates = { ...updates, mintUrl };
             }
             if (Object.keys(updates).length > 0) {
-               const updatedUser = await updateUser(pubkey, updates);
+               const updatedUser = await updateUser(slug, updates);
                return res.status(200).json(updatedUser);
             }
          } catch (error: any) {
