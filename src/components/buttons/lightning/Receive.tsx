@@ -195,23 +195,23 @@ const Receive = () => {
                               onChange={e => setAmount(e.target.value)}
                            />
                            <div className='flex flex-col items-center md:flex-row justify-around'>
+                              <div className='mb-3 md:mb-0'>
+                                 <QRScannerButton onScan={setAmount} />
+                              </div>
                               <Button
                                  color='success'
                                  onClick={handleReceive}
                                  className='mb-4 md:mb-0'
                               >
-                                 &nbsp;&nbsp;Generate Invoice&nbsp;
+                                 Continue
                               </Button>
-                              <div className='mb-3 md:mb-0'>
-                                 <QRScannerButton onScan={setAmount} />
-                              </div>
-                              <Tooltip content='Copy lightning address'>
+                              {/* <Tooltip content='Copy lightning address'>
                                  <ClipboardButton
                                     onClick={handleModalClose}
                                     toCopy={lightningAddress}
                                     toShow='Lightning Address'
                                  />
-                              </Tooltip>
+                              </Tooltip> */}
                            </div>
                         </div>
                      )}
