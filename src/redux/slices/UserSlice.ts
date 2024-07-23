@@ -81,7 +81,7 @@ export const initializeUser = createAsyncThunk<
             pubkey: storedPubKey,
             privkey: storedPrivKey,
             username,
-            contacts: contacts.map((c: any) => c.user),
+            contacts: contacts.map((c: any) => c.linkedUser),
          };
       }
    } catch (error) {
