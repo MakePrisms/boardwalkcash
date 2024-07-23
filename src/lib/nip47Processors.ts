@@ -2,7 +2,7 @@ import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NWA } from '@/hooks/nostr/useNwc';
 import NDK, { NDKEvent } from '@nostr-dev-kit/ndk';
 import { getAmountFromInvoice } from '@/utils/bolt11';
-import { CashuWallet, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
+import { CashuWallet, MeltQuoteState, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
 import { addBalance } from '@/utils/cashu';
 
 export class NIP47RequestProcessor {
@@ -63,6 +63,9 @@ export class NIP47RequestProcessor {
             quote: this.quoteId!,
             amount: this.amountCents,
             fee_reserve: fee,
+            state: MeltQuoteState.UNPAID,
+            expiry: 0,
+            payment_preimage: null,
          });
       } catch (e) {
          addBalance(this.proofs);
@@ -152,7 +155,7 @@ export class NIP47RequestProcessor {
       }
 
       try {
-         const meltQuote = await this.wallet.getMeltQuote(this.params.invoice);
+         const meltQuote = await this.wallet.createMeltQuote(this.params.invoice);
          this.quoteId = meltQuote.quote;
          this.fee = meltQuote.fee_reserve;
       } catch {

@@ -5,7 +5,7 @@ import {
    SerializedBlindedMessage,
    SerializedBlindedSignature,
 } from '@cashu/cashu-ts';
-import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
+import { constructProofs } from '@/utils/crypto';
 import { NDKEvent, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { nip04 } from 'nostr-tools';
 
