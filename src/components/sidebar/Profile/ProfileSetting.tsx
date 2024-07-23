@@ -67,7 +67,10 @@ const ProfileSettings = () => {
    }
 
    const handleUpdateUsername = async () => {
-      if (!newUsername) return;
+      if (!newUsername) {
+         addToast('Username cannot be empty', 'error');
+         return;
+      }
       if (newUsername === username) {
          setIsEditing(false);
          return;
@@ -97,7 +100,7 @@ const ProfileSettings = () => {
 
    return (
       <div className='flex justify-between mb-9'>
-         <div>
+         <div className='flex items-center space-x-4'>
             {isEditing ? (
                <TextInput
                   type='text'
@@ -108,20 +111,21 @@ const ProfileSettings = () => {
             ) : (
                <div>{username}</div>
             )}
+            <button
+               onClick={() => {
+                  if (isEditing) {
+                     handleUpdateUsername();
+                  } else {
+                     setIsEditing(true);
+                  }
+               }}
+               className='text-sm underline'
+            >
+               {isEditing ? 'Save' : 'Edit'}
+            </button>
          </div>
          <button className='mr-3' onClick={handleShareLink}>
             {<ShareIcon className='size-4' />}
-         </button>
-         <button
-            onClick={() => {
-               if (isEditing) {
-                  handleUpdateUsername();
-               } else {
-                  setIsEditing(true);
-               }
-            }}
-         >
-            {isEditing ? 'Save' : 'Edit'}
          </button>
       </div>
    );
