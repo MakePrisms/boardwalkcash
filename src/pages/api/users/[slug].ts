@@ -1,5 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { addContactToUser, deleteUser, findUserByPubkey, updateUser } from '@/lib/userModels';
+import {
+   ContactData,
+   addContactToUser,
+   deleteUser,
+   findUserByPubkey,
+   updateUser,
+} from '@/lib/userModels';
+import { Prisma } from '@prisma/client';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    const { slug } = req.query;
@@ -24,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'PUT':
          try {
             if (req.body.contact) {
-               await addContactToUser(slug, req.body.contact);
+               await addContactToUser(slug, req.body as ContactData);
                return res.status(201).json({ message: 'Contact added' });
             }
             const { pubkey, username, mintUrl } = req.body;
@@ -40,6 +47,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                return res.status(200).json(updatedUser);
             }
          } catch (error: any) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+               if (error.code === 'P2002') {
+                  return res.status(409).json({ message: 'Contact already exists' });
+               }
+               return res.status(400).json({ message: error.message });
+            }
             console.log('Error:', error);
             return res.status(500).json({ message: error.message });
          }

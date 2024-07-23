@@ -99,7 +99,7 @@ async function deleteUser(id: number) {
    return user;
 }
 
-interface ContactData {
+export interface ContactData {
    nickname?: string;
    phoneNumber?: string;
    email?: string;
@@ -108,6 +108,9 @@ interface ContactData {
 }
 
 async function addContactToUser(userPubkey: string, contactData: ContactData) {
+   if (!userPubkey || !contactData.linkedUserPubkey) {
+      throw new Error('Missing required parameters');
+   }
    try {
       const newContact = await prisma.contact.create({
          data: {
