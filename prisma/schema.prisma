@@ -36,6 +36,8 @@ model Contact {
   linkedUserId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@unique([userId, linkedUserId]) // can only have one contact per user
 }
 
 model Proof {

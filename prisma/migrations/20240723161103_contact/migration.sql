@@ -13,6 +13,9 @@ CREATE TABLE "Contact" (
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Contact_userId_linkedUserId_key" ON "Contact"("userId", "linkedUserId");
+
 -- AddForeignKey
 ALTER TABLE "Contact" ADD CONSTRAINT "Contact_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("pubkey") ON DELETE RESTRICT ON UPDATE CASCADE;
 
