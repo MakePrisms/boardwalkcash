@@ -338,9 +338,14 @@ export const useCashu = () => {
       try {
          const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
 
-         const { preimage, isPaid, change } = await wallet.meltTokens(meltQuote, proofsToSend, {
-            keysetId: wallet.keys.id,
-         });
+         const { preimage, isPaid, change } = await wallet
+            .meltTokens(meltQuote, proofsToSend, {
+               keysetId: wallet.keys.id,
+            })
+            .catch(err => {
+               addProofs(proofsToSend);
+               throw err;
+            });
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
          if (!isPaid) {
