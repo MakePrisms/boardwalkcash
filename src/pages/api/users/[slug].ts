@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'PUT':
          try {
-            if (req.body.contact) {
+            if (req.body.linkedUserPubkey) {
                await addContactToUser(slug, req.body as ContactData);
                return res.status(201).json({ message: 'Contact added' });
             }
