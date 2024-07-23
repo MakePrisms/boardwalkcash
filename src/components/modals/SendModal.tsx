@@ -52,6 +52,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setInvoice('');
       setMeltQuote(null);
       setEcashToken(undefined);
+      setLockTo(undefined);
+      setIsContactsModalOpen(false);
       onClose();
    };
 
