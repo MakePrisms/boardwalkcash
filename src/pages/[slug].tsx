@@ -82,7 +82,6 @@ const UserProfilePage = () => {
             'Content-Type': 'application/json',
          },
          body: JSON.stringify({
-            contact: user.pubkey,
             linkedUserPubkey: user.pubkey,
          } as ContactData),
       });
