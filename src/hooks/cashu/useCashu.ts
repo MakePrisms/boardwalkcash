@@ -5,6 +5,7 @@ import {
    Proof,
    getEncodedToken,
    getDecodedToken,
+   MintQuoteState,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
@@ -43,9 +44,14 @@ export const useCashu = () => {
    const getMintQuote = async (wallet: CashuWallet, amount: number): Promise<MintQuoteResponse> => {
       if (reserveWallet?.keys.id === wallet.keys.id) {
          const invoice = await requestDeposit(getReserveUri(), amount);
-         return { request: invoice.invoice, quote: 'reserve' };
+         return {
+            request: invoice.invoice,
+            quote: 'reserve',
+            state: MintQuoteState.UNPAID,
+            expiry: 0,
+         };
       } else {
-         return wallet.getMintQuote(amount);
+         return wallet.createMintQuote(amount);
       }
    };
 
@@ -92,7 +98,7 @@ export const useCashu = () => {
          attempts++;
 
          const mintQuote = await getMintQuote(toWallet, amountToMint);
-         const meltQuote = await fromWallet.getMeltQuote(mintQuote.request);
+         const meltQuote = await fromWallet.createMeltQuote(mintQuote.request);
          if (meltQuote.amount + meltQuote.fee_reserve <= totalProofsAmount) {
             console.log('Found valid quotes');
             return { mintQuote, meltQuote, amountToMint };
@@ -208,22 +214,12 @@ export const useCashu = () => {
       lockBalance();
 
       try {
-         const swapRes = await wallet.receiveTokenEntry({
+         const newProofs = await wallet.receiveTokenEntry({
             proofs: proofs,
             mint: wallet.mint.mintUrl,
          });
 
-         if (swapRes.proofsWithError) {
-            if (swapRes.proofs) {
-               addProofs(swapRes.proofs);
-            }
-            console.error('proofs came back with error', swapRes.proofsWithError);
-            throw new Error(
-               `Error claiming proofs. ${swapRes.proofsWithError.length} of ${swapRes.proofs?.length} failed`,
-            );
-         }
-
-         addProofs(swapRes.proofs);
+         addProofs(newProofs);
 
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
          toastSwapSuccess(wallet, activeWallet, amountUsd);
@@ -296,7 +292,7 @@ export const useCashu = () => {
          wallet = activeWallet;
       }
       try {
-         const quote = await wallet.getMeltQuote(invoice);
+         const quote = await wallet.createMeltQuote(invoice);
 
          const { amount, fee_reserve } = await quote;
 
@@ -349,6 +345,7 @@ export const useCashu = () => {
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
          if (!isPaid) {
+            addProofs([...change, ...proofsToSend]);
             throw new TransactionError('Melt failed');
          }
 

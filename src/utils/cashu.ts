@@ -65,7 +65,7 @@ export const customMintQuoteRequest = async (
    const isLocalHost = wallet.mint.mintUrl.includes('localhost');
    if (!isBitcoinMints && !isLocalHost) {
       try {
-         return await wallet.getMintQuote(amountUsd);
+         return await wallet.createMintQuote(amountUsd);
       } catch (error) {
          console.error('Error getting mint quote:', error);
          throw error;
