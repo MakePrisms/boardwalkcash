@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { ProofData } from '@/types';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // async function createProof(proofData: ProofData) {
 //    const proof = await prisma.proof.create({
