@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/Balance';
-import Receive from '@/components/buttons/lightning/Receive';
-import Send from '@/components/buttons/lightning/Send';
+import Receive from '@/components/buttons/Receive';
+import Send from '@/components/buttons/Send';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
