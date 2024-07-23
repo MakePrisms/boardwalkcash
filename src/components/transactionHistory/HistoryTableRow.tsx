@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
 import { useProofStorage } from '@/hooks/cashu/useProofStorage';
+import { useCashu } from '@/hooks/cashu/useCashu';
 
 const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
    const [reclaiming, setReclaiming] = useState(false);
@@ -25,6 +26,8 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
+   const { user } = useSelector((state: RootState) => state);
+   const { proofsLockedTo } = useCashu();
 
    const getIcon = (tx: Transaction) => {
       if (isEcashTransaction(tx) && tx.isReserve) {
@@ -69,6 +72,11 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
       const proofs = getDecodedToken(transaction.token).token[0].proofs;
 
+      let privkey: string | undefined;
+      if (proofsLockedTo(proofs) === '02' + user.pubkey) {
+         privkey = user.privkey;
+      }
+
       setReclaiming(true);
 
       const spent = await wallet.checkProofsSpent(proofs).catch(e => {
@@ -91,7 +99,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
             }),
          );
       } else {
-         const newProofs = await wallet.receive(transaction.token);
+         const newProofs = await wallet.receive(transaction.token, { privkey });
 
          addProofs(newProofs);
          addToast(
