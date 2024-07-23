@@ -5,12 +5,12 @@ import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/hooks/util/useToast';
 import { assembleLightningAddress } from '@/utils/lud16';
-import ClipboardButton from '../utility/ClipboardButton';
+import ClipboardButton from './utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import { RootState } from '@/redux/store';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { Token } from '@cashu/cashu-ts';
-import QRScannerButton from '../QRScannerButton';
+import QRScannerButton from './QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 

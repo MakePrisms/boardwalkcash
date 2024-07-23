@@ -21,7 +21,7 @@ import {
    TransactionError,
 } from '@/types';
 
-type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean };
+type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
 export const useCashu = () => {
    const { activeWallet, reserveWallet, getWallet, getMint } = useCashuContext();
@@ -200,7 +200,7 @@ export const useCashu = () => {
             throw new Error('this function requires proofs to be passed in');
          }
 
-         return await swapToClaimProofs(from, opts.proofs);
+         return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
       }
       return await crossMintSwap(from, activeWallet, opts);
    };
@@ -210,14 +210,21 @@ export const useCashu = () => {
     * @param {CashuWallet} wallet - Wallet the proofs are from
     * @param {Proof[]} proofs - Proofs to claim
     */
-   const swapToClaimProofs = async (wallet: CashuWallet, proofs: Proof[]) => {
+   const swapToClaimProofs = async (
+      wallet: CashuWallet,
+      proofs: Proof[],
+      opts?: { privkey?: string },
+   ) => {
       lockBalance();
 
       try {
-         const newProofs = await wallet.receiveTokenEntry({
-            proofs: proofs,
-            mint: wallet.mint.mintUrl,
-         });
+         const newProofs = await wallet.receiveTokenEntry(
+            {
+               proofs: proofs,
+               mint: wallet.mint.mintUrl,
+            },
+            { privkey: opts?.privkey },
+         );
 
          addProofs(newProofs);
 
@@ -231,7 +238,11 @@ export const useCashu = () => {
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
-   const getProofsToSend = async (amount: number, wallet: CashuWallet) => {
+   const getProofsToSend = async (
+      amount: number,
+      wallet: CashuWallet,
+      opts?: { pubkey?: string },
+   ) => {
       const proofs = getProofsByAmount(amount, wallet.keys.id);
 
       if (!proofs || proofs.length === 0) {
@@ -240,6 +251,7 @@ export const useCashu = () => {
 
       const { send, returnChange } = await wallet.send(amount, proofs, {
          keysetId: wallet.keys.id,
+         pubkey: opts?.pubkey,
       });
 
       addProofs(returnChange);
@@ -248,7 +260,11 @@ export const useCashu = () => {
       return send;
    };
 
-   const createSendableToken = async (amount: number, wallet?: CashuWallet) => {
+   const createSendableToken = async (
+      amount: number,
+      opts?: { wallet?: CashuWallet; pubkey?: string },
+   ) => {
+      let wallet: CashuWallet | undefined;
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');
@@ -257,7 +273,7 @@ export const useCashu = () => {
       }
 
       try {
-         const proofs = await getProofsToSend(amount, wallet);
+         const proofs = await getProofsToSend(amount, wallet, { pubkey: opts?.pubkey });
 
          const token = getEncodedToken({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
@@ -403,6 +419,43 @@ export const useCashu = () => {
       } catch (e) {}
    };
 
+   const proofsLockedTo = (proofs: Proof[]) => {
+      const pubkeys = new Set<string>();
+      proofs.forEach(({ secret }) => {
+         console.log('secret', secret);
+         let parsed;
+         try {
+            parsed = JSON.parse(secret);
+         } catch (e) {
+            // If parsing fails, assume it's a hex string
+            parsed = secret;
+         }
+         if (Array.isArray(parsed)) {
+            if (parsed[0] === 'P2PK') {
+               pubkeys.add(parsed[1].data as string);
+            } else {
+               alert('Unsupported well-known secret');
+               throw new Error('Unsupported well-known secret');
+            }
+         }
+      });
+
+      if (pubkeys.size > 1) {
+         alert(
+            'Received a token locked to multiple pubkeys. This is not supported yet. Please report this.',
+         );
+         throw new Error(
+            'Received a token with multiple pubkeys. This is not supported yet. Please report this.',
+         );
+      }
+
+      if (pubkeys.size === 1) {
+         return Array.from(pubkeys)[0];
+      } else {
+         return null;
+      }
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -416,5 +469,6 @@ export const useCashu = () => {
       payInvoice,
       requestMintInvoice,
       decodeToken,
+      proofsLockedTo,
    };
 };
