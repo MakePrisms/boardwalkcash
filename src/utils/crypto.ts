@@ -3,9 +3,20 @@ import { randomBytes } from 'crypto';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
 import { splitAmount } from '@cashu/cashu-ts/dist/lib/es5/utils';
 import { BlindedMessage } from '@cashu/cashu-ts/dist/lib/es5/model/BlindedMessage';
-import { BlindedMessageData, SerializedBlindedMessage } from '@cashu/cashu-ts';
+import {
+   BlindedMessageData,
+   MintKeys,
+   Proof,
+   SerializedBlindedMessage,
+   SerializedBlindedSignature,
+} from '@cashu/cashu-ts';
 import { bytesToHex } from '@noble/curves/abstract/utils';
-import { blindMessage } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
+import {
+   blindMessage,
+   constructProofFromPromise,
+   serializeProof,
+} from '@cashu/crypto/modules/client';
+import { pointFromHex } from '@cashu/crypto/modules/common';
 
 const ec = new EC('secp256k1');
 
@@ -15,6 +26,23 @@ function getCurvePointFromX(x: string) {
    // Use x to generate a key pair (as a deterministic workaround)
    const keyPair = ec.keyFromPrivate(x, 'hex');
    return keyPair.getPublic();
+}
+
+export function constructProofs(
+   promises: Array<SerializedBlindedSignature>,
+   rs: Array<bigint>,
+   secrets: Array<Uint8Array>,
+   keyset: MintKeys,
+): Array<Proof> {
+   return promises
+      .map((p: SerializedBlindedSignature, i: number) => {
+         const blindSignature = { id: p.id, amount: p.amount, C_: pointFromHex(p.C_) };
+         const r = rs[i];
+         const secret = secrets[i];
+         const A = pointFromHex(keyset.keys[p.amount]);
+         return constructProofFromPromise(blindSignature, r, secret, A);
+      })
+      .map(p => serializeProof(p) as Proof);
 }
 
 // Generate a blinded message for a given amount
