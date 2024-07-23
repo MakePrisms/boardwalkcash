@@ -4,6 +4,7 @@ import { ShareIcon } from '@heroicons/react/20/solid';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
 import { TextInput } from 'flowbite-react';
+import ViewContactsButton from './ViewContactsButton';
 
 const ProfileSettings = () => {
    const { username, pubkey } = useSelector((state: RootState) => state.user);
@@ -99,34 +100,37 @@ const ProfileSettings = () => {
    };
 
    return (
-      <div className='flex justify-between mb-9'>
-         <div className='flex items-center space-x-4'>
-            {isEditing ? (
-               <TextInput
-                  type='text'
-                  value={newUsername}
-                  onChange={e => setNewUsername(e.target.value)}
-                  className='text-black'
-               />
-            ) : (
-               <div>{username}</div>
-            )}
-            <button
-               onClick={() => {
-                  if (isEditing) {
-                     handleUpdateUsername();
-                  } else {
-                     setIsEditing(true);
-                  }
-               }}
-               className='text-sm underline'
-            >
-               {isEditing ? 'Save' : 'Edit'}
+      <div>
+         <div className='flex justify-between mb-9'>
+            <div className='flex items-center space-x-4'>
+               {isEditing ? (
+                  <TextInput
+                     type='text'
+                     value={newUsername}
+                     onChange={e => setNewUsername(e.target.value)}
+                     className='text-black'
+                  />
+               ) : (
+                  <div>{username}</div>
+               )}
+               <button
+                  onClick={() => {
+                     if (isEditing) {
+                        handleUpdateUsername();
+                     } else {
+                        setIsEditing(true);
+                     }
+                  }}
+                  className='text-sm underline'
+               >
+                  {isEditing ? 'Save' : 'Edit'}
+               </button>
+            </div>
+            <button className='mr-3' onClick={handleShareLink}>
+               {<ShareIcon className='size-4' />}
             </button>
          </div>
-         <button className='mr-3' onClick={handleShareLink}>
-            {<ShareIcon className='size-4' />}
-         </button>
+         <ViewContactsButton />
       </div>
    );
 };

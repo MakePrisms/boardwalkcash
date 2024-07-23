@@ -2,11 +2,11 @@ import ContactsModal from '@/components/modals/ContactsModal/ContactsModal';
 import { Button } from 'flowbite-react';
 import { useState } from 'react';
 
-const ContactsDropdown = () => {
+const ViewContactsButton = () => {
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
 
    return (
-      <div className='mb-9'>
+      <div className='mb-9 flex justify-end'>
          <Button onClick={() => setIsContactsModalOpen(true)}>View Contacts</Button>
          <ContactsModal
             isOpen={isContactsModalOpen}
@@ -17,4 +17,4 @@ const ContactsDropdown = () => {
    );
 };
 
-export default ContactsDropdown;
+export default ViewContactsButton;
