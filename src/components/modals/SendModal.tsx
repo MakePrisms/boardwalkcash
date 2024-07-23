@@ -11,6 +11,9 @@ import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { UserIcon } from '@heroicons/react/20/solid';
+import ContactsModal from './ContactsModal/ContactsModal';
+import { PublicContact } from '@/types';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -33,6 +36,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [isProcessing, setIsProcessing] = useState(false);
    const [scanError, setScanError] = useState<string | null>(null);
    const [ecashToken, setEcashToken] = useState<string | undefined>();
+   const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
+   const [lockTo, setLockTo] = useState<PublicContact | undefined>();
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -111,7 +116,9 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setAmountUsd(amount.toString());
       setCurrentFlow(SendFlow.Ecash);
       try {
-         const token = await createSendableToken(Math.round(amount * 100));
+         const token = await createSendableToken(Math.round(amount * 100), {
+            pubkey: lockTo ? `02${lockTo.pubkey}` : undefined,
+         });
          if (!token) {
             throw new Error('Failed to create ecash token');
          }
@@ -169,6 +176,14 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       }
    };
 
+   const handleSendToUser = (contact: PublicContact) => {
+      setIsContactsModalOpen(false);
+      console.log('constact', contact);
+      setLockTo(contact);
+      // setInputValue(contact.lud16);
+      // handleInputSubmit();
+   };
+
    const renderFlowContent = () => {
       switch (currentFlow) {
          case SendFlow.Input:
@@ -176,13 +191,25 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                <Modal.Body>
                   <textarea
                      className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
-                     placeholder='Amount USD, Lightning address, or invoice'
+                     placeholder={
+                        lockTo
+                           ? `Amount USD to send to ${lockTo.username}`
+                           : `Amount USD, Lightning address, or invoice`
+                     }
                      value={inputValue}
                      onChange={e => setInputValue(e.target.value)}
                   />
                   {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                   <div className='flex justify-between mx-3'>
-                     <QRScannerButton onScan={handleQRScan} />
+                     <div className='flex flex-row gap-2'>
+                        <QRScannerButton onScan={handleQRScan} />
+                        <button
+                           className='p-2 rounded-full'
+                           onClick={() => setIsContactsModalOpen(true)}
+                        >
+                           <UserIcon className='w-6 h-6 text-gray-500' />
+                        </button>
+                     </div>
                      <Button color='info' onClick={handleInputSubmit}>
                         Continue
                      </Button>
@@ -240,15 +267,23 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    };
 
    return (
-      <Modal show={isOpen} onClose={resetModalState}>
-         <Modal.Header>Send</Modal.Header>
-         {isProcessing ? (
-            <div className='flex justify-center items-center my-8'>
-               <Spinner size='xl' />
-            </div>
-         ) : (
-            renderFlowContent()
-         )}
-      </Modal>
+      <>
+         <Modal show={isOpen} onClose={resetModalState}>
+            <Modal.Header>Send</Modal.Header>
+            {isProcessing ? (
+               <div className='flex justify-center items-center my-8'>
+                  <Spinner size='xl' />
+               </div>
+            ) : (
+               renderFlowContent()
+            )}
+         </Modal>
+         <ContactsModal
+            isOpen={isContactsModalOpen}
+            onClose={() => setIsContactsModalOpen(false)}
+            onSelectContact={handleSendToUser}
+            mode='select'
+         />
+      </>
    );
 };

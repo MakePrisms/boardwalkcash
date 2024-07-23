@@ -29,11 +29,13 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const [tokenUnit, setTokenUnit] = useState<string | null>(null);
    const [fromActiveMint, setFromActiveMint] = useState(true);
    const [amountUsd, setAmountUsd] = useState<number | null>(null);
+   const [lockedTo, setLockedTo] = useState<string | null>(null);
+   const user = useSelector((state: RootState) => state.user);
 
    const dispatch = useAppDispatch();
 
    const { fetchUnitFromProofs } = useProofManager();
-   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu();
+   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
    const { addWallet } = useCashuContext();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
@@ -67,9 +69,11 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
       const usdKeyset = await getUsdKeyset(swapFromMint);
 
+      let privkey = lockedTo ? user.privkey : undefined;
+
       await swapToActiveWallet(
          new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
-         { proofs },
+         { proofs, privkey },
       );
 
       addEcashTransaction(TxStatus.PAID);
@@ -102,6 +106,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             'Received a token with more than one mint. This is not supported yet. Please report this.',
          );
       }
+
+      setLockedTo(proofsLockedTo(token.token[0].proofs));
 
       setMintUrl(token.token[0].mint);
       setProofs(token.token[0].proofs);
@@ -224,7 +230,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       }
       console.log('Swapping');
 
-      await swapToClaimProofs(wallet, proofs);
+      const privkey = lockedTo ? user.privkey : undefined;
+      await swapToClaimProofs(wallet, proofs, { privkey });
 
       // TOOD: move to cashu2
       addEcashTransaction(TxStatus.PAID);
@@ -278,20 +285,24 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                      </p>
                   </div>
 
-                  <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                     <button
-                        onClick={handleSwapToMain}
-                        className='mr-3 underline text-lg mb-3 md:mb-0'
-                     >
-                        Claim
-                     </button>
-                     <button
-                        className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
-                        onClick={handleAddMint}
-                     >
-                        {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
-                     </button>
-                  </div>
+                  {!lockedTo || lockedTo === '02' + user.pubkey ? (
+                     <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
+                        <button
+                           onClick={handleSwapToMain}
+                           className='mr-3 underline text-lg mb-3 md:mb-0'
+                        >
+                           Claim
+                        </button>
+                        <button
+                           className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
+                           onClick={handleAddMint}
+                        >
+                           {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
+                        </button>
+                     </div>
+                  ) : (
+                     <div className='text-center text-red-700'>LOCKED</div>
+                  )}
                </div>
             </Modal.Body>
          </Modal>
