@@ -256,7 +256,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                      value={amountSat || ''}
                      onChange={e => setAmountSat(() => e.target.value)}
                   />
-                  <div className='flex items-center flex-row justify-around'>
+                  <div className='flex items-center flex-row justify-between mx-3'>
                      <Button color='failure' onClick={handleBackClick}>
                         Back
                      </Button>
@@ -280,7 +280,7 @@ export const SendModal = ({ isSendModalOpen, setIsSendModalOpen }: SendModalProp
                      Total amount to pay: $
                      {(parseFloat(amountSat) + estimatedFee! / 100).toFixed(2)}
                   </div>
-                  <div className='flex justify-around'>
+                  <div className='flex justify-between mx-3'>
                      <Button color='failure' onClick={handleBackClick}>
                         Back
                      </Button>
