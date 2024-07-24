@@ -1,8 +1,10 @@
+import useContacts from '@/hooks/boardwalk/useContacts';
 import { RootState } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { Button, Modal, TextInput, Table } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import ContactTableRowItem from './ContactTableRowItem';
 
 interface ContactsModalProps {
    isOpen: boolean;
@@ -19,17 +21,16 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
 }) => {
    const [searchTerm, setSearchTerm] = useState('');
    const user = useSelector((state: RootState) => state.user);
-   const contacts = user.contacts;
+   const { sortedContacts } = useContacts();
 
    const filteredContacts = useMemo(() => {
-      const f = contacts.filter(contact =>
-         contact.username?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-
-      f.push({ username: 'self', pubkey: user.pubkey! } as PublicContact);
+      const f = [
+         ...sortedContacts,
+         { username: 'self', pubkey: user.pubkey! } as PublicContact,
+      ].filter(contact => contact.username?.toLowerCase().includes(searchTerm.toLowerCase()));
 
       return f;
-   }, [searchTerm, contacts, user.pubkey]);
+   }, [searchTerm, sortedContacts, user.pubkey]);
 
    const handleContactClick = (contact: PublicContact) => {
       if (mode === 'select' && onSelectContact) {
@@ -50,15 +51,18 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
             <div className='max-h-[300px] overflow-y-auto'>
                <Table>
                   <Table.Body>
-                     {filteredContacts.map((contact, index) => (
-                        <Table.Row
-                           key={index}
-                           onClick={() => handleContactClick(contact)}
-                           className={mode === 'select' ? 'cursor-pointer hover:bg-gray-100' : ''}
-                        >
-                           <Table.Cell>{contact.username}</Table.Cell>
-                        </Table.Row>
-                     ))}
+                     {filteredContacts.length > 0 && (
+                        <>
+                           {filteredContacts.map((contact, index) => (
+                              <ContactTableRowItem
+                                 key={index}
+                                 contact={contact}
+                                 mode={mode}
+                                 handleContactClick={handleContactClick}
+                              />
+                           ))}
+                        </>
+                     )}
                   </Table.Body>
                </Table>
             </div>

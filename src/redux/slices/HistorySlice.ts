@@ -15,6 +15,7 @@ export interface EcashTransaction {
    unit: 'sat' | 'usd';
    appName?: string;
    isReserve?: boolean;
+   pubkey?: string;
 }
 
 export interface LightningTransaction {
@@ -25,6 +26,7 @@ export interface LightningTransaction {
    quote: string;
    memo?: string;
    appName?: string;
+   pubkey?: string;
 }
 
 export type Transaction = EcashTransaction | LightningTransaction;
