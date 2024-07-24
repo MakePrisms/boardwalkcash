@@ -1,7 +1,10 @@
 import { EcashTransaction, LightningTransaction } from '@/redux/slices/HistorySlice';
-import { Table } from 'flowbite-react';
-import React from 'react';
+import { Modal, Table } from 'flowbite-react';
+import React, { useState } from 'react';
 import HistoryTableRow from './HistoryTableRow';
+import SendEcashModalBody from '../modals/SendEcashModalBody';
+import useContacts from '@/hooks/boardwalk/useContacts';
+import { PublicContact } from '@/types';
 
 const customTheme = {
    root: {
@@ -14,15 +17,41 @@ const customTheme = {
 const HistoryTable: React.FC<{
    history: (EcashTransaction | LightningTransaction)[];
 }> = ({ history }) => {
+   const [lockedToken, setLockedToken] = useState<string>('');
+   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+   const [tokenLockedTo, setTokenLockedTo] = useState<PublicContact | null>(null);
+
+   const { fetchContact } = useContacts();
+
+   const openSendEcashModal = async (tx: EcashTransaction) => {
+      if (tx.pubkey) {
+         const contact = await fetchContact(tx.pubkey?.slice(2));
+         setTokenLockedTo(contact);
+      }
+      setLockedToken(tx.token);
+      setIsSendModalOpen(true);
+   };
+
+   const closeSendEcashModal = () => {
+      setLockedToken('');
+      setIsSendModalOpen(false);
+   };
+
    return (
       <>
          <Table theme={customTheme} className='text-white'>
             <Table.Body>
                {history.map((tx: EcashTransaction | LightningTransaction, i) => (
-                  <HistoryTableRow key={i} tx={tx} />
+                  <HistoryTableRow key={i} tx={tx} openSendEcashModal={openSendEcashModal} />
                ))}
             </Table.Body>
          </Table>
+         <Modal show={isSendModalOpen} onClose={closeSendEcashModal}>
+            <Modal.Header>
+               {tokenLockedTo ? `Locked to ${tokenLockedTo.username}` : 'Locked'}
+            </Modal.Header>
+            <SendEcashModalBody token={lockedToken} onClose={closeSendEcashModal} />
+         </Modal>
       </>
    );
 };
