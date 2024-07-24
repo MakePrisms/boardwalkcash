@@ -26,7 +26,7 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
-   const { user } = useSelector((state: RootState) => state);
+   const user = useSelector((state: RootState) => state.user);
    const { proofsLockedTo } = useCashu();
 
    const getIcon = (tx: Transaction) => {

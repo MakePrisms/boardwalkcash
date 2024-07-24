@@ -290,6 +290,7 @@ export const useCashu = () => {
                   mint: wallet.mint.mintUrl,
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
+                  pubkey: opts?.pubkey,
                },
             }),
          );
