@@ -1,16 +1,19 @@
 import { useToast } from '@/hooks/util/useToast';
-import { RootState } from '@/redux/store';
+import { RootState, useAppDispatch } from '@/redux/store';
 import { ShareIcon } from '@heroicons/react/20/solid';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
-import { TextInput } from 'flowbite-react';
+import { Button, TextInput } from 'flowbite-react';
 import ViewContactsButton from './ViewContactsButton';
-
+import { updateUsernameAction } from '@/redux/slices/UserSlice';
 const ProfileSettings = () => {
    const { username, pubkey } = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
    const [isEditing, setIsEditing] = useState(false);
+   const [isSavingUsername, setIsSavingUsername] = useState(false);
    const [newUsername, setNewUsername] = useState(username);
+
+   const dispatch = useAppDispatch();
 
    const handleShareLink = () => {
       const url = `${window.location.protocol}//${window.location.host}/${username}`;
@@ -81,6 +84,7 @@ const ProfileSettings = () => {
          addToast(valid, 'error');
          return;
       }
+      setIsSavingUsername(true);
       const res = await fetch(`/api/users/${pubkey}`, {
          method: 'PUT',
          headers: {
@@ -93,10 +97,12 @@ const ProfileSettings = () => {
       if (res.status === 200) {
          addToast('Username updated', 'success');
          setIsEditing(false);
+         dispatch(updateUsernameAction(newUsername));
       }
       if (res.status === 409) {
          addToast('Username already taken', 'error');
       }
+      setIsSavingUsername(false);
    };
 
    return (
@@ -111,26 +117,29 @@ const ProfileSettings = () => {
                      className='text-black'
                   />
                ) : (
-                  <div>{username}</div>
+                  <div className='font-bold text-lg'>{username}</div>
                )}
-               <button
-                  onClick={() => {
-                     if (isEditing) {
-                        handleUpdateUsername();
-                     } else {
-                        setIsEditing(true);
-                     }
-                  }}
-                  className='text-sm underline'
-               >
-                  {isEditing ? 'Save' : 'Edit'}
-               </button>
             </div>
             <button className='mr-3' onClick={handleShareLink}>
                {<ShareIcon className='size-4' />}
             </button>
          </div>
-         <ViewContactsButton />
+         <div className='flex justify-between align-middle mb-9'>
+            <Button
+               isProcessing={isSavingUsername}
+               onClick={() => {
+                  if (isEditing) {
+                     handleUpdateUsername();
+                  } else {
+                     setIsEditing(true);
+                  }
+               }}
+               className='btn-primary'
+            >
+               {isEditing ? 'Save' : 'Edit'}
+            </Button>
+            <ViewContactsButton />
+         </div>
       </div>
    );
 };

@@ -144,3 +144,7 @@ body {
 .link {
    @apply underline text-cyan-teal;
 }
+
+.btn-primary {
+   @apply bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none;
+}

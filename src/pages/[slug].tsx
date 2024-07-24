@@ -1,4 +1,5 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
+import useContacts from '@/hooks/boardwalk/useContacts';
 import { useToast } from '@/hooks/util/useToast';
 import { ContactData } from '@/lib/userModels';
 import { PublicContact } from '@/types';
@@ -15,6 +16,7 @@ const UserProfilePage = () => {
    const [isLoaded, setIsLoaded] = React.useState(false);
    const [showAddContact, setShowAddContact] = React.useState(false);
    const [addingContact, setAddingContact] = React.useState(false);
+   const { addContact } = useContacts();
 
    const router = useRouter();
    const { addToast } = useToast();
@@ -68,37 +70,20 @@ const UserProfilePage = () => {
          return;
       }
 
-      if (user.pubkey === localPubkey) {
-         addToast('You cannot add yourself as a contact', 'error');
-         setShowAddContact(false);
-         return;
-      }
-
       setAddingContact(true);
 
-      const res = await fetch(`/api/users/${localPubkey}`, {
-         method: 'PUT',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            linkedUserPubkey: user.pubkey,
-         } as ContactData),
-      });
-
-      if (!res.ok) {
-         if (res.status === 409) {
-            addToast('Contact already added', 'error');
-            setShowAddContact(false);
-         } else {
-            addToast('Failed to add contact', 'error');
-         }
-      } else {
+      try {
+         await addContact(user);
          addToast('Contact added', 'success');
          setShowAddContact(false);
+      } catch (e: any) {
+         if (e.message === 'Contact already added') {
+            setShowAddContact(false);
+         }
+         addToast(e.message, 'error');
+      } finally {
+         setAddingContact(false);
       }
-
-      setAddingContact(false);
    }, [localPubkey, user, boardwalkInitialized, addingContact]);
 
    if (!isLoaded || !user) {

@@ -1,10 +1,11 @@
 import useContacts from '@/hooks/boardwalk/useContacts';
 import { RootState } from '@/redux/store';
 import { PublicContact } from '@/types';
-import { Button, Modal, TextInput, Table } from 'flowbite-react';
-import { useMemo, useState } from 'react';
+import { Modal } from 'flowbite-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import ContactTableRowItem from './ContactTableRowItem';
+import ViewContactsModalBody from './ViewContactsModalBody';
+import AddContactModalBody from './AddContactModalBody';
 
 interface ContactsModalProps {
    isOpen: boolean;
@@ -22,6 +23,8 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    const [searchTerm, setSearchTerm] = useState('');
    const user = useSelector((state: RootState) => state.user);
    const { sortedContacts } = useContacts();
+   const [addingContact, setAddingContact] = useState(false);
+   const [modalTitle, setModalTitle] = useState('Contacts');
 
    const filteredContacts = useMemo(() => {
       const f = [
@@ -42,37 +45,40 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
       }
    };
 
+   const onAddContactClicked = () => {
+      setAddingContact(true);
+   };
+
+   const onContactAdded = () => {
+      setAddingContact(false);
+   };
+
+   const onCancelAddContact = () => {
+      setAddingContact(false);
+   };
+
+   useEffect(() => {
+      if (addingContact) {
+         setModalTitle('Add Contact');
+      } else if (mode === 'view') {
+         setModalTitle('Contacts');
+      } else {
+         setModalTitle('Select a Contact');
+      }
+   }, [mode, addingContact]);
+
    return (
       <Modal show={isOpen} onClose={onClose} size={'sm'}>
-         <Modal.Header>{mode === 'view' ? 'Contacts' : 'Select a Contact'}</Modal.Header>
-         <Modal.Body>
-            <TextInput
-               placeholder='Search contacts'
-               value={searchTerm}
-               onChange={e => setSearchTerm(e.target.value)}
+         <Modal.Header>{modalTitle}</Modal.Header>
+         {addingContact ? (
+            <AddContactModalBody onContactAdded={onContactAdded} onCancel={onCancelAddContact} />
+         ) : (
+            <ViewContactsModalBody
+               mode={mode}
+               onSelectContact={handleContactClick}
+               onAddContactClicked={onAddContactClicked}
             />
-            <div className='max-h-[300px] overflow-y-auto'>
-               <Table>
-                  <Table.Body>
-                     {filteredContacts.length > 0 && (
-                        <>
-                           {filteredContacts.map((contact, index) => (
-                              <ContactTableRowItem
-                                 key={index}
-                                 contact={contact}
-                                 mode={mode}
-                                 handleContactClick={handleContactClick}
-                              />
-                           ))}
-                        </>
-                     )}
-                  </Table.Body>
-               </Table>
-            </div>
-         </Modal.Body>
-         <Modal.Footer>
-            <Button onClick={onClose}>Close</Button>
-         </Modal.Footer>
+         )}
       </Modal>
    );
 };
