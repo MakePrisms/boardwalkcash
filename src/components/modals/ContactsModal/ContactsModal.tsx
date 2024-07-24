@@ -26,7 +26,10 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    const filteredContacts = useMemo(() => {
       const f = [
          ...sortedContacts,
-         { username: 'self', pubkey: user.pubkey! } as PublicContact,
+         {
+            username: user.username ? `${user.username} (me)` : '(me)',
+            pubkey: user.pubkey!,
+         } as PublicContact,
       ].filter(contact => contact.username?.toLowerCase().includes(searchTerm.toLowerCase()));
 
       return f;
