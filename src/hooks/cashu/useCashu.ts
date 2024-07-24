@@ -422,7 +422,6 @@ export const useCashu = () => {
    const proofsLockedTo = (proofs: Proof[]) => {
       const pubkeys = new Set<string>();
       proofs.forEach(({ secret }) => {
-         console.log('secret', secret);
          let parsed;
          try {
             parsed = JSON.parse(secret);

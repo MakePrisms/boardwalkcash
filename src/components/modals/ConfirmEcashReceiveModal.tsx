@@ -10,6 +10,8 @@ import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { PublicContact } from '@/types';
+import useContacts from '@/hooks/boardwalk/useContacts';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -31,6 +33,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const [amountUsd, setAmountUsd] = useState<number | null>(null);
    const [lockedTo, setLockedTo] = useState<string | null>(null);
    const user = useSelector((state: RootState) => state.user);
+   const [tokenContact, setTokenContact] = useState<PublicContact | null>(null);
 
    const dispatch = useAppDispatch();
 
@@ -39,6 +42,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const { addWallet } = useCashuContext();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
+   const { fetchContact } = useContacts();
 
    const addEcashTransaction = (status: TxStatus) => {
       if (!token) return;
@@ -58,6 +62,19 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       );
    };
 
+   useEffect(() => {
+      if (!lockedTo) {
+         return;
+      }
+
+      const setContact = async () => {
+         const contact = await fetchContact(lockedTo.slice(2));
+
+         setTokenContact(contact || null);
+      };
+
+      setContact();
+   }, [lockedTo, fetchContact]);
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
       console.log('Token', token);
@@ -107,6 +124,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          );
       }
 
+      // set the pubkey that the token is locked to
       setLockedTo(proofsLockedTo(token.token[0].proofs));
 
       setMintUrl(token.token[0].mint);
@@ -301,7 +319,23 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                         </button>
                      </div>
                   ) : (
-                     <div className='text-center text-red-700'>LOCKED</div>
+                     <div className='text-center text-red-700'>
+                        LOCKED{' '}
+                        {tokenContact ? (
+                           <span className=''>
+                              to{' '}
+                              <a
+                                 className='underline'
+                                 target='_blank'
+                                 href={`/${tokenContact.username}`}
+                              >
+                                 {tokenContact.username}
+                              </a>
+                           </span>
+                        ) : (
+                           ''
+                        )}
+                     </div>
                   )}
                </div>
             </Modal.Body>
