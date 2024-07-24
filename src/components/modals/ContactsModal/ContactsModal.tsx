@@ -1,7 +1,7 @@
 import { RootState } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { Button, Modal, TextInput, Table } from 'flowbite-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 interface ContactsModalProps {
@@ -18,11 +18,18 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    mode,
 }) => {
    const [searchTerm, setSearchTerm] = useState('');
-   const contacts = useSelector((state: RootState) => state.user.contacts);
+   const user = useSelector((state: RootState) => state.user);
+   const contacts = user.contacts;
 
-   const filteredContacts = contacts.filter(contact =>
-      contact.username?.toLowerCase().includes(searchTerm.toLowerCase()),
-   );
+   const filteredContacts = useMemo(() => {
+      const f = contacts.filter(contact =>
+         contact.username?.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+
+      f.push({ username: 'self', pubkey: user.pubkey! } as PublicContact);
+
+      return f;
+   }, [searchTerm, contacts, user.pubkey]);
 
    const handleContactClick = (contact: PublicContact) => {
       if (mode === 'select' && onSelectContact) {
