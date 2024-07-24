@@ -6,8 +6,10 @@ const ViewContactsButton = () => {
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
 
    return (
-      <div className='mb-9 flex justify-end'>
-         <Button onClick={() => setIsContactsModalOpen(true)}>View Contacts</Button>
+      <div className='flex justify-end'>
+         <Button onClick={() => setIsContactsModalOpen(true)} className='btn-primary'>
+            Contacts
+         </Button>
          <ContactsModal
             isOpen={isContactsModalOpen}
             onClose={() => setIsContactsModalOpen(false)}

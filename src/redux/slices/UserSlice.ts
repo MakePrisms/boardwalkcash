@@ -92,7 +92,14 @@ export const initializeUser = createAsyncThunk<
 const userSlice = createSlice({
    name: 'user',
    initialState,
-   reducers: {},
+   reducers: {
+      addContactAction(state, action: PayloadAction<PublicContact>) {
+         state.contacts.push(action.payload);
+      },
+      updateUsernameAction(state, action: PayloadAction<string>) {
+         state.username = action.payload;
+      },
+   },
    extraReducers: builder => {
       builder
          .addCase(initializeUser.pending, state => {
@@ -122,5 +129,7 @@ const userSlice = createSlice({
          });
    },
 });
+
+export const { addContactAction, updateUsernameAction } = userSlice.actions;
 
 export default userSlice.reducer;

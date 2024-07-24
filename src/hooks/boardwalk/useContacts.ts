@@ -1,8 +1,10 @@
 import { EcashTransaction, TxStatus } from '@/redux/slices/HistorySlice';
-import { RootState } from '@/redux/store';
+import { RootState, useAppDispatch } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
+import { ContactData } from '@/lib/userModels';
+import { addContactAction } from '@/redux/slices/UserSlice';
 
 type ContactTxData = {
    numTxs: number;
@@ -15,6 +17,8 @@ type ContactTxDataRecord = Record<string, ContactTxData>;
 const useContacts = () => {
    const contacts = useSelector((state: RootState) => state.user.contacts);
    const txHistory = useSelector((state: RootState) => state.history);
+
+   const dispatch = useAppDispatch();
 
    // transactions with an associated pubkey
    const transactionsToPubkey = useMemo(() => {
@@ -86,8 +90,21 @@ const useContacts = () => {
       return [...topContacts, ...otherContacts];
    }, [topContacts, otherContacts]);
 
-   const fetchContactFromServer = async (pubkey: string) => {
-      const res = await fetch(`/api/users/pubkey/${pubkey}`);
+   const fetchContactFromServer = async ({
+      pubkey,
+      username,
+   }: {
+      pubkey?: string;
+      username?: string;
+   }) => {
+      let res;
+      if (pubkey) {
+         res = await fetch(`/api/users/pubkey/${pubkey}`);
+      } else if (username) {
+         res = await fetch(`/api/users/username/${username}`);
+      } else {
+         throw new Error('fetch by username or pubkey');
+      }
 
       if (res.status === 200) {
          const contact = (await res.json()) as PublicContact;
@@ -97,12 +114,12 @@ const useContacts = () => {
       return null;
    };
 
-   const fetchContact = useCallback(
-      async (pubkey: string) => {
-         let contact = contacts.find(c => c.pubkey === pubkey) || null;
+   const fetchContactByUsername = useCallback(
+      async (username: string) => {
+         let contact = contacts.find(c => c.username === username) || null;
 
          if (!contact) {
-            contact = await fetchContactFromServer(pubkey);
+            contact = await fetchContactFromServer({ username });
          }
 
          return contact;
@@ -110,7 +127,57 @@ const useContacts = () => {
       [contacts],
    );
 
-   return { fetchContact, sortedContacts };
+   const fetchContact = useCallback(
+      async (pubkey: string) => {
+         let contact = contacts.find(c => c.pubkey === pubkey) || null;
+
+         if (!contact) {
+            contact = await fetchContactFromServer({ pubkey });
+         }
+
+         return contact;
+      },
+      [contacts],
+   );
+
+   const addContact = useCallback(
+      async (user: PublicContact) => {
+         const localPubkey = window.localStorage.getItem('pubkey');
+         if (user.pubkey === localPubkey) {
+            throw new Error('You cannot add yourself as a contact');
+         }
+
+         const res = await fetch(`/api/users/${localPubkey}`, {
+            method: 'PUT',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+               linkedUserPubkey: user.pubkey,
+            } as ContactData),
+         });
+
+         if (!res.ok) {
+            if (res.status === 409) {
+               throw new Error('Contact already added');
+            } else {
+               throw new Error('Failed to add contact');
+            }
+         }
+
+         dispatch(addContactAction(user));
+      },
+      [dispatch],
+   );
+
+   const isContactAdded = useCallback(
+      ({ pubkey, username }: { pubkey?: string; username?: string }) => {
+         return contacts.find(c => c.pubkey === pubkey || c.username === username) !== undefined;
+      },
+      [contacts],
+   );
+
+   return { fetchContact, sortedContacts, addContact, fetchContactByUsername, isContactAdded };
 };
 
 export default useContacts;
