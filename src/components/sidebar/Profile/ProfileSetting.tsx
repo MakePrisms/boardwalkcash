@@ -107,7 +107,7 @@ const ProfileSettings = () => {
                   <TextInput
                      type='text'
                      value={newUsername}
-                     onChange={e => setNewUsername(e.target.value)}
+                     onChange={e => setNewUsername(e.target.value.toLowerCase())}
                      className='text-black'
                   />
                ) : (
