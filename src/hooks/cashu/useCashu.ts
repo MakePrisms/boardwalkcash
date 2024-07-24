@@ -6,6 +6,7 @@ import {
    getEncodedToken,
    getDecodedToken,
    MintQuoteState,
+   Token,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
@@ -456,6 +457,30 @@ export const useCashu = () => {
       }
    };
 
+   const isTokenSpent = async (token: string | Token) => {
+      const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+
+      if (decodedToken.token.length !== 1) {
+         throw new Error('Invalid token. Multiple token entries are not supported.');
+      }
+
+      const proofs = decodedToken.token[0].proofs;
+
+      const wallet = getWallet(proofs[0].id);
+
+      if (!wallet) {
+         throw new Error('No wallet found for this token');
+      }
+
+      try {
+         const spent = await wallet.checkProofsSpent(proofs);
+         return spent.length > 0;
+      } catch (e) {
+         console.error(e);
+         return false;
+      }
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -470,5 +495,6 @@ export const useCashu = () => {
       requestMintInvoice,
       decodeToken,
       proofsLockedTo,
+      isTokenSpent,
    };
 };
