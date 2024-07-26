@@ -13,6 +13,7 @@ import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from './QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { postUserMintQuote, pollForInvoicePayment } from '@/utils/appApiRequests';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -104,43 +105,41 @@ const Receive = () => {
          const { quote, request } = await requestMintInvoice(amountUsdCents);
          setInvoiceToPay(request);
 
-         await axios.post('/api/quotes/mint', {
-            pubkey,
-            quoteId: quote,
-            request,
-            keysetId: activeWallet.id,
-            mintUrl: activeWallet.url,
-         });
+         await postUserMintQuote(pubkey, quote, request, activeWallet.url, activeWallet.id);
 
-         const pollingResponse = await axios.post(
-            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`,
-            {
-               pubkey,
-               amount: amountUsdCents,
-               mintUrl: activeWallet.url,
-               keysetId: activeWallet.id,
-            },
+         // TODO: this should return the proofs or we shouldn't even call
+         // the api. Instead poll from the browser? Need some way to
+         // recover from errors
+         const pollingResponse = await pollForInvoicePayment(
+            pubkey,
+            quote,
+            amountUsdCents,
+            activeWallet.url,
+            activeWallet.id,
          );
 
-         if (pollingResponse.status === 200 && pollingResponse.data.success) {
-            setIsReceiving(false);
-            setIsReceiveModalOpen(false);
-            setInvoiceToPay('');
-            setAmount('');
-            // dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
-            dispatch(
-               addTransaction({
-                  type: 'lightning',
-                  transaction: {
-                     amount: amountUsdCents,
-                     date: new Date().toLocaleString(),
-                     status: TxStatus.PAID,
-                     mint: activeWallet.url,
-                     quote,
-                  },
-               }),
-            );
+         if (!pollingResponse.success) {
+            addToast('Error receiving', 'error');
+            throw new Error('Error polling for invoice payment');
          }
+
+         setIsReceiving(false);
+         setIsReceiveModalOpen(false);
+         setInvoiceToPay('');
+         setAmount('');
+         // dispatch(setSuccess(`Received $${Number(amount).toFixed(2)}!`));
+         dispatch(
+            addTransaction({
+               type: 'lightning',
+               transaction: {
+                  amount: amountUsdCents,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PAID,
+                  mint: activeWallet.url,
+                  quote,
+               },
+            }),
+         );
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();

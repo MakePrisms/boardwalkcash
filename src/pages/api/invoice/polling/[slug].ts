@@ -11,6 +11,14 @@ interface PollingRequest {
    amount: number;
 }
 
+export type PollingApiResponse = {
+   success: boolean;
+   message: string;
+   user?: {
+      receiving: boolean;
+   };
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    const { mintUrl, keysetId } = req.body;
@@ -107,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                success: true,
                message: 'Payment confirmed and proofs created.',
                user: { receiving: user.receiving },
-            });
+            } as PollingApiResponse);
             return;
          } catch (e) {
             if (e instanceof Error) {

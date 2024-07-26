@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { findProofsByUserId, updateProof, deleteProof } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
+import { authMiddleware, runMiddleware } from '@/utils/middleware';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+   await runMiddleware(req, res, authMiddleware);
    const { slug } = req.query;
 
    if (!slug || slug === 'undefined') {

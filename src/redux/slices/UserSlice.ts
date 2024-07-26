@@ -1,12 +1,12 @@
 import { PublicContact } from '@/types';
+import { createUser, fetchUser, updateUser } from '@/utils/appApiRequests';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
 
 interface UserState {
    pubkey?: string;
    privkey?: string;
-   username?: string;
+   username: string;
    contacts: PublicContact[];
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
@@ -16,6 +16,7 @@ const initialState: UserState = {
    status: 'idle',
    error: null,
    contacts: [],
+   username: '',
 };
 
 export const initializeUser = createAsyncThunk<
@@ -49,33 +50,24 @@ export const initializeUser = createAsyncThunk<
 
          const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
 
-         const user = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
-            pubkey: newPubKey,
-            mintUrl: defaultMintUrl,
-            username: placeholderUsername,
-         });
+         const user = await createUser(newPubKey, placeholderUsername, defaultMintUrl);
 
-         const { username } = user.data;
+         const { username } = user;
 
          return {
             pubkey: newPubKey,
             privkey: Buffer.from(newSecretKey).toString('hex'),
-            username,
+            username: username!,
             contacts: [],
          };
       } else {
-         const user = await axios.get(
-            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
-         );
+         const user = await fetchUser(storedPubKey);
 
-         let { username, contacts } = user.data;
+         let { username, contacts } = user;
 
          if (!username) {
             username = `user-${storedPubKey.slice(0, 5)}`;
-            const updatedUser = await axios.put(
-               `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
-               { username, pubkey: storedPubKey },
-            );
+            await updateUser(storedPubKey, { username });
          }
          return {
             pubkey: storedPubKey,
