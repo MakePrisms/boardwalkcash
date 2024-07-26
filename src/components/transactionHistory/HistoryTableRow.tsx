@@ -146,7 +146,7 @@ const HistoryTableRow: React.FC<{
          if (tx.status === TxStatus.PENDING && isEcashTransaction(tx)) {
             if (tx.pubkey !== undefined && tx.pubkey !== user.pubkey) {
                return (
-                  <div className='flex justify-center min-w-[116px]'>
+                  <div className='flex justify-center'>
                      <button className='underline' onClick={() => handleLockedToken(tx)}>
                         eTip
                      </button>
@@ -155,7 +155,7 @@ const HistoryTableRow: React.FC<{
             }
 
             return (
-               <div className='flex justify-center min-w-[116px]'>
+               <div className='flex justify-center'>
                   {reclaiming ? (
                      <Spinner size={'sm'} />
                   ) : (
