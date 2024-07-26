@@ -106,7 +106,10 @@ const UserProfilePage = () => {
             className='flex flex-col items-center justify-center mx-auto space-y-7'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Button className='absolute top-4 right-4 md:right-8 md:top-8 btn-primary '>
+            <Button
+               color={'secondary'}
+               className='absolute top-4 right-4 md:right-8 md:top-8 btn-bg-blend'
+            >
                {boardwalkInitialized ? (
                   <Link className='' href='/wallet'>
                      Go to Boardwalk
