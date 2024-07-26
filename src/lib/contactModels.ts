@@ -13,4 +13,16 @@ const findContactByUsername = async (username: string): Promise<PublicContact | 
    return contact;
 };
 
-export { findContactByUsername };
+const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null> => {
+   const contact = await prisma.user.findUnique({
+      where: { pubkey },
+      select: {
+         username: true,
+         pubkey: true,
+         createdAt: true,
+      },
+   });
+   return contact;
+};
+
+export { findContactByUsername, findContactByPubkey };
