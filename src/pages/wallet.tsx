@@ -28,7 +28,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance } = useCashu();
+   const { balance, proofsLockedTo } = useCashu();
    const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
@@ -44,6 +44,13 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
       const handleTokenQuery = async (token: string) => {
          const decoded = getDecodedToken(token);
+         // make wallet view-only if token is locked and boardwalk has not been initialized
+         if (proofsLockedTo(decoded.token[0].proofs) && !localKeysets) {
+            setTokenDecoded(decoded);
+            setEcashReceiveModalOpen(true);
+
+            return;
+         }
 
          if (decoded.token.length !== 1) {
             throw new Error(
@@ -194,6 +201,13 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}
                onClose={() => {
+                  // modal should not be closable if token is locked and boardwalk has not been initialized
+                  if (
+                     proofsLockedTo(tokenDecoded.token[0].proofs) &&
+                     !window.localStorage.getItem('keysets')
+                  ) {
+                     return;
+                  }
                   setEcashReceiveModalOpen(false);
                   setTokenDecoded(null);
                   router.push('/wallet');
