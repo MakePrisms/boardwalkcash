@@ -193,17 +193,12 @@ const Receive = () => {
                               value={amount}
                               onChange={e => setAmount(e.target.value)}
                            />
-                           <div className='flex flex-col items-center md:flex-row justify-between mx-3'>
+                           <div className='flex items-center justify-between mx-3'>
+                              {' '}
                               <div className='mb-3 md:mb-0'>
                                  <QRScannerButton onScan={setAmount} />
                               </div>
-                              <Button
-                                 color='success'
-                                 onClick={handleReceive}
-                                 className='mb-4 md:mb-0'
-                              >
-                                 Continue
-                              </Button>
+                              <Button onClick={handleReceive}>Continue</Button>
                               {/* <Tooltip content='Copy lightning address'>
                                  <ClipboardButton
                                     onClick={handleModalClose}

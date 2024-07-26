@@ -229,7 +229,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      value={amountUsd}
                      onChange={e => setAmountUsd(e.target.value)}
                   />
-                  <div className='flex items-center flex-row justify-around'>
+                  <div className='flex justify-between mx-3'>
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
                      </Button>
@@ -249,7 +249,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      Total amount to pay: $
                      {(parseFloat(amountUsd) + meltQuote!.fee_reserve / 100).toFixed(2)}
                   </div>
-                  <div className='flex justify-around'>
+                  <div className='flex items-center flex-row justify-between mx-3'>
+                     {' '}
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
                      </Button>
