@@ -148,7 +148,7 @@ const HistoryTableRow: React.FC<{
                return (
                   <div className='flex justify-center min-w-[116px]'>
                      <button className='underline' onClick={() => handleLockedToken(tx)}>
-                        Locked
+                        eTip
                      </button>
                   </div>
                );

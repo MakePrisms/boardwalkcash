@@ -48,7 +48,7 @@ const HistoryTable: React.FC<{
          </Table>
          <Modal show={isSendModalOpen} onClose={closeSendEcashModal}>
             <Modal.Header>
-               {tokenLockedTo ? `Locked to ${tokenLockedTo.username}` : 'Locked'}
+               {tokenLockedTo ? `eTip for ${tokenLockedTo.username}` : 'eTip'}
             </Modal.Header>
             <SendEcashModalBody token={lockedToken} onClose={closeSendEcashModal} />
          </Modal>
