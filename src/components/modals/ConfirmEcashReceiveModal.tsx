@@ -147,7 +147,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
       new CashuWallet(mint).checkProofsSpent(proofs).then(spent => {
          if (spent.length > 0) {
-            addToast('Proofs already claimed', 'error');
+            addToast('eCash already claimed', 'error');
             onClose();
          }
       });
