@@ -320,10 +320,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                      </div>
                   ) : (
                      <div className='text-center text-red-700'>
-                        LOCKED{' '}
+                        eTip{' '}
                         {tokenContact ? (
                            <span className=''>
-                              to{' '}
+                              for{' '}
                               <a
                                  className='underline'
                                  target='_blank'
