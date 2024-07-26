@@ -5,6 +5,7 @@ import { ContactData } from '@/lib/userModels';
 import { PublicContact } from '@/types';
 import { Button } from 'flowbite-react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode.react';
 import React, { useCallback } from 'react';
@@ -105,12 +106,27 @@ const UserProfilePage = () => {
             className='flex flex-col items-center justify-center mx-auto space-y-7'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
+            <Button className='absolute top-4 right-4 md:right-8 md:top-8 btn-primary '>
+               {boardwalkInitialized ? (
+                  <Link className='' href='/wallet'>
+                     Go to Boardwalk
+                  </Link>
+               ) : (
+                  <Link className='' href='/setup'>
+                     Get Boardwalk
+                  </Link>
+               )}
+            </Button>
             <h1 className='text-3xl'>{user.username}</h1>
             <QRCode value={`${window.location.href}`} size={128} />
             <div className='flex flex-row items-center space-x-6'>
-               <ClipboardButton toCopy={user.username!} toShow='Username' />
+               <ClipboardButton toCopy={user.username!} toShow='Username' className='btn-primary' />
                {showAddContact && (
-                  <Button isProcessing={addingContact} onClick={handleAddContact}>
+                  <Button
+                     className='btn-primary'
+                     isProcessing={addingContact}
+                     onClick={handleAddContact}
+                  >
                      Add Contact
                   </Button>
                )}
