@@ -122,7 +122,7 @@ const ProfileSettings = () => {
                )}
             </div>
             <button className='mr-3' onClick={handleShareLink}>
-               {<ShareIcon className='size-4' />}
+               {<ShareIcon className='size-6' />}
             </button>
          </div>
          <div className='flex justify-between align-middle mb-9'>
