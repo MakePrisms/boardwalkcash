@@ -1,9 +1,15 @@
 import { findKeysetById, findOrCreateMint } from '@/lib/mintModels';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 import { updateUser } from '@/lib/userModels';
+import { authMiddleware, runMiddleware } from '@/utils/middleware';
 import { NextApiRequest, NextApiResponse } from 'next';
 
+export type PostMintQuoteApiResponse = {
+   message: string;
+};
+
 export default async function POST(req: NextApiRequest, res: NextApiResponse) {
+   await runMiddleware(req, res, authMiddleware);
    const { quoteId, request, pubkey, keysetId, mintUrl } = req.body;
 
    if (!quoteId || !request || !pubkey || !keysetId) {
@@ -30,7 +36,7 @@ export default async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       await updateUser(pubkey, { receiving: true });
 
-      return res.status(201).json({ message: 'Mint quote created' });
+      return res.status(201).json({ message: 'Mint quote created' } as PostMintQuoteApiResponse);
    } catch (error: any) {
       console.error('Failed to create mint quote:', error);
       return res.status(500).json({ message: 'Failed to create mint quote', error: error.message });

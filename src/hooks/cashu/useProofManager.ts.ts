@@ -1,21 +1,12 @@
 import { useEffect } from 'react';
-import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-   setBalance,
-} from '@/redux/slices/Wallet.slice';
-import {
-   setSuccess,
-   setReceiving,
-   setNotReceiving,
-} from '@/redux/slices/ActivitySlice';
-import { ProofData } from '@/types';
-import {
-   Proof,
-} from '@cashu/cashu-ts';
+import { setBalance } from '@/redux/slices/Wallet.slice';
+import { setSuccess, setReceiving, setNotReceiving } from '@/redux/slices/ActivitySlice';
+import { Proof } from '@cashu/cashu-ts';
 import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
 import { RootState } from '@/redux/store';
 import { useProofStorage } from './useProofStorage';
+import { getProofsFromServer, deleteProofById } from '@/utils/appApiRequests';
 
 export const useProofManager = () => {
    const dispatch = useDispatch();
@@ -38,23 +29,6 @@ export const useProofManager = () => {
          dispatch(setBalance({ usd: newBalance }));
       }
    }, [wallet.balance]);
-
-   const deleteProofById = async (proofId: string) => {
-      try {
-         await axios
-            .delete(`/api/proofs/${proofId}`)
-            .then(response => {
-               console.log(
-                  `Proof with ID ${proofId} deleted drom database and moved into local storage.`,
-               );
-            })
-            .catch(error => {
-               console.log(error);
-            });
-      } catch (error) {
-         console.error(`Failed to delete proof with ID ${proofId}:`, error);
-      }
-   };
 
    const checkProofsValid = async (wallet: CashuWallet) => {
       const localProofs = getProofs().filter(proof => proof.id === wallet.keys.id);
@@ -106,9 +80,9 @@ export const useProofManager = () => {
       }
 
       try {
-         const pollingResponse = await axios.get(`/api/proofs/${pubkey}`);
+         const pollingResponse = await getProofsFromServer(pubkey);
 
-         const isReceiving = pollingResponse.data?.receiving;
+         const isReceiving = pollingResponse.receiving;
 
          if (isReceiving) {
             dispatch(setReceiving('Receiving...'));
@@ -116,8 +90,8 @@ export const useProofManager = () => {
             dispatch(setNotReceiving());
          }
 
-         const proofsFromDb = pollingResponse.data.proofs;
-         const formattedProofs = proofsFromDb.map((proof: ProofData) => ({
+         const proofsFromDb = pollingResponse.proofs;
+         const formattedProofs = proofsFromDb.map(proof => ({
             C: proof.C,
             amount: proof.amount,
             id: proof.proofId,
@@ -126,7 +100,7 @@ export const useProofManager = () => {
 
          const localProofs = getProofs();
          const newProofs = formattedProofs.filter(
-            (proof: ProofData) =>
+            (proof: Proof) =>
                !localProofs.some((localProof: Proof) => localProof.secret === proof.secret),
          );
 
@@ -145,9 +119,13 @@ export const useProofManager = () => {
             // Delete new proofs from the database
             // get the index as well
             for (const proof of newProofs) {
-               const proofId = proofsFromDb.find((p: ProofData) => p.secret === proof.secret).id;
-               console.log('Deleting proof with ID:', proofId);
-               await deleteProofById(proofId);
+               const proofId = proofsFromDb.find(p => p.secret === proof.secret)?.id;
+               if (proofId) {
+                  console.log('Deleting proof with ID from db:', proofId);
+                  await deleteProofById(proofId).catch(error => {
+                     console.error('Failed to delete proof:', error);
+                  });
+               }
             }
          } else {
             updatedProofs = localProofs;

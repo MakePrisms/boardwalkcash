@@ -3,8 +3,8 @@ import { RootState, useAppDispatch } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { ContactData } from '@/lib/userModels';
 import { addContactAction } from '@/redux/slices/UserSlice';
+import { HttpResponseError, addContactRequest } from '@/utils/appApiRequests';
 
 type ContactTxData = {
    numTxs: number;
@@ -147,25 +147,23 @@ const useContacts = () => {
             throw new Error('You cannot add yourself as a contact');
          }
 
-         const res = await fetch(`/api/users/${localPubkey}`, {
-            method: 'PUT',
-            headers: {
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-               linkedUserPubkey: user.pubkey,
-            } as ContactData),
-         });
-
-         if (!res.ok) {
-            if (res.status === 409) {
-               throw new Error('Contact already added');
-            } else {
-               throw new Error('Failed to add contact');
-            }
+         if (!localPubkey) {
+            throw new Error('No local pubkey found');
          }
 
-         dispatch(addContactAction(user));
+         try {
+            await addContactRequest(localPubkey, { linkedUserPubkey: user.pubkey });
+
+            dispatch(addContactAction(user));
+         } catch (error) {
+            if (error instanceof HttpResponseError) {
+               if (error.status === 409) {
+                  throw new Error('Contact already added');
+               } else {
+                  throw new Error('Failed to add contact');
+               }
+            }
+         }
       },
       [dispatch],
    );

@@ -6,9 +6,13 @@ import {
    findUserByPubkey,
    updateUser,
 } from '@/lib/userModels';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
+import { authMiddleware, runMiddleware } from '@/utils/middleware';
+
+export type UserWithContacts = User & { contacts: ContactData[] };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+   await runMiddleware(req, res, authMiddleware);
    const { slug } = req.query;
 
    if (!slug || typeof slug !== 'string') {
@@ -20,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          try {
             const user = await findUserByPubkey(slug.toString());
             if (user) {
-               return res.status(200).json(user);
+               return res.status(200).json(user as UserWithContacts);
             } else {
                return res.status(404).json({ message: 'User not found' });
             }
@@ -34,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                await addContactToUser(slug, req.body as ContactData);
                return res.status(201).json({ message: 'Contact added' });
             }
-            const { pubkey, username, mintUrl } = req.body;
+            const { pubkey, username, defaultMintUrl: mintUrl } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };

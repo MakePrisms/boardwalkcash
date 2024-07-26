@@ -1,7 +1,10 @@
+import { authMiddleware, runMiddleware } from '@/utils/middleware';
 import type { NextApiRequest, NextApiResponse } from 'next';
 // import { createProof } from '@/lib/proofModels';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+   await runMiddleware(req, res, authMiddleware);
+
    console.log('Calling createProof');
    if (req.method === 'POST') {
       const { id, amount, secret, C, userId } = req.body;

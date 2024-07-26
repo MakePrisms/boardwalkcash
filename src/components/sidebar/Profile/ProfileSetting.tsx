@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Button, TextInput } from 'flowbite-react';
 import ViewContactsButton from './ViewContactsButton';
 import { updateUsernameAction } from '@/redux/slices/UserSlice';
+import { HttpResponseError, updateUser } from '@/utils/appApiRequests';
 const ProfileSettings = () => {
    const { username, pubkey } = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
@@ -85,22 +86,22 @@ const ProfileSettings = () => {
          return;
       }
       setIsSavingUsername(true);
-      const res = await fetch(`/api/users/${pubkey}`, {
-         method: 'PUT',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-            username: newUsername,
-         }),
-      });
-      if (res.status === 200) {
+      try {
+         await updateUser(pubkey!, { username: newUsername });
+
          addToast('Username updated', 'success');
          setIsEditing(false);
          dispatch(updateUsernameAction(newUsername));
-      }
-      if (res.status === 409) {
-         addToast('Username already taken', 'error');
+      } catch (error: any) {
+         if (error instanceof HttpResponseError) {
+            if (error.status === 409) {
+               addToast('Username already taken', 'error');
+            } else {
+               addToast(error.message, 'error');
+            }
+         } else {
+            addToast('Error updating username', 'error');
+         }
       }
       setIsSavingUsername(false);
    };
