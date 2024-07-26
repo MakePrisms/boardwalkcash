@@ -279,7 +279,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    return (
       <>
          <Modal show={isOpen} onClose={onClose}>
-            <Modal.Header>Confirm Ecash Receive</Modal.Header>
+            <Modal.Header>{lockedTo ? 'eTip' : 'Confirm Ecash Receive'}</Modal.Header>
 
             <Modal.Body className='text-black'>
                <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>

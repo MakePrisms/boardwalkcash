@@ -271,7 +271,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    return (
       <>
          <Modal show={isOpen} onClose={resetModalState}>
-            <Modal.Header>Send</Modal.Header>
+            <Modal.Header>
+               {!lockTo || currentFlow !== SendFlow.Ecash
+                  ? 'Send'
+                  : `eTip ${lockTo.username && 'for ' + lockTo.username}`}
+            </Modal.Header>
             {isProcessing ? (
                <div className='flex justify-center items-center my-8'>
                   <Spinner size='xl' />
