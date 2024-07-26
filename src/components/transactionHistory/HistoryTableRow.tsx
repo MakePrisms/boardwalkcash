@@ -122,7 +122,7 @@ const HistoryTableRow: React.FC<{
    };
 
    const handleSpentToken = (tx: EcashTransaction) => {
-      addToast('Already claimed', 'error');
+      addToast('ecash already claimed', 'error');
       dispatch(
          updateTransactionStatus({
             type: 'ecash',
