@@ -261,8 +261,8 @@ export const getServerSideProps: GetServerSideProps = async (
    return {
       props: {
          isMobile,
-         pageTitle: pageTitle(tokenData),
-         pageDescription: pageDescription(tokenData),
+         pageTitle: pageTitle(tokenData) || null,
+         pageDescription: pageDescription(tokenData) || null,
       },
    };
 };
