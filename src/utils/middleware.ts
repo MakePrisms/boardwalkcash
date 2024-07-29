@@ -24,10 +24,6 @@ export const authMiddleware = async (req: NextApiRequest, res: NextApiResponse, 
       return res.status(401).json({ message: 'Invalid request' });
    }
 
-   console.log('Event:', event);
-   console.log('Method:', method);
-   console.log('URL:', url);
-
    const protocol =
       req.headers['x-forwarded-proto'] || req.headers['x-forwarded-protocol'] || 'http';
    // const fullUrl = `${protocol}://${req.headers.host}${req.url}`;
