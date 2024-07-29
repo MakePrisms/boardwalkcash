@@ -10,9 +10,8 @@ export const normalizeUrl = (url: string): string => {
 };
 
 export const formatUrl = (url: string, maxLength: number = 20): string => {
-   if (url.length <= maxLength) return url;
    let formatted = url.replace('https://', '').replace('http://', '');
-   // slice last 4 characters of url
+   if (formatted.length <= maxLength) return formatted;
    const last = formatted.slice(-4);
    return formatted.slice(0, maxLength - 4) + '...' + last;
 };
