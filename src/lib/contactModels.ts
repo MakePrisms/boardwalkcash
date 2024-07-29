@@ -25,4 +25,17 @@ const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null
    return contact;
 };
 
-export { findContactByUsername, findContactByPubkey };
+const isContactsTrustedMint = async (contact: PublicContact, mintUrl: string) => {
+   const contactsTrustedMint = await prisma.user.findUnique({
+      where: { pubkey: contact.pubkey },
+      select: {
+         defaultMint: true,
+      },
+   });
+
+   if (!contactsTrustedMint) return false;
+
+   return contactsTrustedMint.defaultMint.url === mintUrl;
+};
+
+export { findContactByUsername, findContactByPubkey, isContactsTrustedMint };

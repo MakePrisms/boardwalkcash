@@ -88,20 +88,19 @@ const UserProfilePage = () => {
    }, [localPubkey, user, boardwalkInitialized, addingContact]);
 
    if (!isLoaded || !user) {
-      return <div>Loading...</div>;
+      return (
+         <main
+            className='flex flex-col items-center justify-center mx-auto space-y-7'
+            style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+         >
+            {' '}
+            <div>Loading...</div>
+         </main>
+      );
    }
 
    return (
       <>
-         <Head>
-            <title>{user.username + "'s"} Boardwalk</title>
-            <meta
-               name='description'
-               content={'This is the profile page for ' + user.username + '.'}
-            />
-            <meta property='og:title' content={`${user.username}'s Boardwalk`} />
-            <meta property='og:description' content={`${user.username}'s Boardwalk`} />
-         </Head>
          <main
             className='flex flex-col items-center justify-center mx-auto space-y-7'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
@@ -137,6 +136,30 @@ const UserProfilePage = () => {
          </main>
       </>
    );
+};
+
+import { GetServerSideProps } from 'next';
+import { findContactByUsername } from '@/lib/contactModels';
+
+export const getServerSideProps: GetServerSideProps = async context => {
+   const { slug } = context.params || {};
+
+   const contact = await findContactByUsername(slug as string);
+
+   if (!contact) {
+      return {
+         props: {
+            pageTitle: 'User not found',
+            pageDescription: 'User not found. Make sure their username is correct.',
+         },
+      };
+   }
+
+   return {
+      props: {
+         pageTitle: `${slug}'s Boardwalk`,
+      },
+   };
 };
 
 export default UserProfilePage;

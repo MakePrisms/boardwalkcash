@@ -19,9 +19,13 @@ import { useToast } from '@/hooks/util/useToast';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
-import { GetServerSideProps } from 'next';
+import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { PublicContact, TokenProps } from '@/types';
+import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
+import { proofsLockedTo } from '@/utils/cashu';
+import { formatUrl } from '@/utils/url';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
@@ -218,13 +222,75 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }: any) => {
-   const userAgent = req.headers['user-agent'];
-   const isMobile = /mobile/i.test(userAgent);
+export const getServerSideProps: GetServerSideProps = async (
+   context: GetServerSidePropsContext,
+) => {
+   const userAgent = context.req.headers['user-agent'];
+   const isMobile = /mobile/i.test(userAgent as string);
+
+   const token = context.query.token as string;
+
+   let tokenData: TokenProps | null = null;
+   if (token) {
+      const decoded = getDecodedToken(token);
+
+      const pubkey = proofsLockedTo(decoded.token[0].proofs);
+
+      let contact: PublicContact | null = null;
+      if (pubkey) {
+         contact = await findContactByPubkey(pubkey.slice(2));
+      }
+
+      const mintUrl = decoded.token[0].mint;
+
+      let isTrustedMint = null;
+      if (contact) {
+         isTrustedMint = await isContactsTrustedMint(contact, mintUrl);
+      }
+
+      const amount = decoded.token[0].proofs.reduce((acc, curr) => acc + curr.amount, 0);
+      tokenData = {
+         amount,
+         contact,
+         token,
+         mintUrl,
+         isTrustedMint,
+      };
+   }
 
    return {
       props: {
          isMobile,
+         pageTitle: pageTitle(tokenData),
+         pageDescription: pageDescription(tokenData),
       },
    };
+};
+
+const formatCents = (amount: number) => {
+   return `$${(amount / 100).toFixed(2)}`;
+};
+
+const pageTitle = (tokenData: TokenProps | null) => {
+   if (tokenData) {
+      const { amount, contact, isTrustedMint } = tokenData;
+      if (contact) {
+         return `${formatCents(amount)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
+      }
+      return `${formatCents(amount)} eCash`;
+   }
+};
+
+const pageDescription = (tokenData: TokenProps | null) => {
+   if (tokenData) {
+      const { amount, contact, mintUrl, isTrustedMint } = tokenData;
+
+      if (mintUrl.includes('stablenut.umint.cash')) {
+         return `Stablenut (4.9 ⭐️)`;
+      } else if (mintUrl.includes('mint.lnvoltz.com')) {
+         return `Voltz (5.0 ⭐️)`;
+      } else {
+         return `${formatUrl(mintUrl, 35)}`;
+      }
+   }
 };
