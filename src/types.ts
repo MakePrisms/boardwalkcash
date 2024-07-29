@@ -80,3 +80,31 @@ export const isCashuApiError = (error: any): error is CashuApiError => {
    }
    return false;
 };
+
+export type PublicContact = {
+   /** The pubkey of the contact */
+   pubkey: string;
+
+   /** The username of the contact */
+   username: string | null;
+
+   /** The date the contact was created */
+   createdAt: Date;
+};
+
+export type TokenProps = {
+   /** raw token */
+   token: string;
+
+   /** Total token amount */
+   amount: number;
+
+   /** Boardwalk contact token is locked to */
+   contact: PublicContact | null;
+
+   /** Tokens mint url */
+   mintUrl: string;
+
+   /** Whether or not the token is from the contact's default mint */
+   isTrustedMint: boolean | null;
+};

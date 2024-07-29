@@ -1,19 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { deleteUser, findUserByPubkey, updateUser } from '@/lib/userModels';
+import {
+   ContactData,
+   addContactToUser,
+   deleteUser,
+   findUserByPubkey,
+   updateUser,
+} from '@/lib/userModels';
+import { Prisma, User } from '@prisma/client';
+import { authMiddleware, runMiddleware } from '@/utils/middleware';
+
+export type UserWithContacts = User & { contacts: ContactData[] };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+   await runMiddleware(req, res, authMiddleware);
    const { slug } = req.query;
+
+   if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ message: 'Invalid slug' });
+   }
 
    switch (req.method) {
       case 'GET':
          try {
-            if (!slug || typeof slug !== 'string') {
-               return res.status(400).json({ message: 'Invalid slug' });
-            }
-
             const user = await findUserByPubkey(slug.toString());
             if (user) {
-               return res.status(200).json(user);
+               return res.status(200).json(user as UserWithContacts);
             } else {
                return res.status(404).json({ message: 'User not found' });
             }
@@ -23,7 +34,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'PUT':
          try {
-            const { pubkey, username, mintUrl } = req.body;
+            if (req.body.linkedUserPubkey) {
+               await addContactToUser(slug, req.body as ContactData);
+               return res.status(201).json({ message: 'Contact added' });
+            }
+            const { pubkey, username, defaultMintUrl: mintUrl } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };
@@ -31,9 +46,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             if (mintUrl) {
                updates = { ...updates, mintUrl };
             }
-            const updatedUser = await updateUser(pubkey, updates);
-            return res.status(200).json(updatedUser);
+            if (Object.keys(updates).length > 0) {
+               const updatedUser = await updateUser(slug, updates);
+               return res.status(200).json(updatedUser);
+            }
          } catch (error: any) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+               if (error.code === 'P2002') {
+                  return res.status(409).json({ message: 'Contact already exists' });
+               }
+               return res.status(400).json({ message: error.message });
+            }
             console.log('Error:', error);
             return res.status(500).json({ message: error.message });
          }

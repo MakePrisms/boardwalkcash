@@ -5,6 +5,8 @@ import {
    Proof,
    getEncodedToken,
    getDecodedToken,
+   MintQuoteState,
+   Token,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
@@ -19,8 +21,9 @@ import {
    ReserveError,
    TransactionError,
 } from '@/types';
+import { proofsLockedTo } from '@/utils/cashu';
 
-type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean };
+type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
 export const useCashu = () => {
    const { activeWallet, reserveWallet, getWallet, getMint } = useCashuContext();
@@ -43,9 +46,14 @@ export const useCashu = () => {
    const getMintQuote = async (wallet: CashuWallet, amount: number): Promise<MintQuoteResponse> => {
       if (reserveWallet?.keys.id === wallet.keys.id) {
          const invoice = await requestDeposit(getReserveUri(), amount);
-         return { request: invoice.invoice, quote: 'reserve' };
+         return {
+            request: invoice.invoice,
+            quote: 'reserve',
+            state: MintQuoteState.UNPAID,
+            expiry: 0,
+         };
       } else {
-         return wallet.getMintQuote(amount);
+         return wallet.createMintQuote(amount);
       }
    };
 
@@ -92,7 +100,7 @@ export const useCashu = () => {
          attempts++;
 
          const mintQuote = await getMintQuote(toWallet, amountToMint);
-         const meltQuote = await fromWallet.getMeltQuote(mintQuote.request);
+         const meltQuote = await fromWallet.createMeltQuote(mintQuote.request);
          if (meltQuote.amount + meltQuote.fee_reserve <= totalProofsAmount) {
             console.log('Found valid quotes');
             return { mintQuote, meltQuote, amountToMint };
@@ -194,7 +202,7 @@ export const useCashu = () => {
             throw new Error('this function requires proofs to be passed in');
          }
 
-         return await swapToClaimProofs(from, opts.proofs);
+         return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
       }
       return await crossMintSwap(from, activeWallet, opts);
    };
@@ -204,26 +212,23 @@ export const useCashu = () => {
     * @param {CashuWallet} wallet - Wallet the proofs are from
     * @param {Proof[]} proofs - Proofs to claim
     */
-   const swapToClaimProofs = async (wallet: CashuWallet, proofs: Proof[]) => {
+   const swapToClaimProofs = async (
+      wallet: CashuWallet,
+      proofs: Proof[],
+      opts?: { privkey?: string },
+   ) => {
       lockBalance();
 
       try {
-         const swapRes = await wallet.receiveTokenEntry({
-            proofs: proofs,
-            mint: wallet.mint.mintUrl,
-         });
+         const newProofs = await wallet.receiveTokenEntry(
+            {
+               proofs: proofs,
+               mint: wallet.mint.mintUrl,
+            },
+            { privkey: opts?.privkey },
+         );
 
-         if (swapRes.proofsWithError) {
-            if (swapRes.proofs) {
-               addProofs(swapRes.proofs);
-            }
-            console.error('proofs came back with error', swapRes.proofsWithError);
-            throw new Error(
-               `Error claiming proofs. ${swapRes.proofsWithError.length} of ${swapRes.proofs?.length} failed`,
-            );
-         }
-
-         addProofs(swapRes.proofs);
+         addProofs(newProofs);
 
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
          toastSwapSuccess(wallet, activeWallet, amountUsd);
@@ -235,7 +240,11 @@ export const useCashu = () => {
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
-   const getProofsToSend = async (amount: number, wallet: CashuWallet) => {
+   const getProofsToSend = async (
+      amount: number,
+      wallet: CashuWallet,
+      opts?: { pubkey?: string },
+   ) => {
       const proofs = getProofsByAmount(amount, wallet.keys.id);
 
       if (!proofs || proofs.length === 0) {
@@ -244,6 +253,7 @@ export const useCashu = () => {
 
       const { send, returnChange } = await wallet.send(amount, proofs, {
          keysetId: wallet.keys.id,
+         pubkey: opts?.pubkey,
       });
 
       addProofs(returnChange);
@@ -252,7 +262,11 @@ export const useCashu = () => {
       return send;
    };
 
-   const createSendableToken = async (amount: number, wallet?: CashuWallet) => {
+   const createSendableToken = async (
+      amount: number,
+      opts?: { wallet?: CashuWallet; pubkey?: string },
+   ) => {
+      let wallet: CashuWallet | undefined;
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');
@@ -261,7 +275,7 @@ export const useCashu = () => {
       }
 
       try {
-         const proofs = await getProofsToSend(amount, wallet);
+         const proofs = await getProofsToSend(amount, wallet, { pubkey: opts?.pubkey });
 
          const token = getEncodedToken({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
@@ -278,6 +292,7 @@ export const useCashu = () => {
                   mint: wallet.mint.mintUrl,
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
+                  pubkey: opts?.pubkey,
                },
             }),
          );
@@ -296,7 +311,7 @@ export const useCashu = () => {
          wallet = activeWallet;
       }
       try {
-         const quote = await wallet.getMeltQuote(invoice);
+         const quote = await wallet.createMeltQuote(invoice);
 
          const { amount, fee_reserve } = await quote;
 
@@ -349,6 +364,7 @@ export const useCashu = () => {
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
          if (!isPaid) {
+            addProofs([...change, ...proofsToSend]);
             throw new TransactionError('Melt failed');
          }
 
@@ -406,6 +422,30 @@ export const useCashu = () => {
       } catch (e) {}
    };
 
+   const isTokenSpent = async (token: string | Token) => {
+      const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+
+      if (decodedToken.token.length !== 1) {
+         throw new Error('Invalid token. Multiple token entries are not supported.');
+      }
+
+      const proofs = decodedToken.token[0].proofs;
+
+      const wallet = getWallet(proofs[0].id);
+
+      if (!wallet) {
+         throw new Error('No wallet found for this token');
+      }
+
+      try {
+         const spent = await wallet.checkProofsSpent(proofs);
+         return spent.length > 0;
+      } catch (e) {
+         console.error(e);
+         return false;
+      }
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -419,5 +459,7 @@ export const useCashu = () => {
       payInvoice,
       requestMintInvoice,
       decodeToken,
+      proofsLockedTo,
+      isTokenSpent,
    };
 };

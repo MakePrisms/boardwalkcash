@@ -2,6 +2,7 @@ import { MintKeys, Proof } from '@cashu/cashu-ts';
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Wallet } from '@/types';
 import { RootState } from '../store';
+import { updateUser } from '@/utils/appApiRequests';
 
 const updateKeysetLocalStorage = (keysets: { [key: string]: Wallet }) => {
    localStorage.setItem('keysets', JSON.stringify(Object.values(keysets)));
@@ -53,14 +54,7 @@ export const setMainKeyset = createAsyncThunk(
 
       try {
          const pubkey = localStorage.getItem('pubkey');
-         console.log('Posting to /api/users/', pubkey);
-         await fetch(`/api/users/${pubkey}`, {
-            method: 'PUT',
-            headers: {
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ mintUrl: toSetMain.url, pubkey }),
-         });
+         await updateUser(pubkey!, { defaultMintUrl: toSetMain.url });
       } catch (e) {
          throw new Error(`Failed to update user: ${e}`);
       }

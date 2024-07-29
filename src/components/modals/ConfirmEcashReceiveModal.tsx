@@ -10,6 +10,8 @@ import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { PublicContact } from '@/types';
+import useContacts from '@/hooks/boardwalk/useContacts';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -29,14 +31,18 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    const [tokenUnit, setTokenUnit] = useState<string | null>(null);
    const [fromActiveMint, setFromActiveMint] = useState(true);
    const [amountUsd, setAmountUsd] = useState<number | null>(null);
+   const [lockedTo, setLockedTo] = useState<string | null>(null);
+   const user = useSelector((state: RootState) => state.user);
+   const [tokenContact, setTokenContact] = useState<PublicContact | null>(null);
 
    const dispatch = useAppDispatch();
 
    const { fetchUnitFromProofs } = useProofManager();
-   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet } = useCashu();
+   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
    const { addWallet } = useCashuContext();
    const { addToast } = useToast();
    const { satsToUnit } = useExchangeRate();
+   const { fetchContact } = useContacts();
 
    const addEcashTransaction = (status: TxStatus) => {
       if (!token) return;
@@ -56,6 +62,19 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       );
    };
 
+   useEffect(() => {
+      if (!lockedTo) {
+         return;
+      }
+
+      const setContact = async () => {
+         const contact = await fetchContact(lockedTo.slice(2));
+
+         setTokenContact(contact || null);
+      };
+
+      setContact();
+   }, [lockedTo, fetchContact]);
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
       console.log('Token', token);
@@ -67,9 +86,11 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
       const usdKeyset = await getUsdKeyset(swapFromMint);
 
+      let privkey = lockedTo ? user.privkey : undefined;
+
       await swapToActiveWallet(
          new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
-         { proofs },
+         { proofs, privkey },
       );
 
       addEcashTransaction(TxStatus.PAID);
@@ -103,6 +124,9 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
          );
       }
 
+      // set the pubkey that the token is locked to
+      setLockedTo(proofsLockedTo(token.token[0].proofs));
+
       setMintUrl(token.token[0].mint);
       setProofs(token.token[0].proofs);
    }, [token]);
@@ -123,7 +147,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
       new CashuWallet(mint).checkProofsSpent(proofs).then(spent => {
          if (spent.length > 0) {
-            addToast('Proofs already claimed', 'error');
+            addToast('eCash already claimed', 'error');
             onClose();
          }
       });
@@ -224,7 +248,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       }
       console.log('Swapping');
 
-      await swapToClaimProofs(wallet, proofs);
+      const privkey = lockedTo ? user.privkey : undefined;
+      await swapToClaimProofs(wallet, proofs, { privkey });
 
       // TOOD: move to cashu2
       addEcashTransaction(TxStatus.PAID);
@@ -254,7 +279,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    return (
       <>
          <Modal show={isOpen} onClose={onClose}>
-            <Modal.Header>Confirm Ecash Receive</Modal.Header>
+            <Modal.Header>{lockedTo ? 'eTip' : 'Confirm Ecash Receive'}</Modal.Header>
 
             <Modal.Body className='text-black'>
                <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>
@@ -278,20 +303,40 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
                      </p>
                   </div>
 
-                  <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                     <button
-                        onClick={handleSwapToMain}
-                        className='mr-3 underline text-lg mb-3 md:mb-0'
-                     >
-                        Claim
-                     </button>
-                     <button
-                        className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
-                        onClick={handleAddMint}
-                     >
-                        {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
-                     </button>
-                  </div>
+                  {!lockedTo || lockedTo === '02' + user.pubkey ? (
+                     <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
+                        <button
+                           onClick={handleSwapToMain}
+                           className='mr-3 underline text-lg mb-3 md:mb-0'
+                        >
+                           Claim
+                        </button>
+                        <button
+                           className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
+                           onClick={handleAddMint}
+                        >
+                           {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
+                        </button>
+                     </div>
+                  ) : (
+                     <div className='text-center text-red-700'>
+                        eTip{' '}
+                        {tokenContact ? (
+                           <span className=''>
+                              for{' '}
+                              <a
+                                 className='underline'
+                                 target='_blank'
+                                 href={`/${tokenContact.username}`}
+                              >
+                                 {tokenContact.username}
+                              </a>
+                           </span>
+                        ) : (
+                           ''
+                        )}
+                     </div>
+                  )}
                </div>
             </Modal.Body>
          </Modal>

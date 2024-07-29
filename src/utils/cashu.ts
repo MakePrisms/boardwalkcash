@@ -65,7 +65,7 @@ export const customMintQuoteRequest = async (
    const isLocalHost = wallet.mint.mintUrl.includes('localhost');
    if (!isBitcoinMints && !isLocalHost) {
       try {
-         return await wallet.getMintQuote(amountUsd);
+         return await wallet.createMintQuote(amountUsd);
       } catch (error) {
          console.error('Error getting mint quote:', error);
          throw error;
@@ -101,5 +101,37 @@ export const customMintQuoteRequest = async (
    } catch (e) {
       console.error('Error getting mint quote:', e);
       throw e;
+   }
+};
+
+export const proofsLockedTo = (proofs: Proof[]) => {
+   const pubkeys = new Set<string>();
+   proofs.forEach(({ secret }) => {
+      let parsed;
+      try {
+         parsed = JSON.parse(secret);
+      } catch (e) {
+         // If parsing fails, assume it's a hex string
+         parsed = secret;
+      }
+      if (Array.isArray(parsed)) {
+         if (parsed[0] === 'P2PK') {
+            pubkeys.add(parsed[1].data as string);
+         } else {
+            throw new Error('Unsupported well-known secret');
+         }
+      }
+   });
+
+   if (pubkeys.size > 1) {
+      throw new Error(
+         'Received a token with multiple pubkeys. This is not supported yet. Please report this.',
+      );
+   }
+
+   if (pubkeys.size === 1) {
+      return Array.from(pubkeys)[0];
+   } else {
+      return null;
    }
 };

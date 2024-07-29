@@ -8,7 +8,7 @@ import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
 import { createBlindedMessages } from '@/utils/crypto';
 import { CashuMint, getEncodedToken } from '@cashu/cashu-ts';
-import { constructProofs } from '@cashu/cashu-ts/dist/lib/es5/DHKE';
+import { constructProofs } from '@/utils/crypto';
 import EyeIcon from '@heroicons/react/20/solid/EyeIcon';
 import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
 import { Badge, Button, Spinner } from 'flowbite-react';

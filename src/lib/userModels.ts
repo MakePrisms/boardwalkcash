@@ -31,6 +31,11 @@ async function findUserByPubkey(pubkey: string) {
       where: {
          pubkey,
       },
+      include: {
+         contacts: {
+            select: { linkedUser: { select: { pubkey: true, username: true } } },
+         },
+      },
    });
    return user;
 }
@@ -94,6 +99,48 @@ async function deleteUser(id: number) {
    return user;
 }
 
+export interface ContactData {
+   nickname?: string;
+   phoneNumber?: string;
+   email?: string;
+   xHandle?: string;
+   linkedUserPubkey?: string;
+}
+
+async function addContactToUser(userPubkey: string, contactData: ContactData) {
+   if (!userPubkey || !contactData.linkedUserPubkey) {
+      throw new Error('Missing required parameters');
+   }
+   try {
+      const newContact = await prisma.contact.create({
+         data: {
+            nickname: contactData.nickname,
+            phoneNumber: contactData.phoneNumber,
+            email: contactData.email,
+            xHandle: contactData.xHandle,
+            user: {
+               connect: { pubkey: userPubkey },
+            },
+            linkedUser: contactData.linkedUserPubkey
+               ? { connect: { pubkey: contactData.linkedUserPubkey } }
+               : undefined,
+         },
+         include: {
+            user: {
+               select: { pubkey: true, username: true },
+            },
+            linkedUser: {
+               select: { pubkey: true, username: true },
+            },
+         },
+      });
+
+      return newContact;
+   } catch (error) {
+      console.error('Error adding contact:', error);
+      throw error;
+   }
+}
 export {
    createUser,
    findUserById,
@@ -101,4 +148,5 @@ export {
    findUserByPubkeyWithMint,
    updateUser,
    deleteUser,
+   addContactToUser,
 };

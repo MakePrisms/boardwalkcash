@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/Balance';
-import Receive from '@/components/buttons/lightning/Receive';
-import Send from '@/components/buttons/lightning/Send';
+import Receive from '@/components/buttons/Receive';
+import Send from '@/components/buttons/Send';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -19,16 +19,20 @@ import { useToast } from '@/hooks/util/useToast';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import TransactionHistoryDrawer from '@/components/transactionHistory/TransactionHistoryDrawer';
 import EcashTapButton from '@/components/EcashTapButton';
-import { GetServerSideProps } from 'next';
+import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { PublicContact, TokenProps } from '@/types';
+import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
+import { proofsLockedTo } from '@/utils/cashu';
+import { formatUrl } from '@/utils/url';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance } = useCashu();
+   const { balance, proofsLockedTo } = useCashu();
    const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
@@ -44,6 +48,13 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
       const handleTokenQuery = async (token: string) => {
          const decoded = getDecodedToken(token);
+         // make wallet view-only if token is locked and boardwalk has not been initialized
+         if (proofsLockedTo(decoded.token[0].proofs) && !localKeysets) {
+            setTokenDecoded(decoded);
+            setEcashReceiveModalOpen(true);
+
+            return;
+         }
 
          if (decoded.token.length !== 1) {
             throw new Error(
@@ -194,6 +205,13 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}
                onClose={() => {
+                  // modal should not be closable if token is locked and boardwalk has not been initialized
+                  if (
+                     proofsLockedTo(tokenDecoded.token[0].proofs) &&
+                     !window.localStorage.getItem('keysets')
+                  ) {
+                     return;
+                  }
                   setEcashReceiveModalOpen(false);
                   setTokenDecoded(null);
                   router.push('/wallet');
@@ -204,13 +222,75 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
    );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }: any) => {
-   const userAgent = req.headers['user-agent'];
-   const isMobile = /mobile/i.test(userAgent);
+export const getServerSideProps: GetServerSideProps = async (
+   context: GetServerSidePropsContext,
+) => {
+   const userAgent = context.req.headers['user-agent'];
+   const isMobile = /mobile/i.test(userAgent as string);
+
+   const token = context.query.token as string;
+
+   let tokenData: TokenProps | null = null;
+   if (token) {
+      const decoded = getDecodedToken(token);
+
+      const pubkey = proofsLockedTo(decoded.token[0].proofs);
+
+      let contact: PublicContact | null = null;
+      if (pubkey) {
+         contact = await findContactByPubkey(pubkey.slice(2));
+      }
+
+      const mintUrl = decoded.token[0].mint;
+
+      let isTrustedMint = null;
+      if (contact) {
+         isTrustedMint = await isContactsTrustedMint(contact, mintUrl);
+      }
+
+      const amount = decoded.token[0].proofs.reduce((acc, curr) => acc + curr.amount, 0);
+      tokenData = {
+         amount,
+         contact,
+         token,
+         mintUrl,
+         isTrustedMint,
+      };
+   }
 
    return {
       props: {
          isMobile,
+         pageTitle: pageTitle(tokenData) || null,
+         pageDescription: pageDescription(tokenData) || null,
       },
    };
+};
+
+const formatCents = (amount: number) => {
+   return `$${(amount / 100).toFixed(2)}`;
+};
+
+const pageTitle = (tokenData: TokenProps | null) => {
+   if (tokenData) {
+      const { amount, contact, isTrustedMint } = tokenData;
+      if (contact) {
+         return `${formatCents(amount)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
+      }
+      return `${formatCents(amount)} eCash`;
+   }
+};
+
+const pageDescription = (tokenData: TokenProps | null) => {
+   if (tokenData) {
+      const { amount, contact, mintUrl, isTrustedMint } = tokenData;
+
+      if (mintUrl.includes('stablenut.umint.cash')) {
+         return `Stablenut (4.9 ⭐️)`;
+      } else if (mintUrl.includes('mint.lnvoltz.com')) {
+         return `Voltz (5.0 ⭐️)`;
+      } else {
+         return `${formatUrl(mintUrl, 35)}`;
+      }
+   }
 };

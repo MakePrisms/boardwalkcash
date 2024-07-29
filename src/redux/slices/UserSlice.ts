@@ -1,11 +1,13 @@
+import { PublicContact } from '@/types';
+import { createUser, fetchUser, updateUser } from '@/utils/appApiRequests';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
 
 interface UserState {
    pubkey?: string;
    privkey?: string;
-   username?: string;
+   username: string;
+   contacts: PublicContact[];
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
 }
@@ -13,10 +15,12 @@ interface UserState {
 const initialState: UserState = {
    status: 'idle',
    error: null,
+   contacts: [],
+   username: '',
 };
 
 export const initializeUser = createAsyncThunk<
-   { pubkey: string; privkey: string; username: string } | undefined, // Type of the return value from the thunk
+   { pubkey: string; privkey: string; username: string; contacts: PublicContact[] } | undefined, // Type of the return value from the thunk
    void, // First argument of the payload creator
    { rejectValue: string } // Types for ThunkAPI parameters
 >('user/initializeUser', async (_, { rejectWithValue }) => {
@@ -46,30 +50,31 @@ export const initializeUser = createAsyncThunk<
 
          const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
 
-         const user = await axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users`, {
+         const user = await createUser(newPubKey, placeholderUsername, defaultMintUrl);
+
+         const { username } = user;
+
+         return {
             pubkey: newPubKey,
-            mintUrl: defaultMintUrl,
-            username: placeholderUsername,
-         });
-
-         const { username } = user.data;
-
-         return { pubkey: newPubKey, privkey: Buffer.from(newSecretKey).toString('hex'), username };
+            privkey: Buffer.from(newSecretKey).toString('hex'),
+            username: username!,
+            contacts: [],
+         };
       } else {
-         const user = await axios.get(
-            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
-         );
+         const user = await fetchUser(storedPubKey);
 
-         let { username } = user.data;
+         let { username, contacts } = user;
 
          if (!username) {
             username = `user-${storedPubKey.slice(0, 5)}`;
-            const updatedUser = await axios.put(
-               `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/users/${storedPubKey}`,
-               { username, pubkey: storedPubKey },
-            );
+            await updateUser(storedPubKey, { username });
          }
-         return { pubkey: storedPubKey, privkey: storedPrivKey, username };
+         return {
+            pubkey: storedPubKey,
+            privkey: storedPrivKey,
+            username,
+            contacts: contacts.map((c: any) => c.linkedUser),
+         };
       }
    } catch (error) {
       return rejectWithValue('Error initializing user');
@@ -79,7 +84,14 @@ export const initializeUser = createAsyncThunk<
 const userSlice = createSlice({
    name: 'user',
    initialState,
-   reducers: {},
+   reducers: {
+      addContactAction(state, action: PayloadAction<PublicContact>) {
+         state.contacts.push(action.payload);
+      },
+      updateUsernameAction(state, action: PayloadAction<string>) {
+         state.username = action.payload;
+      },
+   },
    extraReducers: builder => {
       builder
          .addCase(initializeUser.pending, state => {
@@ -90,7 +102,8 @@ const userSlice = createSlice({
             (
                state,
                action: PayloadAction<
-                  { pubkey: string; privkey: string; username: string } | undefined
+                  | { pubkey: string; privkey: string; username: string; contacts: PublicContact[] }
+                  | undefined
                >,
             ) => {
                state.status = 'succeeded';
@@ -98,6 +111,7 @@ const userSlice = createSlice({
                   state.pubkey = action.payload.pubkey;
                   state.privkey = action.payload.privkey;
                   state.username = action.payload.username;
+                  state.contacts = action.payload.contacts;
                }
             },
          )
@@ -107,5 +121,7 @@ const userSlice = createSlice({
          });
    },
 });
+
+export const { addContactAction, updateUsernameAction } = userSlice.actions;
 
 export default userSlice.reducer;

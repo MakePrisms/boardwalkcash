@@ -12,12 +12,16 @@ import { RootState } from '@/redux/store';
 import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
 import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
 import { useProofStorage } from '@/hooks/cashu/useProofStorage';
+import { useCashu } from '@/hooks/cashu/useCashu';
 
-const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
+const HistoryTableRow: React.FC<{
+   tx: Transaction;
+   openSendEcashModal: (tx: EcashTransaction) => void;
+}> = ({ tx, openSendEcashModal }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -25,6 +29,8 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
+   const user = useSelector((state: RootState) => state.user);
+   const { proofsLockedTo, isTokenSpent } = useCashu();
 
    const getIcon = (tx: Transaction) => {
       if (isEcashTransaction(tx) && tx.isReserve) {
@@ -69,10 +75,15 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
       const proofs = getDecodedToken(transaction.token).token[0].proofs;
 
+      let privkey: string | undefined;
+      if (proofsLockedTo(proofs) === '02' + user.pubkey) {
+         privkey = user.privkey;
+      }
+
       setReclaiming(true);
 
       const spent = await wallet.checkProofsSpent(proofs).catch(e => {
-         addToast('Failed to check token status', 'error');
+         addToast('Failed to check token status' + e.detail || e.message || '', 'error');
          console.error(e);
          setReclaiming(false);
       });
@@ -82,24 +93,10 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
       console.log('Spent tokens', spent);
 
       if (spent.length > 0) {
-         addToast('Proofs already claimed', 'error');
-         dispatch(
-            updateTransactionStatus({
-               type: 'ecash',
-               token: transaction.token,
-               status: TxStatus.PAID,
-            }),
-         );
+         handleSpentToken(transaction);
       } else {
-         const { token, tokensWithErrors } = await wallet.receive(transaction.token);
+         const newProofs = await wallet.receive(transaction.token, { privkey });
 
-         if (tokensWithErrors !== undefined) {
-            addToast('Failed to reclaim tokens', 'error');
-            setReclaiming(false);
-            return;
-         }
-
-         const newProofs = token.token[0].proofs;
          addProofs(newProofs);
          addToast(
             `Reclaimed $${(newProofs.reduce((a, b) => (a += b.amount), 0) / 100).toFixed(2)}`,
@@ -123,23 +120,63 @@ const HistoryTableRow: React.FC<{ tx: Transaction }> = ({ tx }) => {
 
       setReclaiming(false);
    };
+
+   const handleSpentToken = (tx: EcashTransaction) => {
+      addToast('ecash already claimed', 'error');
+      dispatch(
+         updateTransactionStatus({
+            type: 'ecash',
+            token: tx.token,
+            status: TxStatus.PAID,
+         }),
+      );
+      setReclaiming(false);
+   };
+
+   const handleLockedToken = async (tx: EcashTransaction) => {
+      if (await isTokenSpent(tx.token)) {
+         handleSpentToken(tx);
+         return;
+      }
+      openSendEcashModal(tx);
+   };
+
+   const getStatusCell = useCallback(
+      (tx: Transaction) => {
+         if (tx.status === TxStatus.PENDING && isEcashTransaction(tx)) {
+            if (tx.pubkey !== undefined && tx.pubkey !== user.pubkey) {
+               return (
+                  <div className='flex justify-center'>
+                     <button className='underline' onClick={() => handleLockedToken(tx)}>
+                        eTip
+                     </button>
+                  </div>
+               );
+            }
+
+            return (
+               <div className='flex justify-center'>
+                  {reclaiming ? (
+                     <Spinner size={'sm'} />
+                  ) : (
+                     <button className='underline' onClick={() => handleReclaim(tx)}>
+                        Reclaim
+                     </button>
+                  )}
+               </div>
+            );
+         }
+
+         return getIcon(tx);
+      },
+      [reclaiming, user.pubkey, tx.pubkey],
+   );
+
    return (
       <Table.Row>
          <Table.Cell className='pe-0 md:pe-6'>{formatDate(tx.date)}</Table.Cell>
          <Table.Cell className='pe-0 md:pe-6'>{formatAmount(tx.amount)}</Table.Cell>
-         <Table.Cell className='flex justify-center min-w-[116px]'>
-            {tx.status === TxStatus.PENDING && isEcashTransaction(tx) ? (
-               reclaiming ? (
-                  <Spinner size={'sm'} />
-               ) : (
-                  <button className='underline' onClick={() => handleReclaim(tx)}>
-                     Reclaim
-                  </button>
-               )
-            ) : (
-               getIcon(tx)
-            )}
-         </Table.Cell>
+         <Table.Cell className='flex justify-center min-w-[116px]'>{getStatusCell(tx)}</Table.Cell>
       </Table.Row>
    );
 };

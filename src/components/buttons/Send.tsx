@@ -15,7 +15,7 @@ const Send = () => {
             <span className='text-lg'>&nbsp;&nbsp;Send&nbsp;</span>
             <ArrowUpRightIcon className='ms-2 h-5 w-5' />
          </Button>
-         <SendModal isSendModalOpen={isSendModalOpen} setIsSendModalOpen={setIsSendModalOpen} />
+         <SendModal isOpen={isSendModalOpen} onClose={() => setIsSendModalOpen(false)} />
       </>
    );
 };
