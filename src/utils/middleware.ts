@@ -29,8 +29,6 @@ export const authMiddleware = async (req: NextApiRequest, res: NextApiResponse, 
    // const fullUrl = `${protocol}://${req.headers.host}${req.url}`;
    const fullUrl = url;
 
-   console.log('Full URL:', fullUrl);
-
    const valid = await nip98.validateEvent(event, fullUrl, method);
 
    if (!valid) {

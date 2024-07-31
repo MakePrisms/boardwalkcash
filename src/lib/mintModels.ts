@@ -2,7 +2,9 @@ import { CashuMint } from '@cashu/cashu-ts';
 import prisma from './prisma';
 
 export async function findOrCreateMint(mintUrl: string) {
+   console.log('Mint URL:', mintUrl);
    const mintLocal = await prisma.mint.findUnique({ where: { url: mintUrl } });
+   console.log('Mint Local:', mintLocal);
 
    if (mintLocal) {
       return mintLocal;
@@ -30,7 +32,7 @@ export async function findOrCreateMint(mintUrl: string) {
             data: {
                url: mintUrl,
                keysets: {
-                  create: mintKeysetData,
+                  create: mintKeysetData.filter(k => k.unit.toLowerCase() === 'usd'),
                },
             },
          });
