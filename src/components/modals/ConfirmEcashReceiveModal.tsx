@@ -21,7 +21,6 @@ interface ConfirmEcashReceiveModalProps {
 
 const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiveModalProps) => {
    const [mintTrusted, setMintTrusted] = useState(false);
-   const [swapToMainOpen, setSwapToMainOpen] = useState(false);
    const [swapping, setSwapping] = useState(false);
    const wallet = useSelector((state: RootState) => state.wallet);
    const [loadingUnits, setLoadingUnits] = useState(true);
@@ -91,12 +90,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       await swapToActiveWallet(
          new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
          { proofs, privkey },
-      );
+      ).finally(() => setSwapping(false));
 
       addEcashTransaction(TxStatus.PAID);
-      setSwapToMainOpen(false);
       onClose();
-      setSwapping(false);
    };
 
    useEffect(() => {

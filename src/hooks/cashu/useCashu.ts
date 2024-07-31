@@ -125,11 +125,12 @@ export const useCashu = () => {
     * @returns {Promise<void>}
     */
    const crossMintSwap = async (from: CashuWallet, to: CashuWallet, opts: CrossMintSwapOpts) => {
-      if (Object.keys(opts).length > 1) {
-         throw new Error('Can only specify one of `proofs`, `amount`, or `max`');
+      if ((opts.max ? 1 : 0) + (opts.proofs ? 1 : 0) + (opts.amount ? 1 : 0) > 1) {
+         throw new Error('Exactly one of max, proofs, or amount must be specified');
       }
 
       let proofsToMelt: Proof[] | null = [];
+
       if (opts.max) {
          proofsToMelt = getAllProofsByKeysetId(from.keys.id);
       } else if (opts.proofs) {
