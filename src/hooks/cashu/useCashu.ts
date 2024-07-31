@@ -403,11 +403,7 @@ export const useCashu = () => {
       } catch (error: any) {
          console.error('Failed to get mint quote:', error);
          if (error.message) {
-            if (error.message === 'Bad Request') {
-               dispatch(setError('Error: minting is probably disabled'));
-            } else {
-               dispatch(setError(error.message));
-            }
+            dispatch(setError(`Failed to fetch invoice from mint: ${error.message}`));
             throw new Error('Error getting mint quote', error);
          }
          dispatch(setError('Error: main mint is offline or minting is disabled'));
