@@ -144,7 +144,14 @@ export const useCashu = () => {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
-            return;
+         // need to swap for proofs that are not locked before melting
+         if (opts.privkey) {
+            try {
+               proofsToMelt = await unlockProofs(from, proofsToMelt);
+            } catch (e) {
+               toastSwapError(e);
+               return success;
+            }
          }
 
          const totalProofAmount = proofsToMelt.reduce((acc, p) => acc + p.amount, 0);
@@ -441,6 +448,25 @@ export const useCashu = () => {
          console.error(e);
          return false;
       }
+   };
+
+   const unlockProofs = async (wallet: CashuWallet, proofs: Proof[]) => {
+      const pubkeys = proofsLockedTo(proofs);
+      if (!pubkeys) {
+         return proofs;
+      }
+      const privkey = window.localStorage.getItem('privkey');
+      if (!privkey) {
+         throw new Error('No private key found');
+      }
+      const newProofs = await wallet.receiveTokenEntry(
+         {
+            proofs,
+            mint: wallet.mint.mintUrl,
+         },
+         { privkey },
+      );
+      return newProofs;
    };
 
    return {
