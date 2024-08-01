@@ -144,7 +144,14 @@ export const useCashu = () => {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
-            return;
+         // need to swap for proofs that are not locked before melting
+         if (opts.privkey) {
+            try {
+               proofsToMelt = await unlockProofs(from, proofsToMelt);
+            } catch (e) {
+               toastSwapError(e);
+               return success;
+            }
          }
          // need to swap for proofs that are not locked before melting
          if (opts.privkey) {
