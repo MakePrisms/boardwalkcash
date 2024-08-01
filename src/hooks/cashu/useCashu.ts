@@ -124,7 +124,11 @@ export const useCashu = () => {
     * @throws {TransactionError} Throws if the melt or mint transaction fails.
     * @returns {Promise<void>}
     */
-   const crossMintSwap = async (from: CashuWallet, to: CashuWallet, opts: CrossMintSwapOpts) => {
+   const crossMintSwap = async (
+      from: CashuWallet,
+      to: CashuWallet,
+      opts: CrossMintSwapOpts,
+   ): Promise<boolean> => {
       if ((opts.max ? 1 : 0) + (opts.proofs ? 1 : 0) + (opts.amount ? 1 : 0) > 1) {
          throw new Error('Exactly one of max, proofs, or amount must be specified');
       }
@@ -139,11 +143,15 @@ export const useCashu = () => {
          proofsToMelt = getProofsByAmount(opts.amount, from.keys.id);
       }
 
+      let success = false;
+
       try {
          if (!proofsToMelt) {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
+            return success;
+         }
          // need to swap for proofs that are not locked before melting
          if (opts.privkey) {
             try {
@@ -193,11 +201,13 @@ export const useCashu = () => {
             await removeProofs(proofsToMelt);
          }
          toastSwapSuccess(to, activeWallet, amountToMint);
+         success = true;
       } catch (error) {
          toastSwapError(error);
       } finally {
          unlockBalance();
       }
+      return success;
    };
 
    /**
@@ -233,9 +243,9 @@ export const useCashu = () => {
       wallet: CashuWallet,
       proofs: Proof[],
       opts?: { privkey?: string },
-   ) => {
+   ): Promise<boolean> => {
       lockBalance();
-
+      let success = false;
       try {
          const newProofs = await wallet.receiveTokenEntry(
             {
@@ -249,11 +259,14 @@ export const useCashu = () => {
 
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
          toastSwapSuccess(wallet, activeWallet, amountUsd);
+         success = true;
       } catch (error) {
          toastSwapError(error);
       } finally {
          unlockBalance();
       }
+      return success;
+   };
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
