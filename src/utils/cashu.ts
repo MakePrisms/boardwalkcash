@@ -1,4 +1,11 @@
-import { CashuWallet, MintQuoteResponse, Proof } from '@cashu/cashu-ts';
+import {
+   CashuMint,
+   CashuWallet,
+   MintQuoteResponse,
+   Proof,
+   Token,
+   getDecodedToken,
+} from '@cashu/cashu-ts';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -134,4 +141,41 @@ export const proofsLockedTo = (proofs: Proof[]) => {
    } else {
       return null;
    }
+};
+
+export const isTokenSpent = async (token: string | Token) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+
+   if (decodedToken.token.length !== 1) {
+      throw new Error('Invalid token. Multiple token entries are not supported.');
+   }
+
+   const proofs = decodedToken.token[0].proofs;
+
+   const mintUrl = decodedToken.token[0].mint;
+
+   const wallet = new CashuWallet(new CashuMint(mintUrl));
+
+   if (!wallet) {
+      throw new Error('No wallet found for this token');
+   }
+
+   try {
+      const spent = await wallet.checkProofsSpent(proofs);
+      return spent.length > 0;
+   } catch (e) {
+      console.error(e);
+      return false;
+   }
+};
+
+export const initializeUsdWallet = async (mintUrl: string) => {
+   const mint = new CashuMint(mintUrl);
+   const keys = await mint.getKeys();
+   const usdKeyset = keys.keysets.find(key => key.unit === 'usd');
+   if (!usdKeyset) {
+      throw new Error(`Mint ${mintUrl} does not support USD`);
+   }
+   const wallet = new CashuWallet(mint, { unit: 'usd', keys: usdKeyset });
+   return wallet;
 };

@@ -38,4 +38,16 @@ const isContactsTrustedMint = async (contact: PublicContact, mintUrl: string) =>
    return contactsTrustedMint.defaultMint.url === mintUrl;
 };
 
-export { findContactByUsername, findContactByPubkey, isContactsTrustedMint };
+const findManyContacts = async (pubkeys: string[]) => {
+   const contacts = await prisma.user.findMany({
+      where: { pubkey: { in: pubkeys } },
+      select: {
+         username: true,
+         pubkey: true,
+         createdAt: true,
+      },
+   });
+   return contacts;
+};
+
+export { findContactByUsername, findContactByPubkey, isContactsTrustedMint, findManyContacts };

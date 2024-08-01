@@ -26,6 +26,7 @@ import { PublicContact, TokenProps } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
+import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatCents } from '@/utils/formatting';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
@@ -180,6 +181,8 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
    useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
+   if (!user.pubkey) return null;
+
    return (
       <>
          <main
@@ -198,6 +201,8 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
                <Disclaimer />
             </footer>
          </main>
+         {/* TOOD: add loading state for when user is not initialized */}
+         <NotificationDrawer />
          <SettingsSidebar />
          <TransactionHistoryDrawer />
          <EcashTapButton isMobile={isMobile} />

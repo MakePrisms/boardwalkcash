@@ -6,6 +6,7 @@ import {
    MeltQuoteResponse,
    ApiError as CashuApiError,
 } from '@cashu/cashu-ts';
+import { Notification } from '@prisma/client';
 
 export interface ProofData {
    proofId: string;
@@ -107,4 +108,29 @@ export type TokenProps = {
 
    /** Whether or not the token is from the contact's default mint */
    isTrustedMint: boolean | null;
+};
+
+export enum NotificationType {
+   Token = 'token',
+   NewContact = 'new-contact',
+}
+
+export type MarkNotificationsAsReadRequest = {
+   ids: number[];
+};
+
+export type UpdateNotificationsResponse = MarkNotificationsAsReadRequest;
+
+export type DeleteNotificationsRequest = {
+   ids: number[];
+};
+
+export type DeleteNotificationsResponse = GetNotificationsResponse;
+
+export type GetNotificationResponse = Notification & { contact?: PublicContact };
+
+export type GetNotificationsResponse = Array<GetNotificationResponse>;
+
+export type NotifyTokenReceivedRequest = {
+   token: string;
 };

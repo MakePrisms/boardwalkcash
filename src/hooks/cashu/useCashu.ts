@@ -21,7 +21,7 @@ import {
    ReserveError,
    TransactionError,
 } from '@/types';
-import { proofsLockedTo } from '@/utils/cashu';
+import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -267,6 +267,21 @@ export const useCashu = () => {
       }
       return success;
    };
+
+   /**
+    *
+    * @param token
+    * @param privkey
+    * @throws Error if mint does not support usd
+    * @returns
+    */
+   const claimToken = async (token: Token, privkey?: string) => {
+      let fromWallet = getWallet(token.token[0].proofs[0].id);
+      if (!fromWallet) {
+         const mintUrl = token.token[0].mint;
+         fromWallet = await initializeUsdWallet(mintUrl);
+      }
+      return await swapToActiveWallet(fromWallet, { proofs: [token.token[0].proofs[0]], privkey });
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
@@ -506,5 +521,6 @@ export const useCashu = () => {
       decodeToken,
       proofsLockedTo,
       isTokenSpent,
+      claimToken,
    };
 };
