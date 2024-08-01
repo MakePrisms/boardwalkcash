@@ -14,6 +14,7 @@ import EyeSlashIcon from '@heroicons/react/20/solid/EyeSlashIcon';
 import { Badge, Button, Spinner } from 'flowbite-react';
 import { useCallback, useEffect, useState } from 'react';
 import ConnectReserve from './ConnectReserve';
+import { formatCents } from '@/utils/formatting';
 
 const ConnectWalletSetting = () => {
    const [connectionString, setConnectionString] = useState('');
@@ -222,10 +223,6 @@ const ConnectWalletSetting = () => {
       { name: '$5', value: 500 },
       { name: '$25', value: 2500 },
    ];
-
-   const formatCents = (cents: number) => {
-      return `$${(cents / 100).toFixed(2)}`;
-   };
 
    return (
       <>

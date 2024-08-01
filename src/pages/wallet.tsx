@@ -26,6 +26,7 @@ import { PublicContact, TokenProps } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
+import { formatCents } from '@/utils/formatting';
 
 export default function Home({ isMobile }: { isMobile: boolean }) {
    const newUser = useRef(false);
@@ -265,10 +266,6 @@ export const getServerSideProps: GetServerSideProps = async (
          pageDescription: pageDescription(tokenData) || null,
       },
    };
-};
-
-const formatCents = (amount: number) => {
-   return `$${(amount / 100).toFixed(2)}`;
 };
 
 const pageTitle = (tokenData: TokenProps | null) => {
