@@ -3,6 +3,7 @@ import { PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import AddContactButton from './buttons/AddContactButton';
+import NotificationItemText from './NotificationItemText';
 
 interface NewContactNotificationProps {
    contact: PublicContact;
@@ -39,9 +40,7 @@ const NewContactNotification = ({
 
    return (
       <>
-         <div className='notification-text'>
-            {notificationText} - {timeAgo}
-         </div>
+         <NotificationItemText text={notificationText} time={timeAgo} />
          <div className={`flex space-x-4 justify-start`}>{buttons}</div>
       </>
    );

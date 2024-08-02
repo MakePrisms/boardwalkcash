@@ -156,7 +156,3 @@ body {
 .btn-notification {
    @apply underline text-sm;
 }
-
-.notification-text {
-   @apply text-start font-bold;
-}

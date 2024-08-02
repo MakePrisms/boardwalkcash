@@ -48,6 +48,16 @@ const NotificationItem = ({ notification, clearNotification }: NotificationItemP
             console.error(e);
             return null;
          }
+      case NotificationType.TIP:
+         return (
+            <TokenNotification
+               token={data}
+               from={''}
+               isTip={true}
+               clearNotification={clearNotification}
+               timeAgo={timeAgo}
+            />
+         );
       case NotificationType.NewContact:
          return (
             <NewContactNotification

@@ -7,33 +7,41 @@ import { useEffect, useMemo, useState } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import ViewTokenButton from './buttons/ViewTokenButton';
 import ClaimTokenButton from './buttons/ClaimTokenButton';
+import NotificationItemText from './NotificationItemText';
 
 interface TokenNotificationProps {
    token: string;
    from: string;
+   isTip?: boolean;
    timeAgo: string;
    clearNotification: () => void;
 }
 
-const TokenNotification = ({ token, from, clearNotification, timeAgo }: TokenNotificationProps) => {
+const TokenNotification = ({
+   token,
+   from,
+   clearNotification,
+   timeAgo,
+   isTip,
+}: TokenNotificationProps) => {
    const [contact, setContact] = useState<PublicContact | null>(null);
    const [tokenState, setTokenState] = useState<'claimed' | 'unclaimed'>('unclaimed');
    const { fetchContact } = useContacts();
 
    useEffect(() => {
+      if (from === '' && isTip) {
+         setContact(null);
+         return;
+      }
       fetchContact(from).then(setContact);
-   }, [from]);
+   }, [from, isTip, fetchContact]);
 
    useEffect(() => {
-      console.log('TOKEN', token);
       isTokenSpent(token).then((isSpent: boolean) => {
          if (isSpent) {
             setTokenState('claimed');
          }
       });
-      // return () => {
-      //    setTokenState('unclaimed');
-      // };
    }, [token]);
 
    const decodedToken = useMemo(() => getDecodedToken(token), [token]);
@@ -44,6 +52,9 @@ const TokenNotification = ({ token, from, clearNotification, timeAgo }: TokenNot
 
    const notificationText = useMemo(() => {
       const formattedAmount = formatCents(amountCents);
+      if (isTip) {
+         return `You got tipped ${formattedAmount}`;
+      }
       let firstPart = '';
       if (contact?.username) {
          firstPart = `${contact.username} sent you`;
@@ -51,7 +62,7 @@ const TokenNotification = ({ token, from, clearNotification, timeAgo }: TokenNot
          firstPart = 'You received';
       }
       return `${firstPart} ${formattedAmount}`;
-   }, [contact, amountCents]);
+   }, [contact, amountCents, isTip]);
 
    const buttons = useMemo(() => {
       if (tokenState === 'claimed') {
@@ -62,13 +73,11 @@ const TokenNotification = ({ token, from, clearNotification, timeAgo }: TokenNot
             <ClaimTokenButton key={1} token={decodedToken} clearNotification={clearNotification} />,
          ];
       }
-   }, [tokenState, decodedToken]);
+   }, [tokenState, decodedToken, clearNotification]);
 
    return (
       <>
-         <p className='notification-text'>
-            {notificationText} - {timeAgo}
-         </p>
+         <NotificationItemText text={notificationText} time={timeAgo} />
          <div className={`flex space-x-4 justify-start`}>{buttons}</div>
       </>
    );

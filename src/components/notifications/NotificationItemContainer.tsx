@@ -26,7 +26,14 @@ const NotificationItemContainer = ({
                   {<BanknoteIcon className='w-6 h-6 text-white' />}
                </div>
             );
+         case NotificationType.TIP:
+            return (
+               <div className='w-6 h-6 text-gray-500'>
+                  {<BanknoteIcon className='w-6 h-6 text-white' />}
+               </div>
+            );
          default:
+            console.error('Unknown notification type', notificationType);
             return null;
       }
    }, [notificationType]);
