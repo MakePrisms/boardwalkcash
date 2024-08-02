@@ -167,7 +167,7 @@ export const useCashu = () => {
                proofsToMelt = await unlockProofs(from, proofsToMelt);
             } catch (e) {
                toastSwapError(e);
-               return;
+               return success;
             }
          }
 
