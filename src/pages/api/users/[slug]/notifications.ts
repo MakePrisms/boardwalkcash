@@ -142,9 +142,11 @@ async function handleDeleteNotifications(
    }
 
    try {
-      await deleteManyNotifications(ids.map(Number));
-      const newNotifications = await getUserNotifications(userPubkey);
-      return res.status(200).json(newNotifications as DeleteNotificationsResponse);
+      const { count: numDeleted } = await deleteManyNotifications(ids.map(Number));
+      if (numDeleted !== ids.length) {
+         return res.status(500).json({ error: 'Some notifications could not be deleted' });
+      }
+      return res.status(200).json({ ids } as DeleteNotificationsResponse);
    } catch (error) {
       console.error('Error deleting notifications:', error);
       return res.status(500).json({ error: 'Failed to delete notifications' });

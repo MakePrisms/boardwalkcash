@@ -1,15 +1,22 @@
-import { GetNotificationsResponse, UpdateNotificationsResponse } from '@/types';
+import {
+   DeleteNotificationsResponse,
+   GetNotificationsResponse,
+   UpdateNotificationsResponse,
+} from '@/types';
 import { Notification } from '@prisma/client';
 import { authenticatedRequest } from '@/utils/appApiRequests';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 
 const useNotifications = () => {
    const user = useSelector((state: RootState) => state.user);
    const [notifications, setNotifications] = useState<Notification[]>([]);
+   const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
 
-   const unreadNotifications = useMemo(() => notifications.filter(n => !n.isRead), [notifications]);
+   useEffect(() => {
+      setUnreadNotifications(notifications.filter(n => !n.isRead));
+   }, [notifications]);
 
    const pubkey = useMemo(() => user.pubkey || '', [user]);
 
@@ -43,19 +50,24 @@ const useNotifications = () => {
          'PUT',
          { ids: unreadNotifications.map(n => n.id) },
       );
+      setUnreadNotifications([]);
       return response;
    }, [unreadNotifications, pubkey]);
 
    const clearNotification = useCallback(
       async (notificationId: number) => {
-         const newNotifications = await authenticatedRequest<GetNotificationsResponse>(
+         const { ids: deletedIds } = await authenticatedRequest<DeleteNotificationsResponse>(
             `/api/users/${pubkey}/notifications`,
             'DELETE',
             {
                ids: [notificationId],
             },
          );
-         setNotifications(newNotifications);
+
+         setNotifications(prevNotifications => {
+            const newNotifications = prevNotifications.filter(n => n.id !== notificationId);
+            return newNotifications;
+         });
       },
       [pubkey],
    );

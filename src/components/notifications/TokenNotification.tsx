@@ -11,10 +11,11 @@ import ClaimTokenButton from './buttons/ClaimTokenButton';
 interface TokenNotificationProps {
    token: string;
    from: string;
+   timeAgo: string;
    clearNotification: () => void;
 }
 
-const TokenNotification = ({ token, from, clearNotification }: TokenNotificationProps) => {
+const TokenNotification = ({ token, from, clearNotification, timeAgo }: TokenNotificationProps) => {
    const [contact, setContact] = useState<PublicContact | null>(null);
    const [tokenState, setTokenState] = useState<'claimed' | 'unclaimed'>('unclaimed');
    const { fetchContact } = useContacts();
@@ -26,7 +27,6 @@ const TokenNotification = ({ token, from, clearNotification }: TokenNotification
    useEffect(() => {
       console.log('TOKEN', token);
       isTokenSpent(token).then((isSpent: boolean) => {
-         console.log('IS SPENT', isSpent);
          if (isSpent) {
             setTokenState('claimed');
          }
@@ -66,10 +66,10 @@ const TokenNotification = ({ token, from, clearNotification }: TokenNotification
 
    return (
       <>
-         <p className='text-end'>{notificationText}</p>
-         <div className={`flex space-x-4 ${buttons.length === 1 ? 'justify-end' : 'justify-end'}`}>
-            {buttons}
-         </div>
+         <p className='notification-text'>
+            {notificationText} - {timeAgo}
+         </p>
+         <div className={`flex space-x-4 justify-start`}>{buttons}</div>
       </>
    );
 };

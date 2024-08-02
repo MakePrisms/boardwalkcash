@@ -125,7 +125,9 @@ export type DeleteNotificationsRequest = {
    ids: number[];
 };
 
-export type DeleteNotificationsResponse = GetNotificationsResponse;
+export type DeleteNotificationsResponse = {
+   ids: number[];
+};
 
 export type GetNotificationResponse = Notification & { contact?: PublicContact };
 

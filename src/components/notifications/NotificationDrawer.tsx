@@ -61,11 +61,10 @@ const NotificationDrawer = () => {
                   <div className='flex flex-col h-full space-y-2'>
                      {notifications.map(notification => (
                         <NotificationItemContainer
-                           key={notification.id}
+                           key={`${notification.id}-${notification.type}`}
                            notificationType={notification.type as NotificationType}
                         >
                            <NotificationItem
-                              key={notification.id}
                               notification={notification}
                               clearNotification={handleClearNotification(notification.id)}
                            />

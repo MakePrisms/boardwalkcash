@@ -1,23 +1,33 @@
 import useContacts from '@/hooks/boardwalk/useContacts';
 import { PublicContact } from '@/types';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import AddContactButton from './buttons/AddContactButton';
 
 interface NewContactNotificationProps {
    contact: PublicContact;
+   timeAgo: string;
    clearNotification: () => void;
 }
 
-const NewContactNotification = ({ contact, clearNotification }: NewContactNotificationProps) => {
+const NewContactNotification = ({
+   contact,
+   clearNotification,
+   timeAgo,
+}: NewContactNotificationProps) => {
    const { isContactAdded } = useContacts();
 
-   const notificationText = isContactAdded({ pubkey: contact.pubkey })
-      ? `${contact.username} added you back`
-      : `${contact.username} added you`;
+   const isAdded = useCallback(
+      () => isContactAdded({ pubkey: contact.pubkey }),
+      [contact.pubkey, isContactAdded],
+   );
+
+   const notificationText = useMemo(() => {
+      return isAdded() ? `${contact.username} added you back` : `${contact.username} added you`;
+   }, [contact.username, isAdded]);
 
    const buttons = useMemo(() => {
-      if (isContactAdded({ pubkey: contact.pubkey })) {
+      if (isAdded()) {
          return [<ClearNotificationButton key={0} clearNotification={clearNotification} />];
       } else {
          return [
@@ -25,14 +35,14 @@ const NewContactNotification = ({ contact, clearNotification }: NewContactNotifi
             <ClearNotificationButton key={1} clearNotification={clearNotification} />,
          ];
       }
-   }, [isContactAdded, contact]);
+   }, [isAdded, contact, clearNotification]);
 
    return (
       <>
-         <div className='text-end'>{notificationText}</div>
-         <div className={`flex space-x-4 ${buttons.length === 1 ? 'justify-end' : 'justify-end'}`}>
-            {buttons}
+         <div className='notification-text'>
+            {notificationText} - {timeAgo}
          </div>
+         <div className={`flex space-x-4 justify-start`}>{buttons}</div>
       </>
    );
 };
