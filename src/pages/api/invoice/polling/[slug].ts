@@ -110,7 +110,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } else {
                created = await createManyProofs(proofsPayload);
             }
-            console.log('Proofs created:', created);
 
             if (!created) {
                !isTip && (await updateUser(pubkey, { receiving: false }));

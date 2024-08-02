@@ -53,3 +53,15 @@ export const updateMintQuote = async (quoteId: string, data: { paid: boolean }) 
    });
    return quote;
 };
+
+export const getMintQuote = async (quoteId: string) => {
+   const quote = await prisma.mintQuote.findUnique({
+      where: {
+         id: quoteId,
+      },
+      include: {
+         mintKeyset: true,
+      },
+   });
+   return quote;
+};

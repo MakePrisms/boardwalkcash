@@ -105,20 +105,20 @@ const UserProfilePage = () => {
             className='flex flex-col items-center justify-center mx-auto space-y-7'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Button
-               color={'secondary'}
-               className='absolute top-4 right-4 md:right-8 md:top-8 btn-bg-blend'
-            >
-               {boardwalkInitialized ? (
-                  <Link className='' href='/wallet'>
-                     Go to Boardwalk
-                  </Link>
-               ) : (
-                  <Link className='' href='/setup'>
-                     Get Boardwalk
-                  </Link>
-               )}
-            </Button>
+            <div className='absolute flex top-4 md:top-8 justify-between w-full px-4'>
+               <LightningTipButton userPubkey={user.pubkey} />
+               <Button className=' btn-bg-blend'>
+                  {boardwalkInitialized ? (
+                     <Link className='' href='/wallet'>
+                        Go to Boardwalk
+                     </Link>
+                  ) : (
+                     <Link className='' href='/setup'>
+                        Get Boardwalk
+                     </Link>
+                  )}
+               </Button>
+            </div>
             <h1 className='text-3xl'>{user.username}</h1>
             <QRCode value={`${window.location.href}`} size={128} />
             <div className='flex flex-row items-center space-x-6'>
@@ -140,6 +140,7 @@ const UserProfilePage = () => {
 
 import { GetServerSideProps } from 'next';
 import { findContactByUsername } from '@/lib/contactModels';
+import LightningTipButton from '@/components/buttons/LightningTipButton';
 
 export const getServerSideProps: GetServerSideProps = async context => {
    const { slug } = context.params || {};
