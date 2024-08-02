@@ -2,14 +2,17 @@ import { customDrawerTheme } from '@/themes/drawerTheme';
 import { BellAlertIcon, BellIcon } from '@/components/icons/BellIcon';
 import XMarkIcon from '@/components/icons/XMarkIcon';
 import { Drawer } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
 import NotificationItem from './NotificationItem';
 import NotificationItemContainer from './NotificationItemContainer';
 import { NotificationType } from '@/types';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 
 const NotificationDrawer = () => {
    const [hidden, setHidden] = useState(true);
+   const ecashTapsEnabled = useSelector((state: RootState) => state.settings.ecashTapsEnabled);
 
    const {
       notifications,
@@ -37,9 +40,19 @@ const NotificationDrawer = () => {
       await clearNotification(notificationId);
    };
 
+   const iconPosition = useMemo(() => {
+      if (ecashTapsEnabled) {
+         return `left-12 top-0`;
+      }
+      return `left-0 top-0`;
+   }, [ecashTapsEnabled]);
+
    return (
       <>
-         <button className='fixed left-0 top-0 m-4 p-2 z-10' onClick={() => setHidden(!hidden)}>
+         <button
+            className={`fixed ${iconPosition} m-4 p-2 z-10`}
+            onClick={() => setHidden(!hidden)}
+         >
             {unreadNotifications.length > 0 ? <BellAlertIcon /> : <BellIcon />}
          </button>
          <Drawer
