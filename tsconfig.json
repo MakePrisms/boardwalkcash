@@ -16,6 +16,13 @@
          "@/*": ["./src/*"]
       }
    },
-   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "global.d.ts", "bolt11-decoder.d.ts"],
+   "include": [
+      "next-env.d.ts",
+      "**/*.ts",
+      "**/*.tsx",
+      "global.d.ts",
+      "bolt11-decoder.d.ts"
+      // "src/scripts/getMetrics.js"
+   ],
    "exclude": ["node_modules"]
 }
