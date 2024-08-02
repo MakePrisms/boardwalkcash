@@ -1,5 +1,7 @@
 import { useCashu } from '@/hooks/cashu/useCashu';
-import { Token } from '@cashu/cashu-ts';
+import { EcashTransaction, TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
+import { useAppDispatch } from '@/redux/store';
+import { Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Spinner } from 'flowbite-react';
 import { useState } from 'react';
 
@@ -11,6 +13,7 @@ interface ClaimTokenButtonProps {
 const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) => {
    const [claiming, setClaiming] = useState(false);
    const { claimToken } = useCashu();
+   const dispatch = useAppDispatch();
    const handleClaim = async () => {
       const privkey = window.localStorage.getItem('privkey');
       if (!privkey) {
@@ -20,6 +23,20 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
       try {
          if (await claimToken(token, privkey)) {
             clearNotification();
+            // TODO: move all tx history logic to useCashu or something like that rather than in all the componenents
+            dispatch(
+               addTransaction({
+                  type: 'ecash',
+                  transaction: {
+                     token: getEncodedToken(token),
+                     amount: token.token[0].proofs.reduce((acc, p) => acc + p.amount, 0),
+                     unit: 'usd',
+                     mint: token.token[0].mint,
+                     status: TxStatus.PAID,
+                     date: new Date().toLocaleString(),
+                  } as EcashTransaction,
+               }),
+            );
          }
       } catch (e) {
       } finally {
