@@ -281,7 +281,7 @@ export const useCashu = () => {
          const mintUrl = token.token[0].mint;
          fromWallet = await initializeUsdWallet(mintUrl);
       }
-      return await swapToActiveWallet(fromWallet, { proofs: [token.token[0].proofs[0]], privkey });
+      return await swapToActiveWallet(fromWallet, { proofs: token.token[0].proofs, privkey });
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
