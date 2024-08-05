@@ -8,6 +8,8 @@ import {
 } from '@/lib/userModels';
 import { Prisma, User } from '@prisma/client';
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
+import { createNotification } from '@/lib/notificationModels';
+import { NotificationType } from '@/types';
 
 export type UserWithContacts = User & { contacts: ContactData[] };
 
@@ -36,6 +38,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          try {
             if (req.body.linkedUserPubkey) {
                await addContactToUser(slug, req.body as ContactData);
+
+               // notify the added user that they've been added as a contact
+               await createNotification(
+                  req.body.linkedUserPubkey,
+                  NotificationType.NewContact,
+                  slug,
+               );
+
                return res.status(201).json({ message: 'Contact added' });
             }
             const { pubkey, username, defaultMintUrl: mintUrl } = req.body;

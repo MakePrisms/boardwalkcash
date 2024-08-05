@@ -42,7 +42,11 @@ const generateNip98Header = async (
    return `Nostr ${encodedEvent}`;
 };
 
-const authenticatedRequest = async <T>(url: string, method: string, body?: any): Promise<T> => {
+export const authenticatedRequest = async <T>(
+   url: string,
+   method: string,
+   body?: any,
+): Promise<T> => {
    const token = await generateNip98Header(url, method, undefined);
    const headers = {
       'Content-Type': 'application/json',

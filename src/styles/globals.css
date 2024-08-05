@@ -152,3 +152,7 @@ body {
 .btn-bg-blend {
    @apply hover:bg-[#1f3473] bg-[#1E3A8A] text-white border-none hover:border-none hover:outline-none;
 }
+
+.btn-notification {
+   @apply underline text-sm;
+}

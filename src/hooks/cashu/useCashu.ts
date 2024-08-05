@@ -21,7 +21,7 @@ import {
    ReserveError,
    TransactionError,
 } from '@/types';
-import { proofsLockedTo } from '@/utils/cashu';
+import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -124,7 +124,11 @@ export const useCashu = () => {
     * @throws {TransactionError} Throws if the melt or mint transaction fails.
     * @returns {Promise<void>}
     */
-   const crossMintSwap = async (from: CashuWallet, to: CashuWallet, opts: CrossMintSwapOpts) => {
+   const crossMintSwap = async (
+      from: CashuWallet,
+      to: CashuWallet,
+      opts: CrossMintSwapOpts,
+   ): Promise<boolean> => {
       if ((opts.max ? 1 : 0) + (opts.proofs ? 1 : 0) + (opts.amount ? 1 : 0) > 1) {
          throw new Error('Exactly one of max, proofs, or amount must be specified');
       }
@@ -139,12 +143,14 @@ export const useCashu = () => {
          proofsToMelt = getProofsByAmount(opts.amount, from.keys.id);
       }
 
+      let success = false;
+
       try {
          if (!proofsToMelt) {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
-            return;
+            return success;
          }
          // need to swap for proofs that are not locked before melting
          if (opts.privkey) {
@@ -152,7 +158,16 @@ export const useCashu = () => {
                proofsToMelt = await unlockProofs(from, proofsToMelt);
             } catch (e) {
                toastSwapError(e);
-               return;
+               return success;
+            }
+         }
+         // need to swap for proofs that are not locked before melting
+         if (opts.privkey) {
+            try {
+               proofsToMelt = await unlockProofs(from, proofsToMelt);
+            } catch (e) {
+               toastSwapError(e);
+               return success;
             }
          }
 
@@ -186,11 +201,13 @@ export const useCashu = () => {
             await removeProofs(proofsToMelt);
          }
          toastSwapSuccess(to, activeWallet, amountToMint);
+         success = true;
       } catch (error) {
          toastSwapError(error);
       } finally {
          unlockBalance();
       }
+      return success;
    };
 
    /**
@@ -226,9 +243,9 @@ export const useCashu = () => {
       wallet: CashuWallet,
       proofs: Proof[],
       opts?: { privkey?: string },
-   ) => {
+   ): Promise<boolean> => {
       lockBalance();
-
+      let success = false;
       try {
          const newProofs = await wallet.receiveTokenEntry(
             {
@@ -242,11 +259,29 @@ export const useCashu = () => {
 
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
          toastSwapSuccess(wallet, activeWallet, amountUsd);
+         success = true;
       } catch (error) {
          toastSwapError(error);
       } finally {
          unlockBalance();
       }
+      return success;
+   };
+
+   /**
+    *
+    * @param token
+    * @param privkey
+    * @throws Error if mint does not support usd
+    * @returns
+    */
+   const claimToken = async (token: Token, privkey?: string) => {
+      let fromWallet = getWallet(token.token[0].proofs[0].id);
+      if (!fromWallet) {
+         const mintUrl = token.token[0].mint;
+         fromWallet = await initializeUsdWallet(mintUrl);
+      }
+      return await swapToActiveWallet(fromWallet, { proofs: token.token[0].proofs, privkey });
    };
 
    // TODO: how to make sure the `send` tokens don't get lost
@@ -486,5 +521,6 @@ export const useCashu = () => {
       decodeToken,
       proofsLockedTo,
       isTokenSpent,
+      claimToken,
    };
 };

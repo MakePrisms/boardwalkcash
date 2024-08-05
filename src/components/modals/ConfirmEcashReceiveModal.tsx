@@ -17,9 +17,17 @@ interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
    token: Token | null;
    onClose: () => void;
+   onSuccess?: () => void;
+   contact?: PublicContact;
 }
 
-const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiveModalProps) => {
+const ConfirmEcashReceiveModal = ({
+   isOpen,
+   token,
+   onClose,
+   onSuccess,
+   contact,
+}: ConfirmEcashReceiveModalProps) => {
    const [mintTrusted, setMintTrusted] = useState(false);
    const [swapping, setSwapping] = useState(false);
    const wallet = useSelector((state: RootState) => state.wallet);
@@ -62,6 +70,10 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
    };
 
    useEffect(() => {
+      if (contact) {
+         setTokenContact(contact);
+         return;
+      }
       if (!lockedTo) {
          return;
       }
@@ -87,13 +99,17 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
       let privkey = lockedTo ? user.privkey : undefined;
 
-      await swapToActiveWallet(
+      const success = await swapToActiveWallet(
          new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
          { proofs, privkey },
       ).finally(() => setSwapping(false));
 
       addEcashTransaction(TxStatus.PAID);
       onClose();
+
+      if (onSuccess && success) {
+         onSuccess();
+      }
    };
 
    useEffect(() => {
@@ -130,6 +146,8 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
 
    useEffect(() => {
       if (!mintUrl) return;
+      if (!isOpen) return;
+
       const activeWallet = Object.values(wallet.keysets).find(w => w.active);
 
       if (mintUrl === activeWallet?.url) {
@@ -173,7 +191,7 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
             }
          })
          .finally(() => setLoadingUnits(false));
-   }, [mintUrl, proofs]);
+   }, [mintUrl, proofs, isOpen]);
 
    if (!token) return null;
 
@@ -246,12 +264,16 @@ const ConfirmEcashReceiveModal = ({ isOpen, token, onClose }: ConfirmEcashReceiv
       console.log('Swapping');
 
       const privkey = lockedTo ? user.privkey : undefined;
-      await swapToClaimProofs(wallet, proofs, { privkey });
+      const success = await swapToClaimProofs(wallet, proofs, { privkey });
 
       // TOOD: move to cashu2
       addEcashTransaction(TxStatus.PAID);
 
       onClose();
+
+      if (onSuccess && success) {
+         onSuccess();
+      }
    };
 
    const receiveAmountString = () => {

@@ -7,13 +7,13 @@ import { RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import SendEcashModalBody from './SendEcashModalBody';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScannerButton from '../buttons/QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { UserIcon } from '@heroicons/react/20/solid';
 import ContactsModal from './ContactsModal/ContactsModal';
 import { PublicContact } from '@/types';
+import useNotifications from '@/hooks/boardwalk/useNotifications';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -38,6 +38,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [ecashToken, setEcashToken] = useState<string | undefined>();
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
+   const { sendTokenAsNotification } = useNotifications();
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -125,6 +126,12 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             throw new Error('Failed to create ecash token');
          }
          setEcashToken(token);
+         if (lockTo) {
+            // send token to contact as notification
+            // TODO: right now we don't support generic p2pk lock, but if lockTo is not a contact,
+            // we should not do this.
+            await sendTokenAsNotification(token);
+         }
       } catch (error) {
          console.error(error);
          addToast('An error occurred while creating the ecash token.', 'error');

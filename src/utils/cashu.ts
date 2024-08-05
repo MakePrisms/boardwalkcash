@@ -1,4 +1,11 @@
-import { CashuWallet, MintQuoteResponse, Proof } from '@cashu/cashu-ts';
+import {
+   CashuMint,
+   CashuWallet,
+   MintQuoteResponse,
+   Proof,
+   Token,
+   getDecodedToken,
+} from '@cashu/cashu-ts';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -134,4 +141,102 @@ export const proofsLockedTo = (proofs: Proof[]) => {
    } else {
       return null;
    }
+};
+
+export const isTokenSpent = async (token: string | Token) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+
+   if (decodedToken.token.length !== 1) {
+      throw new Error('Invalid token. Multiple token entries are not supported.');
+   }
+
+   const proofs = decodedToken.token[0].proofs;
+
+   const mintUrl = decodedToken.token[0].mint;
+
+   const wallet = new CashuWallet(new CashuMint(mintUrl));
+
+   if (!wallet) {
+      throw new Error('No wallet found for this token');
+   }
+
+   try {
+      const spent = await wallet.checkProofsSpent(proofs);
+      return spent.length > 0;
+   } catch (e) {
+      console.error(e);
+      return false;
+   }
+};
+
+/**
+ * Checks if multiple tokens are spent across different mints.
+ *
+ * @param tokenEntries - An array of tuples, each containing a token ID and either a token string or Token object.
+ * @returns A Promise that resolves to an object where keys are token IDs and values are booleans indicating if the token is spent.
+ *
+ * @throws {Error} If any token has multiple token entries, which are not supported.
+ *
+ * @example
+ * const tokenEntries = [
+ *   ['id1', 'tokenString1'],
+ *   ['id2', tokenObject2]
+ * ];
+ * const spentStatus = await areTokensSpent(tokenEntries);
+ * // spentStatus might look like: { id1: true, id2: false }
+ */
+export const areTokensSpent = async (tokenEntries: [string, string | Token][]) => {
+   const mintProofs: { [mintUrl: string]: Proof[] } = {};
+   const tokenMap: { [proofSecret: string]: boolean } = {};
+   const idToProofSecrets: { [id: string]: string[] } = {};
+
+   // Group proofs by mint URL
+   tokenEntries.forEach(([id, token]) => {
+      const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+      if (decodedToken.token.length !== 1) {
+         throw new Error('Invalid token. Multiple token entries are not supported.');
+      }
+      const mintUrl = decodedToken.token[0].mint;
+      const proofs = decodedToken.token[0].proofs;
+
+      if (!mintProofs[mintUrl]) mintProofs[mintUrl] = [];
+      mintProofs[mintUrl].push(...proofs);
+
+      idToProofSecrets[id] = proofs.map(proof => proof.secret);
+      proofs.forEach(proof => {
+         tokenMap[proof.secret] = false;
+      });
+   });
+
+   // Check proofs for each mint
+   for (const [mintUrl, proofs] of Object.entries(mintProofs)) {
+      const wallet = new CashuWallet(new CashuMint(mintUrl));
+      try {
+         const spentProofs = await wallet.checkProofsSpent(proofs);
+         spentProofs.forEach(proof => {
+            tokenMap[proof.secret] = true;
+         });
+      } catch (e) {
+         console.error(`Error checking proofs for mint ${mintUrl}:`, e);
+      }
+   }
+
+   // Map results back to original IDs
+   const results: [string, boolean][] = tokenEntries.map(([id, _]) => [
+      id,
+      idToProofSecrets[id].some(secret => tokenMap[secret]),
+   ]);
+
+   return Object.fromEntries(results);
+};
+
+export const initializeUsdWallet = async (mintUrl: string) => {
+   const mint = new CashuMint(mintUrl);
+   const keys = await mint.getKeys();
+   const usdKeyset = keys.keysets.find(key => key.unit === 'usd');
+   if (!usdKeyset) {
+      throw new Error(`Mint ${mintUrl} does not support USD`);
+   }
+   const wallet = new CashuWallet(mint, { unit: 'usd', keys: usdKeyset });
+   return wallet;
 };

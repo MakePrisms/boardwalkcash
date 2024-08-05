@@ -5,7 +5,9 @@ import {
    MintQuoteResponse,
    MeltQuoteResponse,
    ApiError as CashuApiError,
+   Token,
 } from '@cashu/cashu-ts';
+import { Notification } from '@prisma/client';
 
 export interface ProofData {
    proofId: string;
@@ -107,4 +109,80 @@ export type TokenProps = {
 
    /** Whether or not the token is from the contact's default mint */
    isTrustedMint: boolean | null;
+};
+
+export enum NotificationType {
+   Token = 'token',
+   NewContact = 'new-contact',
+   TIP = 'tip',
+}
+
+export type MarkNotificationsAsReadRequest = {
+   ids: number[];
+};
+
+export type UpdateNotificationsResponse = MarkNotificationsAsReadRequest;
+
+export type DeleteNotificationsRequest = {
+   ids: number[];
+};
+
+export type DeleteNotificationsResponse = {
+   ids: number[];
+};
+
+export type GetNotificationResponse = Notification & { contact: PublicContact };
+
+export type GetNotificationsResponse = Array<GetNotificationResponse>;
+
+export type NotifyTokenReceivedRequest = {
+   token: string;
+};
+
+export type LightningTipResponse = {
+   invoice: string;
+   checkingId: string;
+};
+
+export type LightningTipStatusResponse = {
+   paid: boolean;
+   quoteId: string;
+};
+
+export type TokenNotificationData = {
+   token: Token;
+   rawToken: string;
+   contact: PublicContact | null;
+   isTip: boolean;
+   timeAgo: string;
+   tokenState: 'claimed' | 'unclaimed';
+};
+
+export type ContactNotificationData = {
+   id: number;
+   contact: PublicContact;
+   contactIsAdded: boolean;
+   timeAgo: string;
+};
+
+export type NotificationWithData = Notification & {
+   processedData: TokenNotificationData | ContactNotificationData;
+};
+
+export const isTokenNotification = (
+   data: TokenNotificationData | ContactNotificationData,
+): data is TokenNotificationData => {
+   if ('token' in data || 'rawToken' in data) {
+      return true;
+   }
+   return false;
+};
+
+export const isContactNotification = (
+   data: TokenNotificationData | ContactNotificationData,
+): data is ContactNotificationData => {
+   if ('contactIsAdded' in data) {
+      return true;
+   }
+   return false;
 };
