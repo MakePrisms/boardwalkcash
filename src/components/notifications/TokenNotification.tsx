@@ -1,53 +1,26 @@
-import useContacts from '@/hooks/boardwalk/useContacts';
-import { PublicContact } from '@/types';
-import { isTokenSpent } from '@/utils/cashu';
+import { TokenNotificationData } from '@/types';
 import { formatCents } from '@/utils/formatting';
-import { getDecodedToken } from '@cashu/cashu-ts';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import ViewTokenButton from './buttons/ViewTokenButton';
 import ClaimTokenButton from './buttons/ClaimTokenButton';
 import NotificationItemText from './NotificationItemText';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 
 interface TokenNotificationProps {
-   token: string;
-   from: string;
-   isTip?: boolean;
-   timeAgo: string;
+   data: TokenNotificationData;
    clearNotification: () => void;
 }
 
-const TokenNotification = ({
-   token,
-   from,
-   clearNotification,
-   timeAgo,
-   isTip,
-}: TokenNotificationProps) => {
-   const [contact, setContact] = useState<PublicContact | null>(null);
-   const [tokenState, setTokenState] = useState<'claimed' | 'unclaimed'>('unclaimed');
-   const { fetchContact } = useContacts();
+const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) => {
+   const { token, contact, isTip, timeAgo, tokenState } = data;
+   const user = useSelector((state: RootState) => state.user);
+   const selfContact = useMemo(() => user.contacts.find(c => c.pubkey === user.pubkey), [user]);
 
-   useEffect(() => {
-      if (from === '' && isTip) {
-         setContact(null);
-         return;
-      }
-      fetchContact(from).then(setContact);
-   }, [from, isTip, fetchContact]);
-
-   useEffect(() => {
-      isTokenSpent(token).then((isSpent: boolean) => {
-         if (isSpent) {
-            setTokenState('claimed');
-         }
-      });
-   }, [token]);
-
-   const decodedToken = useMemo(() => getDecodedToken(token), [token]);
    const amountCents = useMemo(
-      () => decodedToken.token[0].proofs.reduce((acc, p) => acc + p.amount, 0),
-      [decodedToken],
+      () => token.token[0].proofs.reduce((acc, p) => acc + p.amount, 0),
+      [token],
    );
 
    const notificationText = useMemo(() => {
@@ -69,11 +42,16 @@ const TokenNotification = ({
          return [<ClearNotificationButton key={0} clearNotification={clearNotification} />];
       } else {
          return [
-            <ViewTokenButton key={0} token={decodedToken} clearNotification={clearNotification} />,
-            <ClaimTokenButton key={1} token={decodedToken} clearNotification={clearNotification} />,
+            <ViewTokenButton
+               key={0}
+               token={token}
+               clearNotification={clearNotification}
+               contact={contact || selfContact}
+            />,
+            <ClaimTokenButton key={1} token={token} clearNotification={clearNotification} />,
          ];
       }
-   }, [tokenState, decodedToken, clearNotification]);
+   }, [tokenState, token, clearNotification]);
 
    return (
       <>

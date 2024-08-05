@@ -44,12 +44,16 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
       }
    };
 
-   return claiming ? (
-      <Spinner size='sm' color='primary' />
-   ) : (
-      <button className='btn-notification' onClick={handleClaim}>
-         claim
-      </button>
+   return (
+      <div className='w-4 h-4 flex items-center justify-center'>
+         {claiming ? (
+            <Spinner size='sm' color='primary' />
+         ) : (
+            <button className='btn-notification w-full h-full' onClick={handleClaim}>
+               claim
+            </button>
+         )}
+      </div>
    );
 };
 

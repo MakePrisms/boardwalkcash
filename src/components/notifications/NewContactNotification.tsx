@@ -1,34 +1,25 @@
 import useContacts from '@/hooks/boardwalk/useContacts';
-import { PublicContact } from '@/types';
+import { ContactNotificationData, PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import AddContactButton from './buttons/AddContactButton';
 import NotificationItemText from './NotificationItemText';
 
 interface NewContactNotificationProps {
-   contact: PublicContact;
-   timeAgo: string;
+   data: ContactNotificationData;
    clearNotification: () => void;
 }
 
-const NewContactNotification = ({
-   contact,
-   clearNotification,
-   timeAgo,
-}: NewContactNotificationProps) => {
-   const { isContactAdded } = useContacts();
-
-   const isAdded = useCallback(
-      () => isContactAdded({ pubkey: contact.pubkey }),
-      [contact.pubkey, isContactAdded],
-   );
-
+const NewContactNotification = ({ data, clearNotification }: NewContactNotificationProps) => {
+   const { contact, contactIsAdded, timeAgo } = data;
    const notificationText = useMemo(() => {
-      return isAdded() ? `${contact.username} added you back` : `${contact.username} added you`;
-   }, [contact.username, isAdded]);
+      return contactIsAdded
+         ? `${contact.username} added you back`
+         : `${contact.username} added you`;
+   }, [contact.username, contactIsAdded]);
 
    const buttons = useMemo(() => {
-      if (isAdded()) {
+      if (contactIsAdded) {
          return [<ClearNotificationButton key={0} clearNotification={clearNotification} />];
       } else {
          return [
@@ -36,7 +27,7 @@ const NewContactNotification = ({
             <ClearNotificationButton key={1} clearNotification={clearNotification} />,
          ];
       }
-   }, [isAdded, contact, clearNotification]);
+   }, [contactIsAdded, contact, clearNotification]);
 
    return (
       <>

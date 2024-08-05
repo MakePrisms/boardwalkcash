@@ -2,17 +2,23 @@ import { customDrawerTheme } from '@/themes/drawerTheme';
 import { BellAlertIcon, BellIcon } from '@/components/icons/BellIcon';
 import XMarkIcon from '@/components/icons/XMarkIcon';
 import { Drawer } from 'flowbite-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
 import NotificationItem from './NotificationItem';
 import NotificationItemContainer from './NotificationItemContainer';
 import { NotificationType } from '@/types';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
+import { Virtuoso } from 'react-virtuoso';
 
 const NotificationDrawer = () => {
    const [hidden, setHidden] = useState(true);
    const ecashTapsEnabled = useSelector((state: RootState) => state.settings.ecashTapsEnabled);
+
+   const scrollerRef = useRef<HTMLElement | Window | null>(null);
+   const setScrollerRef = useCallback((ref: HTMLElement | Window | null) => {
+      scrollerRef.current = ref;
+   }, []);
 
    const {
       notifications,
@@ -24,7 +30,7 @@ const NotificationDrawer = () => {
 
    useEffect(() => {
       loadNotifications();
-   }, [loadNotifications]);
+   }, []);
 
    useEffect(() => {
       const updateNotifications = async () => {
@@ -46,6 +52,20 @@ const NotificationDrawer = () => {
       }
       return `left-0 top-0`;
    }, [ecashTapsEnabled]);
+
+   const renderNotification = (_index: number, notification: any) => {
+      return (
+         <NotificationItemContainer
+            key={`${notification.id}-${notification.type}`}
+            notificationType={notification.type as NotificationType}
+         >
+            <NotificationItem
+               notification={notification}
+               clearNotification={handleClearNotification(notification.id)}
+            />
+         </NotificationItemContainer>
+      );
+   };
 
    return (
       <>
@@ -69,21 +89,20 @@ const NotificationDrawer = () => {
                titleIcon={() => null}
                closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
-            <Drawer.Items className='md:w-96 max-w-screen-sm'>
+            <Drawer.Items
+               className='md:w-96 max-w-screen-sm overflow-y-auto mb-16'
+               style={{ height: 'calc(100vh - 100px)' }}
+            >
                {notifications.length > 0 ? (
-                  <div className='flex flex-col h-full space-y-2'>
-                     {notifications.map(notification => (
-                        <NotificationItemContainer
-                           key={`${notification.id}-${notification.type}`}
-                           notificationType={notification.type as NotificationType}
-                        >
-                           <NotificationItem
-                              notification={notification}
-                              clearNotification={handleClearNotification(notification.id)}
-                           />
-                        </NotificationItemContainer>
-                     ))}
-                  </div>
+                  <Virtuoso
+                     data={notifications}
+                     itemContent={renderNotification}
+                     style={{ scrollbarWidth: 'none' }}
+                     scrollerRef={setScrollerRef}
+                     totalCount={200}
+                     overscan={200}
+                     increaseViewportBy={{ bottom: 200, top: 200 }}
+                  />
                ) : (
                   <div className='flex justify-center mt-4'>No notifications</div>
                )}

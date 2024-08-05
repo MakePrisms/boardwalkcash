@@ -18,6 +18,7 @@ interface ConfirmEcashReceiveModalProps {
    token: Token | null;
    onClose: () => void;
    onSuccess?: () => void;
+   contact?: PublicContact;
 }
 
 const ConfirmEcashReceiveModal = ({
@@ -25,6 +26,7 @@ const ConfirmEcashReceiveModal = ({
    token,
    onClose,
    onSuccess,
+   contact,
 }: ConfirmEcashReceiveModalProps) => {
    const [mintTrusted, setMintTrusted] = useState(false);
    const [swapping, setSwapping] = useState(false);
@@ -68,6 +70,10 @@ const ConfirmEcashReceiveModal = ({
    };
 
    useEffect(() => {
+      if (contact) {
+         setTokenContact(contact);
+         return;
+      }
       if (!lockedTo) {
          return;
       }

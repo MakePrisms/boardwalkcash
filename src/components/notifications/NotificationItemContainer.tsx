@@ -39,7 +39,7 @@ const NotificationItemContainer = ({
    }, [notificationType]);
 
    return (
-      <div className='flex flex-row items-center justify-start space-x-4 bg-[var(--background-end-rgb)] rounded-sm w-full px-4 py-4'>
+      <div className='flex flex-row items-center justify-start space-x-4 bg-[var(--background-end-rgb)] rounded-sm w-full px-4 py-4 mb-2'>
          <div className='w-6 h-6 text-gray-500'>{icon}</div>
          <div className='flex flex-col justify-between w-full space-y-1'>{children}</div>
       </div>

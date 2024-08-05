@@ -1,13 +1,15 @@
 import { Token } from '@cashu/cashu-ts';
 import ConfirmEcashReceiveModal from '../../modals/ConfirmEcashReceiveModal';
 import { useState } from 'react';
+import { PublicContact } from '@/types';
 
 interface ViewTokenButtonProps {
    token: Token;
+   contact?: PublicContact;
    clearNotification: () => void;
 }
 
-export const ViewTokenButton = ({ token, clearNotification }: ViewTokenButtonProps) => {
+export const ViewTokenButton = ({ token, clearNotification, contact }: ViewTokenButtonProps) => {
    const [isModalOpen, setIsModalOpen] = useState(false);
 
    const onSuccess = () => {
@@ -24,6 +26,7 @@ export const ViewTokenButton = ({ token, clearNotification }: ViewTokenButtonPro
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             onSuccess={onSuccess}
+            contact={contact}
          />
       </>
    );
