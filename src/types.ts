@@ -113,6 +113,7 @@ export type TokenProps = {
 export enum NotificationType {
    Token = 'token',
    NewContact = 'new-contact',
+   TIP = 'tip',
 }
 
 export type MarkNotificationsAsReadRequest = {
