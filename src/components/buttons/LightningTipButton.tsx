@@ -3,7 +3,7 @@ import QRCode from 'qrcode.react';
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
-import { getInvoiceForTip, getTipStatus } from '@/utils/appApiRequests';
+import { HttpResponseError, getInvoiceForTip, getTipStatus } from '@/utils/appApiRequests';
 import { useForm } from 'react-hook-form';
 
 interface LightningTipButtonProps {
@@ -17,11 +17,14 @@ interface TipFormData {
 const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
    const [showLightningTipModal, setShowLightningTipModal] = useState(false);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
+   const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [invoice, setInvoice] = useState('');
+   const [quoteId, setQuoteId] = useState('');
    const {
       register,
       handleSubmit,
       formState: { errors },
+      reset: resetForm,
    } = useForm<TipFormData>();
    const { addToast } = useToast();
 
@@ -29,6 +32,8 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
       setFetchingInvoice(false);
       setInvoice('');
       setShowLightningTipModal(false);
+      setInvoiceTimeout(false);
+      resetForm();
    };
 
    const onAmountSubmit = async (data: TipFormData) => {
@@ -71,6 +76,7 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
          setInvoice(invoice);
          setFetchingInvoice(false);
 
+         setQuoteId(checkingId);
          await waitForPayment(checkingId);
       } catch (error) {
          console.error('Error fetching invoice for tip', error);
@@ -79,21 +85,48 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
       }
    };
 
+   const checkPaymentStatus = async (checkingId?: string): Promise<boolean> => {
+      if (!checkingId) {
+         checkingId = quoteId;
+      }
+      try {
+         return (await getTipStatus(checkingId)).paid;
+      } catch (error) {
+         console.error('Error fetching tip status', error);
+         return false;
+      }
+   };
+
    const waitForPayment = async (checkingId: string) => {
+      let attempts = 0;
+      const maxAttempts = 4;
       const interval = setInterval(async () => {
-         console.log('looking up payment for ', checkingId + '...');
-         const status = await getTipStatus(checkingId).catch(error => {
-            console.error('Error fetching tip status', error);
+         const success = await checkPaymentStatus(checkingId);
+         if (success) {
             handleModalClose();
-            addToast('Error fetching tip status', 'error');
-         });
-         if (!status) return;
-         if (status.paid) {
             clearInterval(interval);
-            handleModalClose();
             addToast('Received!', 'success');
          }
+         if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setInvoiceTimeout(true);
+            return;
+         } else {
+            attempts++;
+         }
+         console.log('looking up payment for ', checkingId + '...');
       }, 5000);
+   };
+
+   const handleCheckAgain = async () => {
+      setInvoiceTimeout(false);
+      const paid = await checkPaymentStatus();
+      if (paid) {
+         handleModalClose();
+         addToast('Received!', 'success');
+      } else {
+         setInvoiceTimeout(true);
+      }
    };
 
    return (
@@ -106,16 +139,27 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
             <Modal.Header>Tip With Bitcoin</Modal.Header>
             <Modal.Body>
                {fetchingInvoice ? (
-                  <>
-                     <Spinner />
-                     <p>Fetching invoice...</p>
-                  </>
+                  <div className='flex flex-col items-center justify-center space-y-3'>
+                     <Spinner size='lg' />
+                     <p className='text-black'>Getting invoice...</p>
+                  </div>
                ) : invoice !== '' ? (
                   <div className='flex flex-col items-center justify-center space-y-4'>
                      <QRCode value={invoice} size={256} />
                      <ClipboardButton toCopy={invoice} toShow='Copy' />
                      <div className='text-black'>
-                        <Spinner /> Waiting for payment...
+                        {invoiceTimeout ? (
+                           <div className='flex flex-col items-center justify-center space-y-4'>
+                              <p>Timed out waiting for payment...</p>
+                              <button className='underline' onClick={handleCheckAgain}>
+                                 Check again
+                              </button>
+                           </div>
+                        ) : (
+                           <div>
+                              <Spinner /> Waiting for payment...
+                           </div>
+                        )}
                      </div>
                   </div>
                ) : (
