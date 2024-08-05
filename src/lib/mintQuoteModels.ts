@@ -6,6 +6,7 @@ export const createMintQuote = async (
    request: string,
    pubkey: string,
    keysetId: string,
+   amountUnit?: number,
 ) => {
    const { amount, expiry } = getAmountAndExpiryFromInvoice(request);
 
@@ -14,7 +15,7 @@ export const createMintQuote = async (
          id: quoteId,
          request,
          pubkey,
-         amount,
+         amount: amountUnit ? amountUnit : amount, // this is a hack to get the amount in the correct unit
          expiryUnix: expiry,
          paid: false,
          mintKeysetId: keysetId,

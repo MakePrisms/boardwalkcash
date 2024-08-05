@@ -34,7 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             parseFloat(amount as string),
          );
 
-         await createMintQuote(quote, invoice, user.pubkey, wallet.keys.id);
+         await createMintQuote(
+            quote,
+            invoice,
+            user.pubkey,
+            wallet.keys.id,
+            parseFloat(amount as string),
+         );
 
          axios.post(
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}?isTip=true`,
