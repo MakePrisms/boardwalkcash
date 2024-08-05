@@ -1,6 +1,8 @@
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { useToast } from '@/hooks/util/useToast';
 import { EcashTransaction, TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
+import { isTokenSpent } from '@/utils/cashu';
 import { Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Spinner } from 'flowbite-react';
 import { useState } from 'react';
@@ -14,6 +16,7 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
    const [claiming, setClaiming] = useState(false);
    const { claimToken } = useCashu();
    const dispatch = useAppDispatch();
+   const { addToast } = useToast();
    const handleClaim = async () => {
       const privkey = window.localStorage.getItem('privkey');
       if (!privkey) {
@@ -37,8 +40,15 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
                   } as EcashTransaction,
                }),
             );
+         } else {
+            const isSpent = await isTokenSpent(token);
+            if (isSpent) {
+               addToast('Already claimed', 'error');
+               clearNotification();
+            }
          }
       } catch (e) {
+         console.error('ERROR CLAIMING TOKEN', e);
       } finally {
          setClaiming(false);
       }

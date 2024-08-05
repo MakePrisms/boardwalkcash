@@ -161,15 +161,6 @@ export const useCashu = () => {
                return success;
             }
          }
-         // need to swap for proofs that are not locked before melting
-         if (opts.privkey) {
-            try {
-               proofsToMelt = await unlockProofs(from, proofsToMelt);
-            } catch (e) {
-               toastSwapError(e);
-               return success;
-            }
-         }
 
          const totalProofAmount = proofsToMelt.reduce((acc, p) => acc + p.amount, 0);
 
