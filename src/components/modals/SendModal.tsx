@@ -14,6 +14,8 @@ import { UserIcon } from '@heroicons/react/20/solid';
 import ContactsModal from './ContactsModal/ContactsModal';
 import { PublicContact } from '@/types';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
+import GiftIcon from '../icons/GiftIcon';
+import GiftModal from '../eGifts/GiftModal';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -39,6 +41,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
    const { sendTokenAsNotification } = useNotifications();
+   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -218,6 +221,12 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                         >
                            <UserIcon className='w-6 h-6 text-gray-500' />
                         </button>
+                        <button
+                           className='p-2 rounded-full'
+                           onClick={() => setIsGiftModalOpen(true)}
+                        >
+                           <GiftIcon />
+                        </button>
                      </div>
                      <Button color='info' onClick={handleInputSubmit}>
                         Continue
@@ -298,6 +307,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             onSelectContact={handleSendToUser}
             mode='select'
          />
+         <GiftModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} />
       </>
    );
 };
