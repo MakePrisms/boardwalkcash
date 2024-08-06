@@ -181,7 +181,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
    useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
-   if (!user.pubkey) return null;
+   // if (!user.pubkey) return null;
 
    return (
       <>
