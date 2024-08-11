@@ -5,20 +5,27 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
 import { HttpResponseError, getInvoiceForTip, getTipStatus } from '@/utils/appApiRequests';
 import { useForm } from 'react-hook-form';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+import { formatCents, formatSats } from '@/utils/formatting';
 
 interface LightningTipButtonProps {
    userPubkey: string;
+   className?: string;
 }
 
 interface TipFormData {
    amount: number;
 }
 
-const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
+const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) => {
    const [showLightningTipModal, setShowLightningTipModal] = useState(false);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [invoice, setInvoice] = useState('');
+   const [amountData, setAmountData] = useState<{
+      amountUsdCents: number;
+      amountSats: number;
+   } | null>(null);
    const [quoteId, setQuoteId] = useState('');
    const {
       register,
@@ -27,6 +34,7 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
       reset: resetForm,
    } = useForm<TipFormData>();
    const { addToast } = useToast();
+   const { unitToSats } = useExchangeRate();
 
    const handleModalClose = () => {
       setFetchingInvoice(false);
@@ -61,6 +69,9 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
       }
 
       const amountUsdCents = parseFloat(Number(amount).toFixed(2)) * 100;
+      const amountSats = await unitToSats(amountUsdCents, 'usd');
+
+      setAmountData({ amountUsdCents, amountSats });
 
       console.log('amountUsdCents', amountUsdCents);
 
@@ -131,12 +142,14 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
 
    return (
       <>
-         <Button className='btn-bg-blend' onClick={() => setShowLightningTipModal(true)}>
-            {' '}
-            Tip{' '}
+         <Button
+            className={`btn-bg-blend ${className}`}
+            onClick={() => setShowLightningTipModal(true)}
+         >
+            eTip
          </Button>
          <Modal show={showLightningTipModal} size='lg' onClose={handleModalClose}>
-            <Modal.Header>Tip With Bitcoin</Modal.Header>
+            <Modal.Header>Scan with any Bitcoin Lightning wallet</Modal.Header>
             <Modal.Body>
                {fetchingInvoice ? (
                   <div className='flex flex-col items-center justify-center space-y-3'>
@@ -145,11 +158,20 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
                   </div>
                ) : invoice !== '' ? (
                   <div className='flex flex-col items-center justify-center space-y-4'>
+                     {amountData && (
+                        <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
+                           <div className='flex items-center justify-center space-x-5 text-black'>
+                              <div>{formatCents(amountData.amountUsdCents)}</div>
+                              <div>|</div>
+                              <div>{formatSats(amountData.amountSats)}</div>
+                           </div>
+                        </div>
+                     )}
                      <QRCode value={invoice} size={256} />
-                     <ClipboardButton toCopy={invoice} toShow='Copy' />
+                     <ClipboardButton toCopy={invoice} toShow='Copy' className='btn-primary' />
                      <div className='text-black'>
                         {invoiceTimeout ? (
-                           <div className='flex flex-col items-center justify-center space-y-4'>
+                           <div className='flex flex-col items-center justify-center text-center space-y-4'>
                               <p>Timed out waiting for payment...</p>
                               <button className='underline' onClick={handleCheckAgain}>
                                  Check again
@@ -176,7 +198,9 @@ const LightningTipButton = ({ userPubkey }: LightningTipButtonProps) => {
                         })}
                      />
                      {errors.amount && <span>{errors.amount.message}</span>}
-                     <Button type='submit'>Continue</Button>
+                     <Button type='submit' className='btn-primary'>
+                        Continue
+                     </Button>
                   </form>
                )}
             </Modal.Body>
