@@ -103,9 +103,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
 
             let created;
+            let token: string | undefined;
             if (isTip) {
                // if its a tip, send as a notification
-               const token = getEncodedToken({ token: [{ proofs, mint: wallet.mint.mintUrl }] });
+               token = getEncodedToken({ token: [{ proofs, mint: wallet.mint.mintUrl }] });
                created = await createNotification(pubkey, NotificationType.TIP, token);
             } else {
                created = await createManyProofs(proofsPayload);
@@ -117,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                return;
             }
 
-            await updateMintQuote(slug, { paid: true });
+            await updateMintQuote(slug, { paid: true, token });
 
             !isTip && (await updateUser(pubkey, { receiving: false }));
 

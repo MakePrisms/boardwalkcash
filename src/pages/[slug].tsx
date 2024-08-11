@@ -152,7 +152,7 @@ const UserProfilePage = () => {
                   )}
                </div>
                <div className='w-full flex justify-center'>
-                  <LightningTipButton userPubkey={user.pubkey} className='w-40' />
+                  <LightningTipButton contact={user} className='w-40' />
                </div>
             </div>
          </main>

@@ -26,6 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({
          paid: mintQuote.paid,
          quoteId: mintQuote.id,
+         token: mintQuote.token,
       } as LightningTipStatusResponse);
    } catch (error) {
       console.error('Error fetching mint quote status:', error);

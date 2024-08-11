@@ -7,9 +7,11 @@ import { HttpResponseError, getInvoiceForTip, getTipStatus } from '@/utils/appAp
 import { useForm } from 'react-hook-form';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { formatCents, formatSats } from '@/utils/formatting';
+import SendEcashModalBody from '../modals/SendEcashModalBody';
+import { PublicContact } from '@/types';
 
 interface LightningTipButtonProps {
-   userPubkey: string;
+   contact: PublicContact;
    className?: string;
 }
 
@@ -17,16 +19,18 @@ interface TipFormData {
    amount: number;
 }
 
-const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) => {
+const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => {
    const [showLightningTipModal, setShowLightningTipModal] = useState(false);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [invoice, setInvoice] = useState('');
+   const [token, setToken] = useState('');
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
    const [quoteId, setQuoteId] = useState('');
+   const [showTokenModal, setShowTokenModal] = useState(false);
    const {
       register,
       handleSubmit,
@@ -82,7 +86,7 @@ const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) 
       setFetchingInvoice(true);
 
       try {
-         const { checkingId, invoice } = await getInvoiceForTip(userPubkey, amountCents);
+         const { checkingId, invoice } = await getInvoiceForTip(contact.pubkey, amountCents);
 
          setInvoice(invoice);
          setFetchingInvoice(false);
@@ -101,7 +105,11 @@ const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) 
          checkingId = quoteId;
       }
       try {
-         return (await getTipStatus(checkingId)).paid;
+         const statusResponse = await getTipStatus(checkingId);
+         if (statusResponse.token) {
+            setToken(statusResponse.token);
+         }
+         return statusResponse.paid;
       } catch (error) {
          console.error('Error fetching tip status', error);
          return false;
@@ -117,6 +125,7 @@ const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) 
             handleModalClose();
             clearInterval(interval);
             addToast('Received!', 'success');
+            setShowTokenModal(true);
          }
          if (attempts >= maxAttempts) {
             clearInterval(interval);
@@ -204,6 +213,10 @@ const LightningTipButton = ({ userPubkey, className }: LightningTipButtonProps) 
                   </form>
                )}
             </Modal.Body>
+         </Modal>
+         <Modal show={showTokenModal} onClose={() => setShowTokenModal(false)}>
+            <Modal.Header>eTip for {contact.username}</Modal.Header>
+            <SendEcashModalBody token={token} onClose={() => setShowTokenModal(false)} />
          </Modal>
       </>
    );

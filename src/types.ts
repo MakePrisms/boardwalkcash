@@ -147,6 +147,7 @@ export type LightningTipResponse = {
 export type LightningTipStatusResponse = {
    paid: boolean;
    quoteId: string;
+   token?: string;
 };
 
 export type TokenNotificationData = {
