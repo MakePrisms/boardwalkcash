@@ -1,14 +1,14 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import { useToast } from '@/hooks/util/useToast';
-import { ContactData } from '@/lib/userModels';
 import { PublicContact } from '@/types';
 import { Button } from 'flowbite-react';
-import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode.react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import { useAppDispatch } from '@/redux/store';
+import { initializeUser } from '@/redux/slices/UserSlice';
 
 const UserProfilePage = () => {
    const [boardwalkInitialized, setBoardwalkInitialized] = React.useState(false);
@@ -17,12 +17,13 @@ const UserProfilePage = () => {
    const [isLoaded, setIsLoaded] = React.useState(false);
    const [showAddContact, setShowAddContact] = React.useState(false);
    const [addingContact, setAddingContact] = React.useState(false);
-   const { addContact } = useContacts();
+   const { addContact, isContactAdded } = useContacts();
+   const dispatch = useAppDispatch();
 
    const router = useRouter();
    const { addToast } = useToast();
 
-   React.useEffect(() => {
+   useEffect(() => {
       const username = router.query.slug as string;
 
       if (!username) {
@@ -34,27 +35,36 @@ const UserProfilePage = () => {
          if (res.ok) {
             const user = await res.json();
             setUser(user);
+            return user;
          } else {
             if (res.status === 404) {
                console.error('User not found', username);
                router.push('/404/user');
             }
+            return null;
          }
       };
 
-      const isBoardwalkInitialized = () => {
+      const isBoardwalkInitialized = async () => {
          const localPubkey = window.localStorage.getItem('pubkey');
 
          if (localPubkey) {
             setBoardwalkInitialized(true);
             setShowAddContact(true);
             setLocalPubkey(localPubkey);
+            await dispatch(initializeUser());
+            return true;
          }
+         return false;
       };
 
       const loadState = async () => {
-         await fetchUser();
-         isBoardwalkInitialized();
+         const user = await fetchUser();
+         const isInitialized = await isBoardwalkInitialized();
+
+         if (isInitialized && isContactAdded({ pubkey: user.pubkey })) {
+            setShowAddContact(false);
+         }
 
          setIsLoaded(true);
       };
@@ -105,33 +115,45 @@ const UserProfilePage = () => {
             className='flex flex-col items-center justify-center mx-auto space-y-7'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Button
-               color={'secondary'}
-               className='absolute top-4 right-4 md:right-8 md:top-8 btn-bg-blend'
-            >
-               {boardwalkInitialized ? (
-                  <Link className='' href='/wallet'>
-                     Go to Boardwalk
-                  </Link>
-               ) : (
-                  <Link className='' href='/setup'>
-                     Get Boardwalk
-                  </Link>
-               )}
-            </Button>
+            <div className='absolute flex top-4 md:top-8 justify-end w-full px-4'>
+               <Button className=' btn-bg-blend'>
+                  {boardwalkInitialized ? (
+                     <Link className='' href='/wallet'>
+                        Go to Boardwalk
+                     </Link>
+                  ) : (
+                     <Link className='' href='/setup'>
+                        Get Boardwalk
+                     </Link>
+                  )}
+               </Button>
+            </div>
             <h1 className='text-3xl'>{user.username}</h1>
             <QRCode value={`${window.location.href}`} size={128} />
-            <div className='flex flex-row items-center space-x-6'>
-               <ClipboardButton toCopy={user.username!} toShow='Username' className='btn-primary' />
-               {showAddContact && (
-                  <Button
-                     className='btn-primary'
-                     isProcessing={addingContact}
-                     onClick={handleAddContact}
-                  >
-                     Add Contact
-                  </Button>
-               )}
+            <div className='flex flex-col items-center space-y-6 w-50 mx-auto justify-center'>
+               <div className='flex flex-row items-center space-x-6 w-full'>
+                  <div className='w-full'>
+                     <ClipboardButton
+                        toCopy={user.username!}
+                        toShow='Username'
+                        className='btn-primary w-full'
+                     />
+                  </div>
+                  {showAddContact && (
+                     <div className='w-full'>
+                        <Button
+                           className='btn-primary w-full'
+                           isProcessing={addingContact}
+                           onClick={handleAddContact}
+                        >
+                           Add Contact
+                        </Button>
+                     </div>
+                  )}
+               </div>
+               <div className='w-full flex justify-center'>
+                  <LightningTipButton userPubkey={user.pubkey} className='w-40' />
+               </div>
             </div>
          </main>
       </>
@@ -140,6 +162,7 @@ const UserProfilePage = () => {
 
 import { GetServerSideProps } from 'next';
 import { findContactByUsername } from '@/lib/contactModels';
+import LightningTipButton from '@/components/buttons/LightningTipButton';
 
 export const getServerSideProps: GetServerSideProps = async context => {
    const { slug } = context.params || {};

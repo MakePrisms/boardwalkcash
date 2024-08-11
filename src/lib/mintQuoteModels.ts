@@ -6,6 +6,7 @@ export const createMintQuote = async (
    request: string,
    pubkey: string,
    keysetId: string,
+   amountUnit?: number,
 ) => {
    const { amount, expiry } = getAmountAndExpiryFromInvoice(request);
 
@@ -14,7 +15,7 @@ export const createMintQuote = async (
          id: quoteId,
          request,
          pubkey,
-         amount,
+         amount: amountUnit ? amountUnit : amount, // this is a hack to get the amount in the correct unit
          expiryUnix: expiry,
          paid: false,
          mintKeysetId: keysetId,
@@ -50,6 +51,18 @@ export const updateMintQuote = async (quoteId: string, data: { paid: boolean }) 
          id: quoteId,
       },
       data,
+   });
+   return quote;
+};
+
+export const getMintQuote = async (quoteId: string) => {
+   const quote = await prisma.mintQuote.findUnique({
+      where: {
+         id: quoteId,
+      },
+      include: {
+         mintKeyset: true,
+      },
    });
    return quote;
 };
