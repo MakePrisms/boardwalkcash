@@ -176,7 +176,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
          case 'invoice':
             return (
                <div className='flex flex-col items-center justify-center space-y-4'>
-                  <p className='text-black'>Scan with any Bitcoin Lightning wallet</p>
+                  <p className='text-black'>Scan with any Lightning wallet</p>
                   {amountData && (
                      <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
                         <div className='flex items-center justify-center space-x-5 text-black'>
@@ -218,7 +218,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
    return (
       <>
          <Button
-            className={`btn-bg-blend ${className}`}
+            className={`etip-button ${className}`}
             onClick={() => setShowLightningTipModal(true)}
          >
             eTip

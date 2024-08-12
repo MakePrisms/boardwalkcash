@@ -150,9 +150,25 @@ body {
 }
 
 .btn-bg-blend {
-   @apply hover:bg-[#1f3473] bg-[#1E3A8A] text-white border-none hover:border-none hover:outline-none;
+   @apply bg-[#1E3A8A] text-white border-none;
+}
+
+.btn-bg-blend:hover {
+   background-color: #1f3473 !important;
+   border: none !important;
+   outline: none !important;
 }
 
 .btn-notification {
    @apply underline text-sm;
+}
+
+.etip-button {
+   @apply bg-[#4f91c8] text-white border-none;
+}
+
+.etip-button:hover {
+   background-color: #1e3a8a !important;
+   border: none !important;
+   outline: none !important;
 }
