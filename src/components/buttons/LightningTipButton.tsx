@@ -56,7 +56,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
       const { amount } = data;
 
       const amountUsdCents = parseFloat(Number(amount).toFixed(2)) * 100;
-      const amountSats = await unitToSats(amountUsdCents, 'usd');
+      const amountSats = await unitToSats(amount, 'usd');
 
       setAmountData({ amountUsdCents, amountSats });
 
