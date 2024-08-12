@@ -67,6 +67,7 @@ model MintQuote {
   pubkey       String
   mintKeyset   MintKeyset @relation(fields: [mintKeysetId], references: [id])
   mintKeysetId String
+  token        String? // encoded token so that frontend can display it
 }
 
 model Mint {

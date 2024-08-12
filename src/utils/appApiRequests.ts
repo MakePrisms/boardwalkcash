@@ -7,6 +7,7 @@ import { calculateSha256 } from './crypto';
 import { UserWithContacts } from '@/pages/api/users/[slug]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
+import { LightningTipResponse, LightningTipStatusResponse } from '@/types';
 
 export class HttpResponseError extends Error {
    status: number;
@@ -40,6 +41,21 @@ const generateNip98Header = async (
    await event.sign(new NDKPrivateKeySigner(privkey));
    const encodedEvent = btoa(JSON.stringify(event.rawEvent()));
    return `Nostr ${encodedEvent}`;
+};
+
+export const request = async <T>(url: string, method: string, body?: any): Promise<T> => {
+   const response = await fetch(url, {
+      method,
+      body: JSON.stringify(body),
+   });
+   if (!response.ok) {
+      throw new HttpResponseError(response.statusText, response.status);
+   } else if (response.status === 204) {
+      // no content breaks the json parsing
+      return undefined as unknown as T;
+   } else {
+      return response.json();
+   }
 };
 
 export const authenticatedRequest = async <T>(
@@ -126,6 +142,22 @@ export const deleteProofById = async (proofId: number) => {
 export const getProofsFromServer = async (pubkey: string) => {
    return await authenticatedRequest<{ proofs: Proof[]; receiving: boolean }>(
       `/api/proofs/${pubkey}`,
+      'GET',
+      undefined,
+   );
+};
+
+export const getInvoiceForTip = async (pubkey: string, amount: number) => {
+   return await request<LightningTipResponse>(
+      `/api/tip/${pubkey}?amount=${amount}&unit=usd`,
+      'GET',
+      undefined,
+   );
+};
+
+export const getTipStatus = async (quoteId: string) => {
+   return await request<LightningTipStatusResponse>(
+      `/api/tip/status?quoteId=${quoteId}`,
       'GET',
       undefined,
    );

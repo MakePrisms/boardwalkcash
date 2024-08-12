@@ -1,10 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, getEncodedToken } from '@cashu/cashu-ts';
 import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
-import { ProofData } from '@/types';
+import { NotificationType, ProofData } from '@/types';
 import { findMintByUrl } from '@/lib/mintModels';
+import { createNotification } from '@/lib/notificationModels';
 
 interface PollingRequest {
    pubkey: string;
@@ -22,6 +23,7 @@ export type PollingApiResponse = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    const { mintUrl, keysetId } = req.body;
+   const isTip = req.query.isTip === 'true';
 
    if (!mintUrl) {
       res.status(400).send({ success: false, message: 'No mint URL provided.' });
@@ -61,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { pubkey, amount }: PollingRequest = req.body;
 
    // Set user's "receiving" to true at the start of polling
-   await updateUser(pubkey, { receiving: true });
+   !isTip && (await updateUser(pubkey, { receiving: true }));
 
    try {
       let paymentConfirmed = false;
@@ -71,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const user = await findUserByPubkey(pubkey);
       if (!user) {
-         await updateUser(pubkey, { receiving: false });
+         !isTip && (await updateUser(pubkey, { receiving: false }));
          res.status(404).send({ success: false, message: 'User not found.' });
          return;
       }
@@ -80,11 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          console.log('polling', attempts);
 
          if (attempts === 10) {
-            await updateUser(pubkey, { receiving: false });
+            !isTip && (await updateUser(pubkey, { receiving: false }));
          }
 
          try {
-            const { proofs } = await wallet.mintTokens(amount, slug, { keysetId: keyset.id });
+            const { proofs } = await wallet.mintTokens(amount, slug, {
+               keysetId: keyset.id,
+               pubkey: isTip ? `02${pubkey}` : undefined, // if its a tip, we should lock the tokens. TOOD: always lock to pubkey, this will just require that the frontend unlocks them when polling to updateProofsAndBalance
+            });
 
             let proofsPayload: ProofData[] = proofs.map(proof => {
                return {
@@ -97,19 +102,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                };
             });
 
-            const created = await createManyProofs(proofsPayload);
-
-            console.log('Proofs created:', created);
+            let created;
+            let token: string | undefined;
+            if (isTip) {
+               // if its a tip, send as a notification
+               token = getEncodedToken({ token: [{ proofs, mint: wallet.mint.mintUrl }] });
+               created = await createNotification(pubkey, NotificationType.TIP, token);
+            } else {
+               created = await createManyProofs(proofsPayload);
+            }
 
             if (!created) {
-               await updateUser(pubkey, { receiving: false });
+               !isTip && (await updateUser(pubkey, { receiving: false }));
                res.status(500).send({ success: false, message: 'Failed to create proofs.' });
                return;
             }
 
-            await updateMintQuote(slug, { paid: true });
+            await updateMintQuote(slug, { paid: true, token });
 
-            await updateUser(pubkey, { receiving: false });
+            !isTip && (await updateUser(pubkey, { receiving: false }));
 
             res.status(200).send({
                success: true,
@@ -123,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                attempts++;
                await new Promise(resolve => setTimeout(resolve, interval));
             } else {
-               await updateUser(pubkey, { receiving: false });
+               !isTip && (await updateUser(pubkey, { receiving: false }));
                throw e;
             }
          }
