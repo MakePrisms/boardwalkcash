@@ -95,3 +95,10 @@ model Notification {
   user       User     @relation(fields: [userPubkey], references: [pubkey])
   createdAt  DateTime @default(now())
 }
+
+model Token {
+  id         String    @id
+  token      String
+  createdAt  DateTime  @default(now())
+  redeemedAt DateTime?
+}
