@@ -292,7 +292,7 @@ export default function Home() {
             <div className='flex justify-between items-center mt-3'>
                {' '}
                <div></div> {/* Empty div for spacing */}
-               <Button isProcessing={addingMint} type='submit'>
+               <Button isProcessing={addingMint} type='submit' className='btn-primary'>
                   Continue
                </Button>
             </div>

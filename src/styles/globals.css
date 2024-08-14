@@ -146,7 +146,24 @@ body {
 }
 
 .btn-primary {
-   @apply bg-cyan-teal text-white border-cyan-teal  hover:border-none hover:outline-none;
+   @apply bg-cyan-teal text-white border-cyan-teal border-none outline-none;
+}
+
+.btn-primary:hover {
+   background-color: #1e3a8a !important;
+}
+button:focus,
+button:active,
+button:focus-visible {
+   border: none !important;
+   outline: none !important;
+   box-shadow: none !important;
+}
+
+/* Override Flowbite's focus styles */
+button:focus-visible {
+   outline: none !important;
+   box-shadow: none !important;
 }
 
 .btn-bg-blend {

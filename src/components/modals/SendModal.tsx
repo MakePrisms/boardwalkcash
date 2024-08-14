@@ -219,7 +219,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                            <UserIcon className='w-6 h-6 text-gray-500' />
                         </button>
                      </div>
-                     <Button color='info' onClick={handleInputSubmit}>
+                     <Button className='btn-primary' onClick={handleInputSubmit}>
                         Continue
                      </Button>
                   </div>
@@ -240,7 +240,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
                      </Button>
-                     <Button isProcessing={isProcessing} color='info' onClick={handleAmountSubmit}>
+                     <Button
+                        className='btn-primary'
+                        isProcessing={isProcessing}
+                        onClick={handleAmountSubmit}
+                     >
                         Continue
                      </Button>
                   </div>
@@ -261,7 +265,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
                      </Button>
-                     <Button color='success' onClick={handlePayInvoice}>
+                     <Button className='btn-primary' onClick={handlePayInvoice}>
                         Pay
                      </Button>
                   </div>

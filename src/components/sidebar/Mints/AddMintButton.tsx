@@ -87,7 +87,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
             />
             <Button
                isProcessing={fetchingMint}
-               className='max-w-fit self-end bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
+               className='max-w-fit self-end btn-primary'
                onClick={() => handleAddMint()}
             >
                Add

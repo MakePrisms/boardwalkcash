@@ -35,7 +35,7 @@ const SwapToMainButton = ({
                <Button onClick={() => setSwapToMainOpen(false)} color='failure'>
                   Cancel
                </Button>
-               <Button onClick={handleSwapToMain} color='success'>
+               <Button onClick={handleSwapToMain} className='btn-primary'>
                   Confirm
                </Button>
             </div>

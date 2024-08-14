@@ -192,7 +192,7 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
             <Balance balance={balance} />
             <ActivityIndicator />
             <div className=' flex flex-col justify-center py-8 w-full'>
-               <div className='flex flex-row justify-center mx-auto'>
+               <div className='flex flex-row justify-center mx-auto space-x-9'>
                   <Receive />
                   <Send />
                </div>
