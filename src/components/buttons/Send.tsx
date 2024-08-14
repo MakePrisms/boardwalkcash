@@ -8,12 +8,9 @@ const Send = () => {
 
    return (
       <>
-         <Button
-            onClick={() => setIsSendModalOpen(true)}
-            className='bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
-         >
+         <Button onClick={() => setIsSendModalOpen(true)} className='btn-primary'>
             <span className='text-lg'>&nbsp;&nbsp;Send&nbsp;</span>
-            <ArrowUpRightIcon className='ms-2 h-5 w-5' />
+            <ArrowUpRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
          <SendModal isOpen={isSendModalOpen} onClose={() => setIsSendModalOpen(false)} />
       </>

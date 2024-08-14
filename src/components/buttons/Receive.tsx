@@ -156,11 +156,9 @@ const Receive = () => {
 
    return (
       <>
-         <Button
-            onClick={() => setIsReceiveModalOpen(true)}
-            className='me-10 bg-cyan-teal text-white border-cyan-teal hover:bg-cyan-teal-dark hover:border-none hover:outline-none'
-         >
-            <span className='text-lg'>Receive</span> <ArrowDownRightIcon className='ms-2 h-5 w-5' />
+         <Button onClick={() => setIsReceiveModalOpen(true)} className='btn-primary'>
+            <span className='text-lg'>Receive</span>{' '}
+            <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
          <Modal show={isReceiveModalOpen} onClose={handleModalClose}>
             <Modal.Header>Receive</Modal.Header>
@@ -183,6 +181,7 @@ const Receive = () => {
                               toCopy={invoiceToPay}
                               toShow='Copy'
                               onClick={handleModalClose}
+                              className='btn-primary'
                            />
                         </div>
                      ) : (
@@ -198,7 +197,9 @@ const Receive = () => {
                               <div className='mb-3 md:mb-0'>
                                  <QRScannerButton onScan={setAmount} />
                               </div>
-                              <Button onClick={handleReceive}>Continue</Button>
+                              <Button className='btn-primary' onClick={handleReceive}>
+                                 Continue
+                              </Button>
                               {/* <Tooltip content='Copy lightning address'>
                                  <ClipboardButton
                                     onClick={handleModalClose}

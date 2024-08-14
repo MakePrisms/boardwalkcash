@@ -32,7 +32,7 @@ const SetMainButton = ({
                <Button onClick={() => setSetMainOpen(false)} color='failure'>
                   Cancel
                </Button>
-               <Button onClick={handleSetMain} color='success'>
+               <Button onClick={handleSetMain} className='btn-primary'>
                   Confirm
                </Button>
             </div>

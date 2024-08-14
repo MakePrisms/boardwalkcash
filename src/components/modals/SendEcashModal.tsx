@@ -62,7 +62,7 @@ export const SendEcashModal = ({ showModal, closeModal }: SendEcashModalProps) =
                 </Button> */}
                      <Button
                         // isProcessing={isFetchingInvoice}
-                        color='info'
+                        className='btn-primary'
                         onClick={handleSendEcash}
                      >
                         Continue

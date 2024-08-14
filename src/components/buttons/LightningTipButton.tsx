@@ -148,7 +148,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
       switch (currentPage) {
          case 'amount':
             return (
-               <form className='flex flex-col  space-y-4' onSubmit={handleSubmit(onAmountSubmit)}>
+               <form className='flex flex-col  space-y-6' onSubmit={handleSubmit(onAmountSubmit)}>
                   <TextInput
                      type='text'
                      inputMode='decimal'

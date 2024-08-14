@@ -78,8 +78,14 @@ const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
                         toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${token}`}
                         toShow={`Link`}
                         onClick={onClose}
+                        className='btn-primary'
                      />
-                     <ClipboardButton toCopy={`${token}`} toShow={`Token`} onClick={onClose} />
+                     <ClipboardButton
+                        toCopy={`${token}`}
+                        toShow={`Token`}
+                        onClick={onClose}
+                        className='btn-primary'
+                     />
                   </div>
                </>
             </div>
