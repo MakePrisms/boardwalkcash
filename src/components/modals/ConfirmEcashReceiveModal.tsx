@@ -1,6 +1,6 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
-import { Modal, Spinner } from 'flowbite-react';
+import { Button, Modal, Spinner } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
@@ -12,6 +12,7 @@ import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
+import ClipboardButton from '../buttons/utility/ClipboardButton';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -323,15 +324,15 @@ const ConfirmEcashReceiveModal = ({
                   </div>
 
                   {!lockedTo || lockedTo === '02' + user.pubkey ? (
-                     <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                        <button
+                     <div className='flex flex-col space-y-1  md:justify-center justify-center items-center'>
+                        <Button
                            onClick={handleSwapToMain}
-                           className='mr-3 underline text-lg mb-3 md:mb-0'
+                           className='btn-primary mr-3 mb-3 md:mb-0 w-40'
                         >
                            Claim
-                        </button>
+                        </Button>
                         <button
-                           className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
+                           className={`underline hover:cursor-pointer text-lg ${!fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
                            onClick={handleAddMint}
                         >
                            {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
@@ -356,6 +357,13 @@ const ConfirmEcashReceiveModal = ({
                         )}
                      </div>
                   )}
+               </div>
+               <div className='flex justify-center items-center mt-4'>
+                  <ClipboardButton
+                     toShow='Token'
+                     toCopy={getEncodedToken(token)}
+                     className='etip-button '
+                  />
                </div>
             </Modal.Body>
          </Modal>

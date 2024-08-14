@@ -187,3 +187,15 @@ export const isContactNotification = (
    }
    return false;
 };
+
+export type PostTokenRequest = {
+   token: string;
+};
+
+export type PostTokenResponse = {
+   txid: string;
+};
+
+export type GetTokenResponse = {
+   token: string;
+};

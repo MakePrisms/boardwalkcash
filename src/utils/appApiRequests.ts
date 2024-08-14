@@ -7,7 +7,12 @@ import { calculateSha256 } from './crypto';
 import { UserWithContacts } from '@/pages/api/users/[slug]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
-import { LightningTipResponse, LightningTipStatusResponse } from '@/types';
+import {
+   LightningTipResponse,
+   LightningTipStatusResponse,
+   PostTokenRequest,
+   PostTokenResponse,
+} from '@/types';
 
 export class HttpResponseError extends Error {
    status: number;
@@ -47,6 +52,9 @@ export const request = async <T>(url: string, method: string, body?: any): Promi
    const response = await fetch(url, {
       method,
       body: JSON.stringify(body),
+      headers: {
+         'Content-Type': 'application/json',
+      },
    });
    if (!response.ok) {
       throw new HttpResponseError(response.statusText, response.status);
@@ -161,4 +169,10 @@ export const getTipStatus = async (quoteId: string) => {
       'GET',
       undefined,
    );
+};
+
+export const postTokenToDb = async (token: string) => {
+   console.log('posting token to db', token);
+   return (await request<PostTokenResponse>(`/api/token`, 'POST', { token } as PostTokenRequest))
+      .txid;
 };

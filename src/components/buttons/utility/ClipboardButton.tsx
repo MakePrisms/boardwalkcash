@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
 import { Button } from 'flowbite-react';
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon } from '@heroicons/react/20/solid';
@@ -15,7 +15,7 @@ const ClipboardButton: React.FC<Props> = ({ toCopy, toShow, onClick, className =
 
    const { addToast } = useToast();
 
-   const handleCopy = () => {
+   const handleCopy = useCallback(() => {
       navigator.clipboard
          .writeText(toCopy)
          .then(() => {
@@ -34,7 +34,7 @@ const ClipboardButton: React.FC<Props> = ({ toCopy, toShow, onClick, className =
       if (onClick) {
          onClick();
       }
-   };
+   }, [toCopy]);
 
    return (
       <Button onClick={handleCopy} className={className}>

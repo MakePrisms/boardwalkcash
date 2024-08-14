@@ -14,6 +14,7 @@ import { UserIcon } from '@heroicons/react/20/solid';
 import ContactsModal from './ContactsModal/ContactsModal';
 import { PublicContact } from '@/types';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
+import { postTokenToDb } from '@/utils/appApiRequests';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -38,6 +39,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [ecashToken, setEcashToken] = useState<string | undefined>();
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
+   const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
    const { sendTokenAsNotification } = useNotifications();
 
    const { addToast } = useToast();
@@ -131,6 +133,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             // TODO: right now we don't support generic p2pk lock, but if lockTo is not a contact,
             // we should not do this.
             await sendTokenAsNotification(token);
+            const txid = await postTokenToDb(token);
+            setTxid(txid);
          }
       } catch (error) {
          console.error(error);
@@ -273,7 +277,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             );
 
          case SendFlow.Ecash:
-            return <SendEcashModalBody token={ecashToken} onClose={resetModalState} />;
+            return <SendEcashModalBody token={ecashToken} txid={txid} onClose={resetModalState} />;
 
          default:
             return null;

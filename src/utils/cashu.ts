@@ -6,6 +6,9 @@ import {
    Token,
    getDecodedToken,
 } from '@cashu/cashu-ts';
+import { hashToCurve } from '@cashu/crypto/modules/common';
+import { bytesToHex } from '@noble/curves/abstract/utils';
+import { sha256 } from '@noble/hashes/sha256';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -240,3 +243,29 @@ export const initializeUsdWallet = async (mintUrl: string) => {
    const wallet = new CashuWallet(mint, { unit: 'usd', keys: usdKeyset });
    return wallet;
 };
+
+export const getProofsFromToken = (token: Token | string) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   return decodedToken.token[0].proofs;
+};
+
+export function computeTxId(tx: Array<Proof> | string | Token): string {
+   const proofs: Array<Proof> = !Array.isArray(tx) ? getProofsFromToken(tx) : tx;
+   const enc = new TextEncoder();
+   const Ys = proofs.map(p => hashToCurve(enc.encode(p.secret)).toRawBytes(true));
+   Ys.sort((a, b) => {
+      for (let i = 0; i < a.length; i++) {
+         if (a[i] !== b[i]) {
+            return a[i] - b[i]; // descending order
+         }
+      }
+      return 0;
+   });
+   const hasher = sha256.create();
+   // concatenate Ys and hash
+   for (const y of Ys) {
+      hasher.update(y);
+   }
+   const hash = hasher.digest();
+   return bytesToHex(hash);
+}
