@@ -13,6 +13,10 @@ const nextConfig = {
         source: '/.well-known/lnurlp/:slug',
         destination: '/api/lnurlp/:slug',
       },
+      {
+        source: "/.well-known/nostr.json",
+        destination: "/api/nostr/nip05",
+      },
       // ... other rewrites if necessary
     ];
   },
