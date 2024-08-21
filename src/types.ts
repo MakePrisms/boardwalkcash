@@ -7,7 +7,7 @@ import {
    ApiError as CashuApiError,
    Token,
 } from '@cashu/cashu-ts';
-import { Notification } from '@prisma/client';
+import { Gift, Notification, Token as TokenPrisma } from '@prisma/client';
 
 export interface ProofData {
    proofId: string;
@@ -109,12 +109,16 @@ export type TokenProps = {
 
    /** Whether or not the token is from the contact's default mint */
    isTrustedMint: boolean | null;
+
+   /** Gift asset */
+   gift?: GiftAsset;
 };
 
 export enum NotificationType {
    Token = 'token',
    NewContact = 'new-contact',
    TIP = 'tip',
+   Gift = 'gift', // TODO: add this to notifications
 }
 
 export type MarkNotificationsAsReadRequest = {
@@ -131,12 +135,16 @@ export type DeleteNotificationsResponse = {
    ids: number[];
 };
 
-export type GetNotificationResponse = Notification & { contact: PublicContact };
+export type GetNotificationResponse = Notification & {
+   contact: PublicContact;
+   token: TokenPrisma | null;
+};
 
 export type GetNotificationsResponse = Array<GetNotificationResponse>;
 
 export type NotifyTokenReceivedRequest = {
    token: string;
+   txid?: string;
 };
 
 export type LightningTipResponse = {
@@ -157,6 +165,7 @@ export type TokenNotificationData = {
    isTip: boolean;
    timeAgo: string;
    tokenState: 'claimed' | 'unclaimed';
+   gift?: string;
 };
 
 export type ContactNotificationData = {
@@ -190,6 +199,7 @@ export const isContactNotification = (
 
 export type PostTokenRequest = {
    token: string;
+   gift?: string;
 };
 
 export type PostTokenResponse = {
@@ -198,4 +208,19 @@ export type PostTokenResponse = {
 
 export type GetTokenResponse = {
    token: string;
+   gift?: string;
 };
+
+export type GetAllGiftsResponse = {
+   gifts: Gift[];
+};
+
+export type GetGiftResponse = Gift;
+
+export interface GiftAsset {
+   amountCents: number;
+   name: string;
+   selectedSrc: string;
+   unselectedSrc: string;
+   description: string | null;
+}

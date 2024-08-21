@@ -8,6 +8,7 @@ import { UserWithContacts } from '@/pages/api/users/[slug]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
 import {
+   GetTokenResponse,
    LightningTipResponse,
    LightningTipStatusResponse,
    PostTokenRequest,
@@ -171,8 +172,13 @@ export const getTipStatus = async (quoteId: string) => {
    );
 };
 
-export const postTokenToDb = async (token: string) => {
+export const postTokenToDb = async (token: string, gift?: string) => {
    console.log('posting token to db', token);
-   return (await request<PostTokenResponse>(`/api/token`, 'POST', { token } as PostTokenRequest))
-      .txid;
+   return (
+      await request<PostTokenResponse>(`/api/token`, 'POST', { token, gift } as PostTokenRequest)
+   ).txid;
+};
+
+export const getTokenFromDb = async (txid: string) => {
+   return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
 };

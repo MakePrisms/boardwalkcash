@@ -29,17 +29,19 @@ const useNotifications = () => {
 
    const pubkey = useMemo(() => user.pubkey || '', [user]);
 
-   const getNotifications = useCallback(async () => {
+   const getNotifications = async (pubkey: string) => {
       const response = await authenticatedRequest<GetNotificationsResponse>(
          `/api/users/${pubkey}/notifications`,
          'GET',
          undefined,
       );
       return response;
-   }, [pubkey]);
+   };
 
    const loadNotifications = useCallback(async () => {
-      const allNotifications = await getNotifications();
+      if (!pubkey) return;
+      const allNotifications = await getNotifications(pubkey);
+      console.log('allNotifications', allNotifications);
       const newNotifications = allNotifications.filter(
          newNotification =>
             !notifications.some(
@@ -56,9 +58,10 @@ const useNotifications = () => {
    }, [getNotifications, notifications]);
 
    const sendTokenAsNotification = useCallback(
-      async (token: string) => {
+      async (token: string, txid?: string) => {
          await authenticatedRequest<unknown>(`/api/users/${pubkey}/notifications`, 'POST', {
             token,
+            txid,
          });
       },
       [pubkey],
@@ -125,6 +128,7 @@ const useNotifications = () => {
          throw new Error('Could not get raw token from notification');
       }
       const token = getDecodedToken(rawToken);
+      const gift = notification.token?.gift as string | undefined;
       return {
          token,
          rawToken,
@@ -132,6 +136,7 @@ const useNotifications = () => {
          isTip: notification.type === NotificationType.TIP,
          timeAgo: calculateTimeAgo(notification.createdAt),
          tokenState: 'unclaimed',
+         gift,
       };
    };
 

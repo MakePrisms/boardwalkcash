@@ -7,6 +7,8 @@
    /* --background-end-rgb: #0a1f44; */
    --background-start-rgb: #0f3470;
    --background-end-rgb: #0f3470;
+   --boardwalk-blue: #4f91c8;
+   --btn-bg-primary: #5a708a;
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -132,7 +134,7 @@ body {
    width: 10px;
    height: 10px;
    margin: 0 5px;
-   background-color: gray;
+   background-color: var(--btn-bg-primary);
    border-radius: 50%;
    cursor: pointer;
 }
@@ -149,9 +151,6 @@ body {
    @apply bg-cyan-teal text-white border-cyan-teal border-none outline-none;
 }
 
-.btn-primary:hover {
-   background-color: #1e3a8a !important;
-}
 button:focus,
 button:active,
 button:focus-visible {
@@ -170,12 +169,6 @@ button:focus-visible {
    @apply bg-[#1E3A8A] text-white border-none;
 }
 
-.btn-bg-blend:hover {
-   background-color: #1f3473 !important;
-   border: none !important;
-   outline: none !important;
-}
-
 .btn-notification {
    @apply underline text-sm;
 }
@@ -184,8 +177,38 @@ button:focus-visible {
    @apply bg-[#4f91c8] text-white border-none;
 }
 
+.xss-button {
+   font-size: xx-small !important;
+}
+
 .etip-button:hover {
-   background-color: #1e3a8a !important;
+   background-color: var(--btn-bg-primary) !important;
    border: none !important;
    outline: none !important;
+}
+
+.btn-bg-blend:hover {
+   border: none !important;
+   outline: none !important;
+}
+
+.btn-primary:hover {
+   background-color: var(--btn-bg-primary) !important;
+}
+
+@media (hover: hover) {
+   .etip-button:hover {
+      background-color: var(--btn-bg-primary) !important;
+      border: none !important;
+      outline: none !important;
+   }
+
+   .btn-bg-blend:hover {
+      border: none !important;
+      outline: none !important;
+   }
+
+   .btn-primary:hover {
+      background-color: var(--btn-bg-primary) !important;
+   }
 }

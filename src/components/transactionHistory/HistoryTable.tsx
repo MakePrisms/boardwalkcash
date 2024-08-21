@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import HistoryTableRow from './HistoryTableRow';
 import SendEcashModalBody from '../modals/SendEcashModalBody';
 import useContacts from '@/hooks/boardwalk/useContacts';
-import { PublicContact } from '@/types';
+import { PublicContact, GiftAsset } from '@/types';
 import { computeTxId } from '@/utils/cashu';
+import ViewGiftModal from '../eGifts/ViewGiftModal';
+import useGifts from '@/hooks/boardwalk/useGifts';
 
 const customTheme = {
    root: {
@@ -22,8 +24,30 @@ const HistoryTable: React.FC<{
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
    const [tokenLockedTo, setTokenLockedTo] = useState<PublicContact | null>(null);
    const [txid, setTxid] = useState<string | undefined>();
+   const [isViewGiftModalOpen, setIsViewGiftModalOpen] = useState(false);
+   const [selectedGift, setSelectedGift] = useState<GiftAsset | undefined>(undefined);
 
    const { fetchContact } = useContacts();
+   const { getGiftByIdentifier } = useGifts();
+
+   const closeViewGiftModal = () => {
+      setIsViewGiftModalOpen(false);
+   };
+
+   const openViewGiftModal = async (tx: EcashTransaction & { gift: string }) => {
+      setIsViewGiftModalOpen(true);
+      setIsSendModalOpen(false);
+      const gift = getGiftByIdentifier(tx.gift);
+      if (!gift) {
+         console.error('Gift not found:', tx.gift);
+         return;
+      }
+      setSelectedGift(gift);
+      if (tx.pubkey) {
+         const contact = await fetchContact(tx.pubkey?.slice(2));
+         setTokenLockedTo(contact);
+      }
+   };
 
    const openSendEcashModal = async (tx: EcashTransaction) => {
       if (tx.pubkey) {
@@ -49,7 +73,12 @@ const HistoryTable: React.FC<{
          <Table theme={customTheme} className='text-white'>
             <Table.Body>
                {history.map((tx: EcashTransaction | LightningTransaction, i) => (
-                  <HistoryTableRow key={i} tx={tx} openSendEcashModal={openSendEcashModal} />
+                  <HistoryTableRow
+                     key={i}
+                     tx={tx}
+                     openSendEcashModal={openSendEcashModal}
+                     openViewGiftModal={openViewGiftModal}
+                  />
                ))}
             </Table.Body>
          </Table>
@@ -59,6 +88,16 @@ const HistoryTable: React.FC<{
             </Modal.Header>
             <SendEcashModalBody token={lockedToken} onClose={closeSendEcashModal} txid={txid} />
          </Modal>
+         {selectedGift && txid && (
+            <ViewGiftModal
+               isOpen={isViewGiftModalOpen}
+               onClose={closeViewGiftModal}
+               stickerPath={selectedGift.selectedSrc}
+               selectedContact={tokenLockedTo}
+               amountCents={selectedGift.amountCents}
+               txid={txid}
+            />
+         )}
       </>
    );
 };

@@ -14,7 +14,7 @@ interface TokenNotificationProps {
 }
 
 const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) => {
-   const { token, contact, isTip, timeAgo, tokenState } = data;
+   const { token, contact, isTip, timeAgo, tokenState, gift } = data;
    const user = useSelector((state: RootState) => state.user);
    const selfContact = useMemo(() => user.contacts.find(c => c.pubkey === user.pubkey), [user]);
 
@@ -34,8 +34,18 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
       } else {
          firstPart = 'You received';
       }
+
+      const getArticle = (word: string) => {
+         return ['a', 'e', 'i', 'o', 'u'].includes(word.toLowerCase()[0]) ? 'an' : 'a';
+      };
+
+      if (gift) {
+         const giftName = gift;
+         const article = getArticle(giftName);
+         return `${firstPart} ${article} ${giftName} eGift`;
+      }
       return `${firstPart} ${formattedAmount}`;
-   }, [contact, amountCents, isTip]);
+   }, [contact, amountCents, isTip, gift]);
 
    const buttons = useMemo(() => {
       if (tokenState === 'claimed') {

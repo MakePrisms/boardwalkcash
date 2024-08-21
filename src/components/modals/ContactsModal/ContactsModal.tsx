@@ -45,18 +45,6 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
       }
    };
 
-   const onAddContactClicked = () => {
-      setAddingContact(true);
-   };
-
-   const onContactAdded = () => {
-      setAddingContact(false);
-   };
-
-   const onCancelAddContact = () => {
-      setAddingContact(false);
-   };
-
    useEffect(() => {
       if (addingContact) {
          setModalTitle('Add Contact');
@@ -70,15 +58,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    return (
       <Modal show={isOpen} onClose={onClose} size={'sm'}>
          <Modal.Header>{modalTitle}</Modal.Header>
-         {addingContact ? (
-            <AddContactModalBody onContactAdded={onContactAdded} onCancel={onCancelAddContact} />
-         ) : (
-            <ViewContactsModalBody
-               mode={mode}
-               onSelectContact={handleContactClick}
-               onAddContactClicked={onAddContactClicked}
-            />
-         )}
+         <ViewContactsModalBody mode={mode} onSelectContact={handleContactClick} />
       </Modal>
    );
 };

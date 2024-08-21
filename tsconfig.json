@@ -21,8 +21,8 @@
       "**/*.ts",
       "**/*.tsx",
       "global.d.ts",
-      "bolt11-decoder.d.ts"
-      // "src/scripts/getMetrics.js"
+      "bolt11-decoder.d.ts",
+      "src/pages/api/nostr/nip05.js"
    ],
    "exclude": ["node_modules"]
 }

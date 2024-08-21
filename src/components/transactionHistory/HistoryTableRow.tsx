@@ -17,11 +17,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
 import { useProofStorage } from '@/hooks/cashu/useProofStorage';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import GiftIcon from '../icons/GiftIcon';
 
 const HistoryTableRow: React.FC<{
    tx: Transaction;
    openSendEcashModal: (tx: EcashTransaction) => void;
-}> = ({ tx, openSendEcashModal }) => {
+   openViewGiftModal: (tx: EcashTransaction & { gift: string }) => void;
+}> = ({ tx, openSendEcashModal, openViewGiftModal }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -38,6 +40,9 @@ const HistoryTableRow: React.FC<{
       }
 
       if (isEcashTransaction(tx)) {
+         if (tx.gift) {
+            return <GiftIcon className='h-5 w-5' />;
+         }
          return <BanknotesIcon className='h-5 w-5' />;
       } else if (isLightningTransaction(tx)) {
          return <BoltIcon className='h-5 w-5' />;
@@ -138,12 +143,25 @@ const HistoryTableRow: React.FC<{
          handleSpentToken(tx);
          return;
       }
-      openSendEcashModal(tx);
+      if (tx.gift) {
+         openViewGiftModal(tx as EcashTransaction & { gift: string });
+      } else {
+         openSendEcashModal(tx);
+      }
    };
 
    const getStatusCell = useCallback(
       (tx: Transaction) => {
          if (tx.status === TxStatus.PENDING && isEcashTransaction(tx)) {
+            if (tx.gift) {
+               return (
+                  <div className='flex justify-center'>
+                     <button className='underline' onClick={() => handleLockedToken(tx)}>
+                        eGift
+                     </button>
+                  </div>
+               );
+            }
             if (tx.pubkey !== undefined && tx.pubkey !== user.pubkey) {
                return (
                   <div className='flex justify-center'>

@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
          const txid = computeTxId(proofs);
 
-         await createTokenInDb(token, txid);
+         await createTokenInDb(req.body, txid);
 
          return res.status(200).json({ txid } as PostTokenResponse);
       } catch (error: any) {
