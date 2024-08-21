@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { NotificationType } from '@/types';
-import { Notification, Prisma, Token } from '@prisma/client';
+import { Notification, Token } from '@prisma/client';
 
 /**
  *
