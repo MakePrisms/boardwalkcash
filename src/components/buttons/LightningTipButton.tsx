@@ -3,12 +3,13 @@ import QRCode from 'qrcode.react';
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
-import { HttpResponseError, getInvoiceForTip, getTipStatus } from '@/utils/appApiRequests';
+import { getInvoiceForTip, getTipStatus, postTokenToDb } from '@/utils/appApiRequests';
 import { Validate, useForm } from 'react-hook-form';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { formatCents, formatSats } from '@/utils/formatting';
 import SendEcashModalBody from '../modals/SendEcashModalBody';
 import { PublicContact } from '@/types';
+import { computeTxId } from '@/utils/cashu';
 
 interface LightningTipButtonProps {
    contact: PublicContact;
@@ -89,6 +90,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
          const statusResponse = await getTipStatus(checkingId);
          if (statusResponse.token) {
             setToken(statusResponse.token);
+            await postTokenToDb(statusResponse.token);
          }
          return statusResponse.paid;
       } catch (error) {
@@ -229,7 +231,11 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
          </Modal>
          <Modal show={showTokenModal} onClose={() => setShowTokenModal(false)}>
             <Modal.Header>eTip for {contact.username}</Modal.Header>
-            <SendEcashModalBody token={token} onClose={() => setShowTokenModal(false)} />
+            <SendEcashModalBody
+               token={token}
+               txid={token && computeTxId(token)}
+               onClose={() => setShowTokenModal(false)}
+            />
          </Modal>
       </>
    );

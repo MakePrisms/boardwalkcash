@@ -28,8 +28,9 @@ import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatCents } from '@/utils/formatting';
+import { findTokenByTxId } from '@/lib/tokenModels';
 
-export default function Home({ isMobile }: { isMobile: boolean }) {
+export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
@@ -45,7 +46,6 @@ export default function Home({ isMobile }: { isMobile: boolean }) {
 
    useEffect(() => {
       if (!router.isReady) return;
-      const { token } = router.query;
       const localKeysets = window.localStorage.getItem('keysets');
 
       const handleTokenQuery = async (token: string) => {
@@ -234,7 +234,15 @@ export const getServerSideProps: GetServerSideProps = async (
    const userAgent = context.req.headers['user-agent'];
    const isMobile = /mobile/i.test(userAgent as string);
 
-   const token = context.query.token as string;
+   let token = context.query.token as string;
+   const txid = context.query.txid as string;
+
+   if (txid && !token) {
+      const tokenEntry = await findTokenByTxId(txid);
+      if (tokenEntry) {
+         token = tokenEntry.token;
+      }
+   }
 
    let tokenData: TokenProps | null = null;
    if (token) {
@@ -267,6 +275,7 @@ export const getServerSideProps: GetServerSideProps = async (
    return {
       props: {
          isMobile,
+         token: token || null,
          pageTitle: pageTitle(tokenData) || null,
          pageDescription: pageDescription(tokenData) || null,
       },

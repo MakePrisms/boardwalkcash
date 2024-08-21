@@ -5,6 +5,7 @@ import HistoryTableRow from './HistoryTableRow';
 import SendEcashModalBody from '../modals/SendEcashModalBody';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import { PublicContact } from '@/types';
+import { computeTxId } from '@/utils/cashu';
 
 const customTheme = {
    root: {
@@ -20,6 +21,7 @@ const HistoryTable: React.FC<{
    const [lockedToken, setLockedToken] = useState<string>('');
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
    const [tokenLockedTo, setTokenLockedTo] = useState<PublicContact | null>(null);
+   const [txid, setTxid] = useState<string | undefined>();
 
    const { fetchContact } = useContacts();
 
@@ -27,6 +29,11 @@ const HistoryTable: React.FC<{
       if (tx.pubkey) {
          const contact = await fetchContact(tx.pubkey?.slice(2));
          setTokenLockedTo(contact);
+         /** Begin backwards compatibility  for < v0.2.2 */
+         if (new Date(tx.date).getTime() > 1723545105975) {
+            setTxid(computeTxId(tx.token));
+         }
+         /** End backwards compatibility  for < v0.2.2 */
       }
       setLockedToken(tx.token);
       setIsSendModalOpen(true);
@@ -50,7 +57,7 @@ const HistoryTable: React.FC<{
             <Modal.Header>
                {tokenLockedTo ? `eTip for ${tokenLockedTo.username}` : 'eTip'}
             </Modal.Header>
-            <SendEcashModalBody token={lockedToken} onClose={closeSendEcashModal} />
+            <SendEcashModalBody token={lockedToken} onClose={closeSendEcashModal} txid={txid} />
          </Modal>
       </>
    );
