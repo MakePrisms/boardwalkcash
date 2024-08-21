@@ -233,6 +233,12 @@ export const areTokensSpent = async (tokenEntries: [string, string | Token][]) =
    return Object.fromEntries(results);
 };
 
+/**
+ * Attempts to initialize a wallet with the mint's USD keyset
+ * @param mintUrl
+ * @throws Error if mint does not support USD
+ * @returns
+ */
 export const initializeUsdWallet = async (mintUrl: string) => {
    const mint = new CashuMint(mintUrl);
    const keys = await mint.getKeys();

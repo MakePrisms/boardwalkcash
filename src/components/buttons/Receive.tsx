@@ -13,10 +13,11 @@ import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from './QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
-import { postUserMintQuote, pollForInvoicePayment } from '@/utils/appApiRequests';
+import { postUserMintQuote, pollForInvoicePayment, getTokenFromDb } from '@/utils/appApiRequests';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+   /* amount is used as the input to text box... TODO: change this to more general input */
    const [amount, setAmount] = useState('');
    const [isReceiving, setIsReceiving] = useState(false);
    const [invoiceToPay, setInvoiceToPay] = useState('');
@@ -29,14 +30,19 @@ const Receive = () => {
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
 
-   const getTokenFromUrl = (url: string) => {
+   const getTokenFromUrl = async (url: string) => {
       try {
          const urlObj = new URL(url);
          const params = new URLSearchParams(urlObj.search);
          const token = params.get('token');
+         const txid = params.get('txid');
 
          if (token && token.startsWith('cashu')) {
             return token;
+         }
+
+         if (txid) {
+            return (await getTokenFromDb(txid)).token;
          }
 
          return null;
@@ -59,25 +65,31 @@ const Receive = () => {
    }, []);
 
    useEffect(() => {
-      if (!amount) return;
-      let decoded: Token | undefined = undefined;
-      if (amount.includes('http')) {
-         const encoded = getTokenFromUrl(amount);
-         if (encoded) {
-            decoded = decodeToken(encoded);
+      const processAmount = async () => {
+         if (!amount) return;
+         let decoded: Token | undefined = undefined;
+
+         if (amount.includes('http')) {
+            const encoded = await getTokenFromUrl(amount);
+            if (encoded) {
+               decoded = decodeToken(encoded);
+            }
+         } else {
+            decoded = decodeToken(
+               amount.includes('Token:') ? amount.replace('Token:', '') : amount,
+            );
          }
-      } else {
-         decoded = decodeToken(amount.includes('Token:') ? amount.replace('Token:', '') : amount);
+
+         if (!decoded) return;
+
          console.log('decoded', decoded);
-      }
 
-      if (!decoded) return;
+         setToken(decoded);
+         setShowEcashReceiveModal(true);
+         setIsReceiveModalOpen(false);
+      };
 
-      console.log('decoded', decoded);
-
-      setToken(decoded);
-      setShowEcashReceiveModal(true);
-      setIsReceiveModalOpen(false);
+      processAmount();
    }, [amount]);
 
    const handleReceive = async () => {
@@ -214,11 +226,13 @@ const Receive = () => {
                </>
             )}
          </Modal>
-         <ConfirmEcashReceiveModal
-            isOpen={showEcashReceiveModal}
-            onClose={handleModalClose}
-            token={token}
-         />
+         {token && (
+            <ConfirmEcashReceiveModal
+               isOpen={showEcashReceiveModal}
+               onClose={handleModalClose}
+               token={token}
+            />
+         )}
       </>
    );
 };

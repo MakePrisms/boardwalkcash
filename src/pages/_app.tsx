@@ -10,10 +10,12 @@ import { NDKProvider } from '@/hooks/nostr/useNDK';
 import useViewportHeight from '@/hooks/util/useViewportHeigh';
 import { ProofProvider } from '@/hooks/cashu/useProofStorage';
 import { CashuProvider } from '@/hooks/contexts/cashuContext';
+import { GiftProvider } from '@/hooks/boardwalk/useGifts';
 
 interface CustomPageProps {
    pageTitle?: string;
    pageDescription?: string;
+   giftPath?: string;
 }
 
 const defaultPageDescription = 'The easiest way to send and receive cash.';
@@ -21,8 +23,10 @@ const defaultPageTitle = 'Boardwalk Cash';
 
 type CustomAppProps = AppProps<CustomPageProps>;
 export default function App({ Component, pageProps }: CustomAppProps) {
-   const { pageTitle, pageDescription } = pageProps;
+   const { pageTitle, pageDescription, giftPath } = pageProps;
    useViewportHeight();
+
+   const previewImg = `https://dev.boardwalkcash.com${giftPath || '/logo-url-preview.png'}`;
 
    return (
       <>
@@ -44,11 +48,7 @@ export default function App({ Component, pageProps }: CustomAppProps) {
                property='og:description'
                content={pageDescription || defaultPageDescription}
             />
-            <meta
-               key='og-image'
-               property='og:image'
-               content='https://dev.boardwalkcash.com/logo-url-preview.png'
-            />
+            <meta key='og-image' property='og:image' content={previewImg} />
             <meta property='og:image:alt' content='Boardwalk Cash logo' />
             <meta property='og:image:width' content='1200' />
             <meta property='og:image:height' content='630' />
@@ -56,10 +56,7 @@ export default function App({ Component, pageProps }: CustomAppProps) {
             <meta name='twitter:card' content='summary' />
             <meta name='twitter:title' content={pageTitle || defaultPageTitle} />
             <meta name='twitter:description' content={pageDescription || defaultPageDescription} />
-            <meta
-               name='twitter:image'
-               content='https://dev.boardwalkcash.com/logo-url-preview.png'
-            />
+            <meta name='twitter:image' content={previewImg} />
             <meta name='twitter:image:alt' content='Boardwalk Cash logo' />
             <link rel='apple-touch-icon' href='/logo120.png' />
 
@@ -77,8 +74,10 @@ export default function App({ Component, pageProps }: CustomAppProps) {
                   <NDKProvider>
                      <CashuProvider>
                         <ProofProvider>
-                           <Analytics />
-                           <Component {...pageProps} />
+                           <GiftProvider>
+                              <Analytics />
+                              <Component {...pageProps} />
+                           </GiftProvider>
                         </ProofProvider>
                      </CashuProvider>
                   </NDKProvider>

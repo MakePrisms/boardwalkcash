@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
 import NotificationItem from './NotificationItem';
 import NotificationItemContainer from './NotificationItemContainer';
-import { NotificationType } from '@/types';
+import { NotificationType, NotificationWithData } from '@/types';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import { Virtuoso } from 'react-virtuoso';
@@ -53,11 +53,14 @@ const NotificationDrawer = () => {
       return `left-0 top-0`;
    }, [ecashTapsEnabled]);
 
-   const renderNotification = (_index: number, notification: any) => {
+   const renderNotification = (_index: number, notification: NotificationWithData) => {
+      // TODO: thist should be in the notification, but gift types are not set in the db yet
+      const isGift = 'gift' in notification.processedData && notification.processedData.gift;
+      const notificationType = isGift ? NotificationType.Gift : notification.type;
       return (
          <NotificationItemContainer
             key={`${notification.id}-${notification.type}`}
-            notificationType={notification.type as NotificationType}
+            notificationType={notificationType as NotificationType}
          >
             <NotificationItem
                notification={notification}

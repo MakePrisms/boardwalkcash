@@ -18,7 +18,7 @@ import { NotifyTokenReceivedRequest } from '@/types';
 import { proofsLockedTo } from '@/utils/cashu';
 import { getDecodedToken } from '@cashu/cashu-ts';
 import { notifyTokenReceived } from '@/lib/notificationModels';
-import { Notification, Prisma } from '@prisma/client';
+import { Notification, Prisma, Token } from '@prisma/client';
 import { findManyContacts } from '@/lib/contactModels';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -80,9 +80,9 @@ function extractContactPubkeys(notifications: Notification[]): string[] {
 }
 
 function attachContactsToNotifications(
-   notifications: Notification[],
+   notifications: (Notification & { token: Token | null })[],
    contacts: PublicContact[],
-): Notification[] {
+): (Notification & { token: Token | null })[] {
    return notifications.map(n => {
       const pubkey = getPubkeyFromNotification(n);
       if (!pubkey) return n;
@@ -112,7 +112,7 @@ async function handleNotifyTokenReceived(
    userPubkey: string,
    res: NextApiResponse,
 ) {
-   const { token } = req.body as NotifyTokenReceivedRequest;
+   const { token, txid } = req.body as NotifyTokenReceivedRequest;
 
    if (!token) {
       return res.status(400).json({ error: 'Token is required' });
@@ -138,6 +138,7 @@ async function handleNotifyTokenReceived(
       const notifications = await notifyTokenReceived(
          receiverPubkey,
          JSON.stringify({ token, from: userPubkey }),
+         txid,
       );
       return res.status(200).json({ status: 'ok' });
    } catch (error) {

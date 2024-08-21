@@ -14,6 +14,8 @@ import { UserIcon } from '@heroicons/react/20/solid';
 import ContactsModal from './ContactsModal/ContactsModal';
 import { PublicContact } from '@/types';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
+import GiftIcon from '../icons/GiftIcon';
+import GiftModal from '../eGifts/GiftModal';
 import { postTokenToDb } from '@/utils/appApiRequests';
 
 interface SendModalProps {
@@ -41,6 +43,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
    const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
    const { sendTokenAsNotification } = useNotifications();
+   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -57,6 +60,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setEcashToken(undefined);
       setLockTo(undefined);
       setIsContactsModalOpen(false);
+      setIsGiftModalOpen(false);
       onClose();
    };
 
@@ -214,13 +218,13 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                   />
                   {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                   <div className='flex justify-between mx-3'>
-                     <div className='flex flex-row gap-2'>
+                     <div className='flex flex-row gap-4'>
                         <QRScannerButton onScan={handleQRScan} />
-                        <button
-                           className='p-2 rounded-full'
-                           onClick={() => setIsContactsModalOpen(true)}
-                        >
+                        <button onClick={() => setIsContactsModalOpen(true)}>
                            <UserIcon className='w-6 h-6 text-gray-500' />
+                        </button>
+                        <button onClick={() => setIsGiftModalOpen(true)}>
+                           <GiftIcon className='w-6 h-6 text-gray-500' />
                         </button>
                      </div>
                      <Button className='btn-primary' onClick={handleInputSubmit}>
@@ -306,6 +310,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             onSelectContact={handleSendToUser}
             mode='select'
          />
+         <GiftModal isOpen={isGiftModalOpen} onClose={() => resetModalState()} />
       </>
    );
 };

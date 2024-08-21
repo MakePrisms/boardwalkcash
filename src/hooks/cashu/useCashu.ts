@@ -298,9 +298,19 @@ export const useCashu = () => {
       return send;
    };
 
+   /**
+    * Removes proofs from local storage and adds a transaction to the history
+    * @param amount
+    * @param opts
+    * @returns
+    */
    const createSendableToken = async (
       amount: number,
-      opts?: { wallet?: CashuWallet; pubkey?: string },
+      opts?: {
+         wallet?: CashuWallet;
+         pubkey?: string;
+         gift?: string;
+      },
    ) => {
       let wallet: CashuWallet | undefined;
       if (!wallet) {
@@ -329,6 +339,7 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
+                  gift: opts?.gift,
                },
             }),
          );

@@ -1,9 +1,10 @@
+import { PostTokenRequest } from '@/types';
 import prisma from './prisma';
 
-export const createTokenInDb = async (token: string, txid: string) => {
+export const createTokenInDb = async (data: PostTokenRequest, txid: string) => {
    return await prisma.token.create({
       data: {
-         token,
+         ...data,
          id: txid,
       },
    });
