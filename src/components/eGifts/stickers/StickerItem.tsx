@@ -39,7 +39,6 @@ export default function StickerItem({
 
    return (
       <div className='relative w-[125px] h-[125px] sm:w-[150px] sm:h-[150px]'>
-         {isLoading && <Spinner size='sm' />}
          <img
             src={isSelected ? selectedSrc : unselectedSrc}
             alt={alt}
