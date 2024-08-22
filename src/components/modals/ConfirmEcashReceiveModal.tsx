@@ -117,6 +117,8 @@ const ConfirmEcashReceiveModal = ({
             setDisableClaim(true);
          }
          if (await isTokenSpent(token)) {
+            /* stop loading so /wallet page shows the ecash still */
+            setLoading(false);
             throw new Error('eCash already claimed');
          }
          const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
