@@ -16,22 +16,26 @@ export const authMiddleware = async (req: NextApiRequest, res: NextApiResponse, 
    if (scheme.toLowerCase() !== 'nostr') {
       return res.status(401).json({ message: 'Invalid authorization scheme' });
    }
-   const event = await nip98.unpackEventFromToken(token);
+   try {
+      const event = await nip98.unpackEventFromToken(token);
 
-   const { method, url } = req;
+      const { method, url } = req;
 
-   if (!method || !url) {
-      return res.status(401).json({ message: 'Invalid request' });
-   }
+      if (!method || !url) {
+         return res.status(401).json({ message: 'Invalid request' });
+      }
 
-   const protocol =
-      req.headers['x-forwarded-proto'] || req.headers['x-forwarded-protocol'] || 'http';
-   // const fullUrl = `${protocol}://${req.headers.host}${req.url}`;
-   const fullUrl = url;
+      const protocol =
+         req.headers['x-forwarded-proto'] || req.headers['x-forwarded-protocol'] || 'http';
+      const fullUrl = url;
 
-   const valid = await nip98.validateEvent(event, fullUrl, method);
+      const valid = await nip98.validateEvent(event, fullUrl, method);
 
-   if (!valid) {
+      if (!valid) {
+         return res.status(401).json({ message: 'Invalid authorization' });
+      }
+   } catch (error) {
+      console.error('Error unpacking NIP98 event:', error);
       return res.status(401).json({ message: 'Invalid authorization' });
    }
 
