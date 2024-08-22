@@ -22,13 +22,14 @@ import EcashTapButton from '@/components/EcashTapButton';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { PublicContact, TokenProps } from '@/types';
+import { PublicContact, TokenProps, GiftAsset } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatCents } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
+import { getGiftByName } from '@/lib/gifts';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -121,18 +122,19 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
 
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      const checkProofsSequentially = async () => {
-         await delay(6000);
-         for await (const w of Object.values(wallets)) {
-            const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-            await checkProofsValid(wallet).catch();
+      /* VV causing too much spam VV */
+      // const checkProofsSequentially = async () => {
+      //    await delay(6000);
+      //    for await (const w of Object.values(wallets)) {
+      //       const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
+      //       await checkProofsValid(wallet).catch();
 
-            // Wait 1 second between each check (adjust as needed)
-            await delay(10000);
-         }
-      };
+      //       // Wait 1 second between each check (adjust as needed)
+      //       await delay(10000);
+      //    }
+      // };
 
-      checkProofsSequentially();
+      // checkProofsSequentially();
 
       const intervalId = setInterval(() => {
          updateProofsAndBalance();
@@ -179,7 +181,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
       return () => {};
    }, []);
 
-   useNwc({ privkey: user.privkey, pubkey: user.pubkey });
+   // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
    // if (!user.pubkey) return null;
 
@@ -211,15 +213,13 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}
                onClose={() => {
-                  // modal should not be closable if token is locked and boardwalk has not been initialized
+                  /* modal should not be closable if token is locked and boardwalk has not been initialized */
                   if (
                      proofsLockedTo(tokenDecoded.token[0].proofs) &&
                      !window.localStorage.getItem('keysets')
                   ) {
                      return;
                   }
-                  setEcashReceiveModalOpen(false);
-                  setTokenDecoded(null);
                   router.push('/wallet');
                }}
             />
@@ -235,12 +235,27 @@ export const getServerSideProps: GetServerSideProps = async (
    const isMobile = /mobile/i.test(userAgent as string);
 
    let token = context.query.token as string;
+   let giftPath = null;
+   let gift: GiftAsset | undefined = undefined;
    const txid = context.query.txid as string;
 
    if (txid && !token) {
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
          token = tokenEntry.token;
+         if (tokenEntry.gift) {
+            gift = await getGiftByName(tokenEntry.gift as string).then(g => {
+               if (!g) return;
+               return {
+                  amountCents: g.amount,
+                  name: g.name,
+                  selectedSrc: g.imageUrlSelected,
+                  unselectedSrc: g.imageUrlUnselected,
+                  description: g.description,
+               } as GiftAsset;
+            });
+            giftPath = gift?.selectedSrc || null;
+         }
       }
    }
 
@@ -269,6 +284,7 @@ export const getServerSideProps: GetServerSideProps = async (
          token,
          mintUrl,
          isTrustedMint,
+         gift,
       };
    }
 
@@ -278,13 +294,17 @@ export const getServerSideProps: GetServerSideProps = async (
          token: token || null,
          pageTitle: pageTitle(tokenData) || null,
          pageDescription: pageDescription(tokenData) || null,
+         giftPath,
       },
    };
 };
 
 const pageTitle = (tokenData: TokenProps | null) => {
    if (tokenData) {
-      const { amount, contact, isTrustedMint } = tokenData;
+      const { amount, contact, gift } = tokenData;
+      if (gift) {
+         return `${gift.name} eGift`;
+      }
       if (contact) {
          return `${formatCents(amount)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
       }
