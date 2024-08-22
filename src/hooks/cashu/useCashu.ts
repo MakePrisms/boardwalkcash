@@ -146,6 +146,9 @@ export const useCashu = () => {
       let success = false;
 
       try {
+         if (from.mint.mintUrl.includes('test') || to.mint.mintUrl.includes('test')) {
+            throw new Error('Cannot swap to/from test mints');
+         }
          if (!proofsToMelt) {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
