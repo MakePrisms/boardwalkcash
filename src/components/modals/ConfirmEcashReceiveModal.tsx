@@ -307,7 +307,7 @@ const ConfirmEcashReceiveModal = ({
                            <StickerItem
                               selectedSrc={gift.selectedSrc}
                               unselectedSrc={gift.unselectedSrc}
-                              isSelected={false}
+                              isSelected={true}
                               alt={formatCents(gift.amountCents)}
                            />
                         </div>
