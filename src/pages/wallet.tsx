@@ -30,6 +30,7 @@ import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatCents } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
+import useGifts from '@/hooks/boardwalk/useGifts';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -44,6 +45,8 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
+   /* modal will not show if gifts are loading, because it messes up gift selection */
+   const { loadingGifts } = useGifts();
 
    useEffect(() => {
       if (!router.isReady) return;
@@ -208,7 +211,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          <SettingsSidebar />
          <TransactionHistoryDrawer />
          <EcashTapButton isMobile={isMobile} />
-         {tokenDecoded && !newUser.current && ecashReceiveModalOpen && (
+         {tokenDecoded && !newUser.current && ecashReceiveModalOpen && !loadingGifts && (
             <ConfirmEcashReceiveModal
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}

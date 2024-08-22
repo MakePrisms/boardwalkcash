@@ -9,6 +9,7 @@ interface GiftContextType {
    giftAssets: Record<string, GiftAsset>;
    getGiftByIdentifier: (identifier: string) => GiftAsset | undefined;
    getGiftFromToken: (token: string | Token) => Promise<GiftAsset | null>;
+   loadingGifts: boolean;
 }
 
 const GiftContext = createContext<GiftContextType | undefined>(undefined);
@@ -19,9 +20,11 @@ interface GiftProviderProps {
 
 export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const [giftAssets, setGiftAssets] = useState<Record<string, GiftAsset>>({});
+   const [isFetching, setIsFetching] = useState(false);
 
    useEffect(() => {
       const fetchGifts = async () => {
+         setIsFetching(true);
          try {
             const apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
             const normalizedGifts = normalizeGifts(apiGifts.gifts);
@@ -31,6 +34,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
          } catch (error) {
             console.error('Failed to fetch gifts:', error);
          }
+         setIsFetching(false);
       };
 
       fetchGifts();
@@ -92,6 +96,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       giftAssets,
       getGiftByIdentifier,
       getGiftFromToken,
+      loadingGifts: isFetching,
    };
 
    return <GiftContext.Provider value={value}>{children}</GiftContext.Provider>;
