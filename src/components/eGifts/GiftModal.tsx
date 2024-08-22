@@ -108,11 +108,7 @@ const GiftModal = ({ isOpen, onClose }: GiftModalProps) => {
             }
             return (
                <div className='flex flex-col w-full text-black mt-[-22px]'>
-                  <ViewGiftModalBody
-                     amountCents={amountCents}
-                     stickerPath={stickerPath}
-                     selectedContact={selectedContact}
-                  />
+                  <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                   <div className='w-full flex justify-center'>
                      <div className='w-32 h-10'>
                         {!token && (
@@ -136,11 +132,7 @@ const GiftModal = ({ isOpen, onClose }: GiftModalProps) => {
             }
             return (
                <div className='flex flex-col w-full text-black mt-[-22px]'>
-                  <ViewGiftModalBody
-                     amountCents={amountCents}
-                     stickerPath={stickerPath}
-                     selectedContact={selectedContact}
-                  />
+                  <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                   <div className='w-full flex justify-center'>
                      <div className='w-32 h-10'>
                         {token && (
