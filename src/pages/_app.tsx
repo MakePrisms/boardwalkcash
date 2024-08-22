@@ -58,7 +58,7 @@ export default function App({ Component, pageProps }: CustomAppProps) {
             <meta name='twitter:description' content={pageDescription || defaultPageDescription} />
             <meta name='twitter:image' content={previewImg} />
             <meta name='twitter:image:alt' content='Boardwalk Cash logo' />
-            <link rel='apple-touch-icon' href='/logo120.png' />
+            <link rel='apple-touch-icon' href='/pwaLogos/logo120.png' />
 
             <link rel='manifest' href='/manifest.json' />
             <meta name='theme-color' content='#0f3470' />
