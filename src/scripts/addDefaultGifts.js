@@ -25,7 +25,7 @@ const gifts = [
       imageUrlUnselected: '/eGifts/unselected/hotdog_100.png',
    },
    {
-      name: 'Candy',
+      name: 'Lollipop',
       amount: 200,
       description: 'Sweet candy',
       imageUrlSelected: '/eGifts/selected/candy_200.png',
