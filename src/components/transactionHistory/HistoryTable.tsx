@@ -28,7 +28,7 @@ const HistoryTable: React.FC<{
    const [selectedGift, setSelectedGift] = useState<GiftAsset | undefined>(undefined);
 
    const { fetchContact } = useContacts();
-   const { getGiftByIdentifier } = useGifts();
+   const { fetchGift } = useGifts();
 
    const closeViewGiftModal = () => {
       setIsViewGiftModalOpen(false);
@@ -37,13 +37,18 @@ const HistoryTable: React.FC<{
    const openViewGiftModal = async (tx: EcashTransaction & { gift: string }) => {
       setIsViewGiftModalOpen(true);
       setIsSendModalOpen(false);
-      const gift = getGiftByIdentifier(tx.gift);
+      const gift = await fetchGift(tx.gift);
       if (!gift) {
          console.error('Gift not found:', tx.gift);
          return;
       }
       setSelectedGift(gift);
       if (tx.pubkey) {
+         /** Begin backwards compatibility  for < v0.2.2 */
+         if (new Date(tx.date).getTime() > 1724352697905) {
+            setTxid(computeTxId(tx.token));
+         }
+         /** End backwards compatibility  for < v0.2.2 */
          const contact = await fetchContact(tx.pubkey?.slice(2));
          setTokenLockedTo(contact);
       }

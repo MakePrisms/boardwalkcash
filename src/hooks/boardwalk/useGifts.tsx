@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { request } from '@/utils/appApiRequests';
 import { computeTxId } from '@/utils/cashu';
-import { GetAllGiftsResponse, GiftAsset } from '@/types';
+import { GetAllGiftsResponse, GetGiftResponse, GiftAsset } from '@/types';
 import { Gift } from '@prisma/client';
 import { Token, getEncodedToken } from '@cashu/cashu-ts';
 
@@ -10,6 +10,7 @@ interface GiftContextType {
    getGiftByIdentifier: (identifier: string) => GiftAsset | undefined;
    getGiftFromToken: (token: string | Token) => Promise<GiftAsset | null>;
    loadingGifts: boolean;
+   fetchGift: (identifier: string) => Promise<GiftAsset | null>;
 }
 
 const GiftContext = createContext<GiftContextType | undefined>(undefined);
@@ -62,7 +63,6 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
          const img = new Image();
          img.src = src;
          img.onload = () => {
-            console.log('Preloading and caching image:', src);
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
@@ -76,6 +76,14 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
 
    const preloadAndCacheImages = async (srcs: string[]): Promise<void> => {
       await Promise.all(srcs.map(preloadAndCacheImage));
+   };
+
+   const fetchGift = async (identifier: string): Promise<GiftAsset | null> => {
+      const apiGift = await request<GetGiftResponse>(`/api/gifts/${identifier}`, 'GET');
+      if (!apiGift) {
+         return null;
+      }
+      return normalizeGifts([apiGift])[identifier];
    };
 
    const getGiftByIdentifier = (identifier: string): GiftAsset | undefined => {
@@ -97,6 +105,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       getGiftByIdentifier,
       getGiftFromToken,
       loadingGifts: isFetching,
+      fetchGift,
    };
 
    return <GiftContext.Provider value={value}>{children}</GiftContext.Provider>;
