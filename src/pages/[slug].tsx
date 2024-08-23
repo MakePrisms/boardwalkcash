@@ -138,8 +138,8 @@ const UserProfilePage = () => {
                   <div className='w-full'>
                      <ClipboardButton
                         toCopy={user.username!}
-                        toShow='Copy'
-                        className='btn-primary w-20'
+                        toShow={showAddContact ? 'Copy' : 'Username'}
+                        className={`btn-primary ${showAddContact ? 'w-20' : 'w-full'}`}
                      />
                   </div>
                   {showAddContact && (
