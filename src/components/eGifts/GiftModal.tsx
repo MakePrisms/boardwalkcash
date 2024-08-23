@@ -109,6 +109,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const handlePaymentSuccess = () => {
       addToast('Sent eGift!', 'success');
       setCurrentStep(GiftStep.ShareGift);
+      setSending(false);
    };
 
    const waitForPayment = async (checkingId: string) => {
@@ -145,11 +146,11 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       if (!amountCents || !stickerPath) {
          throw new Error('Oops, didnt select a gift');
       }
+      setSending(true);
       if (useInvoice) {
          handleLightningTip(amountCents);
          return;
       }
-      setSending(true);
       const sendableToken = await createSendableToken(amountCents, {
          pubkey: `02${selectedContact?.pubkey}`,
          gift: gift,
