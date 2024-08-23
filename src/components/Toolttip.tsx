@@ -10,13 +10,17 @@ const Tooltip = ({ children, content, className = '' }: TooltipProps) => {
    const [isVisible, setIsVisible] = useState(false);
 
    return (
-      <div className='relative inline-block w-full'>
-         <div onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
+      <div className='relative inline-block'>
+         <div
+            className='inline-block'
+            onMouseEnter={() => setIsVisible(true)}
+            onMouseLeave={() => setIsVisible(false)}
+         >
             {children}
          </div>
          {isVisible && (
             <div
-               className={`absolute z-10 px-3 py-2 text-sm text-white rounded shadow-lg transition-opacity duration-300 bg-boardwalk-blue ${className}`}
+               className={`absolute z-10 px-3 py-2 text-sm text-white rounded shadow-lg transition-opacity duration-300 bg-boardwalk-blue w-28 ${className}`}
                style={{
                   top: 'calc(100% + 5px)',
                   left: '50%',
