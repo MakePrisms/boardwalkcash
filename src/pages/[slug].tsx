@@ -62,7 +62,10 @@ const UserProfilePage = () => {
          const user = await fetchUser();
          const isInitialized = await isBoardwalkInitialized();
 
-         if (isInitialized && isContactAdded({ pubkey: user.pubkey })) {
+         if (
+            (isInitialized && isContactAdded({ pubkey: user.pubkey })) ||
+            user.pubkey === window.localStorage.getItem('pubkey')
+         ) {
             setShowAddContact(false);
          }
 
@@ -135,24 +138,25 @@ const UserProfilePage = () => {
                   <div className='w-full'>
                      <ClipboardButton
                         toCopy={user.username!}
-                        toShow='Username'
-                        className='btn-primary w-full'
+                        toShow='Copy'
+                        className='btn-primary w-20'
                      />
                   </div>
                   {showAddContact && (
                      <div className='w-full'>
                         <Button
-                           className='btn-primary w-full'
+                           className='btn-primary w-20'
                            isProcessing={addingContact}
                            onClick={handleAddContact}
                         >
-                           Add Contact
+                           Add
                         </Button>
                      </div>
                   )}
                </div>
-               <div className='w-full flex justify-center'>
-                  <LightningTipButton contact={user} className='w-40' />
+               <div className='flex flex-row items-center space-x-6 w-full'>
+                  <EGiftButton className='w-20' contact={user} />
+                  <LightningTipButton contact={user} className='w-20' />
                </div>
             </div>
          </main>
@@ -163,6 +167,7 @@ const UserProfilePage = () => {
 import { GetServerSideProps } from 'next';
 import { findContactByUsername } from '@/lib/contactModels';
 import LightningTipButton from '@/components/buttons/LightningTipButton';
+import EGiftButton from '@/components/buttons/EGiftButton';
 
 export const getServerSideProps: GetServerSideProps = async context => {
    const { slug } = context.params || {};
