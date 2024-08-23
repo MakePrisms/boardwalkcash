@@ -32,7 +32,7 @@ const gifts = [
       imageUrlUnselected: '/eGifts/unselected/candy_200.png',
    },
    {
-      name: 'Bear',
+      name: 'Teddy Bear',
       amount: 500,
       description: 'A cuddly bear',
       imageUrlSelected: '/eGifts/selected/bear_500.png',
