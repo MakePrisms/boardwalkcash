@@ -10,7 +10,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // slug - user's pubkey
       // amount - amount to tip in specified unit
       // unit - usd only
-      const { slug, amount, unit } = req.query;
+      // gift - gift name
+      const { slug, amount, unit, gift } = req.query;
 
       if (!slug || !amount || !unit) {
          return res.status(400).json({ error: 'Missing required parameters' });
@@ -49,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                amount: amount,
                keysetId: wallet.keys.id,
                mintUrl: wallet.mint.mintUrl,
+               gift,
             },
          );
 

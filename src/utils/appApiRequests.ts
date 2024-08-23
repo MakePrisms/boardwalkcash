@@ -156,9 +156,9 @@ export const getProofsFromServer = async (pubkey: string) => {
    );
 };
 
-export const getInvoiceForTip = async (pubkey: string, amount: number) => {
+export const getInvoiceForTip = async (pubkey: string, amount: number, gift?: string) => {
    return await request<LightningTipResponse>(
-      `/api/tip/${pubkey}?amount=${amount}&unit=usd`,
+      `/api/tip/${pubkey}?amount=${amount}&unit=usd&gift=${gift}`,
       'GET',
       undefined,
    );

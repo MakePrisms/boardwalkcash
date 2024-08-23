@@ -69,7 +69,7 @@ function extractContactPubkeys(notifications: Notification[]): string[] {
       .filter(n => n.type === NotificationType.Token)
       .map(n => {
          try {
-            return JSON.parse(n.data).from;
+            return JSON.parse(n.data).from || null;
          } catch {
             return null;
          }

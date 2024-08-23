@@ -5,7 +5,9 @@ import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
 import { NotificationType, ProofData } from '@/types';
 import { findMintByUrl } from '@/lib/mintModels';
-import { createNotification } from '@/lib/notificationModels';
+import { createNotification, notifyTokenReceived } from '@/lib/notificationModels';
+import { computeTxId, getProofsFromToken } from '@/utils/cashu';
+import { createTokenInDb } from '@/lib/tokenModels';
 
 interface PollingRequest {
    pubkey: string;
@@ -22,7 +24,7 @@ export type PollingApiResponse = {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
-   const { mintUrl, keysetId } = req.body;
+   const { mintUrl, keysetId, gift } = req.body;
    const isTip = req.query.isTip === 'true';
 
    if (!mintUrl) {
@@ -105,9 +107,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             let created;
             let token: string | undefined;
             if (isTip) {
-               // if its a tip, send as a notification
+               /* if its a tip, send as a notification */
                token = getEncodedToken({ token: [{ proofs, mint: wallet.mint.mintUrl }] });
-               created = await createNotification(pubkey, NotificationType.TIP, token);
+               /* not sure why gift is ending up as 'undefined' */
+               if (gift && gift !== 'undefined') {
+                  const proofs = getProofsFromToken(token);
+
+                  const txid = computeTxId(proofs);
+
+                  await createTokenInDb({ token, gift }, txid);
+
+                  created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
+               } else {
+                  created = await createNotification(pubkey, NotificationType.TIP, token);
+               }
             } else {
                created = await createManyProofs(proofsPayload);
             }
