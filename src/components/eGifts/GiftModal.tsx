@@ -1,4 +1,4 @@
-import { Button, Modal } from 'flowbite-react';
+import { Button, Modal, Tooltip } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 import { PublicContact, GiftAsset } from '@/types';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
@@ -12,6 +12,8 @@ import ViewContactsModalBody from '../modals/ContactsModal/ViewContactsModalBody
 import { useToast } from '@/hooks/util/useToast';
 import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
+import { formatCents } from '@/utils/formatting';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -36,7 +38,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [selectedContact, setSelectedContact] = useState<PublicContact | null>(contact || null);
    const [amountCents, setAmountCents] = useState<number | null>(null);
    const [stickerPath, setStickerPath] = useState<string | null>(null);
-   const [gift, setGift] = useState<string | undefined>(undefined);
+   const [gift, setGift] = useState<GiftAsset | undefined>(undefined);
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [token, setToken] = useState<string | null>(null);
    const { createSendableToken } = useCashu();
@@ -60,7 +62,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const handleGiftSelected = (gift: GiftAsset) => {
       setAmountCents(gift.amountCents);
       setStickerPath(gift.selectedSrc);
-      setGift(gift.name);
+      setGift(gift);
    };
 
    const handleContactSelected = (contact: PublicContact) => {
@@ -76,7 +78,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
             amountCents,
-            gift,
+            gift?.name,
          );
 
          setInvoice(invoice);
@@ -153,7 +155,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       const sendableToken = await createSendableToken(amountCents, {
          pubkey: `02${selectedContact?.pubkey}`,
-         gift: gift,
+         gift: gift?.name,
       });
 
       if (!sendableToken) {
@@ -161,7 +163,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          return;
       }
 
-      const txid = await postTokenToDb(sendableToken, gift);
+      const txid = await postTokenToDb(sendableToken, gift?.name);
       // TODO: won't work if tokes are not locked
       await sendTokenAsNotification(sendableToken, txid);
       setToken(sendableToken);
@@ -198,6 +200,21 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return (
                <div className='flex flex-col w-full text-black mt-[-22px]'>
                   <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                  {gift?.cost && (
+                     <div className='flex justify-center mt-[-22px] mb-2'>
+                        <p className='text-sm text-red-600 flex items-center'>
+                           {`Cost: ${formatCents(gift.cost)}`}
+                           <span className='ml-2'>
+                              <Tooltip
+                                 trigger='click'
+                                 content='50% of the cost is paid to OpenSats'
+                              >
+                                 <QuestionMarkCircleIcon className='h-4 w-4 text-gray-500' />
+                              </Tooltip>
+                           </span>
+                        </p>
+                     </div>
+                  )}
                   <div className='w-full flex justify-center'>
                      <div className='w-32 h-10'>
                         {!token && (

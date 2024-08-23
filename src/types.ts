@@ -223,4 +223,5 @@ export interface GiftAsset {
    selectedSrc: string;
    unselectedSrc: string;
    description: string | null;
+   cost?: number;
 }

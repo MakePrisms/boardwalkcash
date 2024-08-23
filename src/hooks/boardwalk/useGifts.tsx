@@ -50,6 +50,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                selectedSrc: gift.imageUrlSelected,
                unselectedSrc: gift.imageUrlUnselected,
                description: gift.description,
+               cost: gift.cost ? gift.cost : undefined,
             };
             acc[gift.name] = giftAsset;
             return acc;
