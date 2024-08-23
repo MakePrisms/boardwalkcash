@@ -47,6 +47,54 @@ const gifts = [
    },
 ];
 
+const giftsV2 = [
+   {
+      name: 'Rose',
+      amount: 10,
+      description: 'A lovely rose',
+      imageUrlSelected: '/eGifts/selected/rose_10.png',
+      imageUrlUnselected: '/eGifts/unselected/rose_10.png',
+   },
+   {
+      name: 'Balloon',
+      amount: 25,
+      description: 'A cool baloon',
+      imageUrlSelected: '/eGifts/selected/baloon_25.png',
+      imageUrlUnselected: '/eGifts/unselected/baloon_25.png',
+   },
+   {
+      name: 'Popcorn',
+      amount: 100,
+      description: 'A tasty popcorn',
+      imageUrlSelected: '/eGifts/selected/popcorn_100.png',
+      imageUrlUnselected: '/eGifts/unselected/popcorn_100.png',
+   },
+   {
+      name: 'Cocktail',
+      amount: 200,
+      description: 'A fancy cocktail',
+      imageUrlSelected: '/eGifts/selected/cocktail_200.png',
+      imageUrlUnselected: '/eGifts/unselected/cocktail_200.png',
+      cost: 20,
+   },
+   {
+      name: 'Carousel',
+      amount: 500,
+      description: 'A collection of gifts',
+      imageUrlSelected: '/eGifts/selected/carousel_500.png',
+      imageUrlUnselected: '/eGifts/unselected/carousel_500.png',
+      cost: 50,
+   },
+   {
+      name: 'Mermaid',
+      amount: 1000,
+      description: 'A mermaid',
+      imageUrlSelected: '/eGifts/selected/mermaid_1000.png',
+      imageUrlUnselected: '/eGifts/unselected/mermaid_1000.png',
+      cost: 100,
+   },
+];
+
 async function addDefaultGifts() {
    try {
       for (const gift of gifts) {
@@ -70,4 +118,29 @@ async function addDefaultGifts() {
    }
 }
 
-addDefaultGifts();
+async function addV2DefaultGifts() {
+   try {
+      for (const gift of giftsV2) {
+         await prisma.gift.create({
+            data: {
+               name: gift.name,
+               amount: gift.amount,
+               description: gift.description,
+               imageUrlSelected: gift.imageUrlSelected,
+               imageUrlUnselected: gift.imageUrlUnselected,
+               unit: 'usd', // Using the default value
+               cost: gift.cost,
+            },
+         });
+         console.log(`Added gift: ${gift.name}`);
+      }
+      console.log('All default gifts have been added successfully.');
+   } catch (error) {
+      console.error('Error adding default gifts:', error);
+   } finally {
+      await prisma.$disconnect();
+   }
+}
+
+// addDefaultGifts();
+addV2DefaultGifts();
