@@ -1,0 +1,79 @@
+import { Modal, Spinner } from 'flowbite-react';
+import QRCode from 'qrcode.react';
+import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
+import { formatCents, formatSats } from '@/utils/formatting';
+import { useEffect, useState } from 'react';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+
+interface WaitForInvoiceModalProps {
+   isOpen: boolean;
+   onClose: () => void;
+   invoice: string;
+   amountUsdCents: number;
+   invoiceTimeout: boolean;
+   onCheckAgain: () => void;
+}
+
+export const WaitForInvoiceModalBody: React.FC<
+   Omit<WaitForInvoiceModalProps, 'isOpen' | 'onClose'>
+> = ({ invoice, amountUsdCents, invoiceTimeout, onCheckAgain }) => {
+   const [amountData, setAmountData] = useState<{
+      amountUsdCents: number;
+      amountSats: number;
+   } | null>(null);
+   const { unitToSats } = useExchangeRate();
+
+   useEffect(() => {
+      unitToSats(amountUsdCents / 100, 'usd').then(amountSats => {
+         setAmountData({ amountUsdCents, amountSats });
+      });
+   }, [amountUsdCents, unitToSats]);
+
+   return (
+      <div className='flex flex-col items-center justify-center space-y-4'>
+         <p className='text-black'>Scan with any Lightning wallet</p>
+         {amountData && (
+            <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
+               <div className='flex items-center justify-center space-x-5 text-black'>
+                  <div>{formatCents(amountData.amountUsdCents)}</div>
+                  <div>|</div>
+                  <div>{formatSats(amountData.amountSats)}</div>
+               </div>
+            </div>
+         )}
+         <QRCode value={invoice} size={256} />
+         <ClipboardButton toCopy={invoice} toShow='Copy' className='btn-primary' />
+         <div className='text-black'>
+            {invoiceTimeout ? (
+               <div className='flex flex-col items-center justify-center text-center space-y-4'>
+                  <p>Timed out waiting for payment...</p>
+                  <button className='underline' onClick={onCheckAgain}>
+                     Check again
+                  </button>
+               </div>
+            ) : (
+               <div>
+                  <Spinner /> Waiting for payment...
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};
+
+const WaitForInvoiceModal: React.FC<WaitForInvoiceModalProps> = ({
+   isOpen,
+   onClose,
+   ...bodyProps
+}) => {
+   return (
+      <Modal show={isOpen} onClose={onClose}>
+         <Modal.Header>Lightning Invoice</Modal.Header>
+         <Modal.Body>
+            <WaitForInvoiceModalBody {...bodyProps} />
+         </Modal.Body>
+      </Modal>
+   );
+};
+
+export default WaitForInvoiceModal;

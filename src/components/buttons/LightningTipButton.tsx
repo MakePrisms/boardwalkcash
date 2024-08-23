@@ -1,15 +1,13 @@
 import { Button, Modal, Spinner, TextInput } from 'flowbite-react';
-import QRCode from 'qrcode.react';
-import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
 import { getInvoiceForTip, getTipStatus, postTokenToDb } from '@/utils/appApiRequests';
-import { Validate, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
-import { formatCents, formatSats } from '@/utils/formatting';
 import SendEcashModalBody from '../modals/SendEcashModalBody';
 import { PublicContact } from '@/types';
 import { computeTxId } from '@/utils/cashu';
+import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 
 interface LightningTipButtonProps {
    contact: PublicContact;
@@ -29,19 +27,18 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [invoice, setInvoice] = useState('');
    const [token, setToken] = useState('');
-   const [amountData, setAmountData] = useState<{
-      amountUsdCents: number;
-      amountSats: number;
-   } | null>(null);
    const [quoteId, setQuoteId] = useState('');
    const {
       register,
       handleSubmit,
       formState: { errors },
       reset: resetForm,
+      watch,
    } = useForm<TipFormData>();
    const { addToast } = useToast();
    const { unitToSats } = useExchangeRate();
+
+   const amount = watch('amount') as number;
 
    const handleModalClose = () => {
       setInvoice('');
@@ -57,9 +54,6 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
       const { amount } = data;
 
       const amountUsdCents = parseFloat(Number(amount).toFixed(2)) * 100;
-      const amountSats = await unitToSats(amount, 'usd');
-
-      setAmountData({ amountUsdCents, amountSats });
 
       console.log('amountUsdCents', amountUsdCents);
 
@@ -177,34 +171,12 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
             );
          case 'invoice':
             return (
-               <div className='flex flex-col items-center justify-center space-y-4'>
-                  <p className='text-black'>Scan with any Lightning wallet</p>
-                  {amountData && (
-                     <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
-                        <div className='flex items-center justify-center space-x-5 text-black'>
-                           <div>{formatCents(amountData.amountUsdCents)}</div>
-                           <div>|</div>
-                           <div>{formatSats(amountData.amountSats)}</div>
-                        </div>
-                     </div>
-                  )}
-                  <QRCode value={invoice} size={256} />
-                  <ClipboardButton toCopy={invoice} toShow='Copy' className='btn-primary' />
-                  <div className='text-black'>
-                     {invoiceTimeout ? (
-                        <div className='flex flex-col items-center justify-center text-center space-y-4'>
-                           <p>Timed out waiting for payment...</p>
-                           <button className='underline' onClick={handleCheckAgain}>
-                              Check again
-                           </button>
-                        </div>
-                     ) : (
-                        <div>
-                           <Spinner /> Waiting for payment...
-                        </div>
-                     )}
-                  </div>
-               </div>
+               <WaitForInvoiceModalBody
+                  invoice={invoice}
+                  amountUsdCents={parseFloat(Number(amount).toFixed(2)) * 100}
+                  invoiceTimeout={invoiceTimeout}
+                  onCheckAgain={handleCheckAgain}
+               />
             );
       }
    };
