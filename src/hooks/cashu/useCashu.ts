@@ -22,6 +22,7 @@ import {
    TransactionError,
 } from '@/types';
 import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
+import useNotifications from '../boardwalk/useNotifications';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -39,6 +40,7 @@ export const useCashu = () => {
    } = useProofStorage();
    const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
       useNostrMintConnect();
+   const { sendTokenAsNotification } = useNotifications();
    const { addToast, toastSwapSuccess, toastSwapError } = useToast();
 
    const dispatch = useAppDispatch();
@@ -295,8 +297,8 @@ export const useCashu = () => {
          pubkey: opts?.pubkey,
       });
 
-      addProofs(returnChange);
-      removeProofs(proofs);
+      await addProofs(returnChange);
+      await removeProofs(proofs);
 
       return send;
    };
@@ -313,6 +315,7 @@ export const useCashu = () => {
          wallet?: CashuWallet;
          pubkey?: string;
          gift?: string;
+         feeCents?: number;
       },
    ) => {
       let wallet: CashuWallet | undefined;
@@ -324,7 +327,27 @@ export const useCashu = () => {
       }
 
       try {
-         const proofs = await getProofsToSend(amount, wallet, { pubkey: opts?.pubkey });
+         if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
+            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+         }
+
+         const proofs = await getProofsToSend(amount, wallet, {
+            pubkey: opts?.pubkey,
+         });
+
+         /* create and send fee token to us if feeCents is set */
+         if (opts?.feeCents) {
+            const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
+               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+            });
+            const feeToken = getEncodedToken({
+               token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
+               unit: 'usd',
+            });
+            if (feeToken) {
+               await sendTokenAsNotification(feeToken);
+            }
+         }
 
          const token = getEncodedToken({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
@@ -343,6 +366,7 @@ export const useCashu = () => {
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
                   gift: opts?.gift,
+                  fee: opts?.feeCents ? true : false,
                },
             }),
          );
@@ -509,6 +533,12 @@ export const useCashu = () => {
          { privkey },
       );
       return newProofs;
+   };
+
+   const hasSufficientBalance = (amountUsdCents: number) => {
+      const activeKeysetId = activeWallet?.keys.id;
+      if (!activeKeysetId) return false;
+      return balanceByWallet[activeKeysetId] >= amountUsdCents;
    };
 
    return {

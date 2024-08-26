@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/util/useToast';
 import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatCents } from '@/utils/formatting';
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -156,6 +156,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       const sendableToken = await createSendableToken(amountCents, {
          pubkey: `02${selectedContact?.pubkey}`,
          gift: gift?.name,
+         feeCents: gift?.cost,
       });
 
       if (!sendableToken) {
@@ -171,7 +172,10 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.ShareGift);
 
       setSending(false);
-      addToast('eGift sent', 'success');
+      addToast(
+         `eGift sent ${gift?.cost ? `(${formatCents(gift.cost, false)} fee)` : ''}`,
+         'success',
+      );
    };
 
    const renderContent = () => {
@@ -202,16 +206,16 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                   {gift?.cost && (
                      <div className='flex justify-center mt-[-22px] mb-2'>
-                        <p className='text-sm text-red-600 flex items-center'>
-                           {`Cost: ${formatCents(gift.cost)}`}
-                           <span className='ml-2'>
+                        <p className='text-sm flex items-center'>
+                           <span className='mr-1'>
                               <Tooltip
                                  trigger='click'
                                  content='50% of the cost is paid to OpenSats'
                               >
-                                 <QuestionMarkCircleIcon className='h-4 w-4 text-gray-500' />
+                                 <LockClosedIcon className='h-4 w-4 text-red-600' />
                               </Tooltip>
                            </span>
+                           {`${formatCents(gift.cost, false)}`}
                         </p>
                      </div>
                   )}
@@ -254,6 +258,20 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return (
                <div className='flex flex-col w-full text-black mt-[-22px]'>
                   <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                  {gift?.cost && (
+                     <div className='flex justify-center mt-[-22px] mb-2'>
+                        <p className='text-sm flex items-center'>
+                           <span className='mr-1'>
+                              <Tooltip
+                                 trigger='click'
+                                 content='50% of the cost is paid to OpenSats'
+                              >
+                                 <LockOpenIcon className='h-4 w-4' />
+                              </Tooltip>
+                           </span>
+                        </p>
+                     </div>
+                  )}
                   <div className='w-full flex justify-center'>
                      <div className='w-32 h-10'>
                         {token && (
