@@ -70,15 +70,16 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.SelectGift);
    };
 
-   const handleLightningTip = async (amountCents: number) => {
+   const handleLightningTip = async (amountCents: number, feeCents?: number) => {
       if (!selectedContact) {
          throw new Error('No contact selected');
       }
       try {
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
-            amountCents,
+            amountCents + (feeCents || 0),
             gift?.name,
+            feeCents,
          );
 
          setInvoice(invoice);
@@ -150,7 +151,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       setSending(true);
       if (useInvoice) {
-         handleLightningTip(amountCents);
+         handleLightningTip(amountCents, gift?.cost);
          return;
       }
       const sendableToken = await createSendableToken(amountCents, {
@@ -243,7 +244,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return (
                <WaitForInvoiceModalBody
                   invoice={invoice}
-                  amountUsdCents={amountCents!}
+                  amountUsdCents={amountCents! + (gift?.cost || 0)}
                   invoiceTimeout={invoiceTimeout}
                   onCheckAgain={handleCheckAgain}
                />

@@ -225,3 +225,12 @@ export interface GiftAsset {
    description: string | null;
    cost?: number;
 }
+
+export interface InvoicePollingRequest {
+   pubkey: string;
+   amount: number;
+   keysetId: string;
+   mintUrl: string;
+   gift?: string;
+   fee?: number;
+}

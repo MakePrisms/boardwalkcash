@@ -7,13 +7,14 @@ import axios from 'axios';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    if (req.method === 'GET') {
-      // slug - user's pubkey
-      // amount - amount to tip in specified unit
+      // pubkey - receiving user's pubkey
+      // amount - amount to tip in specified unit (includes fee)
       // unit - usd only
       // gift - gift name
-      const { slug, amount, unit, gift } = req.query;
+      // fee - amount to send to boardwalk as fee
+      const { pubkey, amount, unit, gift, fee = 0 } = req.query;
 
-      if (!slug || !amount || !unit) {
+      if (!pubkey || !amount || !unit) {
          return res.status(400).json({ error: 'Missing required parameters' });
       }
 
@@ -22,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       try {
-         const user = await findUserByPubkey(slug as string);
+         const user = await findUserByPubkey(pubkey as string);
 
          if (!user) {
             return res.status(404).json({ error: 'User not found' });
@@ -51,6 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                keysetId: wallet.keys.id,
                mintUrl: wallet.mint.mintUrl,
                gift,
+               fee,
             },
          );
 
