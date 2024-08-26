@@ -112,17 +112,17 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    const addProofs = useCallback(
       async (newProofs: Proof[]) => {
          await lockOperation(() => {
-            setProofs(prevProofs => {
-               const existingSecrets = new Set(prevProofs.map(p => p.secret));
-               const proofsToAdd = newProofs.filter(proof => {
-                  if (existingSecrets.has(proof.secret)) {
-                     throw new DuplicateProofError(proof.secret);
-                  }
-                  return true;
-               });
-               setStoredProofs([...prevProofs, ...proofsToAdd]);
-               return [...prevProofs, ...proofsToAdd];
+            const currentProofs = getStoredProofs();
+            const existingSecrets = new Set(currentProofs.map(p => p.secret));
+            const proofsToAdd = newProofs.filter(proof => {
+               if (existingSecrets.has(proof.secret)) {
+                  throw new DuplicateProofError(proof.secret);
+               }
+               return true;
             });
+            const updatedProofs = [...currentProofs, ...proofsToAdd];
+            setStoredProofs(updatedProofs);
+            setProofs(updatedProofs);
          });
       },
       [lockOperation],
@@ -131,38 +131,37 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
    const removeProofs = useCallback(
       async (proofsToRemove: Proof[]) => {
          await lockOperation(() => {
-            setProofs(prevProofs => {
-               const existingSecrets = new Set(prevProofs.map(p => p.secret));
-               proofsToRemove.forEach(proof => {
-                  if (!existingSecrets.has(proof.secret)) {
-                     throw new ProofNotFoundError(proof.secret);
-                  }
-               });
-               const proofsToKeep = prevProofs.filter(proof => !proofsToRemove.includes(proof));
-               setStoredProofs(proofsToKeep);
-               return proofsToKeep;
+            const currentProofs = getStoredProofs();
+            const existingSecrets = new Set(currentProofs.map(p => p.secret));
+            proofsToRemove.forEach(proof => {
+               if (!existingSecrets.has(proof.secret)) {
+                  throw new ProofNotFoundError(proof.secret);
+               }
             });
+            const proofsToKeep = currentProofs.filter(
+               proof => !proofsToRemove.some(p => p.secret === proof.secret),
+            );
+            setStoredProofs(proofsToKeep);
+            setProofs(proofsToKeep);
          });
       },
       [lockOperation],
    );
 
-   const getProofsByAmount = useCallback(
-      (amount: number, keysetId?: string) => {
-         const result = [];
-         let sum = 0;
+   const getProofsByAmount = (amount: number, keysetId?: string) => {
+      const currentProofs = getStoredProofs();
+      const result = [];
+      let sum = 0;
 
-         for (const proof of proofs) {
-            if (sum >= amount) break;
-            if (keysetId && proof.id !== keysetId) continue;
-            result.push(proof);
-            sum += proof.amount;
-         }
+      for (const proof of currentProofs) {
+         if (sum >= amount) break;
+         if (keysetId && proof.id !== keysetId) continue;
+         result.push(proof);
+         sum += proof.amount;
+      }
 
-         return result.length > 0 && sum >= amount ? result : null;
-      },
-      [proofs],
-   );
+      return result.length > 0 && sum >= amount ? result : null;
+   };
 
    const getAllProofsByKeysetId = useCallback(
       (keysetId: string) => {
@@ -194,7 +193,6 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
          balance,
          addProofs,
          removeProofs,
-         getProofsByAmount,
          clearProofs,
          isLoading,
          getAllProofsByKeysetId,
