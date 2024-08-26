@@ -172,10 +172,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.ShareGift);
 
       setSending(false);
-      addToast(
-         `eGift sent ${gift?.cost ? `(${formatCents(gift.cost, false)} fee)` : ''}`,
-         'success',
-      );
+      addToast(`eGift sent (${formatCents(amountCents + (gift?.cost || 0))})`, 'success');
    };
 
    const renderContent = () => {
@@ -205,14 +202,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                <div className='flex flex-col w-full text-black mt-[-22px]'>
                   <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                   {gift?.cost && (
-                     <div className='flex justify-center mt-[-22px] mb-2'>
-                        <p className='text-sm flex items-center'>
+                     <div className='flex justify-center mt-[-18px] mb-3'>
+                        <p className='text-xs flex items-center text-gray-500'>
                            <span className='mr-1'>
                               <Tooltip
                                  trigger='click'
                                  content='50% of the cost is paid to OpenSats'
                               >
-                                 <LockClosedIcon className='h-4 w-4 text-red-600' />
+                                 <LockClosedIcon className='h-3 w-3 text-gray-500' />
                               </Tooltip>
                            </span>
                            {`${formatCents(gift.cost, false)}`}
@@ -259,14 +256,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                <div className='flex flex-col w-full text-black mt-[-22px]'>
                   <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                   {gift?.cost && (
-                     <div className='flex justify-center mt-[-22px] mb-2'>
+                     <div className='flex justify-center mt-[-18px] mb-4'>
                         <p className='text-sm flex items-center'>
                            <span className='mr-1'>
                               <Tooltip
                                  trigger='click'
                                  content='50% of the cost is paid to OpenSats'
                               >
-                                 <LockOpenIcon className='h-4 w-4' />
+                                 <LockOpenIcon className='h-4 w-4 text-gray-500' />
                               </Tooltip>
                            </span>
                         </p>

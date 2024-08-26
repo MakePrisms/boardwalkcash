@@ -23,6 +23,7 @@ import {
 } from '@/types';
 import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
+import { postTokenToDb } from '@/utils/appApiRequests';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -345,7 +346,8 @@ export const useCashu = () => {
                unit: 'usd',
             });
             if (feeToken) {
-               await sendTokenAsNotification(feeToken);
+               const txid = await postTokenToDb(feeToken, opts?.gift);
+               await sendTokenAsNotification(feeToken, txid);
             }
          }
 
@@ -366,7 +368,7 @@ export const useCashu = () => {
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
                   gift: opts?.gift,
-                  fee: opts?.feeCents ? true : false,
+                  fee: opts?.feeCents,
                },
             }),
          );

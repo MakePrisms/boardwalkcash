@@ -59,7 +59,7 @@ const HistoryTableRow: React.FC<{
    };
    const formatAmount = (amount: number, fee?: number) => {
       let color = amount < 0 ? 'text-white' : 'text-green-500';
-      const text = formatCents(Math.abs(amount) + (fee || 0), false);
+      const text = formatCents(Math.abs(amount) + (fee || 0));
 
       return <span className={`${color} flex items-center`}>{text}</span>;
    };

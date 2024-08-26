@@ -17,7 +17,7 @@ export interface EcashTransaction {
    isReserve?: boolean;
    pubkey?: string;
    gift?: string;
-   fee?: boolean;
+   fee?: number;
 }
 
 export interface LightningTransaction {
