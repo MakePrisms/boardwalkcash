@@ -1,5 +1,5 @@
 import { Token } from '@cashu/cashu-ts';
-import ConfirmEcashReceiveModal from '../../modals/ConfirmEcashReceiveModal';
+import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { useState } from 'react';
 import { PublicContact } from '@/types';
 
@@ -31,6 +31,7 @@ export const ViewTokenButton = ({ token, clearNotification, contact }: ViewToken
             onClose={onClose}
             onSuccess={onSuccess}
             contact={contact}
+            isUserInitialized={true}
          />
       </>
    );

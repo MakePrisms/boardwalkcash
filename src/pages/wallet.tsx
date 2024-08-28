@@ -226,6 +226,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                   }
                   router.push('/wallet');
                }}
+               isUserInitialized={!!window.localStorage.getItem('keysets')}
             />
          )}
       </>

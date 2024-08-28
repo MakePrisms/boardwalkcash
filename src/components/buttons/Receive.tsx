@@ -231,6 +231,7 @@ const Receive = () => {
                isOpen={showEcashReceiveModal}
                onClose={handleModalClose}
                token={token}
+               isUserInitialized={true}
             />
          )}
       </>

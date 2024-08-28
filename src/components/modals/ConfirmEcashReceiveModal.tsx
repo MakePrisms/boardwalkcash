@@ -23,6 +23,7 @@ interface ConfirmEcashReceiveModalProps {
    onClose: () => void;
    onSuccess?: () => void;
    contact?: PublicContact;
+   isUserInitialized: boolean;
 }
 
 const ConfirmEcashReceiveModal = ({
@@ -31,6 +32,7 @@ const ConfirmEcashReceiveModal = ({
    onClose,
    onSuccess,
    contact,
+   isUserInitialized,
 }: ConfirmEcashReceiveModalProps) => {
    const [mintTrusted, setMintTrusted] = useState(false);
    const [swapping, setSwapping] = useState(false);
@@ -203,11 +205,20 @@ const ConfirmEcashReceiveModal = ({
    };
 
    const title = useMemo(() => {
-      const forText = tokenContact?.username ? `for ${tokenContact.username}` : '';
+      const forText = tokenContact?.username ? (
+         <>
+            for{' '}
+            <a className='underline' target='_blank' href={`/${tokenContact.username}`}>
+               {tokenContact.username}
+            </a>
+         </>
+      ) : (
+         ''
+      );
       if (gift) {
-         return `eGift ${forText}`;
+         return <>eGift {forText}</>;
       } else if (lockedTo) {
-         return `eTip ${forText}`;
+         return <>eTip {forText}</>;
       }
       return 'Confirm Ecash Receive';
    }, [lockedTo, gift, tokenContact]);
@@ -333,23 +344,25 @@ const ConfirmEcashReceiveModal = ({
                      )}
                   </div>
                </Tooltip>
-               <div className='space-y-4'>
-                  <div className='flex flex-row justify-center'>
-                     <p className='text-center text-sm'>
-                        <a
-                           href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
-                           target='_blank'
-                           className=' '
-                        >
-                           {mintTrusted ? (
-                              <span className='text-green-500 underline'>Trusted</span>
-                           ) : (
-                              <span className='text-red-500 underline'>Not Trusted</span>
-                           )}
-                        </a>
-                     </p>
+               {isUserInitialized === true && (
+                  <div className='space-y-4'>
+                     <div className='flex flex-row justify-center'>
+                        <p className='text-center text-sm'>
+                           <a
+                              href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
+                              target='_blank'
+                              className=' '
+                           >
+                              {mintTrusted ? (
+                                 <span className='text-green-500 underline'>Trusted</span>
+                              ) : (
+                                 <span className='text-red-500 underline'>Not Trusted</span>
+                              )}
+                           </a>
+                        </p>
+                     </div>
                   </div>
-               </div>
+               )}
                {!alreadyClaimed && (
                   <div className='flex flex-col gap-2 justify-center items-center'>
                      {!lockedTo || lockedTo === '02' + user.pubkey ? (
