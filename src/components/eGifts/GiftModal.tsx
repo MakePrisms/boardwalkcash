@@ -1,4 +1,4 @@
-import { Button, Modal, Tooltip } from 'flowbite-react';
+import { Button, Modal } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 import { PublicContact, GiftAsset } from '@/types';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
@@ -14,6 +14,7 @@ import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatCents } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
+import Tooltip from '../Toolttip';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -63,6 +64,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setAmountCents(gift.amountCents);
       setStickerPath(gift.selectedSrc);
       setGift(gift);
+   };
+
+   const handleSelectGift = () => {
+      if (!gift) {
+         alert('Please select a gift');
+         return;
+      }
+      setCurrentStep(GiftStep.ConfirmGift);
    };
 
    const handleContactSelected = (contact: PublicContact) => {
@@ -179,60 +188,81 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const renderContent = () => {
       switch (currentStep) {
          case GiftStep.SelectContact:
-            return <ViewContactsModalBody mode='select' onSelectContact={handleContactSelected} />;
+            return (
+               <>
+                  <Modal.Body>
+                     <ViewContactsModalBody mode='select' onSelectContact={handleContactSelected} />
+                  </Modal.Body>
+               </>
+            );
          case GiftStep.SelectGift:
             return (
-               <div className='flex flex-col w-full items-center justify-center text-black'>
-                  <Stickers onSelectGift={handleGiftSelected} />
-                  <div className='w-full flex justify-end mt-8'>
-                     <Button
-                        key='gift-continue'
-                        className='btn-primary sm:mr-4 mr-2'
-                        onClick={() => setCurrentStep(GiftStep.ConfirmGift)}
-                     >
-                        Continue
-                     </Button>
-                  </div>
-               </div>
+               <>
+                  <Modal.Body>
+                     <div className='flex flex-col w-full h-full relative text-black'>
+                        <div className='flex-grow overflow-y-auto'>
+                           <Stickers onSelectGift={handleGiftSelected} />
+                        </div>
+                     </div>
+                  </Modal.Body>
+                  <Modal.Footer>
+                     <div className='w-full flex justify-end'>
+                        <Button
+                           key='gift-continue'
+                           className='btn-primary'
+                           onClick={handleSelectGift}
+                        >
+                           Continue
+                        </Button>
+                     </div>
+                  </Modal.Footer>
+               </>
             );
          case GiftStep.ConfirmGift:
             if (!amountCents || !stickerPath) {
                throw new Error('Oops, didnt select a gift');
             }
             return (
-               <div className='flex flex-col w-full text-black mt-[-22px]'>
-                  <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                  {gift?.cost && (
-                     <div className='flex justify-center mt-[-18px] mb-3'>
-                        <p className='text-xs flex items-center text-gray-500'>
-                           <span className='mr-1'>
-                              <Tooltip
-                                 trigger='click'
-                                 content='50% of the cost is paid to OpenSats'
-                              >
-                                 <LockClosedIcon className='h-3 w-3 text-gray-500' />
-                              </Tooltip>
-                           </span>
-                           {`${formatCents(gift.cost, false)}`}
-                        </p>
-                     </div>
-                  )}
-                  <div className='w-full flex justify-center'>
-                     <div className='w-32 h-10'>
-                        {!token && (
-                           <Button
-                              key='gift-send'
-                              className='btn-primary w-full h-full'
-                              onClick={onSendGift}
-                              isProcessing={sending}
-                              id='send-button'
-                           >
-                              Send
-                           </Button>
+               <>
+                  <Modal.Body>
+                     <div className='flex flex-col w-full text-black'>
+                        <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                        {gift?.cost && (
+                           <div className='flex justify-center mb-[-15px]'>
+                              <p className='text-xs flex items-center text-gray-500'>
+                                 <span className='mr-1'>
+                                    <Tooltip
+                                       // trigger='click'
+                                       position='top'
+                                       content='50% of the cost is paid to OpenSats'
+                                    >
+                                       <LockClosedIcon className='h-3 w-3 text-gray-500' />
+                                    </Tooltip>
+                                 </span>
+                                 {`${formatCents(gift.cost, false)}`}
+                              </p>
+                           </div>
                         )}
                      </div>
-                  </div>
-               </div>
+                  </Modal.Body>
+                  <Modal.Footer>
+                     <div className='w-full flex justify-center'>
+                        <div className='w-32 h-10'>
+                           {!token && (
+                              <Button
+                                 key='gift-send'
+                                 className='btn-primary w-full h-full'
+                                 onClick={onSendGift}
+                                 isProcessing={sending}
+                                 id='send-button'
+                              >
+                                 Send
+                              </Button>
+                           )}
+                        </div>
+                     </div>
+                  </Modal.Footer>
+               </>
             );
          case GiftStep.PayInvoice:
             if (!selectedContact) {
@@ -242,48 +272,59 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                throw new Error('No invoice found');
             }
             return (
-               <WaitForInvoiceModalBody
-                  invoice={invoice}
-                  amountUsdCents={amountCents! + (gift?.cost || 0)}
-                  invoiceTimeout={invoiceTimeout}
-                  onCheckAgain={handleCheckAgain}
-               />
+               <>
+                  <Modal.Body>
+                     <WaitForInvoiceModalBody
+                        invoice={invoice}
+                        amountUsdCents={amountCents! + (gift?.cost || 0)}
+                        invoiceTimeout={invoiceTimeout}
+                        onCheckAgain={handleCheckAgain}
+                     />
+                  </Modal.Body>
+               </>
             );
          case GiftStep.ShareGift:
             if (!amountCents || !stickerPath) {
                throw new Error('Oops, didnt select a gift');
             }
             return (
-               <div className='flex flex-col w-full text-black mt-[-22px]'>
-                  <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                  {gift?.cost && (
-                     <div className='flex justify-center mt-[-18px] mb-4'>
-                        <p className='text-sm flex items-center'>
-                           <span className='mr-1'>
-                              <Tooltip
-                                 trigger='click'
-                                 content='50% of the cost is paid to OpenSats'
-                              >
-                                 <LockOpenIcon className='h-4 w-4 text-gray-500' />
-                              </Tooltip>
-                           </span>
-                        </p>
-                     </div>
-                  )}
-                  <div className='w-full flex justify-center'>
-                     <div className='w-32 h-10'>
-                        {token && (
-                           <ClipboardButton
-                              toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${computeTxId(token)}`}
-                              toShow={'Share'}
-                              className='btn-primary w-full h-full'
-                              key={`gift-share`}
-                              btnId='share-button'
-                           />
+               <>
+                  <Modal.Body>
+                     <div className='flex flex-col w-full text-black '>
+                        <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                        {gift?.cost && (
+                           <div className='flex justify-center mb-[-15px]'>
+                              <p className='text-xs flex items-center text-gray-500'>
+                                 <span className='mr-1'>
+                                    <Tooltip
+                                       // trigger='click'
+                                       position='top'
+                                       content='50% of the cost is paid to OpenSats'
+                                    >
+                                       <LockOpenIcon className='h-3 w-3 text-gray-500' />
+                                    </Tooltip>
+                                 </span>
+                              </p>
+                           </div>
                         )}
                      </div>
-                  </div>
-               </div>
+                  </Modal.Body>
+                  <Modal.Footer>
+                     <div className='w-full flex justify-center'>
+                        <div className='w-32 h-10'>
+                           {token && (
+                              <ClipboardButton
+                                 toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${computeTxId(token)}`}
+                                 toShow={'Share'}
+                                 className='btn-primary w-full h-full'
+                                 key={`gift-share`}
+                                 btnId='share-button'
+                              />
+                           )}
+                        </div>
+                     </div>
+                  </Modal.Footer>
+               </>
             );
       }
    };
@@ -309,7 +350,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             <Modal.Header>
                <h2>{title}</h2>
             </Modal.Header>
-            <Modal.Body>{renderContent()}</Modal.Body>
+            {renderContent()}
          </Modal>
          <ContactsModal
             mode='select'

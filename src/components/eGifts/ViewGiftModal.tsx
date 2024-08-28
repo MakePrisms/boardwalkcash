@@ -22,12 +22,13 @@ interface ViewGiftModalBodyProps {
 export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftModalBodyProps) => {
    return (
       <Modal.Body>
-         <div className='flex flex-col justify-center items-center space-y-8 text-black text-4xl'>
+         <div className='flex flex-col justify-center items-center text-black text-4xl'>
             <StickerItem
                selectedSrc={stickerPath}
                unselectedSrc={stickerPath}
                isSelected={false}
                alt={formatCents(amountCents)}
+               size='lg'
             />
             {txid && (
                <ClipboardButton

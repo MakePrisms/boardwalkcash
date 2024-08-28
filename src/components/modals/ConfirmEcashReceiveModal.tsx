@@ -102,7 +102,6 @@ const ConfirmEcashReceiveModal = ({
          } else if (pubkeyLock) {
             // fetch contact if not passed to the component
             const contact = await fetchContact(pubkeyLock.slice(2));
-            console.log('contact', contact);
             setTokenContact(contact || null);
          }
 
