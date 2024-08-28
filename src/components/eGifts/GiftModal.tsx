@@ -228,40 +228,39 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                      <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                         {gift?.cost && (
-                           <div className='flex justify-center mb-[-15px]'>
+                           <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
-                                 <span className='mr-1'>
+                                 <span className='flex items-center'>
                                     <Tooltip
-                                       // trigger='click'
                                        position='top'
                                        content='50% of the cost is paid to OpenSats'
                                     >
-                                       <LockClosedIcon className='h-3 w-3 text-gray-500' />
+                                       <div className='flex items-center justify-center w-4 h-4'>
+                                          <LockClosedIcon className='h-3 w-3 text-gray-500' />
+                                       </div>
                                     </Tooltip>
+                                    {`${formatCents(gift.cost, false)}`}
                                  </span>
-                                 {`${formatCents(gift.cost, false)}`}
                               </p>
+                           </div>
+                        )}
+                        {!token && (
+                           <div className='w-full flex justify-center mt-4'>
+                              <div className='w-32 h-10'>
+                                 <Button
+                                    key='gift-send'
+                                    className='btn-primary w-full h-full'
+                                    onClick={onSendGift}
+                                    isProcessing={sending}
+                                    id='send-button'
+                                 >
+                                    Send
+                                 </Button>
+                              </div>
                            </div>
                         )}
                      </div>
                   </Modal.Body>
-                  <Modal.Footer>
-                     <div className='w-full flex justify-center'>
-                        <div className='w-32 h-10'>
-                           {!token && (
-                              <Button
-                                 key='gift-send'
-                                 className='btn-primary w-full h-full'
-                                 onClick={onSendGift}
-                                 isProcessing={sending}
-                                 id='send-button'
-                              >
-                                 Send
-                              </Button>
-                           )}
-                        </div>
-                     </div>
-                  </Modal.Footer>
                </>
             );
          case GiftStep.PayInvoice:
@@ -290,40 +289,39 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return (
                <>
                   <Modal.Body>
-                     <div className='flex flex-col w-full text-black '>
+                     <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
                         {gift?.cost && (
-                           <div className='flex justify-center mb-[-15px]'>
+                           <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
-                                 <span className='mr-1'>
+                                 <span className='flex items-center'>
                                     <Tooltip
-                                       // trigger='click'
                                        position='top'
                                        content='50% of the cost is paid to OpenSats'
                                     >
-                                       <LockOpenIcon className='h-3 w-3 text-gray-500' />
+                                       <div className='flex items-center justify-center w-4 h-4'>
+                                          <LockOpenIcon className='h-3 w-3 text-gray-500' />
+                                       </div>
                                     </Tooltip>
                                  </span>
                               </p>
                            </div>
                         )}
+                        {token && (
+                           <div className='w-full flex justify-center mt-4'>
+                              <div className='w-32 h-10'>
+                                 <ClipboardButton
+                                    toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${computeTxId(token)}`}
+                                    toShow={'Share'}
+                                    className='btn-primary w-full h-full'
+                                    key={`gift-share`}
+                                    btnId='share-button'
+                                 />
+                              </div>
+                           </div>
+                        )}
                      </div>
                   </Modal.Body>
-                  <Modal.Footer>
-                     <div className='w-full flex justify-center'>
-                        <div className='w-32 h-10'>
-                           {token && (
-                              <ClipboardButton
-                                 toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${computeTxId(token)}`}
-                                 toShow={'Share'}
-                                 className='btn-primary w-full h-full'
-                                 key={`gift-share`}
-                                 btnId='share-button'
-                              />
-                           )}
-                        </div>
-                     </div>
-                  </Modal.Footer>
                </>
             );
       }
