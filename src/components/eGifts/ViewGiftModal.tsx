@@ -22,7 +22,7 @@ interface ViewGiftModalBodyProps {
 export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftModalBodyProps) => {
    return (
       <Modal.Body>
-         <div className='flex flex-col justify-center items-center text-black text-4xl'>
+         <div className='flex flex-col justify-center items-center text-black text-4xl '>
             <StickerItem
                selectedSrc={stickerPath}
                unselectedSrc={stickerPath}
@@ -34,7 +34,7 @@ export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftMo
                <ClipboardButton
                   toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary'
+                  className='btn-primary mt-6'
                />
             )}
          </div>
@@ -53,7 +53,12 @@ export const ViewGiftModal = ({
    return (
       <Modal show={isOpen} onClose={() => onClose()}>
          <Modal.Header>
-            <h2>eGift for {selectedContact?.username}</h2>
+            <h2>
+               eGift for{' '}
+               <a className='underline' target='_blank' href={`/${selectedContact?.username}`}>
+                  {selectedContact?.username}
+               </a>
+            </h2>
          </Modal.Header>
          <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} txid={txid} />
       </Modal>

@@ -40,17 +40,13 @@ export default function StickerItem({
    }, [selectedSrc, unselectedSrc]);
 
    const sizeClasses = {
-      md: 'w-[125px] h-[125px] sm:w-[150px] sm:h-[150px]',
-      lg: 'w-[160px] h-[160px] sm:w-[170px] sm:h-[170px]',
+      md: 'w-[125px] h-[120]  sm:w-[150px] sm:h-[140]',
+      lg: 'w-[160px] h-[143]  sm:w-[170px] sm:h-[150]',
    };
 
    return (
       <div className={`relative ${sizeClasses[size]}`}>
-         <img
-            src={isSelected ? selectedSrc : unselectedSrc}
-            alt={alt}
-            className='object-contain w-full h-full'
-         />
+         <img src={isSelected ? selectedSrc : unselectedSrc} alt={alt} className='object-contain' />
       </div>
    );
 }

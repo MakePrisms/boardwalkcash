@@ -139,7 +139,7 @@ const ConfirmEcashReceiveModal = ({
             const gift = await getGiftFromToken(token);
             setGift(gift);
          } catch (e: any) {
-            if (e.message === 'Not found') {
+            if (e.message === 'Not Found') {
                setGift(null);
             } else {
                throw e;
@@ -326,7 +326,7 @@ const ConfirmEcashReceiveModal = ({
          <Modal show={isOpen} onClose={onClose}>
             <Modal.Header>{title}</Modal.Header>
 
-            <Modal.Body className='text-black flex flex-col gap-6 justify-center items-center'>
+            <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
                <Tooltip content='Copy token'>
                   <div className='hover:cursor-pointer' onClick={handleCopy}>
                      {gift ? (
@@ -344,82 +344,62 @@ const ConfirmEcashReceiveModal = ({
                      )}
                   </div>
                </Tooltip>
+
                {isUserInitialized === true && (
-                  <div className='space-y-4'>
-                     <div className='flex flex-row justify-center'>
-                        <p className='text-center text-sm'>
-                           <a
-                              href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
-                              target='_blank'
-                              className=' '
-                           >
-                              {mintTrusted ? (
-                                 <span className='text-green-500 underline'>Trusted</span>
-                              ) : (
-                                 <span className='text-red-500 underline'>Not Trusted</span>
-                              )}
-                           </a>
-                        </p>
+                  <div className='flex items-center'>
+                     <div className='space-y-4'>
+                        <div className='flex flex-row justify-center'>
+                           <p className='text-center text-sm'>
+                              <a
+                                 href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
+                                 target='_blank'
+                                 className=' '
+                              >
+                                 {mintTrusted ? (
+                                    <span className='text-green-500 underline'>Trusted</span>
+                                 ) : (
+                                    <span className='text-red-500 underline'>Not Trusted</span>
+                                 )}
+                              </a>
+                           </p>
+                        </div>
                      </div>
                   </div>
                )}
-               {!alreadyClaimed && (
-                  <div className='flex flex-col gap-2 justify-center items-center'>
-                     {!lockedTo || lockedTo === '02' + user.pubkey ? (
-                        /* wrap in tooltip when disabled to show message */
-                        disableClaim ? (
-                           <Tooltip content='testnut'>
-                              <span>
-                                 <Button
-                                    disabled={disableClaim}
-                                    onClick={handleSwapToMain}
-                                    className='btn-primary w-36'
-                                 >
-                                    Claim
-                                 </Button>
-                              </span>
-                           </Tooltip>
-                        ) : (
+
+               {!alreadyClaimed && (!lockedTo || lockedTo === '02' + user.pubkey) && (
+                  <div className='flex items-center justify-center'>
+                     {disableClaim ? (
+                        <Tooltip content='testnut'>
                            <Button
-                              disabled={false}
+                              disabled={disableClaim}
                               onClick={handleSwapToMain}
                               className='btn-primary w-36'
                            >
                               Claim
                            </Button>
-                        )
+                        </Tooltip>
                      ) : (
-                        <div className='text-center text-lg text-red-700'>
-                           {gift ? 'eGift' : 'eTip'}{' '}
-                           {tokenContact ? (
-                              <span className=''>
-                                 for{' '}
-                                 <a
-                                    className='underline'
-                                    target='_blank'
-                                    href={`/${tokenContact.username}`}
-                                 >
-                                    {tokenContact.username}
-                                 </a>
-                              </span>
-                           ) : (
-                              ''
-                           )}
-                        </div>
+                        <Button onClick={handleSwapToMain} className='btn-primary w-36'>
+                           Claim
+                        </Button>
                      )}
                   </div>
                )}
+
                {!alreadyClaimed &&
                   !fromActiveMint &&
                   (!lockedTo || lockedTo === '02' + user.pubkey) && (
-                     <Button
-                        className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}
-                        onClick={handleAddMint}
-                        size={'xs'}
-                        theme={{ size: { xs: 'px-2 py-1 text-xxs' } }}
-                     >
-                        {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
-                     </Button>
+                     <div className='flex items-center'>
+                        <Button
+                           className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}
+                           onClick={handleAddMint}
+                           size={'xs'}
+                           theme={{ size: { xs: 'px-2 text-xxs' } }}
+                        >
+                           {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
+                        </Button>
+                     </div>
                   )}
             </Modal.Body>
          </Modal>
