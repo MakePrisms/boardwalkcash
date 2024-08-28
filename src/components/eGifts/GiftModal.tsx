@@ -68,7 +68,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
 
    const handleSelectGift = () => {
       if (!gift) {
-         alert('Please select a gift');
+         addToast('Please select a gift', 'error');
          return;
       }
       setCurrentStep(GiftStep.ConfirmGift);
