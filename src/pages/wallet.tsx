@@ -216,11 +216,12 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}
                onClose={() => {
-                  /* modal should not be closable if token is locked and boardwalk has not been initialized */
                   if (
                      proofsLockedTo(tokenDecoded.token[0].proofs) &&
                      !window.localStorage.getItem('keysets')
                   ) {
+                     /* redirect to setup if boardwalk has not been initialized */
+                     router.push('/setup');
                      return;
                   }
                   router.push('/wallet');
