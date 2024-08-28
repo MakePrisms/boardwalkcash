@@ -64,6 +64,13 @@ export class ReserveError extends CashuError {
    }
 }
 
+export class AlreadyClaimedError extends CashuError {
+   constructor(message?: string) {
+      super(`eCash already claimed`);
+      this.name = 'AlreadyClaimedError';
+   }
+}
+
 export interface CrossMintQuoteResult {
    mintQuote: MintQuoteResponse;
    meltQuote: MeltQuoteResponse;

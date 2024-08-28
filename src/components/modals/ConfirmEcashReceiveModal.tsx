@@ -10,7 +10,7 @@ import ProcessingClaimModal from './ProcessingCashuSwap/ProcessingClaim';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { GiftAsset, PublicContact } from '@/types';
+import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import StickerItem from '../eGifts/stickers/StickerItem';
 import { formatCents } from '@/utils/formatting';
@@ -46,6 +46,7 @@ const ConfirmEcashReceiveModal = ({
    const [gift, setGift] = useState<GiftAsset | null>(null);
    const [loading, setLoading] = useState(true);
    const [disableClaim, setDisableClaim] = useState(false);
+   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
 
    const dispatch = useAppDispatch();
 
@@ -101,6 +102,7 @@ const ConfirmEcashReceiveModal = ({
          } else if (pubkeyLock) {
             // fetch contact if not passed to the component
             const contact = await fetchContact(pubkeyLock.slice(2));
+            console.log('contact', contact);
             setTokenContact(contact || null);
          }
 
@@ -119,7 +121,7 @@ const ConfirmEcashReceiveModal = ({
          if (await isTokenSpent(token)) {
             /* stop loading so /wallet page shows the ecash still */
             setLoading(false);
-            throw new Error('eCash already claimed');
+            throw new AlreadyClaimedError();
          }
          const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
          setTokenUnit(proofsUnit);
@@ -132,28 +134,40 @@ const ConfirmEcashReceiveModal = ({
 
       const loadGift = async () => {
          if (!token) return;
-         const loadGift = async () => {
+         try {
             const gift = await getGiftFromToken(token);
             setGift(gift);
-         };
-         loadGift().catch(e => {
+         } catch (e: any) {
             if (e.message === 'Not found') {
                setGift(null);
+            } else {
+               throw e;
             }
-         });
+         }
       };
 
       const load = async (token: Token) => {
-         await Promise.all([loadTokenDetails(token), loadGift()])
-            .then(() => setLoading(false))
-            .catch(e => {
-               if (e.message) {
-                  addToast(e.message, 'error');
-               } else {
-                  addToast('Failed to load token', 'error');
+         try {
+            await Promise.all([loadTokenDetails(token), loadGift()]);
+            setLoading(false);
+         } catch (e: any) {
+            if (e.message) {
+               addToast(e.message, 'error');
+            } else {
+               addToast('Failed to load token', 'error');
+            }
+            if (e instanceof AlreadyClaimedError) {
+               setAlreadyClaimed(true);
+               // Check if this is a gift after both promises have resolved
+               const isGift = await getGiftFromToken(token).catch(() => null);
+               if (isGift) {
+                  setLoading(false);
+                  return; // Don't close the modal for claimed gifts
                }
-               onClose();
-            });
+            }
+
+            onClose();
+         }
       };
 
       if (!token) return;
@@ -190,13 +204,14 @@ const ConfirmEcashReceiveModal = ({
    };
 
    const title = useMemo(() => {
+      const forText = tokenContact?.username ? `for ${tokenContact.username}` : '';
       if (gift) {
-         return `eGift`;
+         return `eGift ${forText}`;
       } else if (lockedTo) {
-         return `eTip`;
+         return `eTip ${forText}`;
       }
       return 'Confirm Ecash Receive';
-   }, [lockedTo, gift]);
+   }, [lockedTo, gift, tokenContact]);
 
    const getUsdKeyset = async (mint: CashuMint) => {
       let keysets: MintKeys[] = [];
@@ -311,6 +326,7 @@ const ConfirmEcashReceiveModal = ({
                               unselectedSrc={gift.unselectedSrc}
                               isSelected={true}
                               alt={formatCents(gift.amountCents)}
+                              size='lg'
                            />
                         </div>
                      ) : (
@@ -335,60 +351,64 @@ const ConfirmEcashReceiveModal = ({
                      </p>
                   </div>
                </div>
-               <div className='flex flex-col gap-2 justify-center items-center'>
-                  {!lockedTo || lockedTo === '02' + user.pubkey ? (
-                     /* wrap in tooltip when disabled to show message */
-                     disableClaim ? (
-                        <Tooltip content='testnut'>
-                           <span>
-                              <Button
-                                 disabled={disableClaim}
-                                 onClick={handleSwapToMain}
-                                 className='btn-primary w-36'
-                              >
-                                 Claim
-                              </Button>
-                           </span>
-                        </Tooltip>
-                     ) : (
-                        <Button
-                           disabled={false}
-                           onClick={handleSwapToMain}
-                           className='btn-primary w-36'
-                        >
-                           Claim
-                        </Button>
-                     )
-                  ) : (
-                     <div className='text-center text-lg text-red-700'>
-                        {gift ? 'eGift' : 'eTip'}{' '}
-                        {tokenContact ? (
-                           <span className=''>
-                              for{' '}
-                              <a
-                                 className='underline'
-                                 target='_blank'
-                                 href={`/${tokenContact.username}`}
-                              >
-                                 {tokenContact.username}
-                              </a>
-                           </span>
+               {!alreadyClaimed && (
+                  <div className='flex flex-col gap-2 justify-center items-center'>
+                     {!lockedTo || lockedTo === '02' + user.pubkey ? (
+                        /* wrap in tooltip when disabled to show message */
+                        disableClaim ? (
+                           <Tooltip content='testnut'>
+                              <span>
+                                 <Button
+                                    disabled={disableClaim}
+                                    onClick={handleSwapToMain}
+                                    className='btn-primary w-36'
+                                 >
+                                    Claim
+                                 </Button>
+                              </span>
+                           </Tooltip>
                         ) : (
-                           ''
-                        )}
-                     </div>
-                  )}
-               </div>
-               {!fromActiveMint && (!lockedTo || lockedTo === '02' + user.pubkey) && (
-                  <Button
-                     className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}
-                     onClick={handleAddMint}
-                     size={'xs'}
-                     theme={{ size: { xs: 'px-2 py-1 text-xxs' } }}
-                  >
-                     {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
-                  </Button>
+                           <Button
+                              disabled={false}
+                              onClick={handleSwapToMain}
+                              className='btn-primary w-36'
+                           >
+                              Claim
+                           </Button>
+                        )
+                     ) : (
+                        <div className='text-center text-lg text-red-700'>
+                           {gift ? 'eGift' : 'eTip'}{' '}
+                           {tokenContact ? (
+                              <span className=''>
+                                 for{' '}
+                                 <a
+                                    className='underline'
+                                    target='_blank'
+                                    href={`/${tokenContact.username}`}
+                                 >
+                                    {tokenContact.username}
+                                 </a>
+                              </span>
+                           ) : (
+                              ''
+                           )}
+                        </div>
+                     )}
+                  </div>
                )}
+               {!alreadyClaimed &&
+                  !fromActiveMint &&
+                  (!lockedTo || lockedTo === '02' + user.pubkey) && (
+                     <Button
+                        className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}
+                        onClick={handleAddMint}
+                        size={'xs'}
+                        theme={{ size: { xs: 'px-2 py-1 text-xxs' } }}
+                     >
+                        {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
+                     </Button>
+                  )}
             </Modal.Body>
          </Modal>
          <ProcessingClaimModal isSwapping={swapping} />
