@@ -249,7 +249,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                      router.push('/setup');
                      return;
                   }
-                  router.push('/wallet');
+                  setEcashReceiveModalOpen(false);
                }}
                isUserInitialized={!!window.localStorage.getItem('keysets')}
             />
