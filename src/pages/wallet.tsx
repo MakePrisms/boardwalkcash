@@ -47,17 +47,18 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
-   const [loadingUser, setLoadingUser] = useState(true);
+   const [loadingState, setLoadingState] = useState(true);
 
    useEffect(() => {
       if (user.status === 'failed') {
-         console.log('Failed to load user', user);
-         setLoadingUser(false);
+         setLoadingState(false);
       }
       if (user.status !== 'succeeded') {
-         setLoadingUser(true);
-      } else {
-         setLoadingUser(false);
+         setLoadingState(true);
+      } else if (user.status === 'succeeded') {
+         setTimeout(() => {
+            setLoadingState(false);
+         }, 1000);
       }
    }, [user]);
 
@@ -72,7 +73,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             setTokenDecoded(decoded);
             setEcashReceiveModalOpen(true);
             /* no user to load */
-            setLoadingUser(false);
+            setLoadingState(false);
             return;
          }
 
@@ -202,7 +203,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
 
    // if (!user.pubkey) return null;
 
-   if (loadingUser) {
+   if (loadingState) {
       return (
          <main
             className='flex flex-col items-center justify-center mx-auto'
