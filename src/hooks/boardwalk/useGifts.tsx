@@ -4,6 +4,9 @@ import { computeTxId } from '@/utils/cashu';
 import { GetAllGiftsResponse, GetGiftResponse, GiftAsset } from '@/types';
 import { Gift } from '@prisma/client';
 import { Token, getEncodedToken } from '@cashu/cashu-ts';
+import useContacts from './useContacts';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 
 interface GiftContextType {
    giftAssets: Record<string, GiftAsset>;
@@ -22,6 +25,8 @@ interface GiftProviderProps {
 export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const [giftAssets, setGiftAssets] = useState<Record<string, GiftAsset>>({});
    const [isFetching, setIsFetching] = useState(false);
+   const user = useSelector((state: RootState) => state.user);
+   const { isContactAdded } = useContacts();
 
    useEffect(() => {
       const fetchGifts = async () => {
@@ -44,6 +49,16 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const normalizeGifts = (apiGifts: Gift[]): Record<string, GiftAsset> => {
       return apiGifts.reduce(
          (acc, gift) => {
+            const userLoaded = user.status === 'succeeded';
+            /* Only load custom gifts if there is an intialized user and the gift creator is a contact */
+            if (
+               userLoaded &&
+               gift.creatorPubkey &&
+               !isContactAdded({ pubkey: gift.creatorPubkey })
+            ) {
+               return acc;
+            }
+
             const giftAsset: GiftAsset = {
                amountCents: gift.amount,
                name: gift.name,
