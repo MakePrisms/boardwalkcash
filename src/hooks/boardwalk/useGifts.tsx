@@ -7,6 +7,7 @@ import { Token, getEncodedToken } from '@cashu/cashu-ts';
 import useContacts from './useContacts';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/router';
 
 interface GiftContextType {
    giftAssets: Record<string, GiftAsset>;
@@ -28,6 +29,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const [isFetching, setIsFetching] = useState(false);
    const user = useSelector((state: RootState) => state.user);
    const { isContactAdded } = useContacts();
+   const router = useRouter();
 
    useEffect(() => {
       const fetchGifts = async () => {
@@ -59,8 +61,11 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       return apiGifts.reduce(
          (acc, gift) => {
             const userLoaded = user.status === 'succeeded';
+            /* hack so that gifts load on profile page (user might not be initialized) */
+            const isUsernamePage = router.query.slug !== undefined;
             /* Only load custom gifts if there is an intialized user and the gift creator is a contact */
             if (
+               !isUsernamePage &&
                !force &&
                userLoaded &&
                gift.creatorPubkey &&
