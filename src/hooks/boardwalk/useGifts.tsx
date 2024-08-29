@@ -46,12 +46,13 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       fetchGifts();
    }, []);
 
-   const normalizeGifts = (apiGifts: Gift[]): Record<string, GiftAsset> => {
+   const normalizeGifts = (apiGifts: Gift[], force: boolean = false): Record<string, GiftAsset> => {
       return apiGifts.reduce(
          (acc, gift) => {
             const userLoaded = user.status === 'succeeded';
             /* Only load custom gifts if there is an intialized user and the gift creator is a contact */
             if (
+               !force &&
                userLoaded &&
                gift.creatorPubkey &&
                !isContactAdded({ pubkey: gift.creatorPubkey })
@@ -100,7 +101,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       if (!apiGift) {
          return null;
       }
-      return normalizeGifts([apiGift])[identifier];
+      return normalizeGifts([apiGift], true)[identifier];
    };
 
    const getGiftByIdentifier = (identifier: string): GiftAsset | undefined => {
@@ -114,7 +115,12 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       const { gift } = await request<{ gift: string }>(`/api/token/${txid}`, 'GET');
       console.log('gift', gift);
       if (!gift) return null;
-      return getGiftByIdentifier(gift) || null;
+      const localGift = getGiftByIdentifier(gift) || null;
+      if (localGift) {
+         return localGift;
+      } else {
+         return await fetchGift(gift);
+      }
    };
 
    const value: GiftContextType = {
