@@ -47,6 +47,19 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
+   const [loadingUser, setLoadingUser] = useState(true);
+
+   useEffect(() => {
+      if (user.status === 'failed') {
+         console.log('Failed to load user', user);
+         setLoadingUser(false);
+      }
+      if (user.status !== 'succeeded') {
+         setLoadingUser(true);
+      } else {
+         setLoadingUser(false);
+      }
+   }, [user]);
 
    useEffect(() => {
       if (!router.isReady) return;
@@ -58,7 +71,8 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          if (proofsLockedTo(decoded.token[0].proofs) && !localKeysets) {
             setTokenDecoded(decoded);
             setEcashReceiveModalOpen(true);
-
+            /* no user to load */
+            setLoadingUser(false);
             return;
          }
 
@@ -187,6 +201,17 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
    // if (!user.pubkey) return null;
+
+   if (loadingUser) {
+      return (
+         <main
+            className='flex flex-col items-center justify-center mx-auto'
+            style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+         >
+            {user.status === 'failed' ? <div>Failed to load user</div> : <div>Loading...</div>}
+         </main>
+      );
+   }
 
    return (
       <>
