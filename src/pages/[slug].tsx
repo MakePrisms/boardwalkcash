@@ -145,7 +145,7 @@ const UserProfilePage = () => {
                   {showAddContact && (
                      <div className='w-full'>
                         <Button
-                           className='btn-primary w-20'
+                           className='btn-primary w-20 h-9 flex items-center justify-center'
                            isProcessing={addingContact}
                            onClick={handleAddContact}
                         >
