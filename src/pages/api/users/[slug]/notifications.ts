@@ -9,6 +9,7 @@ import {
    DeleteNotificationsResponse,
    GetNotificationsResponse,
    MarkNotificationsAsReadRequest,
+   NotificationIncludeTokenAndContact,
    NotificationType,
    PublicContact,
    UpdateNotificationsResponse,
@@ -45,67 +46,97 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
    }
 }
 
-async function handleGetNotifications(userPubkey: string, res: NextApiResponse) {
+async function handleGetNotifications(
+   userPubkey: string,
+   res: NextApiResponse<GetNotificationsResponse | { error: string }>,
+) {
    try {
       const notifications = await getUserNotifications(userPubkey);
-      const contactPubkeys = extractContactPubkeys(notifications);
-      const contacts = await findManyContacts(contactPubkeys);
+      // const contactPubkeys = extractContactPubkeys(notifications);
+      // const contacts = await findManyContacts(contactPubkeys);
 
-      const updatedNotifications = attachContactsToNotifications(notifications, contacts);
+      // const updatedNotifications = attachContactsToNotifications(notifications, contacts);
+      const isContactNotification = (n: Notification) =>
+         n.type === NotificationType.NewContact || n.type === NotificationType.AddedBack;
 
-      return res.status(200).json(updatedNotifications as GetNotificationsResponse);
+      console.log('notifications', notifications);
+
+      const updatedNotifications = notifications.map(n => {
+         const contactData = n.Contact;
+         return {
+            ...n,
+            token: n.token,
+            contact: {
+               pubkey: n.Contact?.linkedUser?.pubkey,
+               username: contactData?.linkedUser?.username,
+            } as PublicContact,
+            Contact: null,
+            gift: n.token?.gift || null,
+         };
+      });
+
+      console.log('updatedNotifications', updatedNotifications);
+
+      return res.status(200).json(updatedNotifications);
    } catch (error) {
       console.error('Error fetching notifications:', error);
       return res.status(500).json({ error: 'Failed to fetch notifications' });
    }
 }
 
-function extractContactPubkeys(notifications: Notification[]): string[] {
-   const newContactPubkeys = notifications
-      .filter(n => n.type === NotificationType.NewContact)
-      .map(n => n.data);
+// function extractContactPubkeys(
+//    notifications: NotificationIncludeTokenAndContact[],
+// ): (string | number)[] {
+//    const isTokenNotification = (n: Notification) => !isContactNotification(n);
 
-   const tokenContactPubkeys = notifications
-      .filter(n => n.type === NotificationType.Token)
-      .map(n => {
-         try {
-            return JSON.parse(n.data).from || null;
-         } catch {
-            return null;
-         }
-      })
-      .filter((pubkey): pubkey is string => pubkey !== null);
+//    const newContactIds = notifications
+//       .filter(n => isContactNotification(n))
+//       .map(n => {
+//          if (!n.contactId) throw new Error('Contact ID is not set on a contact notification');
+//          return n.contactId;
+//       });
 
-   return [...newContactPubkeys, ...tokenContactPubkeys];
-}
+//    const tokenContactPubkeys = notifications
+//       .filter(n => isTokenNotification(n))
+//       .map(n => {
+//          try {
+//             return n.token?.recipientId;
+//          } catch {
+//             return null;
+//          }
+//       })
+//       .filter((pubkey): pubkey is string => pubkey !== null);
 
-function attachContactsToNotifications(
-   notifications: (Notification & { token: Token | null })[],
-   contacts: PublicContact[],
-): (Notification & { token: Token | null })[] {
-   return notifications.map(n => {
-      const pubkey = getPubkeyFromNotification(n);
-      if (!pubkey) return n;
+//    return [...newContactPubkeys, ...tokenContactPubkeys];
+// }
 
-      const contact = contacts.find(c => c.pubkey === pubkey);
-      return { ...n, contact };
-   });
-}
+// function attachContactsToNotifications(
+//    notifications: (Notification & { token: Token | null })[],
+//    contacts: PublicContact[],
+// ): (Notification & { token: Token | null })[] {
+//    return notifications.map(n => {
+//       const pubkey = getPubkeyFromNotification(n);
+//       if (!pubkey) return n;
 
-function getPubkeyFromNotification(notification: Notification): string | null {
-   switch (notification.type) {
-      case NotificationType.NewContact:
-         return notification.data;
-      case NotificationType.Token:
-         try {
-            return JSON.parse(notification.data).from;
-         } catch {
-            return null;
-         }
-      default:
-         return null;
-   }
-}
+//       const contact = contacts.find(c => c.pubkey === pubkey);
+//       return { ...n, contact };
+//    });
+// }
+
+// function getPubkeyFromNotification(notification: Notification): string | null {
+//    switch (notification.type) {
+//       case NotificationType.NewContact:
+//          return notification.data;
+//       case NotificationType.Token:
+//          try {
+//             return JSON.parse(notification.data).from;
+//          } catch {
+//             return null;
+//          }
+//       default:
+//          return null;
+//    }
+// }
 
 async function handleNotifyTokenReceived(
    req: NextApiRequest,
@@ -135,11 +166,7 @@ async function handleNotifyTokenReceived(
 
    try {
       console.log('notifying token received to user', receiverPubkey);
-      const notifications = await notifyTokenReceived(
-         receiverPubkey,
-         JSON.stringify({ token, from: userPubkey }),
-         txid,
-      );
+      const notifications = await notifyTokenReceived(receiverPubkey, txid);
       return res.status(200).json({ status: 'ok' });
    } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

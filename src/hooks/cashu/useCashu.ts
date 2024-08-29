@@ -242,6 +242,7 @@ export const useCashu = () => {
       opts?: { privkey?: string },
    ): Promise<boolean> => {
       lockBalance();
+      console.log('balance before claim', balance);
       let success = false;
       try {
          const newProofs = await wallet.receiveTokenEntry(
@@ -252,7 +253,7 @@ export const useCashu = () => {
             { privkey: opts?.privkey },
          );
 
-         addProofs(newProofs);
+         await addProofs(newProofs);
 
          const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
          toastSwapSuccess(wallet, activeWallet, amountUsd);
@@ -260,7 +261,7 @@ export const useCashu = () => {
       } catch (error) {
          toastSwapError(error);
       } finally {
-         unlockBalance();
+         await Promise.resolve().then(() => unlockBalance());
       }
       return success;
    };
@@ -315,7 +316,7 @@ export const useCashu = () => {
       opts?: {
          wallet?: CashuWallet;
          pubkey?: string;
-         gift?: string;
+         giftId?: number;
          feeCents?: number;
       },
    ) => {
@@ -346,7 +347,7 @@ export const useCashu = () => {
                unit: 'usd',
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.gift);
+               const txid = await postTokenToDb(feeToken, opts?.giftId);
                await sendTokenAsNotification(feeToken, txid);
             }
          }
@@ -367,7 +368,7 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
-                  gift: opts?.gift,
+                  giftId: opts?.giftId,
                   fee: opts?.feeCents,
                },
             }),
@@ -433,18 +434,18 @@ export const useCashu = () => {
             .meltTokens(meltQuote, proofsToSend, {
                keysetId: wallet.keys.id,
             })
-            .catch(err => {
-               addProofs(proofsToSend);
+            .catch(async err => {
+               await addProofs(proofsToSend);
                throw err;
             });
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
          if (!isPaid) {
-            addProofs([...change, ...proofsToSend]);
+            await addProofs([...change, ...proofsToSend]);
             throw new TransactionError('Melt failed');
          }
 
-         addProofs(change);
+         await addProofs(change);
 
          const feePaid = meltQuote.fee_reserve - change.reduce((acc, p) => acc + p.amount, 0);
          const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';

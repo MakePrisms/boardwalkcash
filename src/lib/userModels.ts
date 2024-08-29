@@ -100,10 +100,6 @@ async function deleteUser(id: number) {
 }
 
 export interface ContactData {
-   nickname?: string;
-   phoneNumber?: string;
-   email?: string;
-   xHandle?: string;
    linkedUserPubkey?: string;
 }
 
@@ -114,10 +110,6 @@ async function addContactToUser(userPubkey: string, contactData: ContactData) {
    try {
       const newContact = await prisma.contact.create({
          data: {
-            nickname: contactData.nickname,
-            phoneNumber: contactData.phoneNumber,
-            email: contactData.email,
-            xHandle: contactData.xHandle,
             user: {
                connect: { pubkey: userPubkey },
             },

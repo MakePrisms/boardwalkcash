@@ -159,11 +159,13 @@ export const getProofsFromServer = async (pubkey: string) => {
 export const getInvoiceForTip = async (
    pubkey: string,
    amount: number,
-   gift?: string,
+   giftId?: number,
    fee?: number,
 ) => {
    return await request<LightningTipResponse>(
-      `/api/tip/${pubkey}?amount=${amount}&unit=usd&gift=${gift}${fee ? `&fee=${fee}` : ''}`,
+      `/api/tip/${pubkey}?amount=${amount}&unit=usd${giftId ? `&giftId=${giftId}` : ''}${
+         fee ? `&fee=${fee}` : ''
+      }`,
       'GET',
       undefined,
    );
@@ -177,10 +179,10 @@ export const getTipStatus = async (quoteId: string) => {
    );
 };
 
-export const postTokenToDb = async (token: string, gift?: string) => {
+export const postTokenToDb = async (token: string, giftId?: number) => {
    console.log('posting token to db', token);
    return (
-      await request<PostTokenResponse>(`/api/token`, 'POST', { token, gift } as PostTokenRequest)
+      await request<PostTokenResponse>(`/api/token`, 'POST', { token, giftId } as PostTokenRequest)
    ).txid;
 };
 

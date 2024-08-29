@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { findUserByPubkey } from '@/lib/userModels';
 import { initializeUsdWallet } from '@/utils/cashu';
-import { LightningTipResponse } from '@/types';
+import { InvoicePollingRequest, LightningTipResponse } from '@/types';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 import axios from 'axios';
 
@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // unit - usd only
       // gift - gift name
       // fee - amount to send to boardwalk as fee
-      const { pubkey, amount, unit, gift, fee = 0 } = req.query;
+      const { pubkey, amount, unit, giftId, fee = 0 } = req.query;
 
       if (!pubkey || !amount || !unit) {
          return res.status(400).json({ error: 'Missing required parameters' });
@@ -48,12 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}?isTip=true`,
             {
                pubkey: user.pubkey,
-               amount: amount,
+               amount: Number(amount),
                keysetId: wallet.keys.id,
                mintUrl: wallet.mint.mintUrl,
-               gift,
+               giftId,
                fee,
-            },
+            } as InvoicePollingRequest,
          );
 
          return res.status(200).json({

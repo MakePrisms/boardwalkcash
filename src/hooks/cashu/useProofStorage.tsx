@@ -58,6 +58,8 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
 
    // Lock balance when proofs are being added and removed consecutively to avoid flickering
    const [lockedBalance, setLockedBalance] = useState<number | null>(null);
+   const [balance, setBalance] = useState(0);
+   const [balanceByWallet, setBalanceByWallet] = useState<Record<string, number>>({});
 
    const { wallets } = useCashuContext();
 
@@ -66,7 +68,8 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
       setIsLoading(false);
    }, []);
 
-   const { balance, balanceByWallet } = useMemo(() => {
+   useEffect(() => {
+      console.log('calculating balance');
       const trustedIds = Array.from(wallets.keys());
       let totalBalance = 0;
       const newBalanceByWallet: Record<string, number> = {};
@@ -78,18 +81,25 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
          }
       });
 
-      return {
-         balance: lockedBalance !== null ? lockedBalance : totalBalance,
-         balanceByWallet: newBalanceByWallet,
-      };
+      setBalance(lockedBalance !== null ? lockedBalance : totalBalance);
+      setBalanceByWallet(newBalanceByWallet);
    }, [proofs, wallets, lockedBalance]);
 
    const lockBalance = useCallback(() => {
+      console.log('locking balance', balance);
       setLockedBalance(balance);
    }, [balance]);
 
    const unlockBalance = useCallback(() => {
       setLockedBalance(null);
+
+      // Update proofs state from localStorage
+      const storedProofs = getStoredProofs();
+      setProofs(storedProofs);
+
+      // Calculate new balance based on updated proofs state
+      const newBalance = storedProofs.reduce((a, b) => a + b.amount, 0);
+      console.log('newBalance', newBalance);
    }, []);
 
    const lockOperation = useCallback(
@@ -124,6 +134,7 @@ export const ProofProvider: React.FC<React.PropsWithChildren> = ({ children }) =
             setStoredProofs(updatedProofs);
             setProofs(updatedProofs);
          });
+         console.log('added proofs', newProofs);
       },
       [lockOperation],
    );

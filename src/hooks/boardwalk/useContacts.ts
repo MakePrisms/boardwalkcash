@@ -152,6 +152,7 @@ const useContacts = () => {
          }
 
          try {
+            console.log('Adding contact', user.pubkey, localPubkey);
             await addContactRequest(localPubkey, { linkedUserPubkey: user.pubkey });
 
             dispatch(addContactAction(user));

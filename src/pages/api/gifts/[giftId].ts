@@ -3,23 +3,23 @@ import { Gift } from '@prisma/client';
 import { GetGiftResponse } from '@/types';
 import prisma from '@/lib/prisma';
 
-async function getGift(name: string): Promise<Gift | null> {
-   return prisma.gift.findUnique({ where: { name } });
+async function getGift(id: number): Promise<Gift | null> {
+   return prisma.gift.findUnique({ where: { id } });
 }
 
 export default async function handler(
    req: NextApiRequest,
    res: NextApiResponse<GetGiftResponse | { error: string }>,
 ) {
-   const { giftName } = req.query;
+   const { giftId } = req.query;
 
-   if (!giftName || typeof giftName !== 'string') {
+   if (!giftId || typeof giftId !== 'number') {
       return res.status(400).json({ error: 'Invalid gift name' });
    }
 
    if (req.method === 'GET') {
       try {
-         const gift = await getGift(giftName);
+         const gift = await getGift(giftId);
          if (!gift) {
             return res.status(404).json({ error: 'Gift not found' });
          }

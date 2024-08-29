@@ -23,6 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
          return res.status(200).json({ txid } as PostTokenResponse);
       } catch (error: any) {
+         console.error('Error creating token:', error);
          return res.status(500).json({ message: error.message });
       }
    } else {

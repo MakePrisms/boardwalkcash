@@ -29,24 +29,28 @@ import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatCents } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
-import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { useProofStorage } from '@/hooks/cashu/useProofStorage';
+import { getGiftById } from '@/lib/gifts';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance, proofsLockedTo } = useCashu();
+   const { proofsLockedTo } = useCashu();
+   const { balance } = useProofStorage();
    const { addWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
-   const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
+
+   useEffect(() => {
+      console.log('balance in wallet', balance);
+   }, [balance]);
 
    useEffect(() => {
       if (!router.isReady) return;
@@ -248,18 +252,12 @@ export const getServerSideProps: GetServerSideProps = async (
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
          token = tokenEntry.token;
-         if (tokenEntry.gift) {
-            gift = await getGiftByName(tokenEntry.gift as string).then(g => {
+         if (tokenEntry.giftId) {
+            gift = await getGiftById(tokenEntry.giftId).then(g => {
                if (!g) return;
-               return {
-                  amountCents: g.amount,
-                  name: g.name,
-                  selectedSrc: g.imageUrlSelected,
-                  unselectedSrc: g.imageUrlUnselected,
-                  description: g.description,
-               } as GiftAsset;
+               return g;
             });
-            giftPath = gift?.selectedSrc || null;
+            giftPath = gift?.imageUrlSelected || null;
          }
       }
    }

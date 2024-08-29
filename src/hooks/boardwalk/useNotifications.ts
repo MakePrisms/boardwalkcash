@@ -115,20 +115,13 @@ const useNotifications = () => {
    const processTokenNotification = async (
       notification: GetNotificationResponse,
    ): Promise<TokenNotificationData> => {
-      let rawToken: string = '';
+      const rawToken = notification.token?.token;
       let contact: PublicContact | null = null;
-      if (notification.type === NotificationType.TIP) {
-         rawToken = notification.data;
-      } else if (notification.type === NotificationType.Token) {
-         const { token, from } = JSON.parse(notification.data);
-         rawToken = token;
-         contact = notification.contact;
-      }
       if (!rawToken) {
          throw new Error('Could not get raw token from notification');
       }
       const token = getDecodedToken(rawToken);
-      const gift = notification.token?.gift as string | undefined;
+      const gift = notification.gift;
       return {
          token,
          rawToken,

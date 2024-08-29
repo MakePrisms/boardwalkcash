@@ -45,7 +45,10 @@ export const findMintQuotesToRedeem = async () => {
    return quotes;
 };
 
-export const updateMintQuote = async (quoteId: string, data: { paid: boolean; token?: string }) => {
+export const updateMintQuote = async (
+   quoteId: string,
+   data: { paid: boolean; tokenId?: string },
+) => {
    const quote = await prisma.mintQuote.update({
       where: {
          id: quoteId,
@@ -62,6 +65,7 @@ export const getMintQuote = async (quoteId: string) => {
       },
       include: {
          mintKeyset: true,
+         token: true,
       },
    });
    return quote;

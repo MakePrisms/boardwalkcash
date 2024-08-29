@@ -36,15 +36,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'PUT':
          try {
+            console.log('PUT', req.body);
             if (req.body.linkedUserPubkey) {
-               await addContactToUser(slug, req.body as ContactData);
+               const contact = await addContactToUser(slug, req.body as ContactData);
 
                // notify the added user that they've been added as a contact
-               await createNotification(
+               const n = await createNotification(
                   req.body.linkedUserPubkey,
                   NotificationType.NewContact,
-                  slug,
+                  {
+                     contactId: contact.id,
+                  },
                );
+
+               console.log('n', n);
 
                return res.status(201).json({ message: 'Contact added' });
             }
@@ -70,6 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log('Error:', error);
             return res.status(500).json({ message: error.message });
          }
+         break;
 
       case 'DELETE':
          try {

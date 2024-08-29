@@ -7,7 +7,7 @@ import {
    ApiError as CashuApiError,
    Token,
 } from '@cashu/cashu-ts';
-import { Gift, Notification, Token as TokenPrisma } from '@prisma/client';
+import { Contact, Gift, Notification, Token as TokenPrisma } from '@prisma/client';
 
 export interface ProofData {
    proofId: string;
@@ -91,6 +91,7 @@ export const isCashuApiError = (error: any): error is CashuApiError => {
 };
 
 export type PublicContact = {
+   id: number;
    /** The pubkey of the contact */
    pubkey: string;
 
@@ -126,6 +127,7 @@ export enum NotificationType {
    NewContact = 'new-contact',
    TIP = 'tip',
    Gift = 'gift', // TODO: add this to notifications
+   AddedBack = 'added-back',
 }
 
 export type MarkNotificationsAsReadRequest = {
@@ -145,13 +147,14 @@ export type DeleteNotificationsResponse = {
 export type GetNotificationResponse = Notification & {
    contact: PublicContact;
    token: TokenPrisma | null;
+   gift: Gift | null;
 };
 
 export type GetNotificationsResponse = Array<GetNotificationResponse>;
 
 export type NotifyTokenReceivedRequest = {
    token: string;
-   txid?: string;
+   txid: string;
 };
 
 export type LightningTipResponse = {
@@ -172,7 +175,7 @@ export type TokenNotificationData = {
    isTip: boolean;
    timeAgo: string;
    tokenState: 'claimed' | 'unclaimed';
-   gift?: string;
+   gift: Gift | null;
 };
 
 export type ContactNotificationData = {
@@ -206,7 +209,7 @@ export const isContactNotification = (
 
 export type PostTokenRequest = {
    token: string;
-   gift?: string;
+   giftId?: number;
 };
 
 export type PostTokenResponse = {
@@ -224,20 +227,18 @@ export type GetAllGiftsResponse = {
 
 export type GetGiftResponse = Gift;
 
-export interface GiftAsset {
-   amountCents: number;
-   name: string;
-   selectedSrc: string;
-   unselectedSrc: string;
-   description: string | null;
-   cost?: number;
-}
+export type GiftAsset = Gift;
 
 export interface InvoicePollingRequest {
    pubkey: string;
    amount: number;
    keysetId: string;
    mintUrl: string;
-   gift?: string;
+   giftId?: number;
    fee?: number;
 }
+
+export type NotificationIncludeTokenAndContact = Notification & {
+   token: TokenPrisma | null;
+   Contact: Contact | null;
+};

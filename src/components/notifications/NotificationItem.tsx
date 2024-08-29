@@ -1,5 +1,4 @@
 import {
-   GetNotificationResponse,
    NotificationType,
    NotificationWithData,
    isContactNotification,
@@ -15,7 +14,7 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ notification, clearNotification }: NotificationItemProps) => {
-   const { type, data, processedData } = notification;
+   const { type, processedData } = notification;
 
    if (type === NotificationType.NewContact && !processedData.contact) {
       console.warn('NewContact notification without contact data:', notification);

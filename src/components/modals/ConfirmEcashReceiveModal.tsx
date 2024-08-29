@@ -73,7 +73,7 @@ const ConfirmEcashReceiveModal = ({
                   date: new Date().toLocaleString(),
                   status,
                   unit: 'usd',
-                  gift: gift?.name,
+                  giftId: gift?.id,
                },
             }),
          );
@@ -332,10 +332,10 @@ const ConfirmEcashReceiveModal = ({
                      {gift ? (
                         <div className='flex flex-row justify-center'>
                            <StickerItem
-                              selectedSrc={gift.selectedSrc}
-                              unselectedSrc={gift.unselectedSrc}
+                              selectedSrc={gift.imageUrlSelected}
+                              unselectedSrc={gift.imageUrlUnselected}
                               isSelected={true}
-                              alt={formatCents(gift.amountCents)}
+                              alt={formatCents(gift.amount)}
                               size='lg'
                            />
                         </div>

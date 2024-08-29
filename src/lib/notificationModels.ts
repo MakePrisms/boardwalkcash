@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { NotificationType } from '@/types';
+import { NotificationIncludeTokenAndContact, NotificationType } from '@/types';
 import { Notification, Token } from '@prisma/client';
 
 /**
@@ -12,22 +12,23 @@ import { Notification, Token } from '@prisma/client';
 export async function createNotification(
    userPubkey: string,
    type: NotificationType,
-   data: string,
-   tokenId?: string,
+   data: {
+      tokenId?: string;
+      contactId?: number;
+   },
 ): Promise<Notification> {
+   console.log('creating notification', userPubkey, type, data);
    return prisma.notification.create({
       data: {
          userPubkey,
          type,
-         data,
-         tokenId,
+         tokenId: data.tokenId,
+         contactId: data.contactId,
       },
    });
 }
 
-export async function getUserNotifications(
-   userPubkey: string,
-): Promise<(Notification & { token: Token | null })[]> {
+export async function getUserNotifications(userPubkey: string) {
    return prisma.notification.findMany({
       where: {
          userPubkey,
@@ -36,7 +37,21 @@ export async function getUserNotifications(
          createdAt: 'desc',
       },
       include: {
-         token: true,
+         token: {
+            include: {
+               gift: true,
+            },
+         },
+         Contact: {
+            select: {
+               linkedUser: {
+                  select: {
+                     username: true,
+                     pubkey: true,
+                  },
+               },
+            },
+         },
       },
    });
 }
@@ -82,12 +97,11 @@ export async function deleteReadNotifications(userPubkey: string): Promise<{ cou
    });
 }
 
-export async function notifyTokenReceived(receiverPubkey: string, token: string, tokenId?: string) {
+export async function notifyTokenReceived(receiverPubkey: string, tokenId: string) {
    return prisma.notification.create({
       data: {
          userPubkey: receiverPubkey,
          type: NotificationType.Token,
-         data: token,
          tokenId,
       },
    });

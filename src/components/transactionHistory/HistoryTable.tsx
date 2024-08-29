@@ -28,18 +28,18 @@ const HistoryTable: React.FC<{
    const [selectedGift, setSelectedGift] = useState<GiftAsset | undefined>(undefined);
 
    const { fetchContact } = useContacts();
-   const { fetchGift } = useGifts();
+   const { fetchGiftById } = useGifts();
 
    const closeViewGiftModal = () => {
       setIsViewGiftModalOpen(false);
    };
 
-   const openViewGiftModal = async (tx: EcashTransaction & { gift: string }) => {
+   const openViewGiftModal = async (tx: EcashTransaction & { giftId: number }) => {
       setIsViewGiftModalOpen(true);
       setIsSendModalOpen(false);
-      const gift = await fetchGift(tx.gift);
+      const gift = await fetchGiftById(tx.giftId);
       if (!gift) {
-         console.error('Gift not found:', tx.gift);
+         console.error('Gift not found:', tx.giftId);
          return;
       }
       setSelectedGift(gift);
@@ -97,9 +97,9 @@ const HistoryTable: React.FC<{
             <ViewGiftModal
                isOpen={isViewGiftModalOpen}
                onClose={closeViewGiftModal}
-               stickerPath={selectedGift.selectedSrc}
+               stickerPath={selectedGift.imageUrlSelected}
                selectedContact={tokenLockedTo}
-               amountCents={selectedGift.amountCents}
+               amountCents={selectedGift.amount}
                txid={txid}
             />
          )}

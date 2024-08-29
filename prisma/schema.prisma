@@ -9,41 +9,48 @@ generator client {
 }
 
 model User {
+  // TODO: pubkey is main user's identifier. id is not really used (if at all)
   id             Int            @id @default(autoincrement())
-  pubkey         String         @unique
+  pubkey         String         @unique // user has the private key in their browser
   username       String?        @unique
-  contacts       Contact[]      @relation("UserContacts")
-  contactOf      Contact[]      @relation("ContactUser")
-  proofs         Proof[]
+  contacts       Contact[]      @relation("UserContacts") // added contacts
+  contactOf      Contact[]      @relation("ContactUser") // users that added this user as a contact
+  proofs         Proof[] // TODO: deprecate this in favor of receivedTokens
   mintQuotes     MintQuote[]
   defaultMint    Mint           @relation(fields: [defaultMintUrl], references: [url])
   defaultMintUrl String
-  allowedUnits   String[]
-  receiving      Boolean        @default(false)
+  allowedUnits   String[] // only usd is supported
+  receiving      Boolean        @default(false) // used to indicate the user has a pending invoice
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  Notification   Notification[]
-  // custom gifts created by this user
-  customGifts    Gift[]         @relation("CustomGifts")
-  // UserCustomGift UserConditionalGift[]
+  Notification   Notification[] // notifications for this user
+  customGifts    Gift[]         @relation("CustomGifts") // custom gifts created by this user
+  createdTokens  Token[]        @relation("TokenCreatedBy") // tokens this user created
+  receivedTokens Token[]        @relation("TokenRecipient") // tokens sent to this user
+
+  @@index([pubkey])
+  @@index([username])
 }
 
+// represent entries in a contacts list
 model Contact {
-  id           Int      @id @default(autoincrement())
-  nickname     String?
-  phoneNumber  String?
-  email        String?
-  xHandle      String?
-  user         User     @relation("UserContacts", fields: [userId], references: [pubkey])
-  userId       String
-  linkedUser   User?    @relation("ContactUser", fields: [linkedUserId], references: [pubkey])
-  linkedUserId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           Int            @id @default(autoincrement())
+  // nickname     String? // display name (use username if not set)
+  // phoneNumber  String?
+  // email        String?
+  // xHandle      String?
+  user         User           @relation("UserContacts", fields: [userId], references: [pubkey])
+  userId       String // user that added/owns this contact
+  linkedUser   User?          @relation("ContactUser", fields: [linkedUserId], references: [pubkey])
+  linkedUserId String? // user this contact represents
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Notification Notification[] // notifications with this contact in them
 
   @@unique([userId, linkedUserId]) // can only have one contact per user
 }
 
+// TODO: deprecate this in favor of receivedTokens
 model Proof {
   id           Int        @id @default(autoincrement())
   proofId      String
@@ -58,21 +65,24 @@ model Proof {
   @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
 }
 
+// used to keep track of unpaid mint quotes
 model MintQuote {
-  id      String  @id
-  amount  Int
-  request String
-  paid    Boolean
-
+  id           String     @id
+  amount       Int
+  request      String // the invoice to be paid
+  paid         Boolean
   expiryUnix   Int
   createdAt    DateTime   @default(now())
   user         User       @relation(fields: [pubkey], references: [pubkey])
   pubkey       String
   mintKeyset   MintKeyset @relation(fields: [mintKeysetId], references: [id])
-  mintKeysetId String
-  token        String? // encoded token so that frontend can display it
+  mintKeysetId String // the keyset need to finalize this mint quote
+  token        Token?     @relation(fields: [tokenId], references: [id])
+  tokenId      String?    @unique
 }
 
+// so that we don't have to query the mint's keysets everytime
+// TODO: support key rotation? add all the keys for everymint and cron job to check for new keysets and their status
 model Mint {
   url     String       @id
   keysets MintKeyset[]
@@ -92,40 +102,49 @@ model MintKeyset {
 model Notification {
   id         Int      @id @default(autoincrement())
   userPubkey String
-  type       String // "token" | "new-contact"
-  data       String
-  tokenId    String?
-  token      Token?   @relation(fields: [tokenId], references: [id])
   isRead     Boolean  @default(false)
-  user       User     @relation(fields: [userPubkey], references: [pubkey])
+  type       String // "token" | "new-contact" | "added-back" | "gift" | "tip" | "fee"
+  tokenId    String?  @unique // set if type is "token" | "gift" | "tip" | "fee"
+  contactId  Int? // set if type is "new-contact" | "added-back"
   createdAt  DateTime @default(now())
+  token      Token?   @relation(fields: [tokenId], references: [id])
+  user       User     @relation(fields: [userPubkey], references: [pubkey])
+  Contact    Contact? @relation(fields: [contactId], references: [id])
 }
 
+// individual locked tokens 
 model Token {
-  id           String         @id
-  token        String
-  createdAt    DateTime       @default(now())
+  id           String        @id // see src/utils/cashu.ts/computeTxId
+  token        String // encoded token
+  createdAt    DateTime      @default(now())
   redeemedAt   DateTime?
-  gift         String?
-  Notification Notification[]
+  Notification Notification? // the notification this token is in
+  createdById  String? // user that created this token
+  recipientId  String? // user that received this token
+  giftId       Int? // gift that was sent with this token
+
+  gift      Gift?      @relation(fields: [giftId], references: [id])
+  createdBy User?      @relation(fields: [createdById], references: [pubkey], name: "TokenCreatedBy")
+  recipient User?      @relation(fields: [recipientId], references: [pubkey], name: "TokenRecipient")
+  MintQuote MintQuote?
 }
 
+// represent gift assets. only one instance of a gift is created even if many tokens send it
 model Gift {
-  id                 Int     @id @default(autoincrement())
-  name               String  @unique
-  amount             Int
-  unit               String  @default("usd")
-  description        String?
-  // path to image (relative path or full url)
-  imageUrlSelected   String
+  id                 Int      @id @default(autoincrement())
+  name               String   @unique // display name
+  amount             Int // amount eCash to send
+  imageUrlSelected   String // path to image (relative path or full url)
   imageUrlUnselected String
-  // null -> anyone can send/receive;
-  creatorId          Int?
-  // the creator of the gift
-  creator            User?   @relation("CustomGifts", fields: [creatorId], references: [id])
+  creatorId          Int? // null -> anyone can send/receive; otherwise, only the creator can send/receive
+  feeType            String? // fee type (BASIC, SPLIT)
+  feeAmount          Int? // fee amount in USD cents that must be paid to send
+  feePubkeys         String[] // pubkeys to receive the fee
+  feeSplits          Int[] // corresponding splits for each pubkey (if applicable)
+  feeDesc            String? // fee description
+  creator            User?    @relation("CustomGifts", fields: [creatorId], references: [id]) // the creator of the gift
+  Token              Token[] // tokens that sent this gift
 
-  // if there's a cost, user must pay to send
-  cost Int?
   // // true -> anyone can send/receive; false -> only the creator can send/receive
   // isGlobal    Boolean @default(true)
   // // whether or not there are `conditions`

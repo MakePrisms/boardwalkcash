@@ -20,7 +20,7 @@ export type PollingApiResponse = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    /* amount is total amount to send, including fee */
-   const { mintUrl, keysetId, gift, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
+   const { mintUrl, keysetId, giftId, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
    const isTip = req.query.isTip === 'true';
 
    if (!mintUrl) {
@@ -134,12 +134,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, gift }, txid);
-               await notifyTokenReceived(
-                  process.env.NEXT_PUBLIC_FEE_PUBKEY!,
-                  JSON.stringify({ token: feeToken }),
-                  txid,
-               );
+               await createTokenInDb({ token: feeToken, giftId }, txid);
+               await notifyTokenReceived(process.env.NEXT_PUBLIC_FEE_PUBKEY!, txid);
             }
 
             let proofsPayload: ProofData[] = proofsToSendToUser.map(proof => {
@@ -155,20 +151,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             let created;
             let token: string | undefined;
+            let txid: string | undefined;
             if (isTip) {
                /* if its a tip, send as a notification */
                token = getEncodedToken({
                   token: [{ proofs: proofsToSendToUser, mint: wallet.mint.mintUrl }],
                });
+
+               txid = computeTxId(token);
+               await createTokenInDb({ token, giftId: giftId }, txid);
                /* not sure why gift is ending up as 'undefined' */
-               if (gift && gift !== 'undefined') {
-                  const txid = computeTxId(token);
-
-                  await createTokenInDb({ token, gift }, txid);
-
-                  created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
+               if (giftId) {
+                  created = await notifyTokenReceived(pubkey, txid);
                } else {
-                  created = await createNotification(pubkey, NotificationType.TIP, token);
+                  created = await createNotification(pubkey, NotificationType.TIP, {
+                     tokenId: txid,
+                  });
                }
             } else {
                created = await createManyProofs(proofsPayload);
@@ -180,7 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                return;
             }
 
-            await updateMintQuote(slug, { paid: true, token });
+            await updateMintQuote(slug, { paid: true, tokenId: txid });
 
             !isTip && (await updateUser(pubkey, { receiving: false }));
 

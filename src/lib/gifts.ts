@@ -1,8 +1,8 @@
 import { Gift } from '@prisma/client';
 import prisma from './prisma';
 
-export const getGiftByName = async (name: string): Promise<Gift | null> => {
-   return prisma.gift.findUnique({ where: { name } });
+export const getGiftById = async (id: number): Promise<Gift | null> => {
+   return prisma.gift.findUnique({ where: { id } });
 };
 
 export const getAllGifts = async (): Promise<Gift[]> => {

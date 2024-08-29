@@ -61,8 +61,8 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    };
 
    const handleGiftSelected = (gift: GiftAsset) => {
-      setAmountCents(gift.amountCents);
-      setStickerPath(gift.selectedSrc);
+      setAmountCents(gift.amount);
+      setStickerPath(gift.imageUrlSelected);
       setGift(gift);
    };
 
@@ -87,7 +87,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
             amountCents + (feeCents || 0),
-            gift?.name,
+            gift?.id,
             feeCents,
          );
 
@@ -160,13 +160,13 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       setSending(true);
       if (useInvoice) {
-         handleLightningTip(amountCents, gift?.cost);
+         handleLightningTip(amountCents, gift?.feeAmount || undefined);
          return;
       }
       const sendableToken = await createSendableToken(amountCents, {
          pubkey: `02${selectedContact?.pubkey}`,
-         gift: gift?.name,
-         feeCents: gift?.cost,
+         giftId: gift?.id,
+         feeCents: gift?.feeAmount || undefined,
       });
 
       if (!sendableToken) {
@@ -174,7 +174,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          return;
       }
 
-      const txid = await postTokenToDb(sendableToken, gift?.name);
+      const txid = await postTokenToDb(sendableToken, gift?.id);
       // TODO: won't work if tokes are not locked
       await sendTokenAsNotification(sendableToken, txid);
       setToken(sendableToken);
@@ -182,7 +182,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.ShareGift);
 
       setSending(false);
-      addToast(`eGift sent (${formatCents(amountCents + (gift?.cost || 0))})`, 'success');
+      addToast(`eGift sent (${formatCents(amountCents + (gift?.feeAmount || 0))})`, 'success');
    };
 
    const renderContent = () => {
@@ -227,7 +227,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                        {gift?.cost && (
+                        {gift?.feeAmount && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
                                  <span className='flex items-center'>
@@ -239,7 +239,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                                           <LockClosedIcon className='h-3 w-3 text-gray-500' />
                                        </div>
                                     </Tooltip>
-                                    {`${formatCents(gift.cost, false)}`}
+                                    {`${formatCents(gift.feeAmount, false)}`}
                                  </span>
                               </p>
                            </div>
@@ -275,7 +275,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <WaitForInvoiceModalBody
                         invoice={invoice}
-                        amountUsdCents={amountCents! + (gift?.cost || 0)}
+                        amountUsdCents={amountCents! + (gift?.feeAmount || 0)}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />
@@ -291,7 +291,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                        {gift?.cost && (
+                        {gift?.feeAmount && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
                                  <span className='flex items-center'>

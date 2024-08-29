@@ -10,7 +10,7 @@ interface GiftContextType {
    getGiftByIdentifier: (identifier: string) => GiftAsset | undefined;
    getGiftFromToken: (token: string | Token) => Promise<GiftAsset | null>;
    loadingGifts: boolean;
-   fetchGift: (identifier: string) => Promise<GiftAsset | null>;
+   fetchGiftById: (id: number) => Promise<GiftAsset | null>;
 }
 
 const GiftContext = createContext<GiftContextType | undefined>(undefined);
@@ -30,8 +30,12 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
             const apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
             const normalizedGifts = normalizeGifts(apiGifts.gifts);
             setGiftAssets(normalizedGifts);
-            await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.selectedSrc));
-            await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.unselectedSrc));
+            await preloadAndCacheImages(
+               Object.values(normalizedGifts).map(g => g.imageUrlSelected),
+            );
+            await preloadAndCacheImages(
+               Object.values(normalizedGifts).map(g => g.imageUrlUnselected),
+            );
          } catch (error) {
             console.error('Failed to fetch gifts:', error);
          }
@@ -44,15 +48,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const normalizeGifts = (apiGifts: Gift[]): Record<string, GiftAsset> => {
       return apiGifts.reduce(
          (acc, gift) => {
-            const giftAsset: GiftAsset = {
-               amountCents: gift.amount,
-               name: gift.name,
-               selectedSrc: gift.imageUrlSelected,
-               unselectedSrc: gift.imageUrlUnselected,
-               description: gift.description,
-               cost: gift.cost ? gift.cost : undefined,
-            };
-            acc[gift.name] = giftAsset;
+            acc[gift.name] = gift;
             return acc;
          },
          {} as Record<string, GiftAsset>,
@@ -79,12 +75,8 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       await Promise.all(srcs.map(preloadAndCacheImage));
    };
 
-   const fetchGift = async (identifier: string): Promise<GiftAsset | null> => {
-      const apiGift = await request<GetGiftResponse>(`/api/gifts/${identifier}`, 'GET');
-      if (!apiGift) {
-         return null;
-      }
-      return normalizeGifts([apiGift])[identifier];
+   const fetchGiftById = async (id: number): Promise<GiftAsset | null> => {
+      return await request<GetGiftResponse>(`/api/gifts/${id}`, 'GET');
    };
 
    const getGiftByIdentifier = (identifier: string): GiftAsset | undefined => {
@@ -106,7 +98,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       getGiftByIdentifier,
       getGiftFromToken,
       loadingGifts: isFetching,
-      fetchGift,
+      fetchGiftById,
    };
 
    return <GiftContext.Provider value={value}>{children}</GiftContext.Provider>;

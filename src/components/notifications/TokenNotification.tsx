@@ -40,7 +40,7 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
       };
 
       if (gift) {
-         const giftName = gift;
+         const giftName = gift.name;
          const article = getArticle(giftName);
          return `${firstPart} ${article} ${giftName} eGift`;
       }

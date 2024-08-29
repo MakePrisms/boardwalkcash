@@ -26,7 +26,7 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift }) => {
       <div className='grid md:grid-cols-3 grid-cols-2 gap-4 w-full'>
          {Object.entries(giftAssets)
             /* sort greatest to least by amount */
-            .sort((a, b) => a[1].amountCents - b[1].amountCents)
+            .sort((a, b) => a[1].amount - b[1].amount)
             .map(([giftKey, giftAsset]) => (
                <div key={giftKey} className='flex justify-center'>
                   <button
@@ -34,10 +34,10 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift }) => {
                      className='flex  justify-center '
                   >
                      <StickerItem
-                        selectedSrc={giftAsset.selectedSrc}
-                        unselectedSrc={giftAsset.unselectedSrc}
+                        selectedSrc={giftAsset.imageUrlSelected}
+                        unselectedSrc={giftAsset.imageUrlUnselected}
                         isSelected={selectedSticker?.name === giftKey}
-                        alt={formatCents(giftAsset.amountCents)}
+                        alt={formatCents(giftAsset.amount)}
                      />
                   </button>
                </div>
