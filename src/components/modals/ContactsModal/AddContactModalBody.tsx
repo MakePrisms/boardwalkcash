@@ -2,6 +2,7 @@ import { Button, Modal, TextInput } from 'flowbite-react';
 import { useState } from 'react';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import { useToast } from '@/hooks/util/useToast';
+import useGifts from '@/hooks/boardwalk/useGifts';
 
 interface AddContactModalBodyProps {
    onContactAdded: () => void;
@@ -14,6 +15,7 @@ const AddContactModalBody = ({ onContactAdded, onCancel }: AddContactModalBodyPr
 
    const { addToast } = useToast();
    const { addContact, fetchContactByUsername, isContactAdded } = useContacts();
+   const { loadUserCustomGifts } = useGifts();
 
    const handleAddContact = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -31,7 +33,8 @@ const AddContactModalBody = ({ onContactAdded, onCancel }: AddContactModalBodyPr
 
       try {
          setAddingContact(true);
-         await addContact(contact);
+         /* reload gifts after contact is added to load any custom gifts */
+         await addContact(contact).then(() => loadUserCustomGifts(contact.pubkey));
          addToast('Contact added', 'success');
          setAddContactInput('');
          onContactAdded();

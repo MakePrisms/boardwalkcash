@@ -1,4 +1,5 @@
 import useContacts from '@/hooks/boardwalk/useContacts';
+import useGifts from '@/hooks/boardwalk/useGifts';
 import { useToast } from '@/hooks/util/useToast';
 import { Button, TextInput } from 'flowbite-react';
 import { useState } from 'react';
@@ -9,6 +10,7 @@ const AddContactButton = () => {
 
    const { addToast } = useToast();
    const { addContact, fetchContactByUsername, isContactAdded } = useContacts();
+   const { loadUserCustomGifts } = useGifts();
 
    const handleAddContact = async () => {
       if (isContactAdded({ username: addContactInput })) {
@@ -25,7 +27,8 @@ const AddContactButton = () => {
 
       try {
          setAddingContact(true);
-         await addContact(contact);
+         /* reload gifts after contact is added to load any custom gifts */
+         await addContact(contact).then(() => loadUserCustomGifts(contact.pubkey));
          addToast('Contact added', 'success');
          setAddContactInput('');
       } catch (e: any) {

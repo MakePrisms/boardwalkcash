@@ -14,6 +14,7 @@ interface GiftContextType {
    getGiftFromToken: (token: string | Token) => Promise<GiftAsset | null>;
    loadingGifts: boolean;
    fetchGift: (identifier: string) => Promise<GiftAsset | null>;
+   loadUserCustomGifts: (creatorPubkey: string) => Promise<void>;
 }
 
 const GiftContext = createContext<GiftContextType | undefined>(undefined);
@@ -45,6 +46,14 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
 
       fetchGifts();
    }, []);
+
+   /* used to load gifts created by the user, after a contact is added */
+   const loadUserCustomGifts = async (creatorPubkey: string) => {
+      const apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
+      const creatorGifts = apiGifts.gifts.filter(g => g.creatorPubkey === creatorPubkey);
+      const normalizedGifts = normalizeGifts(creatorGifts, true);
+      setGiftAssets(prevGifts => ({ ...prevGifts, ...normalizedGifts }));
+   };
 
    const normalizeGifts = (apiGifts: Gift[], force: boolean = false): Record<string, GiftAsset> => {
       return apiGifts.reduce(
@@ -129,6 +138,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       getGiftFromToken,
       loadingGifts: isFetching,
       fetchGift,
+      loadUserCustomGifts,
    };
 
    return <GiftContext.Provider value={value}>{children}</GiftContext.Provider>;
