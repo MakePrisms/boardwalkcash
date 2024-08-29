@@ -201,7 +201,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <div className='flex flex-col w-full h-full relative text-black'>
                         <div className='flex-grow overflow-y-auto'>
-                           <Stickers onSelectGift={handleGiftSelected} />
+                           <Stickers onSelectGift={handleGiftSelected} contact={selectedContact} />
                         </div>
                      </div>
                   </Modal.Body>

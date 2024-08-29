@@ -120,9 +120,9 @@ model Gift {
   imageUrlSelected   String
   imageUrlUnselected String
   // null -> anyone can send/receive;
-  creatorId          Int?
+  creatorPubkey      String?
   // the creator of the gift
-  creator            User?   @relation("CustomGifts", fields: [creatorId], references: [id])
+  creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
 
   // if there's a cost, user must pay to send
   cost Int?
@@ -137,7 +137,7 @@ model Gift {
   // // the users that can send the gift
   // userGifts         UserConditionalGift[]
 
-  @@index([creatorId])
+  @@index([creatorPubkey])
   @@index([name])
 }
 

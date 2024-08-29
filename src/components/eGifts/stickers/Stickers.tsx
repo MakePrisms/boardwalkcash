@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { formatCents } from '@/utils/formatting';
 import StickerItem from './StickerItem';
 import useGifts from '@/hooks/boardwalk/useGifts';
-import { GiftAsset } from '@/types';
+import { GiftAsset, PublicContact } from '@/types';
 
 interface StickersProps {
    onSelectGift: (gift: GiftAsset) => void;
+   contact: PublicContact | null;
 }
 
-const Stickers: React.FC<StickersProps> = ({ onSelectGift }) => {
+const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
    const [selectedSticker, setSelectedSticker] = useState<GiftAsset | undefined>(undefined);
    const { giftAssets, getGiftByIdentifier } = useGifts();
 
@@ -22,21 +23,27 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift }) => {
       onSelectGift(gift);
    };
 
+   const processedGifts = useMemo(() => {
+      return Object.entries(giftAssets)
+         .filter(([_, g]) => g.creatorPubkey === null || g.creatorPubkey === contact?.pubkey)
+         .sort((a, b) => a[1].amountCents - b[1].amountCents)
+         .map(([_, giftAsset]) => giftAsset);
+   }, [giftAssets, contact]);
+
    return (
       <div className='grid md:grid-cols-3 grid-cols-2 gap-4 w-full'>
-         {Object.entries(giftAssets)
+         {processedGifts
             /* sort greatest to least by amount */
-            .sort((a, b) => a[1].amountCents - b[1].amountCents)
-            .map(([giftKey, giftAsset]) => (
-               <div key={giftKey} className='flex justify-center'>
+            .map(giftAsset => (
+               <div key={giftAsset.name} className='flex justify-center'>
                   <button
-                     onClick={() => handleStickerClick(giftKey)}
+                     onClick={() => handleStickerClick(giftAsset.name)}
                      className='flex  justify-center '
                   >
                      <StickerItem
                         selectedSrc={giftAsset.selectedSrc}
                         unselectedSrc={giftAsset.unselectedSrc}
-                        isSelected={selectedSticker?.name === giftKey}
+                        isSelected={selectedSticker?.name === giftAsset.name}
                         alt={formatCents(giftAsset.amountCents)}
                      />
                   </button>
