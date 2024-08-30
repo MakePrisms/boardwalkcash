@@ -179,8 +179,13 @@ export const getTipStatus = async (quoteId: string) => {
 
 export const postTokenToDb = async (token: string, gift?: string) => {
    console.log('posting token to db', token);
+   const pubkey = window.localStorage.getItem('pubkey');
    return (
-      await request<PostTokenResponse>(`/api/token`, 'POST', { token, gift } as PostTokenRequest)
+      await request<PostTokenResponse>(`/api/token`, 'POST', {
+         token,
+         gift,
+         createdByPubkey: pubkey,
+      } as PostTokenRequest)
    ).txid;
 };
 

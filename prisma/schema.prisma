@@ -26,6 +26,8 @@ model User {
   // custom gifts created by this user
   customGifts    Gift[]         @relation("CustomGifts")
   // UserCustomGift UserConditionalGift[]
+  createdTokens  Token[]        @relation("TokenCreatedBy")
+  receivedTokens Token[]        @relation("TokenRecipient")
 }
 
 model Contact {
@@ -102,12 +104,16 @@ model Notification {
 }
 
 model Token {
-  id           String         @id
-  token        String
-  createdAt    DateTime       @default(now())
-  redeemedAt   DateTime?
-  gift         String?
-  Notification Notification[]
+  id              String         @id
+  token           String
+  createdAt       DateTime       @default(now())
+  redeemedAt      DateTime?
+  gift            String?
+  Notification    Notification[]
+  createdByPubkey String?
+  recipientPubkey String?
+  recipient       User?          @relation(fields: [recipientPubkey], references: [pubkey], name: "TokenRecipient")
+  createdBy       User?          @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
 }
 
 model Gift {

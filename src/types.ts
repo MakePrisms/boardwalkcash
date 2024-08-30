@@ -207,6 +207,7 @@ export const isContactNotification = (
 export type PostTokenRequest = {
    token: string;
    gift?: string;
+   createdByPubkey?: string;
 };
 
 export type PostTokenResponse = {
@@ -241,4 +242,16 @@ export interface InvoicePollingRequest {
    mintUrl: string;
    gift?: string;
    fee?: number;
+}
+
+export type GiftMetrics = {
+   total: number;
+   giftCount: { [giftName: string]: number };
+   totalAmountCents: number;
+   username: string;
+};
+
+export interface LeaderboardResponse {
+   senderMetrics: Record<string, GiftMetrics>;
+   receiverMetrics: Record<string, GiftMetrics>;
 }

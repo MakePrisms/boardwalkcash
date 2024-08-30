@@ -1,13 +1,24 @@
 import { PostTokenRequest } from '@/types';
 import prisma from './prisma';
+import { getProofsFromToken, proofsLockedTo } from '@/utils/cashu';
 
 export const createTokenInDb = async (data: PostTokenRequest, txid: string) => {
-   return await prisma.token.create({
+   let recipientPubkey = null;
+   const proofs = getProofsFromToken(data.token);
+   const pubkeyLock = proofsLockedTo(proofs);
+   if (pubkeyLock) {
+      recipientPubkey = pubkeyLock.slice(2);
+   }
+
+   const token = await prisma.token.create({
       data: {
          ...data,
          id: txid,
+         recipientPubkey,
       },
    });
+
+   return token;
 };
 
 export const findTokenByTxId = async (txid: string) => {
