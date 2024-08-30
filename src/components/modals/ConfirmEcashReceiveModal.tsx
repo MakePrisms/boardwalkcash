@@ -142,6 +142,7 @@ const ConfirmEcashReceiveModal = ({
             if (e.message === 'Not Found') {
                setGift(null);
             } else {
+               console.error('Failed to load gift', e);
                throw e;
             }
          }
