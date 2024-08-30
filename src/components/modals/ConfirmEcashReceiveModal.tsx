@@ -143,7 +143,7 @@ const ConfirmEcashReceiveModal = ({
                setGift(null);
             } else {
                console.error('Failed to load gift', e);
-               throw e;
+               // throw e;
             }
          }
       };
