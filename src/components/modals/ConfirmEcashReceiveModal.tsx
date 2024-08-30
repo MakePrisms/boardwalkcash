@@ -155,6 +155,7 @@ const ConfirmEcashReceiveModal = ({
             if (e.message) {
                addToast(e.message, 'error');
             } else {
+               console.error('Failed to load token', e);
                addToast('Failed to load token', 'error');
             }
             if (e instanceof AlreadyClaimedError) {
