@@ -31,6 +31,7 @@ import { formatCents } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { Button } from 'flowbite-react';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -209,7 +210,29 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             className='flex flex-col items-center justify-center mx-auto'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            {user.status === 'failed' ? <div>Failed to load user</div> : <div>Loading...</div>}
+            {user.status === 'failed' ? (
+               <div className='flex flex-col items-center justify-center space-y-4'>
+                  <p>Failed to load user</p>
+                  <p>
+                     You can click the big red button to reset your account. Only your private key
+                     and username will be reset, you will not lose your cash. Reach out to support
+                     if you are not sure.
+                  </p>
+                  <Button
+                     onClick={() => {
+                        window.localStorage.removeItem('privkey');
+                        window.localStorage.removeItem('pubkey');
+
+                        dispatch(initializeUser()).then(() => router.reload());
+                     }}
+                     color='failure'
+                  >
+                     Reset Account
+                  </Button>
+               </div>
+            ) : (
+               <div>Loading...</div>
+            )}
          </main>
       );
    }
