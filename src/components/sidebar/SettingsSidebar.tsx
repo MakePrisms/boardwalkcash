@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { Drawer, Modal } from 'flowbite-react';
+import { Button, Drawer, Modal } from 'flowbite-react';
 import MintSidebarItem from './Mints/MintSidebarItem';
 import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
@@ -11,6 +11,7 @@ import { BookOpenIcon, BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroico
 import { BanknoteIcon } from '../EcashTapButton';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ProfileSettings from './Profile/ProfileSetting';
+import Link from 'next/link';
 
 const SettingsCog = () => (
    <svg
@@ -94,6 +95,11 @@ export const SettingsSidebar = () => {
                   <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
                      <EcashTapsSettings />
                   </DrawerCollapse>
+               </div>
+               <div>
+                  <Link href='/leaderboard'>
+                     <Button>Leaderboard</Button>
+                  </Link>
                </div>
             </Drawer.Items>
          </Drawer>

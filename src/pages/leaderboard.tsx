@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Card, Modal, Table, Navbar } from 'flowbite-react';
+import { Card, Modal, Table, Navbar, Button } from 'flowbite-react';
 import { GiftMetrics, LeaderboardResponse } from '@/types';
 import { formatCents } from '@/utils/formatting';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const Leaderboard = () => {
    const [topGiftSender, setTopGiftSender] = useState<Record<string, GiftMetrics>>({});
@@ -60,6 +61,13 @@ const Leaderboard = () => {
                   Leaderboard
                </span>
             </Navbar.Brand>
+            <div className='flex md:order-2'>
+               {userData && (
+                  <Button className='btn-bg-blend'>
+                     <Link href='/wallet'>Back</Link>
+                  </Button>
+               )}
+            </div>
          </Navbar>
          <div className='container mx-auto mt-8'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-8  text-black mt-8'>
