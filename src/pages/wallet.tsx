@@ -220,10 +220,15 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                   </p>
                   <Button
                      onClick={() => {
-                        window.localStorage.removeItem('privkey');
-                        window.localStorage.removeItem('pubkey');
+                        try {
+                           window.localStorage.removeItem('privkey');
+                           window.localStorage.removeItem('pubkey');
 
-                        dispatch(initializeUser()).then(() => router.reload());
+                           dispatch(initializeUser()).then(() => router.reload());
+                        } catch (e: any) {
+                           console.error(e);
+                           addToast('Failed to reset account' + e.message, 'error');
+                        }
                      }}
                      color='failure'
                   >
