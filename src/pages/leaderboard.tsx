@@ -8,6 +8,7 @@ import LoadingPage from '@/components/LoadingPage';
 import LeaderboardTable from '@/components/LeaderboardTable';
 import { leaderboardTabTheme } from '@/themes/tabThemes';
 import UserStatsCard from '@/components/UserStatsCard';
+import ViewTotalGiftsModal from '@/components/modals/ViewTotalGiftsModal';
 
 const Leaderboard = () => {
    const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse>({});
@@ -141,29 +142,6 @@ const Leaderboard = () => {
             )}
          </div>
       </>
-   );
-};
-
-interface ViewTotalGiftsModalProps {
-   isOpen: boolean;
-   onClose: () => void;
-   giftsData: { [giftName: string]: number };
-}
-
-const ViewTotalGiftsModal = ({ isOpen, onClose, giftsData }: ViewTotalGiftsModalProps) => {
-   return (
-      <Modal show={isOpen} onClose={onClose} className='text-black'>
-         <Modal.Header>Total Gifts</Modal.Header>
-         <Modal.Body>
-            {Object.entries(giftsData).map(([giftName, count]) => (
-               <div key={giftName}>
-                  <h3>
-                     {giftName}: {count}
-                  </h3>
-               </div>
-            ))}
-         </Modal.Body>
-      </Modal>
    );
 };
 
