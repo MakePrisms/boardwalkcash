@@ -9,10 +9,19 @@ export default async function handler(
 ) {
    if (req.method === 'GET') {
       try {
+         const { periods } = req.query;
+         const timePeriods = (periods as string).split(',').map(p => p.trim());
+
+         const maxPeriod = Math.max(...timePeriods.map(getPeriodInHours));
+         const sinceDate = new Date(Date.now() - maxPeriod * 60 * 60 * 1000);
+
          const gifts = await prisma.token.findMany({
             where: {
                gift: {
                   not: null,
+               },
+               createdAt: {
+                  gte: sinceDate,
                },
             },
             include: {
@@ -20,79 +29,30 @@ export default async function handler(
                createdBy: true,
             },
          });
-         /* count of gifts sent by each pubkey */
-         const senderMetrics = gifts.reduce(
-            (acc, t) => {
-               if (t.createdByPubkey === null) return acc;
-               if (t.createdByPubkey === t.recipientPubkey) return acc;
-               if (!acc[t.createdByPubkey]) {
-                  acc[t.createdByPubkey] = {
-                     total: 0,
-                     giftCount: {},
-                     totalAmountCents: 0,
-                     username: t.createdBy?.username!,
-                  };
-               }
-               const tokenAmountCents = getDecodedToken(t.token).token[0].proofs.reduce(
-                  (acc, p) => acc + p.amount,
-                  0,
-               );
-               acc[t.createdByPubkey].total += 1;
-               acc[t.createdByPubkey].totalAmountCents += tokenAmountCents;
 
-               if (!acc[t.createdByPubkey].giftCount[t.gift!]) {
-                  acc[t.createdByPubkey].giftCount[t.gift!] = 0;
-               }
-               acc[t.createdByPubkey].giftCount[t.gift!] += 1;
-               return acc;
-            },
-            {} as Record<string, GiftMetrics>,
-         );
+         const result: {
+            [timePeriod: string]: {
+               senderMetrics: Record<string, GiftMetrics>;
+               receiverMetrics: Record<string, GiftMetrics>;
+            };
+         } = {};
 
-         /* count of gifts received by each pubkey */
-         const receiverMetrics = gifts.reduce(
-            (acc, t) => {
-               if (t.recipientPubkey === null) return acc;
-               if (t.createdByPubkey === t.recipientPubkey) return acc;
+         for (const period of timePeriods) {
+            const periodInHours = getPeriodInHours(period);
+            const periodDate = new Date(Date.now() - periodInHours * 60 * 60 * 1000);
 
-               if (!acc[t.recipientPubkey]) {
-                  acc[t.recipientPubkey] = {
-                     total: 0,
-                     giftCount: {},
-                     totalAmountCents: 0,
-                     username: t.recipient?.username || '',
-                  };
-               }
-               const tokenAmountCents = getDecodedToken(t.token).token[0].proofs.reduce(
-                  (acc, p) => acc + p.amount,
-                  0,
-               );
-               acc[t.recipientPubkey].total += 1;
-               acc[t.recipientPubkey].totalAmountCents += tokenAmountCents;
+            const filteredGifts = gifts.filter(g => g.createdAt >= periodDate);
 
-               if (!acc[t.recipientPubkey].giftCount[t.gift!]) {
-                  acc[t.recipientPubkey].giftCount[t.gift!] = 0;
-               }
-               acc[t.recipientPubkey].giftCount[t.gift!] += 1;
-               return acc;
-            },
-            {} as Record<string, GiftMetrics>,
-         );
+            const senderMetrics = calculateMetrics(filteredGifts, 'sender');
+            const receiverMetrics = calculateMetrics(filteredGifts, 'receiver');
 
-         // Sort senderMetrics in descending order
-         const sortedSenderMetrics = Object.entries(senderMetrics)
-            .sort(([, a], [, b]) => b.total - a.total)
-            .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
+            result[period] = {
+               senderMetrics: sortMetrics(senderMetrics),
+               receiverMetrics: sortMetrics(receiverMetrics),
+            };
+         }
 
-         // Sort receiverMetrics in descending order
-         const sortedReceiverMetrics = Object.entries(receiverMetrics)
-            .sort(([, a], [, b]) => b.total - a.total)
-            .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
-
-         res.status(200).json({
-            senderMetrics: sortedSenderMetrics,
-            receiverMetrics: sortedReceiverMetrics,
-         });
+         res.status(200).json(result);
       } catch (error) {
          console.error('Error fetching leaderboard data:', error);
          res.status(500).json({ error: 'An error occurred while fetching leaderboard data' });
@@ -102,4 +62,57 @@ export default async function handler(
    } else {
       res.status(405).json({ error: 'Method not allowed' });
    }
+}
+
+function getPeriodInHours(period: string): number {
+   switch (period) {
+      case '24hr':
+         return 24;
+      case '7d':
+         return 7 * 24;
+      default:
+         throw new Error(`Invalid period: ${period}`);
+   }
+}
+
+function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<string, GiftMetrics> {
+   return gifts.reduce(
+      (acc, t) => {
+         const pubkey = type === 'sender' ? t.createdByPubkey : t.recipientPubkey;
+         const otherPubkey = type === 'sender' ? t.recipientPubkey : t.createdByPubkey;
+
+         if (pubkey === null || pubkey === otherPubkey) return acc;
+
+         if (!acc[pubkey]) {
+            acc[pubkey] = {
+               total: 0,
+               giftCount: {},
+               totalAmountCents: 0,
+               username: type === 'sender' ? t.createdBy?.username! : t.recipient?.username || '',
+            };
+         }
+
+         const tokenAmountCents = getDecodedToken(t.token).token[0].proofs.reduce(
+            (sum, p) => sum + p.amount,
+            0,
+         );
+
+         acc[pubkey].total += 1;
+         acc[pubkey].totalAmountCents += tokenAmountCents;
+
+         if (!acc[pubkey].giftCount[t.gift!]) {
+            acc[pubkey].giftCount[t.gift!] = 0;
+         }
+         acc[pubkey].giftCount[t.gift!] += 1;
+
+         return acc;
+      },
+      {} as Record<string, GiftMetrics>,
+   );
+}
+
+function sortMetrics(metrics: Record<string, GiftMetrics>): Record<string, GiftMetrics> {
+   return Object.entries(metrics)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
 }

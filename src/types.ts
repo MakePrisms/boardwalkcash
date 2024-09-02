@@ -252,6 +252,8 @@ export type GiftMetrics = {
 };
 
 export interface LeaderboardResponse {
-   senderMetrics: Record<string, GiftMetrics>;
-   receiverMetrics: Record<string, GiftMetrics>;
+   [timePeriod: string]: {
+      senderMetrics: Record<string, GiftMetrics>;
+      receiverMetrics: Record<string, GiftMetrics>;
+   };
 }
