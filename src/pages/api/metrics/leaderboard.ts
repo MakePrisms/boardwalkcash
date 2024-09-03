@@ -3,6 +3,8 @@ import prisma from '../../../lib/prisma';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getDecodedToken } from '@cashu/cashu-ts';
 
+const isProduction = process.env.VERCEL_ENV === 'production';
+
 export default async function handler(
    req: NextApiRequest,
    res: NextApiResponse<LeaderboardResponse | { error: string }>,
@@ -82,6 +84,17 @@ function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<str
 
          if (pubkey === null || pubkey === otherPubkey) return acc;
 
+         const decodedToken = getDecodedToken(t.token);
+         const tokenMintUrl = decodedToken.token[0].mint;
+
+         /* only include trusted mints in the leaderboard */
+         if (
+            isProduction &&
+            (!tokenMintUrl.includes('stablenut.umint.cash') ||
+               !tokenMintUrl.includes('mint.lnvoltz.com'))
+         )
+            return acc;
+
          if (!acc[pubkey]) {
             acc[pubkey] = {
                total: 0,
@@ -91,7 +104,7 @@ function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<str
             };
          }
 
-         const tokenAmountCents = getDecodedToken(t.token).token[0].proofs.reduce(
+         const tokenAmountCents = decodedToken.token[0].proofs.reduce(
             (sum, p) => sum + p.amount,
             0,
          );
