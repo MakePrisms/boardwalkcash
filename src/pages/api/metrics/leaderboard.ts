@@ -42,7 +42,6 @@ export default async function handler(
             const periodDate = new Date(Date.now() - periodInHours * 60 * 60 * 1000);
 
             const filteredGifts = gifts.filter(g => g.createdAt >= periodDate);
-
             const senderMetrics = calculateMetrics(filteredGifts, 'sender');
             const receiverMetrics = calculateMetrics(filteredGifts, 'receiver');
 
@@ -78,6 +77,8 @@ function getPeriodInHours(period: string): number {
 function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<string, GiftMetrics> {
    return gifts.reduce(
       (acc, t) => {
+         if (t.recipient?.hideFromLeaderboard === true) return acc;
+
          const pubkey = type === 'sender' ? t.createdByPubkey : t.recipientPubkey;
          const otherPubkey = type === 'sender' ? t.recipientPubkey : t.createdByPubkey;
 

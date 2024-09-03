@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import { Button, Drawer, Modal } from 'flowbite-react';
+import { Drawer, Modal } from 'flowbite-react';
 import MintSidebarItem from './Mints/MintSidebarItem';
 import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../DrawerCollapse';
-import { BookOpenIcon, BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
-import { BanknoteIcon } from '../EcashTapButton';
+import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ProfileSettings from './Profile/ProfileSetting';
-import Link from 'next/link';
+import LeaderboardDrawer from '../leaderboards/LeaderboardDrawer';
+import ChartIcon from '../icons/ChartIcon';
+import EcashIcon from '../icons/EcashIcon';
+import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
 
 const SettingsCog = () => (
    <svg
@@ -36,6 +38,16 @@ export const SettingsSidebar = () => {
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
+   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+
+   const handleOpenLeaderboard = () => {
+      setIsLeaderboardOpen(true);
+      setHidden(true);
+   };
+
+   const handleClose = () => {
+      setHidden(true);
+   };
 
    return (
       <>
@@ -46,7 +58,7 @@ export const SettingsSidebar = () => {
          </div>
          <Drawer
             open={!hidden}
-            onClose={() => setHidden(true)}
+            onClose={handleClose}
             edge={false}
             position='right'
             className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
@@ -91,15 +103,18 @@ export const SettingsSidebar = () => {
                      <ProfileSettings />
                   </DrawerCollapse>
                </div>
-               <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
-                  <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
+               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse
+                     label='Cash Taps'
+                     icon={<EcashIcon type='solid' className='size-4' />}
+                  >
                      <EcashTapsSettings />
                   </DrawerCollapse>
                </div>
-               <div>
-                  <Link href='/leaderboard'>
-                     <Button>Leaderboard</Button>
-                  </Link>
+               <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
+                  <DrawerCollapse label='Leaderboard' icon={<ChartIcon className='size-4' />}>
+                     <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />
+                  </DrawerCollapse>
                </div>
             </Drawer.Items>
          </Drawer>
@@ -113,6 +128,12 @@ export const SettingsSidebar = () => {
                <ClipboardButton className='self-end' toCopy={nwcUri} toShow={'Copy Connection'} />
             </Modal.Body>
          </Modal>
+         {isLeaderboardOpen && (
+            <LeaderboardDrawer
+               isOpen={isLeaderboardOpen}
+               onClose={() => setIsLeaderboardOpen(false)}
+            />
+         )}
       </>
    );
 };

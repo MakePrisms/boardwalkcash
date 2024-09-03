@@ -9,25 +9,26 @@ generator client {
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  pubkey         String         @unique
-  username       String?        @unique
-  contacts       Contact[]      @relation("UserContacts")
-  contactOf      Contact[]      @relation("ContactUser")
-  proofs         Proof[]
-  mintQuotes     MintQuote[]
-  defaultMint    Mint           @relation(fields: [defaultMintUrl], references: [url])
-  defaultMintUrl String
-  allowedUnits   String[]
-  receiving      Boolean        @default(false)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  Notification   Notification[]
+  id                  Int            @id @default(autoincrement())
+  pubkey              String         @unique
+  username            String?        @unique
+  contacts            Contact[]      @relation("UserContacts")
+  contactOf           Contact[]      @relation("ContactUser")
+  proofs              Proof[]
+  mintQuotes          MintQuote[]
+  defaultMint         Mint           @relation(fields: [defaultMintUrl], references: [url])
+  defaultMintUrl      String
+  allowedUnits        String[]
+  receiving           Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  hideFromLeaderboard Boolean        @default(false)
+  Notification        Notification[]
   // custom gifts created by this user
-  customGifts    Gift[]         @relation("CustomGifts")
+  customGifts         Gift[]         @relation("CustomGifts")
   // UserCustomGift UserConditionalGift[]
-  createdTokens  Token[]        @relation("TokenCreatedBy")
-  receivedTokens Token[]        @relation("TokenRecipient")
+  createdTokens       Token[]        @relation("TokenCreatedBy")
+  receivedTokens      Token[]        @relation("TokenRecipient")
 }
 
 model Contact {

@@ -15,8 +15,4 @@ export const leaderboardTabTheme: DeepPartial<FlowbiteTabsTheme> = {
          icon: 'mr-2 h-5 w-5',
       },
    },
-   tabitemcontainer: {
-      base: '',
-   },
-   tabpanel: '',
 };

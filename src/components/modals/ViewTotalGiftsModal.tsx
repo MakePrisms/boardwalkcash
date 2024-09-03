@@ -26,10 +26,8 @@ const ViewTotalGiftsModal = ({ isOpen, onClose, giftsData }: ViewTotalGiftsModal
                         isSelected={true}
                         alt={giftAssets[giftName].name}
                         size='md'
+                        count={count}
                      />
-                     <div className='absolute top-0 right-3 bg-boardwalk-blue text-white text-sm px-2 py-1 rounded-full'>
-                        {count}
-                     </div>
                   </div>
                ))
             )}

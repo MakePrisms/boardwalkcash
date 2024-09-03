@@ -48,13 +48,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                return res.status(201).json({ message: 'Contact added' });
             }
-            const { pubkey, username, defaultMintUrl: mintUrl } = req.body;
+            const { pubkey, username, defaultMintUrl: mintUrl, hideFromLeaderboard } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };
             }
             if (mintUrl) {
                updates = { ...updates, mintUrl };
+            }
+            if (hideFromLeaderboard !== undefined) {
+               updates = { ...updates, hideFromLeaderboard };
             }
             if (Object.keys(updates).length > 0) {
                const updatedUser = await updateUser(slug, updates);

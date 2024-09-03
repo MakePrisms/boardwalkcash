@@ -1,14 +1,15 @@
-import React from 'react';
-import { Card, Table, Pagination } from 'flowbite-react';
+import React, { useState } from 'react';
+import { Table, Pagination } from 'flowbite-react';
 import { GiftMetrics } from '@/types';
 import { formatCents } from '@/utils/formatting';
+import ViewTotalGiftsModal from '../modals/ViewTotalGiftsModal';
+import { leaderboardTableTheme } from '@/themes/tableThemes';
 
 interface LeaderboardTableProps {
    title: string;
    data: Record<string, GiftMetrics>;
    currentPage: number;
    onPageChange: (page: number) => void;
-   onRowClick: (giftCount: { [giftName: string]: number }) => void;
 }
 
 const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
@@ -16,19 +17,26 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
    data,
    currentPage,
    onPageChange,
-   onRowClick,
 }) => {
-   const itemsPerPage = 5;
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [selectedGifts, setSelectedGifts] = useState<{ [giftName: string]: number } | null>(null);
+
+   const itemsPerPage = 10;
 
    const paginatedData = Object.entries(data).slice(
       (currentPage - 1) * itemsPerPage,
       currentPage * itemsPerPage,
    );
 
+   const handleRowClick = (giftCount: { [giftName: string]: number }) => {
+      setSelectedGifts(giftCount);
+      setIsModalOpen(true);
+   };
+
    return (
-      <Card>
-         <h2 className='text-xl mb-4'>{title}</h2>
-         <Table>
+      <>
+         <h2 className='text-lg mb-4'>{title}</h2>
+         <Table theme={leaderboardTableTheme}>
             <Table.Head>
                <Table.HeadCell>User</Table.HeadCell>
                <Table.HeadCell>Gifts</Table.HeadCell>
@@ -38,8 +46,8 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                {paginatedData.map(([_, rowData]) => (
                   <Table.Row
                      key={rowData.username}
-                     onClick={() => onRowClick(rowData.giftCount)}
-                     className='cursor-pointer hover:bg-gray-100'
+                     onClick={() => handleRowClick(rowData.giftCount)}
+                     className='cursor-pointer hover:bg-boardwalk-blue rounded-none'
                   >
                      <Table.Cell>{rowData.username}</Table.Cell>
                      <Table.Cell>{rowData.total}</Table.Cell>
@@ -49,16 +57,24 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
             </Table.Body>
          </Table>
          {Math.ceil(Object.keys(data).length / itemsPerPage) > 1 && (
-            <div className='flex overflow-x-auto sm:justify-center'>
+            <div className='flex justify-center mt-6'>
                <Pagination
                   currentPage={currentPage}
                   totalPages={Math.ceil(Object.keys(data).length / itemsPerPage)}
                   onPageChange={onPageChange}
                   showIcons={true}
+                  layout='navigation'
                />
             </div>
          )}
-      </Card>
+         {selectedGifts && (
+            <ViewTotalGiftsModal
+               isOpen={isModalOpen}
+               onClose={() => setIsModalOpen(false)}
+               giftsData={selectedGifts}
+            />
+         )}
+      </>
    );
 };
 

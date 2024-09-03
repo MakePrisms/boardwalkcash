@@ -8,14 +8,7 @@ import { PublicContact, GiftAsset } from '@/types';
 import { computeTxId } from '@/utils/cashu';
 import ViewGiftModal from '../eGifts/ViewGiftModal';
 import useGifts from '@/hooks/boardwalk/useGifts';
-
-const customTheme = {
-   root: {
-      base: 'md:max-w-fit w-full text-left text-sm text-gray-500 dark:text-gray-400  bg-[#0f3470] ',
-      shadow: 'absolute left-0 top-0 -z-10 h-full  rounded-lg bg-white drop-shadow-md',
-      wrapper: 'relative flex justify-center',
-   },
-};
+import { txHistoryTableTheme } from '@/themes/tableThemes';
 
 const HistoryTable: React.FC<{
    history: (EcashTransaction | LightningTransaction)[];
@@ -75,7 +68,7 @@ const HistoryTable: React.FC<{
 
    return (
       <>
-         <Table theme={customTheme} className='text-white'>
+         <Table theme={txHistoryTableTheme} className='text-white'>
             <Table.Body>
                {history.map((tx: EcashTransaction | LightningTransaction, i) => (
                   <HistoryTableRow
