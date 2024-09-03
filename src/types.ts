@@ -253,7 +253,11 @@ export type GiftMetrics = {
 
 export interface LeaderboardResponse {
    [timePeriod: string]: {
-      senderMetrics: Record<string, GiftMetrics>;
+      // senderMetrics: Record<string, GiftMetrics>;
       receiverMetrics: Record<string, GiftMetrics>;
+      userData?: {
+         sent: GiftMetrics;
+         received: GiftMetrics;
+      };
    };
 }

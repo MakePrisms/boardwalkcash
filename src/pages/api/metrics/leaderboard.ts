@@ -9,7 +9,7 @@ export default async function handler(
 ) {
    if (req.method === 'GET') {
       try {
-         const { periods } = req.query;
+         const { periods, pubkey } = req.query;
          const timePeriods = (periods as string).split(',').map(p => p.trim());
 
          const maxPeriod = Math.max(...timePeriods.map(getPeriodInHours));
@@ -30,24 +30,22 @@ export default async function handler(
             },
          });
 
-         const result: {
-            [timePeriod: string]: {
-               senderMetrics: Record<string, GiftMetrics>;
-               receiverMetrics: Record<string, GiftMetrics>;
-            };
-         } = {};
+         const result: LeaderboardResponse = {};
 
          for (const period of timePeriods) {
             const periodInHours = getPeriodInHours(period);
             const periodDate = new Date(Date.now() - periodInHours * 60 * 60 * 1000);
 
             const filteredGifts = gifts.filter(g => g.createdAt >= periodDate);
-            const senderMetrics = calculateMetrics(filteredGifts, 'sender');
+            // const senderMetrics = calculateMetrics(filteredGifts, 'sender');
             const receiverMetrics = calculateMetrics(filteredGifts, 'receiver');
 
+            const userData = createUserData(filteredGifts, pubkey as string);
+
             result[period] = {
-               senderMetrics: sortMetrics(senderMetrics),
+               // senderMetrics: sortMetrics(senderMetrics),
                receiverMetrics: sortMetrics(receiverMetrics),
+               userData,
             };
          }
 
@@ -116,4 +114,39 @@ function sortMetrics(metrics: Record<string, GiftMetrics>): Record<string, GiftM
    return Object.entries(metrics)
       .sort(([, a], [, b]) => b.total - a.total)
       .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
+}
+
+function createUserData(
+   gifts: any[],
+   userPubkey: string,
+): { sent: GiftMetrics; received: GiftMetrics } | undefined {
+   const sent: GiftMetrics = { total: 0, giftCount: {}, totalAmountCents: 0, username: '' };
+   const received: GiftMetrics = { total: 0, giftCount: {}, totalAmountCents: 0, username: '' };
+
+   gifts.forEach(gift => {
+      const tokenAmountCents = getDecodedToken(gift.token).token[0].proofs.reduce(
+         (sum, p) => sum + p.amount,
+         0,
+      );
+
+      if (gift.createdByPubkey === userPubkey) {
+         sent.total += 1;
+         sent.totalAmountCents += tokenAmountCents;
+         sent.giftCount[gift.gift!] = (sent.giftCount[gift.gift!] || 0) + 1;
+         sent.username = gift.createdBy?.username || '';
+      }
+
+      if (gift.recipientPubkey === userPubkey) {
+         received.total += 1;
+         received.totalAmountCents += tokenAmountCents;
+         received.giftCount[gift.gift!] = (received.giftCount[gift.gift!] || 0) + 1;
+         received.username = gift.recipient?.username || '';
+      }
+   });
+
+   if (sent.total > 0 || received.total > 0) {
+      return { sent, received };
+   }
+
+   return undefined;
 }

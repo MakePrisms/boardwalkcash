@@ -13,7 +13,7 @@ const useLeaderboard = () => {
       null,
    );
    const [data, setData] = useState<{
-      senderMetrics: Record<string, GiftMetrics>;
+      // senderMetrics: Record<string, GiftMetrics>;
       receiverMetrics: Record<string, GiftMetrics>;
    } | null>(null);
    const [loading, setLoading] = useState(true);
@@ -25,10 +25,12 @@ const useLeaderboard = () => {
 
    const fetchLeaderboardData = async () => {
       try {
+         const pubkey = window.localStorage.getItem('pubkey');
          const response = await axios.get<any, { data: LeaderboardResponse }>(
-            '/api/metrics/leaderboard?periods=24hr,7d',
+            `/api/metrics/leaderboard?periods=24hr,7d${pubkey ? `&pubkey=${pubkey}` : ''}`,
          );
          setLeaderboardData(response.data);
+         setUserData(response.data[timeRange]?.userData || null);
          setData(response.data[timeRange]);
       } catch (error) {
          console.error('Error fetching leaderboard data:', error);
@@ -38,13 +40,7 @@ const useLeaderboard = () => {
    useEffect(() => {
       if (!leaderboardData[timeRange]) return;
       setData(leaderboardData[timeRange]);
-
-      /* don't set userData if boardwalk not initialized */
-      const pubkey = window.localStorage.getItem('pubkey');
-      if (!pubkey) return;
-      const sendingData = leaderboardData[timeRange].senderMetrics[pubkey];
-      const receivingData = leaderboardData[timeRange].receiverMetrics[pubkey];
-      setUserData({ sent: sendingData, received: receivingData });
+      setUserData(leaderboardData[timeRange].userData || null);
    }, [leaderboardData, timeRange]);
 
    const load = async () => {
