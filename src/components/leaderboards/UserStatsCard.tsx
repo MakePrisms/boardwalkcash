@@ -29,9 +29,11 @@ const UserStatsCard = ({ userData, title }: UserStatsCardProps) => {
             onClick={() => handleRowClick(userData?.giftCount || {})}
             className='transition-all duration-300 ease-in-out transform hover:scale-105 hover:cursor-pointer bg-[#0f3470] text-white border-none rounded-none'
          >
-            <h3 className='text-xl mb-2'>{title}</h3>
-            <p>Total: {userData?.total || 0}</p>
-            <p>Amount: {formatCents(userData?.totalAmountCents || 0)}</p>
+            <h3 style={{ fontWeight: 'bold' }} className='text-smmb-2'>
+               {title}
+            </h3>
+            <p className='text-sm'>Total: {userData?.total || 0}</p>
+            <p className='text-sm'>Amount: {formatCents(userData?.totalAmountCents || 0)}</p>
          </Card>
          {selectedGifts && (
             <ViewTotalGiftsModal

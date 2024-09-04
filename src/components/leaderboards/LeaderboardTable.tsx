@@ -37,21 +37,21 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
       <>
          <h2 className='text-lg mb-4'>{title}</h2>
          <Table theme={leaderboardTableTheme}>
-            <Table.Head className='bg-[#0c2b5c] text-center'>
-               <Table.HeadCell className='w-1/3'>User</Table.HeadCell>
-               <Table.HeadCell className='w-1/3'>Gifts</Table.HeadCell>
-               <Table.HeadCell className='w-1/3'>Total</Table.HeadCell>
+            <Table.Head className='bg-[#0c2b5c]'>
+               <Table.HeadCell className='w-1/3 text-left'>USER</Table.HeadCell>
+               <Table.HeadCell className='w-1/3 text-right'>eGIFTS</Table.HeadCell>
+               <Table.HeadCell className='w-1/3 text-right'>TOTAL</Table.HeadCell>
             </Table.Head>
             <Table.Body>
                {paginatedData.map(([_, rowData]) => (
                   <Table.Row
                      key={rowData.username}
                      onClick={() => handleRowClick(rowData.giftCount)}
-                     className='cursor-pointer hover:bg-[#0c2b5c] text-center'
+                     className='cursor-pointer hover:bg-[#0c2b5c]'
                   >
-                     <Table.Cell className='w-1/3'>{rowData.username}</Table.Cell>
-                     <Table.Cell className='w-1/3'>{rowData.total}</Table.Cell>
-                     <Table.Cell className='w-1/3'>
+                     <Table.Cell className='w-1/3 text-left'>{rowData.username}</Table.Cell>
+                     <Table.Cell className='w-1/3 text-right'>{rowData.total}</Table.Cell>
+                     <Table.Cell className='w-1/3 text-right'>
                         {formatCents(rowData.totalAmountCents)}
                      </Table.Cell>
                   </Table.Row>

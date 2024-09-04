@@ -33,7 +33,7 @@ const ViewLeaderboardData = () => {
                </div>
                {Object.entries(leaderboardData).length > 0 ? (
                   <LeaderboardTable
-                     title='Top Giftees'
+                     title='Top Rankings'
                      data={leaderboardData.receiverMetrics}
                      currentPage={currentPage}
                      onPageChange={setCurrentPage}
@@ -45,9 +45,9 @@ const ViewLeaderboardData = () => {
                   <div className='mt-8'>
                      <h2 className='text-lg mb-4'>Your Stats</h2>
                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4 text-black'>
-                        <UserStatsCard title='Gifts Sent' userData={userData.sent || undefined} />
+                        <UserStatsCard title='eGIFTS SENT' userData={userData.sent || undefined} />
                         <UserStatsCard
-                           title='Gifts Received'
+                           title='eGIFTS RECEIVED'
                            userData={userData.received || undefined}
                         />
                      </div>

@@ -13,7 +13,7 @@ const ViewTotalGiftsModal = ({ isOpen, onClose, giftsData }: ViewTotalGiftsModal
 
    return (
       <Modal show={isOpen} onClose={onClose} className='text-black'>
-         <Modal.Header>Total Gifts</Modal.Header>
+         <Modal.Header>Total eGifts</Modal.Header>
          <Modal.Body className='grid md:grid-cols-3 grid-cols-2 gap-10 w-full'>
             {loadingGifts ? (
                <Spinner size='lg' />

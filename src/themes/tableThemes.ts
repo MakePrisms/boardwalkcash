@@ -13,7 +13,7 @@ export const leaderboardTableTheme = {
       wrapper: 'relative flex justify-center',
    },
    head: {
-      base: 'group/head text-sm uppercase text-white',
+      base: 'group/head text-sm text-white',
       cell: {
          base: 'px-6 py-3 dark:bg-gray-700',
       },

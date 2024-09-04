@@ -15,8 +15,8 @@ const LeaderboardDrawer = ({ isOpen, onClose }: LeaderboardDrawerProps) => {
             open={isOpen}
             onClose={onClose}
             edge={false}
-            position='bottom'
-            className='h-full bg-[#0f1f41ff] text-white flex flex-col'
+            position='right'
+            className='h-full bg-[#0f1f41ff] text-white flex flex-col md:min-w-fit min-w-full'
             theme={customDrawerTheme}
          >
             <Drawer.Header
