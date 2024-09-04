@@ -108,7 +108,7 @@ export const SettingsSidebar = () => {
                         <ProfileSettings />
                      </DrawerCollapse>
                   </div>
-                  <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0'>
                      <DrawerCollapse
                         label='Cash Taps'
                         icon={<EcashIcon type='solid' className='size-4' />}
@@ -116,11 +116,11 @@ export const SettingsSidebar = () => {
                         <EcashTapsSettings />
                      </DrawerCollapse>
                   </div>
-                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
+                  {/* <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                      <DrawerCollapse label='Leaderboard' icon={<FlameIcon className='size-4' />}>
                         <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />
                      </DrawerCollapse>
-                  </div>
+                  </div> */}
                </Drawer.Items>
             </Drawer>
          )}
