@@ -1,5 +1,5 @@
 import useLeaderboard from '@/hooks/boardwalk/useLeaderboard';
-import { Tabs } from 'flowbite-react';
+import { Tabs } from '@/components/utility/Tabs';
 import { useEffect, useState } from 'react';
 import LeaderboardTable from './LeaderboardTable';
 import UserStatsCard from './UserStatsCard';
@@ -28,13 +28,9 @@ const ViewLeaderboardData = () => {
             <div className='flex flex-col h-full'>
                <div className='mb-4'>
                   <Tabs
-                     style='underline'
                      onActiveTabChange={tab => setTimeRange(tab === 0 ? '24hr' : '7d')}
-                     theme={leaderboardTabTheme}
-                  >
-                     <Tabs.Item active title='24 Hours'></Tabs.Item>
-                     <Tabs.Item title='1 Week'></Tabs.Item>
-                  </Tabs>
+                     titles={['Daily', 'Weekly']}
+                  />
                </div>
                {Object.entries(leaderboardData).length > 0 ? (
                   <LeaderboardTable
