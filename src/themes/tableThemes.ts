@@ -15,7 +15,7 @@ export const leaderboardTableTheme = {
    head: {
       base: 'group/head text-sm uppercase text-white',
       cell: {
-         base: 'bg-[#0f3470] px-6 py-3 dark:bg-gray-700',
+         base: 'px-6 py-3 dark:bg-gray-700',
       },
    },
    body: {
@@ -24,5 +24,4 @@ export const leaderboardTableTheme = {
          base: 'px-6 py-4 ',
       },
    },
-   row: { hovered: 'hover:bg-[#0f3470]' },
 };
