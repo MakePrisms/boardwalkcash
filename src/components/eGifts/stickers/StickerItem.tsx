@@ -1,6 +1,4 @@
 /* eslint-disable @next/next/no-img-element */
-import { Spinner } from 'flowbite-react';
-import NextImage from 'next/image';
 import { useState, useEffect } from 'react';
 
 interface StickerItemProps {

@@ -40,3 +40,5 @@ notes
 
 public/sw.js
 public/workbox-*.js
+
+metrics*

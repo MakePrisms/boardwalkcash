@@ -3,7 +3,6 @@ import { Tabs } from '@/components/utility/Tabs';
 import { useEffect, useState } from 'react';
 import LeaderboardTable from './LeaderboardTable';
 import UserStatsCard from './UserStatsCard';
-import { leaderboardTabTheme } from '@/themes/tabThemes';
 
 const ViewLeaderboardData = () => {
    const [currentPage, setCurrentPage] = useState(1);

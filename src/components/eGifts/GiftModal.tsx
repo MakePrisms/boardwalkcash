@@ -14,7 +14,7 @@ import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatCents } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
-import Tooltip from '../Toolttip';
+import Tooltip from '../utility/Toolttip';
 
 interface GiftModalProps {
    isOpen: boolean;

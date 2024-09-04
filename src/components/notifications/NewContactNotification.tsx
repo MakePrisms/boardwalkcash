@@ -1,6 +1,5 @@
-import useContacts from '@/hooks/boardwalk/useContacts';
-import { ContactNotificationData, PublicContact } from '@/types';
-import { useCallback, useMemo } from 'react';
+import { ContactNotificationData } from '@/types';
+import { useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import AddContactButton from './buttons/AddContactButton';
 import NotificationItemText from './NotificationItemText';

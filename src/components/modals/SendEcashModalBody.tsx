@@ -1,10 +1,10 @@
 import { Modal, Spinner } from 'flowbite-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import AnimatedQRCode from '../AnimatedQR';
+import AnimatedQRCode from '../utility/AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import CustomCarousel from '../Carousel/CustomCarousel';
-import ErrorBoundary from '../ErrorBoundary';
+import ErrorBoundary from '../utility/ErrorBoundary';
 
 interface SendEcashModalBodyProps {
    token?: string;

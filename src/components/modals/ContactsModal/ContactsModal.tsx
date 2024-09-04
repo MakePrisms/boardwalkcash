@@ -5,7 +5,6 @@ import { Modal } from 'flowbite-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import ViewContactsModalBody from './ViewContactsModalBody';
-import AddContactModalBody from './AddContactModalBody';
 
 interface ContactsModalProps {
    isOpen: boolean;

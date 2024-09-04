@@ -1,7 +1,7 @@
 import { NotificationType } from '@/types';
 import { UserCircleIcon } from '@heroicons/react/20/solid';
 import { useMemo } from 'react';
-import { BanknoteIcon } from '../EcashTapButton';
+import { BanknoteIcon } from '@/components/buttons/EcashTapButton';
 import GiftIcon from '../icons/GiftIcon';
 
 interface NotificationItemContainerProps {

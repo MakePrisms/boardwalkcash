@@ -3,7 +3,7 @@ import { RootState, useAppDispatch } from '@/redux/store';
 import { Modal } from 'flowbite-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import SendEcashModalBody from './modals/SendEcashModalBody';
+import SendEcashModalBody from '@/components/modals/SendEcashModalBody';
 import { resetStatus, setSending } from '@/redux/slices/ActivitySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 

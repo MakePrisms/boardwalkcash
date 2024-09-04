@@ -6,7 +6,7 @@ import MintSidebarItem from './Mints/MintSidebarItem';
 import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
-import DrawerCollapse from '../DrawerCollapse';
+import DrawerCollapse from '../utility/DrawerCollapse';
 import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ProfileSettings from './Profile/ProfileSetting';

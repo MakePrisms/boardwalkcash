@@ -1,5 +1,4 @@
 import {
-   GetNotificationResponse,
    NotificationType,
    NotificationWithData,
    isContactNotification,
@@ -7,7 +6,6 @@ import {
 } from '@/types';
 import TokenNotification from './TokenNotification';
 import NewContactNotification from './NewContactNotification';
-import { useMemo } from 'react';
 
 interface NotificationItemProps {
    notification: NotificationWithData;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import Disclaimer from '@/components/Disclaimer';
+import Disclaimer from '@/components/utility/Disclaimer';
 import { useAppDispatch } from '@/redux/store';
 import { initializeUser } from '@/redux/slices/UserSlice';
 import { Spinner } from 'flowbite-react';

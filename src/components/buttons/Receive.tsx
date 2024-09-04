@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Button, Modal, Spinner, Tooltip } from 'flowbite-react';
+import { Button, Modal, Spinner } from 'flowbite-react';
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/hooks/util/useToast';
