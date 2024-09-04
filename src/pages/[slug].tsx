@@ -139,7 +139,7 @@ const UserProfilePage = () => {
                      <ClipboardButton
                         toCopy={user.username!}
                         toShow={showAddContact ? 'Copy' : 'Username'}
-                        className={`btn-primary ${showAddContact ? 'w-20' : 'w-full'}`}
+                        className={`btn-primary h-9 ${showAddContact ? 'w-20' : 'w-full'}`}
                      />
                   </div>
                   {showAddContact && (
@@ -155,8 +155,11 @@ const UserProfilePage = () => {
                   )}
                </div>
                <div className='flex flex-row items-center space-x-6 w-full'>
-                  <EGiftButton className='w-20' contact={user} />
-                  <LightningTipButton contact={user} className='w-20' />
+                  {/* <EGiftButton className='w-20' contact={user} /> */}
+                  <LightningTipButton
+                     contact={user}
+                     className='w-full h-9 flex items-center justify-center'
+                  />
                </div>
             </div>
          </main>
