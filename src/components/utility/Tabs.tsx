@@ -35,9 +35,9 @@ export const Tabs: React.FC<TabsProps> = ({ titles, onActiveTabChange, className
 
 const ActiveTab = ({ children }: { children: React.ReactNode }) => {
    return (
-      <div className='flex-1 px-4 py-2 text-sm font-medium border-b-4 border-[#0f3470] text-white'>
+      <button className='flex-1 px-4 py-2 text-sm font-medium border-b-4 border-[#0f3470] text-white'>
          {children}
-      </div>
+      </button>
    );
 };
 
@@ -49,11 +49,11 @@ export const InactiveTab = ({
    onClick: () => void;
 }) => {
    return (
-      <div
+      <button
          className='flex-1 px-4 py-2 text-sm font-medium border-b-4 border-transparent text-white hover:border-[#0f3470]  transition-colors duration-200'
          onClick={onClick}
       >
          {children}
-      </div>
+      </button>
    );
 };
