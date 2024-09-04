@@ -25,7 +25,7 @@ const ViewLeaderboardData = () => {
          {loading || leaderboardData === null ? (
             <div className='flex justify-center mt-4'>Loading...</div>
          ) : (
-            <div className='flex flex-col h-full'>
+            <div className='flex flex-col h-full mb-16'>
                <div className='mb-4'>
                   <Tabs
                      onActiveTabChange={tab => setTimeRange(tab === 0 ? '24hr' : '7d')}
