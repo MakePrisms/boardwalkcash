@@ -75,7 +75,7 @@ const giftsV2 = [
       description: 'A fancy cocktail',
       imageUrlSelected: '/eGifts/selected/cocktail_200.png',
       imageUrlUnselected: '/eGifts/unselected/cocktail_200.png',
-      cost: 20,
+      cost: 100,
    },
    {
       name: 'Carousel',
@@ -83,7 +83,7 @@ const giftsV2 = [
       description: 'A collection of gifts',
       imageUrlSelected: '/eGifts/selected/carousel_500.png',
       imageUrlUnselected: '/eGifts/unselected/carousel_500.png',
-      cost: 50,
+      cost: 200,
    },
    {
       name: 'Mermaid',
@@ -91,7 +91,7 @@ const giftsV2 = [
       description: 'A mermaid',
       imageUrlSelected: '/eGifts/selected/mermaid_1000.png',
       imageUrlUnselected: '/eGifts/unselected/mermaid_1000.png',
-      cost: 100,
+      cost: 300,
    },
 ];
 
@@ -142,5 +142,5 @@ async function addV2DefaultGifts() {
    }
 }
 
-// addDefaultGifts();
-addV2DefaultGifts();
+addDefaultGifts();
+// addV2DefaultGifts();

@@ -8,9 +8,11 @@
       "start": "next start",
       "lint": "next lint",
       "lint-fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+      "typecheck": "tsc --noEmit",
       "getmetrics": "ts-node -r tsconfig-paths/register src/scripts/getMetrics.js",
       "addgift": "ts-node -r tsconfig-paths/register src/scripts/addGift.js",
-      "adddefaultgifts": "ts-node -r tsconfig-paths/register src/scripts/addDefaultGifts.js"
+      "adddefaultgifts": "ts-node -r tsconfig-paths/register src/scripts/addDefaultGifts.js",
+      "deluser": "ts-node -r tsconfig-paths/register src/scripts/delUser.js"
    },
    "dependencies": {
       "@cashu/cashu-ts": "^1.0.0-rc.12",
@@ -23,6 +25,7 @@
       "@reduxjs/toolkit": "^2.1.0",
       "@vercel/analytics": "^1.2.2",
       "@vercel/node": "^3.0.2",
+      "asciichart": "^1.5.25",
       "axios": "^1.6.7",
       "base64url": "^3.0.1",
       "cors": "^2.8.5",
