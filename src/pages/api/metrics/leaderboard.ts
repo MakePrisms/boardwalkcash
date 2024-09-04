@@ -125,7 +125,7 @@ function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<str
 
 function sortMetrics(metrics: Record<string, GiftMetrics>): Record<string, GiftMetrics> {
    return Object.entries(metrics)
-      .sort(([, a], [, b]) => b.total - a.total)
+      .sort(([, a], [, b]) => b.totalAmountCents - a.totalAmountCents)
       .reduce((r, [k, v]) => ({ ...r, [k]: v }), {});
 }
 
