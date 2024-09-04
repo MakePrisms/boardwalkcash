@@ -11,9 +11,9 @@ import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/so
 import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ProfileSettings from './Profile/ProfileSetting';
 import LeaderboardDrawer from '../leaderboards/LeaderboardDrawer';
-import ChartIcon from '../icons/ChartIcon';
 import EcashIcon from '../icons/EcashIcon';
 import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
+import FlameIcon from '../icons/FlameIcon';
 
 const SettingsCog = () => (
    <svg
@@ -56,6 +56,7 @@ export const SettingsSidebar = () => {
                {hidden && <SettingsCog />}
             </button>
          </div>
+         {/* makes it so all drawers close when hidden */}
          {!hidden && (
             <Drawer
                open={!hidden}
@@ -116,7 +117,7 @@ export const SettingsSidebar = () => {
                      </DrawerCollapse>
                   </div>
                   <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
-                     <DrawerCollapse label='Leaderboard' icon={<ChartIcon className='size-4' />}>
+                     <DrawerCollapse label='Leaderboard' icon={<FlameIcon className='size-4' />}>
                         <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />
                      </DrawerCollapse>
                   </div>
