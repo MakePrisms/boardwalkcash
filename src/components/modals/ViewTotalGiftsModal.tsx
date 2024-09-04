@@ -5,7 +5,7 @@ import StickerItem from '../eGifts/stickers/StickerItem';
 interface ViewTotalGiftsModalProps {
    isOpen: boolean;
    onClose: () => void;
-   giftsData: { [giftName: string]: number };
+   giftsData?: { [giftName: string]: number };
 }
 
 const ViewTotalGiftsModal = ({ isOpen, onClose, giftsData }: ViewTotalGiftsModalProps) => {
@@ -18,7 +18,7 @@ const ViewTotalGiftsModal = ({ isOpen, onClose, giftsData }: ViewTotalGiftsModal
             {loadingGifts ? (
                <Spinner size='lg' />
             ) : (
-               Object.entries(giftsData).map(([giftName, count]) => (
+               Object.entries(giftsData || {}).map(([giftName, count]) => (
                   <div key={giftName} className='relative'>
                      <StickerItem
                         selectedSrc={giftAssets[giftName].selectedSrc}
