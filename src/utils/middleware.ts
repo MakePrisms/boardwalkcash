@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { nip98 } from 'nostr-tools';
 
 export const corsMiddleware = Cors({
-   methods: ['GET', 'HEAD', 'POST'],
+   methods: ['GET', 'HEAD', 'POST', 'OPTIONS'],
    origin: '*',
 });
 
