@@ -4,7 +4,7 @@ import { PostMintQuoteApiResponse } from '@/pages/api/quotes/mint';
 import { PollingApiResponse } from '@/pages/api/invoice/polling/[slug]';
 import { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { calculateSha256 } from './crypto';
-import { UserWithContacts } from '@/pages/api/users/[slug]';
+import { UserWithContacts } from '@/pages/api/users/[pubkey]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
 import {

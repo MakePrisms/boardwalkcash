@@ -15,16 +15,16 @@ export type UserWithContacts = User & { contacts: ContactData[] };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    await runMiddleware(req, res, authMiddleware);
-   const { slug } = req.query;
+   const { pubkey } = req.query;
 
-   if (!slug || typeof slug !== 'string') {
-      return res.status(400).json({ message: 'Invalid slug' });
+   if (!pubkey || typeof pubkey !== 'string') {
+      return res.status(400).json({ message: 'Invalid pubkey' });
    }
 
    switch (req.method) {
       case 'GET':
          try {
-            const user = await findUserByPubkey(slug.toString());
+            const user = await findUserByPubkey(pubkey.toString());
             if (user) {
                return res.status(200).json(user as UserWithContacts);
             } else {
@@ -37,18 +37,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'PUT':
          try {
             if (req.body.linkedUserPubkey) {
-               await addContactToUser(slug, req.body as ContactData);
+               await addContactToUser(pubkey, req.body as ContactData);
 
                // notify the added user that they've been added as a contact
                await createNotification(
                   req.body.linkedUserPubkey,
                   NotificationType.NewContact,
-                  slug,
+                  pubkey,
                );
 
                return res.status(201).json({ message: 'Contact added' });
             }
-            const { pubkey, username, defaultMintUrl: mintUrl, hideFromLeaderboard } = req.body;
+            const { username, defaultMintUrl: mintUrl, hideFromLeaderboard } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };
@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                updates = { ...updates, hideFromLeaderboard };
             }
             if (Object.keys(updates).length > 0) {
-               const updatedUser = await updateUser(slug, updates);
+               const updatedUser = await updateUser(pubkey, updates);
                return res.status(200).json(updatedUser);
             }
          } catch (error: any) {
@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'DELETE':
          try {
-            await deleteUser(Number(slug));
+            await deleteUser(Number(pubkey));
             return res.status(204).end();
          } catch (error: any) {
             return res.status(500).json({ message: error.message });

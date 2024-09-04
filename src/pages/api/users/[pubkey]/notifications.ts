@@ -24,7 +24,7 @@ import { findManyContacts } from '@/lib/contactModels';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    runMiddleware(req, res, authMiddleware);
 
-   const { slug: userPubkey } = req.query;
+   const { pubkey: userPubkey } = req.query;
 
    if (typeof userPubkey !== 'string') {
       return res.status(400).json({ error: 'Invalid user public key' });
