@@ -1,6 +1,6 @@
 import { EcashTransaction, TxStatus } from '@/redux/slices/HistorySlice';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { PublicContact } from '@/types';
+import { DiscoverContactsResponse, PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { addContactAction, deleteContactAction } from '@/redux/slices/UserSlice';
@@ -187,7 +187,26 @@ const useContacts = () => {
       [contacts],
    );
 
+   const discoverContacts = useCallback(async () => {
+      if (!pubkey) throw new Error('No pubkey initialized');
+
+      const response = await authenticatedRequest<DiscoverContactsResponse>(
+         `/api/users/${pubkey}/discover-contacts`,
+         'POST',
+         undefined,
+      );
+      return response.users;
+   }, [pubkey]);
+
+   return {
+      fetchContact,
+      sortedContacts,
+      addContact,
+      fetchContactByUsername,
+      isContactAdded,
+      discoverContacts,
       deleteContact,
+   };
 };
 
 export default useContacts;

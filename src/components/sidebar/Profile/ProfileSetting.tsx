@@ -7,6 +7,7 @@ import { Button, TextInput } from 'flowbite-react';
 import ViewContactsButton from './ViewContactsButton';
 import { updateUsernameAction } from '@/redux/slices/UserSlice';
 import { HttpResponseError, updateUser } from '@/utils/appApiRequests';
+import DiscoverButton from './DiscoverButton';
 const ProfileSettings = () => {
    const { username, pubkey } = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
@@ -139,6 +140,7 @@ const ProfileSettings = () => {
             >
                {isEditing ? 'Save' : 'Edit'}
             </Button>
+            <DiscoverButton />
             <ViewContactsButton />
          </div>
       </div>
