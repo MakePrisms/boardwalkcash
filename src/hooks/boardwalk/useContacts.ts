@@ -3,8 +3,8 @@ import { RootState, useAppDispatch } from '@/redux/store';
 import { PublicContact } from '@/types';
 import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { addContactAction } from '@/redux/slices/UserSlice';
-import { HttpResponseError, addContactRequest } from '@/utils/appApiRequests';
+import { addContactAction, deleteContactAction } from '@/redux/slices/UserSlice';
+import { HttpResponseError, addContactRequest, authenticatedRequest } from '@/utils/appApiRequests';
 
 type ContactTxData = {
    numTxs: number;
@@ -16,6 +16,7 @@ type ContactTxDataRecord = Record<string, ContactTxData>;
 
 const useContacts = () => {
    const contacts = useSelector((state: RootState) => state.user.contacts);
+   const pubkey = useSelector((state: RootState) => state.user.pubkey);
    const txHistory = useSelector((state: RootState) => state.history);
 
    const dispatch = useAppDispatch();
@@ -168,6 +169,17 @@ const useContacts = () => {
       [dispatch],
    );
 
+   const deleteContact = useCallback(
+      async (contact: PublicContact) => {
+         await authenticatedRequest<undefined>(
+            `/api/users/${pubkey}/contacts/${contact.pubkey}`,
+            'DELETE',
+         );
+         dispatch(deleteContactAction(contact));
+      },
+      [dispatch, pubkey],
+   );
+
    const isContactAdded = useCallback(
       ({ pubkey, username }: { pubkey?: string; username?: string }) => {
          return contacts.find(c => c.pubkey === pubkey || c.username === username) !== undefined;
@@ -175,7 +187,7 @@ const useContacts = () => {
       [contacts],
    );
 
-   return { fetchContact, sortedContacts, addContact, fetchContactByUsername, isContactAdded };
+      deleteContact,
 };
 
 export default useContacts;

@@ -81,6 +81,7 @@ const ViewContactsModalBody: React.FC<ViewContactsModalBodyProps> = ({ mode, onS
                                     contact={contact}
                                     mode={mode}
                                     handleContactClick={handleContactClick}
+                                    userPubkey={user.pubkey}
                                  />
                               ))}
                            </>

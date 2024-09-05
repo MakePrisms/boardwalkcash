@@ -141,6 +141,35 @@ async function addContactToUser(userPubkey: string, contactData: ContactData) {
       throw error;
    }
 }
+const removeContactFromUser = async (pubkey: string, contactPubkey: string) => {
+   const contact = await prisma.contact.findFirst({
+      where: {
+         userId: pubkey,
+         linkedUserId: contactPubkey,
+      },
+   });
+
+   console.log('deleting contact', contact);
+
+   if (!contact) {
+      throw new Error('Contact not found');
+   }
+
+   // Delete the contact record
+   await prisma.contact.delete({
+      where: {
+         id: contact.id,
+      },
+   });
+
+   await prisma.contact.deleteMany({
+      where: {
+         userId: contactPubkey,
+         linkedUserId: pubkey,
+      },
+   });
+};
+
 export {
    createUser,
    findUserById,
@@ -149,4 +178,5 @@ export {
    updateUser,
    deleteUser,
    addContactToUser,
+   removeContactFromUser,
 };

@@ -99,6 +99,9 @@ const userSlice = createSlice({
       addContactAction(state, action: PayloadAction<PublicContact>) {
          state.contacts.push(action.payload);
       },
+      deleteContactAction(state, action: PayloadAction<PublicContact>) {
+         state.contacts = state.contacts.filter(c => c.pubkey !== action.payload.pubkey);
+      },
       updateUsernameAction(state, action: PayloadAction<string>) {
          state.username = action.payload;
       },
@@ -143,7 +146,6 @@ const userSlice = createSlice({
    },
 });
 
-export const { addContactAction, updateUsernameAction, updateHideFromLeaderboardAction } =
-   userSlice.actions;
+   deleteContactAction,
 
 export default userSlice.reducer;
