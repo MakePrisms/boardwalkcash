@@ -33,18 +33,16 @@ export default async function handler(
       /* fetch all pubkeys in user's contact list */
       const nostrContacts = await getNostrContacts(user.nostrPubkey);
 
-      /* filter out contacts the user already has and those without a nostr pubkey */
-      const notAdded = nostrContacts.filter(c => {
-         if (c === user.nostrPubkey) return false;
-         return !user.contacts.some(
-            u => u.linkedUser?.nostrPubkey === c || u.linkedUser?.nostrPubkey === null,
-         );
-      });
+      /* find boardwalk users with these nostr pubkeys */
+      const boardwalkUsers = await getManyUsersByNostrPubkey(nostrContacts);
 
-      /* find boardwalk users with these pubkeys */
-      const toDiscover = (await getManyUsersByNostrPubkey(
-         notAdded,
-      )) as DiscoverContactsResponse['users'];
+      /* filter out contacts the user already has */
+      const toDiscover = boardwalkUsers.filter(boardwalkUser => {
+         /* skip this user */
+         if (boardwalkUser.nostrPubkey === user.nostrPubkey) return false;
+         /* check if this specific boardwalk user is not in the user's contacts */
+         return !user.contacts.some(contact => contact.linkedUser?.pubkey === boardwalkUser.pubkey);
+      }) as DiscoverContactsResponse['users'];
 
       return res.status(200).json({ users: toDiscover });
    } catch (error) {
