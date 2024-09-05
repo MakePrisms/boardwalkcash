@@ -67,16 +67,49 @@ export const sendOtp = async (sendTo: { pubkey: string }, otp: string) => {
 export const getNostrContacts = async (pubkey: string) => {
    const { ndk } = await initializeNDK();
 
-   const contactEvent = await ndk.fetchEvent({
-      kinds: [NDKKind.Contacts],
-      authors: [pubkey],
+   let contactEvents: Set<NDKEvent> = new Set();
+
+   /* get all contact list events until timeout */
+   const fetchEventsPromise = new Promise<Set<NDKEvent>>(resolve => {
+      const sub = ndk.subscribe(
+         {
+            kinds: [NDKKind.Contacts],
+            authors: [pubkey],
+         },
+         { closeOnEose: false, groupable: false },
+      );
+
+      sub.on('event', (event: NDKEvent) => {
+         console.log(
+            'Received list with',
+            event.tags.length,
+            'contacts and created_at',
+            event.created_at,
+         );
+         contactEvents.add(event);
+      });
+
+      setTimeout(() => {
+         sub.stop();
+         resolve(contactEvents);
+      }, 5000);
    });
 
-   if (!contactEvent) {
+   try {
+      contactEvents = await fetchEventsPromise;
+   } catch (error) {
+      console.error('Error fetching contact events:', error);
+   }
+
+   if (contactEvents.size === 0) {
       return [];
    }
 
-   const contactsPubkeys = contactEvent.getMatchingTags('p').map((tag: NDKTag) => tag[1]);
+   const mostRecentEvent = Array.from(contactEvents).reduce((latest, current) => {
+      return current.created_at! > latest.created_at! ? current : latest;
+   });
+
+   const contactsPubkeys = mostRecentEvent.getMatchingTags('p').map((tag: NDKTag) => tag[1]);
    return contactsPubkeys;
 };
 
