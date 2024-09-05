@@ -12,6 +12,7 @@ model User {
   id                  Int            @id @default(autoincrement())
   pubkey              String         @unique
   username            String?        @unique
+  nostrPubkey         String?
   contacts            Contact[]      @relation("UserContacts")
   contactOf           Contact[]      @relation("ContactUser")
   proofs              Proof[]
@@ -146,6 +147,16 @@ model Gift {
 
   @@index([creatorPubkey])
   @@index([name])
+}
+
+model PendingOtp {
+  id          Int      @id @default(autoincrement())
+  userPubkey  String // user trying to login
+  nostrPubkey String // nostr pubkey to authenticate
+  otpCode     String   @unique
+  createdAt   DateTime @default(now())
+
+  @@index([otpCode])
 }
 
 // model GiftCondition {

@@ -261,3 +261,19 @@ export interface LeaderboardResponse {
       };
    };
 }
+
+export interface GenerateNostrOtpRequest {
+   nostrPubkey: string;
+}
+
+export interface VerifyNostrOtpRequest {
+   otp: string;
+}
+
+export interface DiscoverContactsResponse {
+   users: {
+      pubkey: string;
+      username: string | null;
+      nostrPubkey: string;
+   }[];
+}
