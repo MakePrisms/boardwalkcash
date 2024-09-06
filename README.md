@@ -1,6 +1,6 @@
 # Boardwalk Cash
 
-A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
+A Cashu wallet designed for fast, easy onboarding and use
 
 ## Table of Contents
 
@@ -8,7 +8,6 @@ A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 -  [Getting Started](#getting-started)
 -  [Prerequisites](#prerequisites)
 -  [Installation](#installation)
--  [Architecture](#architecture)
 -  [Contributing](#contributing)
 -  [License](#license)
 -  [Contact](#contact)
@@ -16,39 +15,41 @@ A Lightning / Cashu Ecash wallet designed for fast easy onboarding and use
 
 ## Features
 
--  **Lightning Integration**: Send and Receive Lightning payments.
--  **Cashu Ecash Wallet**: Store balance locally as e-cash while at rest.
--  **Lightning Address**: Receive payments using an auto-generated Lightning Address.
--  **Nostr Wallet Connect**: Initiate payments from apps using NWC ([NIP-47](https://github.com/nostr-protocol/nips/blob/master/47.md))
--  **Nostr Wallet Authentication**: Seamlessly create app connections with NWA ([NIP-67](https://github.com/benthecarman/nips/blob/nostr-wallet-connect-connect/67.md))
--  **Prism Payments**: Use NWC to pay multiple invoices at once
+-  **Lightning Integration**: Send and receive Lightning payments
+-  **Cashu Ecash Wallet**: Store balance locally as eCash
+-  **Contacts**: Add other users as contacts to send and receive eCash without copy/pasting tokens
+-  **Profile Pages**: Set a custom username and get eTips at boardwalkcash.com/username
+-  **Conditional payments**: Send locked eCash only unlockable by the contact you are sending to
+-  **Notifications**: Get notified when someone sends you eCash or adds you as a contact
+-  **Transaction History**: Keep track of your payment activities
+-  **Cash Taps**: One-tap shareable ecash for easy payments
+-  **USD Tokens**: eCash is denominated in USD
+-  **Multiple Mints**: Hold eCash in multiple mints at the same time
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+These instructions will help you set up a copy of the project on your local machine for development and testing purposes.
 
 ### Prerequisites
 
-Before you begin, ensure you have the following tools installed and running:
+Before you begin, ensure you have the following tools installed:
 
 -  [Docker](https://www.docker.com/)
 -  [Docker Compose](https://docs.docker.com/compose/)
--  [Node.js](https://nodejs.org/en/)
+-  [Node.js](https://nodejs.org/en/) (if running the Next.js app locally)
 
 ### Installation
 
-1. Clone the repository:
+1. Fork and clone the repository:
 
    ```bash
    git clone https://github.com/your-username/boardwalkcash.git
-
    ```
 
 2. Navigate to the project directory:
 
    ```bash
    cd boardwalkcash
-
    ```
 
 3. Use Docker Compose to build and run the containers:
@@ -57,74 +58,50 @@ Before you begin, ensure you have the following tools installed and running:
    docker-compose up --build
    ```
 
-## Architecture
+   Alternatively, if you prefer to run only the database with Docker and use your local Node.js environment for the Next.js app:
 
-### Frontend
+   a. Start the database container:
 
--  **Framework: Built with Next.js and TypeScript**.
--  **Pages**:
-   -  index.tsx: The main page for the app. Starts up top level hooks and reads in proofs from localstorage
-   -  connect.tsx: Reads in query params to connect with the apps using NWA
--  **Components**:
-   -  Balance: Displays sat/usd balance
-   -  ActivityIndicator: Controls the user messaging which appears between balance and buttons
-   -  buttons/lightning: Contains send and receive buttons for making Lightning payments
-   -  SendModal: UI / state for Lightning send flow
-   -  ClipboardButton: for copying to clipboard
-   -  EcashButtons: Currently in development
--  **Hooks**: Custom React hooks for managing state and side effects.
-   -  useCashu: Handles all of the calls to cashu mint and cashu-ts library. Reads/Writes to localstorage for handling proofs
-   -  useNwc: Subscribes to and handles NWC requests and prism payments.
--  **State Management**: Global state management using Redux Toolkit.
-   -  store.ts: Redux Toolkit store for global state management
-   -  slices/ActivitySlice.ts: managing activity state
-   -  slices/CashuSlice.ts: managing cashu state
-   -  slices/UserSlice.ts: managing user state
--  **LocalStorage**: for persisting user data and allowing user to self custody ecash proofs.
-   -  localStorage is being called for reads/writes across the app. This is used to store the user's proofs.
-   -  We are currently working on a more consistent and centralized way to handle this.
+   ```bash
+   docker-compose up db
+   ```
 
-### Backend
+   b. Install dependencies:
 
--  **API Endpoints**: RESTful API endpoints facilitating lud16, crud operations on the db, and mint operations such as paying invoices, creating invoices, and checking/exchanging proofs with the mint.
-   -  /api/callback: lud16 callback
-   -  /api/invoice/polling: Polls mint for invoices waiting to be paid.
-   -  /api/cron/invoice: Once above polling times out, this cron job check every minute for not-expired invoices
-   -  /api/lnurlp: lud16 lnurlp flow for paying invoices
-   -  /api/proofs: CRUD operations for the user's proofs
-   -  /api/users: CRUD operations for the user's data
-   -  /api/quotes: CRUD operations for managing quotes we need to keep track of
--  **Database**: PostgreSQL database, managed using Prisma ORM.
+   ```bash
+   npm install
+   ```
 
-### Docker Integration
+   c. Run the Next.js app:
 
--  Docker Containers: Next.js app and database are containerized.
--  Docker Compose: orchestrates the deployment.
+   ```bash
+   npm run dev
+   ```
 
-**NOTE**: You may run only the database with docker and use your local Node.js environment for running the Next.js app, if you so choose.
+4. Access the application at `http://localhost:3000` in your web browser.
 
-### Contributing
+## Contributing
 
-Any contributions you make are greatly appreciated.
+We welcome contributions to Boardwalk Cash! Here's how you can contribute:
 
--  Fork the Project
--  Create your Feature Branch (git checkout -b feature/AmazingFeature)
--  Commit your Changes (git commit -m 'Add some AmazingFeature')
--  Push to the Branch (git push origin feature/AmazingFeature)
--  Open a Pull Request
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### License
+## License
 
 Distributed under the MIT License. See [LICENSE](https://github.com/makeprisms/boardwalkcash/blob/main/LICENSE) for more information.
 
-### Contact
+## Contact
 
 -  [https://github.com/gudnuf](https://github.com/gudnuf)
 -  [https://github.com/austinkelsay](https://github.com/austinkelsay)
 
 Project Link: [https://github.com/makeprisms/boardwalkcash](https://github.com/makeprisms/boardwalkcash)
 
-### Acknowledgements
+## Acknowledgements
 
 -  The Cashu Ecosystem
 -  Cashu-TS
