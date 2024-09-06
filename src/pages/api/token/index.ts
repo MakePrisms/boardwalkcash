@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
    console.log('req', req.body);
    if (req.method === 'POST') {
       try {
-         const { token } = req.body as PostTokenRequest;
+         const { token, isFee } = req.body as PostTokenRequest;
 
          if (!token) {
             return res.status(400).json({ message: 'Token is required' });
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
          const txid = computeTxId(proofs);
 
-         await createTokenInDb(req.body, txid);
+         await createTokenInDb(req.body, txid, isFee);
 
          return res.status(200).json({ txid } as PostTokenResponse);
       } catch (error: any) {

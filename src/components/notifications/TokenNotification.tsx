@@ -14,7 +14,7 @@ interface TokenNotificationProps {
 }
 
 const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) => {
-   const { token, contact, isTip, timeAgo, tokenState, gift } = data;
+   const { token, contact, isTip, timeAgo, tokenState, gift, isFee } = data;
    const user = useSelector((state: RootState) => state.user);
    const selfContact = useMemo(() => user.contacts.find(c => c.pubkey === user.pubkey), [user]);
 
@@ -25,6 +25,9 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
 
    const notificationText = useMemo(() => {
       const formattedAmount = formatCents(amountCents);
+      if (isFee === true) {
+         return `${contact?.username} sent ${gift}: ${formattedAmount} fee`;
+      }
       if (isTip) {
          return `You got tipped ${formattedAmount}`;
       }
@@ -45,7 +48,7 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
          return `${firstPart} ${article} ${giftName} eGift`;
       }
       return `${firstPart} ${formattedAmount}`;
-   }, [contact, amountCents, isTip, gift]);
+   }, [contact, amountCents, isTip, gift, isFee]);
 
    const buttons = useMemo(() => {
       if (tokenState === 'claimed') {

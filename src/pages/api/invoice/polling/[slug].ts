@@ -134,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, gift }, txid);
+               await createTokenInDb({ token: feeToken, gift }, txid, true);
                await notifyTokenReceived(
                   process.env.NEXT_PUBLIC_FEE_PUBKEY!,
                   JSON.stringify({ token: feeToken }),

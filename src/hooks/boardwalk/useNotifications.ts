@@ -137,6 +137,7 @@ const useNotifications = () => {
          timeAgo: calculateTimeAgo(notification.createdAt),
          tokenState: 'unclaimed',
          gift,
+         isFee: notification.token?.isFee || false,
       };
    };
 

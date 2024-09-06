@@ -173,6 +173,7 @@ export type TokenNotificationData = {
    timeAgo: string;
    tokenState: 'claimed' | 'unclaimed';
    gift?: string;
+   isFee: boolean;
 };
 
 export type ContactNotificationData = {
@@ -208,6 +209,7 @@ export type PostTokenRequest = {
    token: string;
    gift?: string;
    createdByPubkey?: string;
+   isFee?: boolean;
 };
 
 export type PostTokenResponse = {

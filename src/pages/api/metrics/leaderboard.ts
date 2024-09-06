@@ -25,6 +25,7 @@ export default async function handler(
                createdAt: {
                   gte: sinceDate,
                },
+               isFee: false,
             },
             include: {
                recipient: true,

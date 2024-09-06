@@ -346,7 +346,7 @@ export const useCashu = () => {
                unit: 'usd',
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.gift);
+               const txid = await postTokenToDb(feeToken, opts?.gift, true);
                await sendTokenAsNotification(feeToken, txid);
             }
          }
