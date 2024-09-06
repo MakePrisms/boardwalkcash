@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import DiscoverContactsModalBody from '@/components/modals/DiscoverContactsModalBody';
 import AuthenticateNpubModalBody from '@/components/modals/AuthenticateNpubModalBody';
 
-const DiscoverButton = () => {
+const DiscoverButton = ({ className }: { className?: string }) => {
    const [showModal, setShowModal] = useState(false);
    const user = useSelector((state: RootState) => state.user);
 
@@ -22,7 +22,7 @@ const DiscoverButton = () => {
 
    return (
       <>
-         <Button className='btn-primary' onClick={() => setShowModal(true)}>
+         <Button className={`btn-primary ${className}`} onClick={() => setShowModal(true)}>
             Discover
          </Button>
          <Modal show={showModal} onClose={handleCloseModal} className='text-black'>

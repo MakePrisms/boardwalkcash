@@ -1,9 +1,10 @@
 import { useToast } from '@/hooks/util/useToast';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { ShareIcon } from '@heroicons/react/20/solid';
+import { CheckIcon, ShareIcon } from '@heroicons/react/20/solid';
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
-import { Button, TextInput } from 'flowbite-react';
+import { Spinner, TextInput } from 'flowbite-react';
 import ViewContactsButton from './ViewContactsButton';
 import { updateUsernameAction } from '@/redux/slices/UserSlice';
 import { HttpResponseError, updateUser } from '@/utils/appApiRequests';
@@ -64,6 +65,7 @@ const ProfileSettings = () => {
          'support',
          'help',
          'info',
+         'leaderboard',
       ];
       if (reservedWords.includes(username)) {
          return 'This username is reserved and cannot be used.';
@@ -121,27 +123,31 @@ const ProfileSettings = () => {
                ) : (
                   <div className='font-bold text-lg'>{username}</div>
                )}
+               <button
+                  onClick={() => {
+                     if (isEditing) {
+                        handleUpdateUsername();
+                     } else {
+                        setIsEditing(true);
+                     }
+                  }}
+               >
+                  {isSavingUsername ? (
+                     <Spinner size='sm' />
+                  ) : isEditing ? (
+                     <CheckIcon className='h-5 w-5' />
+                  ) : (
+                     <PencilSquareIcon className='h-5 w-5' />
+                  )}
+               </button>
             </div>
             <button className='mr-3' onClick={handleShareLink}>
                {<ShareIcon className='size-6' />}
             </button>
          </div>
-         <div className='flex justify-between align-middle mb-9'>
-            <Button
-               isProcessing={isSavingUsername}
-               onClick={() => {
-                  if (isEditing) {
-                     handleUpdateUsername();
-                  } else {
-                     setIsEditing(true);
-                  }
-               }}
-               className='btn-primary'
-            >
-               {isEditing ? 'Save' : 'Edit'}
-            </Button>
-            <DiscoverButton />
-            <ViewContactsButton />
+         <div className='flex justify-between align-middle mb-9 space-x-4'>
+            <DiscoverButton className='w-1/3' />
+            <ViewContactsButton className='w-1/3' />
          </div>
       </div>
    );
