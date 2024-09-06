@@ -59,6 +59,23 @@ const ConfirmEcashReceiveModal = ({
    const { fetchContact } = useContacts();
    const { getGiftFromToken } = useGifts();
 
+   const handleModalClose = () => {
+      setMintTrusted(false);
+      setSwapping(false);
+      setMintUrl('');
+      setProofs([]);
+      setTokenUnit(null);
+      setFromActiveMint(true);
+      setAmountUsd(null);
+      setLockedTo(null);
+      setTokenContact(null);
+      setGift(null);
+      setLoading(true);
+      setDisableClaim(false);
+      setAlreadyClaimed(false);
+      onClose();
+   };
+
    const addEcashTransaction = useCallback(
       (status: TxStatus) => {
          if (!token) return;
@@ -169,7 +186,7 @@ const ConfirmEcashReceiveModal = ({
                }
             }
 
-            onClose();
+            handleModalClose();
          }
       };
 
@@ -288,7 +305,7 @@ const ConfirmEcashReceiveModal = ({
       // TOOD: move to cashu2
       addEcashTransaction(TxStatus.PAID);
 
-      onClose();
+      handleModalClose();
 
       if (onSuccess && success) {
          onSuccess();
@@ -303,7 +320,7 @@ const ConfirmEcashReceiveModal = ({
 
    if (loading) {
       return (
-         <Modal show={isOpen} onClose={onClose}>
+         <Modal show={isOpen} onClose={handleModalClose}>
             <Modal.Header>Loading...</Modal.Header>
             <Modal.Body>
                <div className='flex flex-col space-y-4 justify-center items-center'>
@@ -325,7 +342,7 @@ const ConfirmEcashReceiveModal = ({
 
    return (
       <>
-         <Modal show={isOpen} onClose={onClose}>
+         <Modal show={isOpen} onClose={handleModalClose}>
             <Modal.Header>{title}</Modal.Header>
 
             <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>

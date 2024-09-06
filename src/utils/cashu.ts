@@ -10,6 +10,7 @@ import {
 import { hashToCurve } from '@cashu/crypto/modules/common';
 import { bytesToHex } from '@noble/curves/abstract/utils';
 import { sha256 } from '@noble/hashes/sha256';
+import { getTokenFromDb } from './appApiRequests';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -336,3 +337,25 @@ export function getProofsForPreference(proofs: Proof[], preference: AmountPrefer
 
    return preferredProofs;
 }
+
+export const getTokenFromUrl = async (url: string) => {
+   try {
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+      const token = params.get('token');
+      const txid = params.get('txid');
+
+      if (token && token.startsWith('cashu')) {
+         return token;
+      }
+
+      if (txid) {
+         return (await getTokenFromDb(txid)).token;
+      }
+
+      return null;
+   } catch (error) {
+      console.error('Invalid URL:', error);
+      return null;
+   }
+};
