@@ -45,11 +45,6 @@ const DiscoverContactsModalBody = () => {
       }
    };
 
-   const handleViewNostrProfile = (nostrPubkey: string) => {
-      const npub = nip19.npubEncode(nostrPubkey);
-      window.open(`https://njump.me/${npub}`, '_blank');
-   };
-
    const getCurrentPageUsers = () => {
       const startIndex = (currentPage - 1) * usersPerPage;
       const endIndex = startIndex + usersPerPage;
@@ -92,9 +87,11 @@ const DiscoverContactsModalBody = () => {
                                  Add
                               </Button>
                               <Button
-                                 onClick={() => handleViewNostrProfile(user.nostrPubkey)}
                                  size={'xs'}
                                  className='btn-primary'
+                                 as='a'
+                                 href={`https://njump.me/${nip19.npubEncode(user.nostrPubkey!)}`}
+                                 target='_blank'
                               >
                                  View
                               </Button>
