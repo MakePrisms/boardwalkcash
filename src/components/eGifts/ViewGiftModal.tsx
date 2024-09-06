@@ -32,7 +32,7 @@ export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftMo
             />
             {txid && (
                <ClipboardButton
-                  toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${txid}`}
+                  toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
                   className='btn-primary mt-6'
                />

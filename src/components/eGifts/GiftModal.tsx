@@ -311,7 +311,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                            <div className='w-full flex justify-center mt-4'>
                               <div className='w-32 h-10'>
                                  <ClipboardButton
-                                    toCopy={`${process.env.NEXT_PUBLIC_PROJECT_URL}/wallet?txid=${computeTxId(token)}`}
+                                    toCopy={`${window.location.origin}/wallet?txid=${computeTxId(token)}`}
                                     toShow={'Share'}
                                     className='btn-primary w-full h-full'
                                     key={`gift-share`}
