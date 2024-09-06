@@ -113,7 +113,7 @@ const userSlice = createSlice({
       updateHideFromLeaderboardAction(state, action: PayloadAction<boolean>) {
          state.hideFromLeaderboard = action.payload;
       },
-      setNostrPubkeyAction(state, action: PayloadAction<string>) {
+      setNostrPubkeyAction(state, action: PayloadAction<string | null>) {
          state.nostrPubkey = action.payload;
       },
    },

@@ -20,3 +20,10 @@ export const formatCents = (cents: number, decimals = true) => {
 };
 
 export const formatSats = (sats: number) => `${sats.toLocaleString()} sats`;
+
+export const shortenString = (str: string, maxLength: number) => {
+   if (str.length <= maxLength) {
+      return str;
+   }
+   return `${str.slice(0, maxLength - 3)}...${str.slice(-4)}`;
+};

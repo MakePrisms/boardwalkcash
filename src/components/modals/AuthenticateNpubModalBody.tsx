@@ -2,6 +2,7 @@ import useNostrLogin from '@/hooks/boardwalk/useNostrLogin';
 import { useToast } from '@/hooks/util/useToast';
 import { setNostrPubkeyAction } from '@/redux/slices/UserSlice';
 import { useAppDispatch } from '@/redux/store';
+import { HttpResponseError } from '@/utils/appApiRequests';
 import { Button, Modal, TextInput } from 'flowbite-react';
 import { nip19 } from 'nostr-tools';
 import { useState, FormEvent } from 'react';
@@ -22,17 +23,25 @@ const AuthenticateNpubModalBody = () => {
       if (!validatePubkey(pubkey)) return;
 
       let hexPubkey = pubkey;
-      if (pubkey.startsWith('npub')) {
-         hexPubkey = nip19.decode(pubkey).data as string;
+      try {
+         if (pubkey.startsWith('npub')) {
+            hexPubkey = nip19.decode(pubkey).data as string;
+         }
+      } catch (error) {
+         addToast('Invalid npub', 'error');
+         return;
       }
       setLoading(true);
       try {
          await generateAndSendOtp(hexPubkey);
          setShowOtpInput(true);
-         console.log('pubkey', pubkey);
       } catch (error) {
+         if (error instanceof HttpResponseError) {
+            addToast(error.message, 'error');
+         } else {
+            addToast('Error generating OTP', 'error');
+         }
          console.error('Error generating OTP:', error);
-         addToast('Error generating OTP', 'error');
       } finally {
          setLoading(false);
       }
@@ -44,13 +53,19 @@ const AuthenticateNpubModalBody = () => {
 
       setLoading(true);
       try {
-         await submitOtp(otp);
-         dispatch(setNostrPubkeyAction(pubkey));
+         const { nostrPubkey } = await submitOtp(otp);
+         if (nostrPubkey) {
+            dispatch(setNostrPubkeyAction(nostrPubkey));
+         }
          setOtp('');
          setPubkey('');
          addToast('Successfully authenticated', 'success');
       } catch (error) {
-         addToast('Error verifying OTP', 'error');
+         if (error instanceof HttpResponseError) {
+            addToast(error.message, 'error');
+         } else {
+            addToast('Error verifying OTP', 'error');
+         }
          console.error('Error verifying OTP:', error);
       } finally {
          setLoading(false);
@@ -93,7 +108,17 @@ const AuthenticateNpubModalBody = () => {
                   placeholder='Enter npub'
                   value={pubkey}
                   onChange={e => setPubkey(e.target.value)}
-                  helperText={'Boardwalk will send you a DM with your one time password'}
+                  helperText={
+                     <>
+                        <p>Boardwalk will send you a DM with your one time password</p>
+                        <button
+                           className='underline cursor-pointer text-xs'
+                           onClick={() => setShowOtpInput(true)}
+                        >
+                           Already have a code?
+                        </button>
+                     </>
+                  }
                />
                {pubkeyError && <p className='text-red-500'>{pubkeyError}</p>}
                <Button isProcessing={loading} type='submit' className='btn-primary'>

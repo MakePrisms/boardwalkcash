@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { findUserByPubkey } from '@/lib/userModels';
-import { GenerateNostrOtpRequest } from '@/types';
+import { GenerateNostrOtpRequest, NostrError } from '@/types';
 import { generateOtp } from '@/lib/otp';
 import { sendOtp } from '@/utils/nostr';
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
@@ -32,13 +32,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const otp = await generateOtp(nostrPubkey, pubkey);
 
-      console.log('otp', otp);
-
       await sendOtp({ pubkey: nostrPubkey }, otp.otpCode);
 
       return res.status(200).json({ message: 'OTP generated' });
    } catch (error) {
-      console.error('Error fetching user:', error);
-      return res.status(500).end();
+      console.error('Error generating OTP:', error);
+      if (error instanceof NostrError) {
+         return res.status(400).json({ error: error.message });
+      }
+      return res.status(500).json({ error: 'Internal server error' });
    }
 }

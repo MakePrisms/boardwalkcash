@@ -270,10 +270,22 @@ export interface VerifyNostrOtpRequest {
    otp: string;
 }
 
+export interface VerifyNostrOtpResponse {
+   error?: string;
+   nostrPubkey?: string;
+}
+
 export interface DiscoverContactsResponse {
    users: {
       pubkey: string;
       username: string | null;
       nostrPubkey: string;
    }[];
+}
+
+export class NostrError extends Error {
+   constructor(message: string) {
+      super(message);
+      this.name = 'NostrError';
+   }
 }

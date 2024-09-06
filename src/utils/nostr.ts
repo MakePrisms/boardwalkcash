@@ -1,3 +1,4 @@
+import { NostrError } from '@/types';
 import NDK, {
    NDKEvent,
    NDKKind,
@@ -34,7 +35,9 @@ const initializeNDK = async () => {
       signer: new NDKPrivateKeySigner(privkey),
    });
 
-   await ndk.connect().then(() => console.log('Connected to NDK'));
+   await ndk.connect().catch(() => {
+      throw new NostrError('Failed to connect to NDK');
+   });
    return { ndk, privkey };
 };
 
@@ -46,7 +49,7 @@ export const sendOtp = async (sendTo: { pubkey: string }, otp: string) => {
    /* make sure the user exists */
    const userProfile = await user.fetchProfile();
    if (!userProfile) {
-      throw new Error('Failed to fetch user profile from Nostr');
+      throw new NostrError('Failed to fetch user profile from Nostr');
    }
    /* if user has relays, prefer those */
    const { relayUrls } = user;
@@ -80,19 +83,13 @@ export const getNostrContacts = async (pubkey: string) => {
       );
 
       sub.on('event', (event: NDKEvent) => {
-         console.log(
-            'Received list with',
-            event.tags.length,
-            'contacts and created_at',
-            event.created_at,
-         );
          contactEvents.add(event);
       });
 
       setTimeout(() => {
          sub.stop();
          resolve(contactEvents);
-      }, 5000);
+      }, 3000);
    });
 
    try {
@@ -123,8 +120,12 @@ export const publishNostrEvent = async (ndk: NDK, event: NostrEvent, relays?: st
       for await (const r of relaySet.relays) {
          await r.connect();
       }
-      await e.publish(relaySet);
+      await e.publish(relaySet).catch(e => {
+         throw new NostrError(e.message);
+      });
    } else {
-      await e.publish();
+      await e.publish().catch(e => {
+         throw new NostrError(e.message);
+      });
    }
 };

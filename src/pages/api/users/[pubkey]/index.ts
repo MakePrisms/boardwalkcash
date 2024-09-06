@@ -48,7 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                return res.status(201).json({ message: 'Contact added' });
             }
-            const { username, defaultMintUrl: mintUrl, hideFromLeaderboard } = req.body;
+            const {
+               username,
+               defaultMintUrl: mintUrl,
+               hideFromLeaderboard,
+               nostrPubkey,
+            } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };
@@ -58,6 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
             if (hideFromLeaderboard !== undefined) {
                updates = { ...updates, hideFromLeaderboard };
+            }
+            /* only allow removing nostr pubkey, otherwise otp is required to authenticate */
+            if (nostrPubkey === null) {
+               updates = { ...updates, nostrPubkey };
             }
             if (Object.keys(updates).length > 0) {
                const updatedUser = await updateUser(pubkey, updates);

@@ -58,7 +58,12 @@ async function findUserByPubkeyWithMint(pubkey: string) {
 
 async function updateUser(
    pubkey: string,
-   updates: { username?: string; receiving?: boolean; mintUrl?: string; nostrPubkey?: string },
+   updates: {
+      username?: string;
+      receiving?: boolean;
+      mintUrl?: string;
+      nostrPubkey?: string | null;
+   },
 ) {
    let defaultMint;
    if (updates.mintUrl) {

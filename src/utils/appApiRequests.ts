@@ -83,7 +83,8 @@ export const authenticatedRequest = async <T>(
       body: JSON.stringify(body),
    });
    if (!response.ok) {
-      throw new HttpResponseError(response.statusText, response.status);
+      const errorMessage = await response.text();
+      throw new HttpResponseError(errorMessage || response.statusText, response.status);
    } else if (response.status === 204) {
       // no content breaks the json parsing
       return undefined as unknown as T;
