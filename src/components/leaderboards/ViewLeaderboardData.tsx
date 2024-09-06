@@ -44,7 +44,7 @@ const ViewLeaderboardData = () => {
                {userData && (
                   <div className='mt-8'>
                      <h2 className='text-lg mb-4'>Your Stats</h2>
-                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 text-black'>
+                     <div className='grid grid-cols-1 gap-6 text-black'>
                         <UserStatsCard title='eGIFTS SENT' userData={userData.sent || undefined} />
                         <UserStatsCard
                            title='eGIFTS RECEIVED'
