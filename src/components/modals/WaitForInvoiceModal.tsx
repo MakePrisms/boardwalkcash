@@ -21,13 +21,30 @@ export const WaitForInvoiceModalBody: React.FC<
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
+   const [loading, setLoading] = useState(true);
    const { unitToSats } = useExchangeRate();
 
    useEffect(() => {
-      unitToSats(amountUsdCents / 100, 'usd').then(amountSats => {
-         setAmountData({ amountUsdCents, amountSats });
-      });
+      setLoading(true);
+      unitToSats(amountUsdCents / 100, 'usd')
+         .then(amountSats => {
+            setAmountData({ amountUsdCents, amountSats });
+         })
+         .finally(() =>
+            setTimeout(() => {
+               setLoading(false);
+            }, 300),
+         );
    }, [amountUsdCents, unitToSats]);
+
+   if (loading) {
+      return (
+         <div className='flex flex-col items-center justify-center space-y-4'>
+            <Spinner size='lg' />
+            <p className='text-black'>Loading...</p>
+         </div>
+      );
+   }
 
    return (
       <div className='flex flex-col items-center justify-center space-y-4'>
@@ -42,7 +59,7 @@ export const WaitForInvoiceModalBody: React.FC<
             </div>
          )}
          <QRCode value={invoice} size={256} />
-         <ClipboardButton toCopy={invoice} toShow='Copy' className='btn-primary' />
+         <ClipboardButton toCopy={invoice} toShow='Copy Invoice' className='btn-primary' />
          <div className='text-black'>
             {invoiceTimeout ? (
                <div className='flex flex-col items-center justify-center text-center space-y-4'>

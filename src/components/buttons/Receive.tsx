@@ -21,6 +21,7 @@ const Receive = () => {
    const [token, setToken] = useState<Token | null>(null);
    const [amountUsdCents, setAmountUsdCents] = useState<number | null>(null);
    const [currentPage, setCurrentPage] = useState<'input' | 'invoice'>('input');
+   const [fetchingInvoice, setFetchingInvoice] = useState(false);
 
    const { requestMintInvoice, decodeToken } = useCashu();
    const { addToast } = useToast();
@@ -84,8 +85,10 @@ const Receive = () => {
       }
 
       try {
+         setFetchingInvoice(true);
          const { quote, request } = await requestMintInvoice(amountUsdCents);
          setInvoiceToPay(request);
+         setFetchingInvoice(false);
 
          await postUserMintQuote(pubkey, quote, request, activeWallet.url, activeWallet.id);
 
@@ -172,7 +175,11 @@ const Receive = () => {
                         <div className='mb-3 md:mb-0'>
                            <QRScannerButton onScan={setInputValue} />
                         </div>
-                        <Button className='btn-primary' onClick={handleReceive}>
+                        <Button
+                           isProcessing={fetchingInvoice}
+                           className='btn-primary'
+                           onClick={handleReceive}
+                        >
                            Continue
                         </Button>
                      </div>
