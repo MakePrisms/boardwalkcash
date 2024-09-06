@@ -232,7 +232,7 @@ export interface GiftAsset {
    unselectedSrc: string;
    description: string | null;
    creatorPubkey: string | null;
-   cost?: number;
+   fee?: number;
 }
 
 export interface InvoicePollingRequest {

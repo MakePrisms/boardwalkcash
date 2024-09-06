@@ -58,9 +58,9 @@ const giftsV2 = [
    {
       name: 'Balloon',
       amount: 25,
-      description: 'A cool baloon',
-      imageUrlSelected: '/eGifts/selected/baloon_25.png',
-      imageUrlUnselected: '/eGifts/unselected/baloon_25.png',
+      description: 'A cool balloon',
+      imageUrlSelected: '/eGifts/selected/balloon_25.png',
+      imageUrlUnselected: '/eGifts/unselected/balloon_25.png',
    },
    {
       name: 'Popcorn',
@@ -75,7 +75,7 @@ const giftsV2 = [
       description: 'A fancy cocktail',
       imageUrlSelected: '/eGifts/selected/cocktail_200.png',
       imageUrlUnselected: '/eGifts/unselected/cocktail_200.png',
-      cost: 100,
+      fee: 100,
    },
    {
       name: 'Carousel',
@@ -83,7 +83,7 @@ const giftsV2 = [
       description: 'A collection of gifts',
       imageUrlSelected: '/eGifts/selected/carousel_500.png',
       imageUrlUnselected: '/eGifts/unselected/carousel_500.png',
-      cost: 200,
+      fee: 200,
    },
    {
       name: 'Mermaid',
@@ -91,7 +91,7 @@ const giftsV2 = [
       description: 'A mermaid',
       imageUrlSelected: '/eGifts/selected/mermaid_1000.png',
       imageUrlUnselected: '/eGifts/unselected/mermaid_1000.png',
-      cost: 300,
+      fee: 300,
    },
 ];
 
@@ -129,7 +129,7 @@ async function addV2DefaultGifts() {
                imageUrlSelected: gift.imageUrlSelected,
                imageUrlUnselected: gift.imageUrlUnselected,
                unit: 'usd', // Using the default value
-               cost: gift.cost,
+               fee: gift.fee,
             },
          });
          console.log(`Added gift: ${gift.name}`);
@@ -142,5 +142,5 @@ async function addV2DefaultGifts() {
    }
 }
 
-addDefaultGifts();
-// addV2DefaultGifts();
+// addDefaultGifts();
+addV2DefaultGifts();

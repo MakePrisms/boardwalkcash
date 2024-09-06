@@ -160,13 +160,13 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       setSending(true);
       if (useInvoice) {
-         handleLightningTip(amountCents, gift?.cost);
+         handleLightningTip(amountCents, gift?.fee);
          return;
       }
       const sendableToken = await createSendableToken(amountCents, {
          pubkey: `02${selectedContact?.pubkey}`,
          gift: gift?.name,
-         feeCents: gift?.cost,
+         feeCents: gift?.fee,
       });
 
       if (!sendableToken) {
@@ -182,7 +182,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.ShareGift);
 
       setSending(false);
-      addToast(`eGift sent (${formatCents(amountCents + (gift?.cost || 0))})`, 'success');
+      addToast(`eGift sent (${formatCents(amountCents + (gift?.fee || 0))})`, 'success');
    };
 
    const renderContent = () => {
@@ -227,19 +227,19 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                        {gift?.cost && (
+                        {gift?.fee && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
                                  <span className='flex items-center'>
                                     <Tooltip
                                        position='top'
-                                       content='50% of the cost is paid to OpenSats'
+                                       content='50% of the fee is paid to OpenSats'
                                     >
                                        <div className='flex items-center justify-center w-4 h-4'>
                                           <LockClosedIcon className='h-3 w-3 text-gray-500' />
                                        </div>
                                     </Tooltip>
-                                    {`${formatCents(gift.cost, false)}`}
+                                    {`${formatCents(gift.fee, false)}`}
                                  </span>
                               </p>
                            </div>
@@ -275,7 +275,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <WaitForInvoiceModalBody
                         invoice={invoice}
-                        amountUsdCents={amountCents! + (gift?.cost || 0)}
+                        amountUsdCents={amountCents! + (gift?.fee || 0)}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />
@@ -291,13 +291,13 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
                         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
-                        {gift?.cost && (
+                        {gift?.fee && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
                                  <span className='flex items-center'>
                                     <Tooltip
                                        position='top'
-                                       content='50% of the cost is paid to OpenSats'
+                                       content='50% of the fee is paid to OpenSats'
                                     >
                                        <div className='flex items-center justify-center w-4 h-4'>
                                           <LockOpenIcon className='h-3 w-3 text-gray-500' />
