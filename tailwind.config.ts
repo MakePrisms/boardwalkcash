@@ -21,7 +21,7 @@ module.exports = {
             'kode-mono': ['Kode Mono', 'monospace'],
          },
          colors: {
-            'cyan-teal': '#26A69A',
+            'cyan-teal': 'var(--cyan-teal)',
             'cyan-teal-dark': '#1E7A6E',
             'boardwalk-blue': 'var(--boardwalk-blue)',
          },

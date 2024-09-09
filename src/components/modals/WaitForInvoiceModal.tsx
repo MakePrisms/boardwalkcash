@@ -59,7 +59,11 @@ export const WaitForInvoiceModalBody: React.FC<
             </div>
          )}
          <QRCode value={invoice} size={256} />
-         <ClipboardButton toCopy={invoice} toShow='Copy Invoice' className='btn-primary' />
+         <ClipboardButton
+            toCopy={invoice}
+            toShow='Copy Invoice'
+            className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+         />
          {invoiceTimeout && (
             <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
                <p>Timed out waiting for payment...</p>

@@ -142,5 +142,5 @@ async function addV2DefaultGifts() {
    }
 }
 
-// addDefaultGifts();
-addV2DefaultGifts();
+addDefaultGifts();
+// addV2DefaultGifts();

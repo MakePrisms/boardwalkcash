@@ -88,13 +88,13 @@ const SendEcashModalBody = ({ onClose, token, txid }: SendEcashModalBodyProps) =
                         toCopy={toCopy}
                         toShow={`Link`}
                         onClick={onClose}
-                        className='btn-primary'
+                        className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                      />
                      <ClipboardButton
                         toCopy={`${token}`}
                         toShow={`Token`}
                         onClick={onClose}
-                        className='btn-primary'
+                        className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                      />
                   </div>
                </>
