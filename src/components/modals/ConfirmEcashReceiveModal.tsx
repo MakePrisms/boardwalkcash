@@ -1,24 +1,29 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
-import { Modal, Spinner } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { Button, Modal, Spinner } from 'flowbite-react';
+import Tooltip from '@/components/utility/Toolttip';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useToast } from '@/hooks/util/useToast';
 import ProcessingClaimModal from './ProcessingCashuSwap/ProcessingClaim';
-import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { PublicContact } from '@/types';
+import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
+import StickerItem from '../eGifts/stickers/StickerItem';
+import { formatCents } from '@/utils/formatting';
+import { isTokenSpent } from '@/utils/cashu';
+import useGifts from '@/hooks/boardwalk/useGifts';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
-   token: Token | null;
+   token: Token;
    onClose: () => void;
    onSuccess?: () => void;
    contact?: PublicContact;
+   isUserInitialized: boolean;
 }
 
 const ConfirmEcashReceiveModal = ({
@@ -27,12 +32,11 @@ const ConfirmEcashReceiveModal = ({
    onClose,
    onSuccess,
    contact,
+   isUserInitialized,
 }: ConfirmEcashReceiveModalProps) => {
    const [mintTrusted, setMintTrusted] = useState(false);
    const [swapping, setSwapping] = useState(false);
    const wallet = useSelector((state: RootState) => state.wallet);
-   const [loadingUnits, setLoadingUnits] = useState(true);
-   const [supportedUnits, setSupportedUnits] = useState<string[]>([]);
    const [mintUrl, setMintUrl] = useState<string>('');
    const [proofs, setProofs] = useState<Proof[]>([]);
    const [tokenUnit, setTokenUnit] = useState<string | null>(null);
@@ -41,58 +45,166 @@ const ConfirmEcashReceiveModal = ({
    const [lockedTo, setLockedTo] = useState<string | null>(null);
    const user = useSelector((state: RootState) => state.user);
    const [tokenContact, setTokenContact] = useState<PublicContact | null>(null);
+   const [gift, setGift] = useState<GiftAsset | null>(null);
+   const [loading, setLoading] = useState(true);
+   const [disableClaim, setDisableClaim] = useState(false);
+   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
 
    const dispatch = useAppDispatch();
 
    const { fetchUnitFromProofs } = useProofManager();
    const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
-   const { addWallet } = useCashuContext();
+   const { addWallet, activeWallet, isMintTrusted } = useCashuContext();
    const { addToast } = useToast();
-   const { satsToUnit } = useExchangeRate();
    const { fetchContact } = useContacts();
+   const { getGiftFromToken } = useGifts();
 
-   const addEcashTransaction = (status: TxStatus) => {
-      if (!token) return;
-      if (!amountUsd) return;
-      dispatch(
-         addTransaction({
-            type: 'ecash',
-            transaction: {
-               token: getEncodedToken(token),
-               amount: amountUsd * 100,
-               mint: mintUrl,
-               date: new Date().toLocaleString(),
-               status,
-               unit: 'usd',
-            },
-         }),
-      );
+   const handleModalClose = () => {
+      setMintTrusted(false);
+      setSwapping(false);
+      setMintUrl('');
+      setProofs([]);
+      setTokenUnit(null);
+      setFromActiveMint(true);
+      setAmountUsd(null);
+      setLockedTo(null);
+      setTokenContact(null);
+      setGift(null);
+      setLoading(true);
+      setDisableClaim(false);
+      setAlreadyClaimed(false);
+      onClose();
    };
 
+   const addEcashTransaction = useCallback(
+      (status: TxStatus) => {
+         if (!token) return;
+         if (!amountUsd) return;
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  token: getEncodedToken(token),
+                  amount: amountUsd * 100,
+                  mint: mintUrl,
+                  date: new Date().toLocaleString(),
+                  status,
+                  unit: 'usd',
+                  gift: gift?.name,
+               },
+            }),
+         );
+      },
+      [dispatch, token, amountUsd, mintUrl, gift],
+   );
+
    useEffect(() => {
-      if (contact) {
-         setTokenContact(contact);
-         return;
-      }
-      if (!lockedTo) {
-         return;
-      }
+      if (!isOpen) return;
+      const loadTokenDetails = async (token: Token) => {
+         if (token?.token.length > 1) {
+            alert(
+               'Received a token with more than one mint. This is not supported yet. Please report this.',
+            );
+            throw new Error(
+               'Received a token with more than one mint. This is not supported yet. Please report this.',
+            );
+         }
 
-      const setContact = async () => {
-         const contact = await fetchContact(lockedTo.slice(2));
+         const { mint: mintUrl, proofs } = token.token[0];
 
-         setTokenContact(contact || null);
+         // set the pubkey that the token is locked to
+         const pubkeyLock = proofsLockedTo(proofs);
+         setLockedTo(pubkeyLock);
+
+         if (contact) {
+            setTokenContact(contact);
+         } else if (pubkeyLock) {
+            // fetch contact if not passed to the component
+            const contact = await fetchContact(pubkeyLock.slice(2));
+            setTokenContact(contact || null);
+         }
+
+         setMintUrl(mintUrl);
+         setProofs(proofs);
+         setMintTrusted(isMintTrusted(mintUrl));
+         const isActiveMint = mintUrl === activeWallet?.mint.mintUrl;
+         setFromActiveMint(isActiveMint);
+         if (
+            !isActiveMint &&
+            (mintUrl.includes('test') || activeWallet?.mint.mintUrl.includes('test'))
+         ) {
+            // disable if trying to swap to or from test mints
+            setDisableClaim(true);
+         }
+         if (await isTokenSpent(token)) {
+            /* stop loading so /wallet page shows the ecash still */
+            setLoading(false);
+            throw new AlreadyClaimedError();
+         }
+         const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
+         setTokenUnit(proofsUnit);
+         if (proofsUnit !== 'usd') {
+            throw new Error('Can only receive eCash in USD');
+         }
+         const unitTotal = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
+         setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
       };
 
-      setContact();
-   }, [lockedTo, fetchContact]);
+      const loadGift = async () => {
+         if (!token) return;
+         try {
+            const gift = await getGiftFromToken(token);
+            setGift(gift);
+         } catch (e: any) {
+            if (e.message === 'Not Found') {
+               setGift(null);
+            } else {
+               console.error('Failed to load gift', e);
+               // throw e;
+            }
+         }
+      };
+
+      const load = async (token: Token) => {
+         try {
+            await Promise.all([loadTokenDetails(token), loadGift()]);
+            setLoading(false);
+         } catch (e: any) {
+            if (e.message) {
+               addToast(e.message, 'error');
+            } else {
+               console.error('Failed to load token', e);
+               addToast('Failed to load token', 'error');
+            }
+            if (e instanceof AlreadyClaimedError) {
+               setAlreadyClaimed(true);
+               // Check if this is a gift after both promises have resolved
+               const isGift = await getGiftFromToken(token).catch(() => null);
+               if (isGift) {
+                  setLoading(false);
+                  return; // Don't close the modal for claimed gifts
+               }
+            }
+
+            handleModalClose();
+         }
+      };
+
+      if (!token) return;
+      if (!isOpen) return;
+      load(token);
+   }, [token, activeWallet, contact, wallet, isOpen, isMintTrusted]);
+
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
       console.log('Token', token);
       if (!token) return null;
       if (!tokenUnit) throw new Error('Token unit is not set');
 
+      /* Opens swap modal */
       setSwapping(true);
+      /* Closes main modal, keeps swap modal open */
+      onClose();
 
       const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
       const usdKeyset = await getUsdKeyset(swapFromMint);
@@ -102,109 +214,33 @@ const ConfirmEcashReceiveModal = ({
       const success = await swapToActiveWallet(
          new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
          { proofs, privkey },
-      ).finally(() => setSwapping(false));
+      ).finally(() => setSwapping(false)); /* Closes swap modal */
 
       addEcashTransaction(TxStatus.PAID);
-      onClose();
 
       if (onSuccess && success) {
          onSuccess();
       }
    };
 
-   useEffect(() => {
-      const tokenMint = token?.token[0].mint;
-
-      if (!tokenMint) return;
-
-      const walletMints = Object.values(wallet.keysets).map(keyset => keyset.url);
-
-      console.log('Wallet Mints', walletMints);
-      console.log('Token Mint', tokenMint);
-
-      setMintTrusted(walletMints.includes(tokenMint));
-   }, [wallet, token]);
-
-   useEffect(() => {
-      if (!token?.token[0].mint) return;
-
-      if (token?.token.length > 1) {
-         alert(
-            'Received a token with more than one mint. This is not supported yet. Please report this.',
-         );
-         throw new Error(
-            'Received a token with more than one mint. This is not supported yet. Please report this.',
-         );
-      }
-
-      // set the pubkey that the token is locked to
-      setLockedTo(proofsLockedTo(token.token[0].proofs));
-
-      setMintUrl(token.token[0].mint);
-      setProofs(token.token[0].proofs);
-   }, [token]);
-
-   useEffect(() => {
-      if (!mintUrl) return;
-      if (!isOpen) return;
-
-      const activeWallet = Object.values(wallet.keysets).find(w => w.active);
-
-      if (mintUrl === activeWallet?.url) {
-         setFromActiveMint(true);
-      } else {
-         setFromActiveMint(false);
-      }
-
-      setLoadingUnits(true);
-
-      const mint = new CashuMint(mintUrl);
-
-      new CashuWallet(mint).checkProofsSpent(proofs).then(spent => {
-         if (spent.length > 0) {
-            addToast('eCash already claimed', 'error');
-            onClose();
-         }
-      });
-
-      mint.getKeys().then(({ keysets }) => {
-         const units = new Set<string>();
-         keysets.forEach(keyset => units.add(keyset.unit));
-
-         setSupportedUnits(Array.from(units));
-      });
-
-      fetchUnitFromProofs(mintUrl, proofs)
-         .then(unit => {
-            setTokenUnit(unit);
-
-            return unit;
-         })
-         .then(async unit => {
-            const unitTotal = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
-            if (unit === 'sat') {
-               await satsToUnit(unitTotal, 'usd').then(usdAmount =>
-                  setAmountUsd(parseFloat((usdAmount / 100).toFixed(2))),
-               );
-            } else {
-               setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
-            }
-         })
-         .finally(() => setLoadingUnits(false));
-   }, [mintUrl, proofs, isOpen]);
-
-   if (!token) return null;
-
-   const { token: tokens } = token;
-
-   if (tokens.length > 1) {
-      alert(
-         'Received a token with more than one mint. This is not supported yet. Please report this.',
+   const title = useMemo(() => {
+      const forText = tokenContact?.username ? (
+         <>
+            for{' '}
+            <a className='underline' target='_blank' href={`/${tokenContact.username}`}>
+               {tokenContact.username}
+            </a>
+         </>
+      ) : (
+         ''
       );
-      throw new Error(
-         'Received a token with more than one mint. This is not supported yet. Please report this.',
-      );
-   }
+      if (gift) {
+         return <>eGift {forText}</>;
+      } else if (lockedTo) {
+         return <>eTip {forText}</>;
+      }
+      return 'Confirm Ecash Receive';
+   }, [lockedTo, gift, tokenContact]);
 
    const getUsdKeyset = async (mint: CashuMint) => {
       let keysets: MintKeys[] = [];
@@ -249,12 +285,12 @@ const ConfirmEcashReceiveModal = ({
       return new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset });
    };
 
-   // trust and claim or claim to source mint
+   /* trust and claim or claim to source mint */
    const handleAddMint = async () => {
       console.log('Adding mint', mintUrl);
       let wallet = getWallet(proofs[0].id);
 
-      // if we don't have the wallet, make sure it supports usd, then add keyset
+      /* if we don't have the wallet, make sure it supports usd, then add keyset */
       if (!wallet) {
          wallet = await addUsdKeysetAndGetWallet(mintUrl);
          if (!wallet) {
@@ -269,7 +305,7 @@ const ConfirmEcashReceiveModal = ({
       // TOOD: move to cashu2
       addEcashTransaction(TxStatus.PAID);
 
-      onClose();
+      handleModalClose();
 
       if (onSuccess && success) {
          onSuccess();
@@ -282,10 +318,10 @@ const ConfirmEcashReceiveModal = ({
       return `${symbol}$${total?.toFixed(2)}`;
    };
 
-   if (loadingUnits) {
+   if (loading) {
       return (
-         <Modal show={isOpen} onClose={onClose}>
-            <Modal.Header>Confirm Ecash Receive</Modal.Header>
+         <Modal show={isOpen} onClose={handleModalClose}>
+            <Modal.Header>Loading...</Modal.Header>
             <Modal.Body>
                <div className='flex flex-col space-y-4 justify-center items-center'>
                   <Spinner size='xl' />
@@ -295,68 +331,95 @@ const ConfirmEcashReceiveModal = ({
       );
    }
 
+   const handleCopy = () => {
+      try {
+         navigator.clipboard.writeText(getEncodedToken(token));
+         addToast('Copied to clipboard', 'info');
+      } catch (e) {
+         addToast('Failed to copy to clipboard', 'error');
+      }
+   };
+
    return (
       <>
-         <Modal show={isOpen} onClose={onClose}>
-            <Modal.Header>{lockedTo ? 'eTip' : 'Confirm Ecash Receive'}</Modal.Header>
+         <Modal show={isOpen} onClose={handleModalClose}>
+            <Modal.Header>{title}</Modal.Header>
 
-            <Modal.Body className='text-black'>
-               <h3 className='text-5xl text-center mb-4'>{receiveAmountString()}</h3>
-               <div className='space-y-4'>
-                  <div className='flex flex-row justify-center mb-4'>
-                     <p className='text-center text-sm mb-2 mr-3'>
-                        <a
-                           href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
-                           target='_blank'
-                           className=' underline'
-                        >
-                           View Reviews
-                        </a>
-                     </p>
-                     <p className='text-center mb-2 text-sm'>
-                        {mintTrusted ? (
-                           <span className='text-green-500'>Trusted</span>
-                        ) : (
-                           <span className='text-red-500'>Not Trusted</span>
-                        )}
-                     </p>
+            <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
+               <Tooltip content='Copy token'>
+                  <div className='hover:cursor-pointer' onClick={handleCopy}>
+                     {gift ? (
+                        <div className='flex flex-row justify-center'>
+                           <StickerItem
+                              selectedSrc={gift.selectedSrc}
+                              unselectedSrc={gift.unselectedSrc}
+                              isSelected={true}
+                              alt={formatCents(gift.amountCents)}
+                              size='lg'
+                           />
+                        </div>
+                     ) : (
+                        <h3 className='text-5xl text-center'>{receiveAmountString()}</h3>
+                     )}
                   </div>
+               </Tooltip>
 
-                  {!lockedTo || lockedTo === '02' + user.pubkey ? (
-                     <div className='flex flex-col md:flex-row md:justify-center justify-center items-center'>
-                        <button
-                           onClick={handleSwapToMain}
-                           className='mr-3 underline text-lg mb-3 md:mb-0'
-                        >
-                           Claim
-                        </button>
-                        <button
-                           className={`underline hover:cursor-pointer text-lg mb-0 ${fromActiveMint ? 'hidden' : ''} ${!supportedUnits.includes('usd') && 'hidden'}`}
-                           onClick={handleAddMint}
-                        >
-                           {mintTrusted ? 'Claim to Source Mint' : 'Trust Mint and Claim'}
-                        </button>
-                     </div>
-                  ) : (
-                     <div className='text-center text-red-700'>
-                        eTip{' '}
-                        {tokenContact ? (
-                           <span className=''>
-                              for{' '}
+               {isUserInitialized === true && (
+                  <div className='flex items-center'>
+                     <div className='space-y-4'>
+                        <div className='flex flex-row justify-center'>
+                           <p className='text-center text-sm'>
                               <a
-                                 className='underline'
+                                 href={`https://bitcoinmints.com/?tab=reviews&mintUrl=${encodeURIComponent(mintUrl)}`}
                                  target='_blank'
-                                 href={`/${tokenContact.username}`}
+                                 className=' '
                               >
-                                 {tokenContact.username}
+                                 {mintTrusted ? (
+                                    <span className='text-green-500 underline'>Trusted</span>
+                                 ) : (
+                                    <span className='text-red-500 underline'>Not Trusted</span>
+                                 )}
                               </a>
-                           </span>
-                        ) : (
-                           ''
-                        )}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+               )}
+
+               {!alreadyClaimed && (!lockedTo || lockedTo === '02' + user.pubkey) && (
+                  <div className='flex items-center justify-center'>
+                     {disableClaim ? (
+                        <Tooltip content='testnut'>
+                           <Button
+                              disabled={disableClaim}
+                              onClick={handleSwapToMain}
+                              className='btn-primary w-36'
+                           >
+                              Claim
+                           </Button>
+                        </Tooltip>
+                     ) : (
+                        <Button onClick={handleSwapToMain} className='btn-primary w-36'>
+                           Claim
+                        </Button>
+                     )}
+                  </div>
+               )}
+
+               {!alreadyClaimed &&
+                  !fromActiveMint &&
+                  (!lockedTo || lockedTo === '02' + user.pubkey) && (
+                     <div className='flex items-center'>
+                        <Button
+                           className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}
+                           onClick={handleAddMint}
+                           size={'xs'}
+                           theme={{ size: { xs: 'px-2 text-xxs' } }}
+                        >
+                           {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
+                        </Button>
                      </div>
                   )}
-               </div>
             </Modal.Body>
          </Modal>
          <ProcessingClaimModal isSwapping={swapping} />

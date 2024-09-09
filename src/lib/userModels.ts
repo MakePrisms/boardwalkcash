@@ -33,7 +33,7 @@ async function findUserByPubkey(pubkey: string) {
       },
       include: {
          contacts: {
-            select: { linkedUser: { select: { pubkey: true, username: true } } },
+            select: { linkedUser: { select: { pubkey: true, username: true, nostrPubkey: true } } },
          },
       },
    });
@@ -58,7 +58,12 @@ async function findUserByPubkeyWithMint(pubkey: string) {
 
 async function updateUser(
    pubkey: string,
-   updates: { username?: string; receiving?: boolean; mintUrl?: string },
+   updates: {
+      username?: string;
+      receiving?: boolean;
+      mintUrl?: string;
+      nostrPubkey?: string | null;
+   },
 ) {
    let defaultMint;
    if (updates.mintUrl) {
@@ -141,6 +146,51 @@ async function addContactToUser(userPubkey: string, contactData: ContactData) {
       throw error;
    }
 }
+
+const getManyUsersByNostrPubkey = async (pubkeys: string[]) => {
+   return prisma.user.findMany({
+      where: {
+         nostrPubkey: {
+            in: pubkeys,
+         },
+      },
+      select: {
+         pubkey: true,
+         username: true,
+         nostrPubkey: true,
+      },
+   });
+};
+
+const removeContactFromUser = async (pubkey: string, contactPubkey: string) => {
+   const contact = await prisma.contact.findFirst({
+      where: {
+         userId: pubkey,
+         linkedUserId: contactPubkey,
+      },
+   });
+
+   console.log('deleting contact', contact);
+
+   if (!contact) {
+      throw new Error('Contact not found');
+   }
+
+   // Delete the contact record
+   await prisma.contact.delete({
+      where: {
+         id: contact.id,
+      },
+   });
+
+   await prisma.contact.deleteMany({
+      where: {
+         userId: contactPubkey,
+         linkedUserId: pubkey,
+      },
+   });
+};
+
 export {
    createUser,
    findUserById,
@@ -149,4 +199,6 @@ export {
    updateUser,
    deleteUser,
    addContactToUser,
+   getManyUsersByNostrPubkey,
+   removeContactFromUser,
 };

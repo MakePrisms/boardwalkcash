@@ -22,6 +22,8 @@ import {
    TransactionError,
 } from '@/types';
 import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
+import useNotifications from '../boardwalk/useNotifications';
+import { postTokenToDb } from '@/utils/appApiRequests';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -39,6 +41,7 @@ export const useCashu = () => {
    } = useProofStorage();
    const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
       useNostrMintConnect();
+   const { sendTokenAsNotification } = useNotifications();
    const { addToast, toastSwapSuccess, toastSwapError } = useToast();
 
    const dispatch = useAppDispatch();
@@ -146,6 +149,9 @@ export const useCashu = () => {
       let success = false;
 
       try {
+         if (from.mint.mintUrl.includes('test') || to.mint.mintUrl.includes('test')) {
+            throw new Error('Cannot swap to/from test mints');
+         }
          if (!proofsToMelt) {
             throw new InsufficientBalanceError(from.mint.mintUrl);
          } else if (proofsToMelt.length === 0) {
@@ -292,15 +298,26 @@ export const useCashu = () => {
          pubkey: opts?.pubkey,
       });
 
-      addProofs(returnChange);
-      removeProofs(proofs);
+      await addProofs(returnChange);
+      await removeProofs(proofs);
 
       return send;
    };
 
+   /**
+    * Removes proofs from local storage and adds a transaction to the history
+    * @param amount
+    * @param opts
+    * @returns
+    */
    const createSendableToken = async (
       amount: number,
-      opts?: { wallet?: CashuWallet; pubkey?: string },
+      opts?: {
+         wallet?: CashuWallet;
+         pubkey?: string;
+         gift?: string;
+         feeCents?: number;
+      },
    ) => {
       let wallet: CashuWallet | undefined;
       if (!wallet) {
@@ -311,7 +328,28 @@ export const useCashu = () => {
       }
 
       try {
-         const proofs = await getProofsToSend(amount, wallet, { pubkey: opts?.pubkey });
+         if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
+            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+         }
+
+         const proofs = await getProofsToSend(amount, wallet, {
+            pubkey: opts?.pubkey,
+         });
+
+         /* create and send fee token to us if feeCents is set */
+         if (opts?.feeCents) {
+            const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
+               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+            });
+            const feeToken = getEncodedToken({
+               token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
+               unit: 'usd',
+            });
+            if (feeToken) {
+               const txid = await postTokenToDb(feeToken, opts?.gift, true);
+               await sendTokenAsNotification(feeToken, txid);
+            }
+         }
 
          const token = getEncodedToken({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
@@ -329,6 +367,8 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
+                  gift: opts?.gift,
+                  fee: opts?.feeCents,
                },
             }),
          );
@@ -495,6 +535,12 @@ export const useCashu = () => {
          { privkey },
       );
       return newProofs;
+   };
+
+   const hasSufficientBalance = (amountUsdCents: number) => {
+      const activeKeysetId = activeWallet?.keys.id;
+      if (!activeKeysetId) return false;
+      return balanceByWallet[activeKeysetId] >= amountUsdCents;
    };
 
    return {

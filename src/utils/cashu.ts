@@ -1,4 +1,5 @@
 import {
+   AmountPreference,
    CashuMint,
    CashuWallet,
    MintQuoteResponse,
@@ -6,6 +7,10 @@ import {
    Token,
    getDecodedToken,
 } from '@cashu/cashu-ts';
+import { hashToCurve } from '@cashu/crypto/modules/common';
+import { bytesToHex } from '@noble/curves/abstract/utils';
+import { sha256 } from '@noble/hashes/sha256';
+import { getTokenFromDb } from './appApiRequests';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -230,6 +235,12 @@ export const areTokensSpent = async (tokenEntries: [string, string | Token][]) =
    return Object.fromEntries(results);
 };
 
+/**
+ * Attempts to initialize a wallet with the mint's USD keyset
+ * @param mintUrl
+ * @throws Error if mint does not support USD
+ * @returns
+ */
 export const initializeUsdWallet = async (mintUrl: string) => {
    const mint = new CashuMint(mintUrl);
    const keys = await mint.getKeys();
@@ -239,4 +250,112 @@ export const initializeUsdWallet = async (mintUrl: string) => {
    }
    const wallet = new CashuWallet(mint, { unit: 'usd', keys: usdKeyset });
    return wallet;
+};
+
+export const getProofsFromToken = (token: Token | string) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   return decodedToken.token[0].proofs;
+};
+
+export function computeTxId(tx: Array<Proof> | string | Token): string {
+   const proofs: Array<Proof> = !Array.isArray(tx) ? getProofsFromToken(tx) : tx;
+   const enc = new TextEncoder();
+   const Ys = proofs.map(p => hashToCurve(enc.encode(p.secret)).toRawBytes(true));
+   Ys.sort((a, b) => {
+      for (let i = 0; i < a.length; i++) {
+         if (a[i] !== b[i]) {
+            return a[i] - b[i]; // descending order
+         }
+      }
+      return 0;
+   });
+   const hasher = sha256.create();
+   // concatenate Ys and hash
+   for (const y of Ys) {
+      hasher.update(y);
+   }
+   const hash = hasher.digest();
+   return bytesToHex(hash);
+}
+
+/**
+ * Finds the largest amounts that fit into target amount
+ * @param targetAmount amount that preferences should sum to
+ * @returns
+ */
+const calculateBasicPreference = (targetAmount: number): AmountPreference[] => {
+   const preference: AmountPreference[] = [];
+   let remaining = targetAmount;
+
+   // Find the largest power of 2 that fits within the target amount
+   const maxPower = Math.floor(Math.log2(remaining));
+
+   for (let i = maxPower; i >= 0; i--) {
+      const amount = Math.pow(2, i);
+      if (amount <= remaining) {
+         const count = Math.floor(remaining / amount);
+         preference.push({ amount, count });
+         remaining -= amount * count;
+      }
+   }
+
+   return preference;
+};
+
+/**
+ * Creates amount preferences so there are two sets of proofs, one for fee and one for amount
+ * @param fee amount 1
+ * @param amount  amount 2
+ * @returns
+ */
+export function createPreferredProofsForFee(fee: number, amount: number) {
+   const feePreference: Array<AmountPreference> = [];
+   const amountPreference: Array<AmountPreference> = [];
+
+   feePreference.push(...calculateBasicPreference(fee));
+   amountPreference.push(...calculateBasicPreference(amount));
+
+   return { feePreference, amountPreference };
+}
+
+/**
+ * Extract proofs from a list of proofs that match the preference
+ * @param proofs
+ * @param preference
+ * @returns
+ */
+export function getProofsForPreference(proofs: Proof[], preference: AmountPreference[]) {
+   const preferredProofs: Proof[] = [];
+
+   for (const { amount, count } of preference) {
+      const proofsForAmount = proofs.filter(p => p.amount === amount);
+      if (proofsForAmount.length < count) {
+         throw new Error('Not enough proofs for preference');
+      }
+      preferredProofs.push(...proofsForAmount.slice(0, count));
+   }
+
+   return preferredProofs;
+}
+
+export const getTokenFromUrl = async (url: string) => {
+   try {
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+      const token = params.get('token');
+      const txid = params.get('txid');
+
+      if (token && token.startsWith('cashu')) {
+         return token;
+      }
+
+      if (txid) {
+         return (await getTokenFromDb(txid)).token;
+      }
+
+      return null;
+   } catch (error) {
+      console.error('Invalid URL:', error);
+      return null;
+   }
 };

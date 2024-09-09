@@ -1,5 +1,5 @@
 import { Token } from '@cashu/cashu-ts';
-import ConfirmEcashReceiveModal from '../../modals/ConfirmEcashReceiveModal';
+import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { useState } from 'react';
 import { PublicContact } from '@/types';
 
@@ -16,6 +16,10 @@ export const ViewTokenButton = ({ token, clearNotification, contact }: ViewToken
       clearNotification();
    };
 
+   const onClose = () => {
+      setIsModalOpen(false);
+   };
+
    return (
       <>
          <button className='btn-notification' onClick={() => setIsModalOpen(true)}>
@@ -24,9 +28,10 @@ export const ViewTokenButton = ({ token, clearNotification, contact }: ViewToken
          <ConfirmEcashReceiveModal
             token={token}
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={onClose}
             onSuccess={onSuccess}
             contact={contact}
+            isUserInitialized={true}
          />
       </>
    );

@@ -6,10 +6,12 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools';
 interface UserState {
    pubkey?: string;
    privkey?: string;
+   nostrPubkey: string | null;
    username: string;
    contacts: PublicContact[];
    status: 'idle' | 'loading' | 'succeeded' | 'failed';
    error: string | null;
+   hideFromLeaderboard: boolean;
 }
 
 const initialState: UserState = {
@@ -17,10 +19,20 @@ const initialState: UserState = {
    error: null,
    contacts: [],
    username: '',
+   hideFromLeaderboard: false,
+   nostrPubkey: null,
 };
 
 export const initializeUser = createAsyncThunk<
-   { pubkey: string; privkey: string; username: string; contacts: PublicContact[] } | undefined, // Type of the return value from the thunk
+   | {
+        pubkey: string;
+        privkey: string;
+        username: string;
+        contacts: PublicContact[];
+        hideFromLeaderboard: boolean;
+        nostrPubkey: string | null;
+     }
+   | undefined, // Type of the return value from the thunk
    void, // First argument of the payload creator
    { rejectValue: string } // Types for ThunkAPI parameters
 >('user/initializeUser', async (_, { rejectWithValue }) => {
@@ -38,32 +50,26 @@ export const initializeUser = createAsyncThunk<
 
          const keysets = JSON.parse(localStorage.getItem('keysets') || '[]');
 
-         if (keysets.length === 0) {
-            throw new Error('No keysets were found in local storage.');
-         }
-
-         if (keysets.length > 1) {
-            throw new Error('Multiple keysets were found in local storage.');
-         }
-
          const defaultMintUrl = keysets[0].url;
 
          const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
 
          const user = await createUser(newPubKey, placeholderUsername, defaultMintUrl);
 
-         const { username } = user;
+         const { username, hideFromLeaderboard, nostrPubkey } = user;
 
          return {
             pubkey: newPubKey,
             privkey: Buffer.from(newSecretKey).toString('hex'),
             username: username!,
             contacts: [],
+            hideFromLeaderboard,
+            nostrPubkey,
          };
       } else {
          const user = await fetchUser(storedPubKey);
 
-         let { username, contacts } = user;
+         let { username, contacts, hideFromLeaderboard, nostrPubkey } = user;
 
          if (!username) {
             username = `user-${storedPubKey.slice(0, 5)}`;
@@ -74,6 +80,8 @@ export const initializeUser = createAsyncThunk<
             privkey: storedPrivKey,
             username,
             contacts: contacts.map((c: any) => c.linkedUser),
+            hideFromLeaderboard,
+            nostrPubkey,
          };
       }
    } catch (error) {
@@ -88,8 +96,17 @@ const userSlice = createSlice({
       addContactAction(state, action: PayloadAction<PublicContact>) {
          state.contacts.push(action.payload);
       },
+      deleteContactAction(state, action: PayloadAction<PublicContact>) {
+         state.contacts = state.contacts.filter(c => c.pubkey !== action.payload.pubkey);
+      },
       updateUsernameAction(state, action: PayloadAction<string>) {
          state.username = action.payload;
+      },
+      updateHideFromLeaderboardAction(state, action: PayloadAction<boolean>) {
+         state.hideFromLeaderboard = action.payload;
+      },
+      setNostrPubkeyAction(state, action: PayloadAction<string | null>) {
+         state.nostrPubkey = action.payload;
       },
    },
    extraReducers: builder => {
@@ -102,7 +119,14 @@ const userSlice = createSlice({
             (
                state,
                action: PayloadAction<
-                  | { pubkey: string; privkey: string; username: string; contacts: PublicContact[] }
+                  | {
+                       pubkey: string;
+                       privkey: string;
+                       username: string;
+                       contacts: PublicContact[];
+                       hideFromLeaderboard: boolean;
+                       nostrPubkey: string | null;
+                    }
                   | undefined
                >,
             ) => {
@@ -112,6 +136,8 @@ const userSlice = createSlice({
                   state.privkey = action.payload.privkey;
                   state.username = action.payload.username;
                   state.contacts = action.payload.contacts;
+                  state.hideFromLeaderboard = action.payload.hideFromLeaderboard;
+                  state.nostrPubkey = action.payload.nostrPubkey;
                }
             },
          )
@@ -122,6 +148,12 @@ const userSlice = createSlice({
    },
 });
 
-export const { addContactAction, updateUsernameAction } = userSlice.actions;
+export const {
+   addContactAction,
+   deleteContactAction,
+   updateUsernameAction,
+   updateHideFromLeaderboardAction,
+   setNostrPubkeyAction,
+} = userSlice.actions;
 
 export default userSlice.reducer;

@@ -1,4 +1,5 @@
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useToast } from '@/hooks/util/useToast';
 import { EcashTransaction, TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
@@ -17,6 +18,7 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
    const { claimToken } = useCashu();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
+   const { activeWallet } = useCashuContext();
    const handleClaim = async () => {
       const privkey = window.localStorage.getItem('privkey');
       if (!privkey) {
@@ -53,6 +55,10 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
          setClaiming(false);
       }
    };
+
+   if (token.token[0].mint !== activeWallet?.mint.mintUrl) {
+      return null;
+   }
 
    return (
       <div className='w-4 h-4 flex items-center justify-center'>

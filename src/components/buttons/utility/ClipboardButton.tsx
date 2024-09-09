@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
 import { Button } from 'flowbite-react';
 import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon } from '@heroicons/react/20/solid';
@@ -8,14 +8,23 @@ interface Props {
    toShow: string;
    onClick?: () => void;
    className?: string;
+   size?: 'xs' | 'sm' | 'md' | 'lg';
+   btnId?: string;
 }
 
-const ClipboardButton: React.FC<Props> = ({ toCopy, toShow, onClick, className = '' }) => {
+const ClipboardButton: React.FC<Props> = ({
+   toCopy,
+   toShow,
+   onClick,
+   className = '',
+   size = 'md',
+   btnId,
+}) => {
    const [isCopied, setIsCopied] = useState(false);
 
    const { addToast } = useToast();
 
-   const handleCopy = () => {
+   const handleCopy = useCallback(() => {
       navigator.clipboard
          .writeText(toCopy)
          .then(() => {
@@ -34,21 +43,18 @@ const ClipboardButton: React.FC<Props> = ({ toCopy, toShow, onClick, className =
       if (onClick) {
          onClick();
       }
-   };
+   }, [toCopy]);
 
    return (
-      <Button onClick={handleCopy} className={className}>
-         <>
-            <div className='flex flex-row content-center justify-center align-middle'>
-               {toShow}
-               &nbsp;
-               {isCopied ? (
-                  <ClipboardDocumentCheckIcon className='w-5 h-5' />
-               ) : (
-                  <ClipboardDocumentIcon className='w-5 h-5' />
-               )}
-            </div>
-         </>
+      <Button onClick={handleCopy} className={`${className} !p-0`} size={size} id={btnId}>
+         <div className='flex items-center justify-center w-full h-full space-x-1'>
+            <span>{toShow}</span>
+            {isCopied ? (
+               <ClipboardDocumentCheckIcon className='w-4 h-4' />
+            ) : (
+               <ClipboardDocumentIcon className='w-4 h-4' />
+            )}
+         </div>
       </Button>
    );
 };

@@ -9,20 +9,27 @@ generator client {
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  pubkey         String         @unique
-  username       String?        @unique
-  contacts       Contact[]      @relation("UserContacts")
-  contactOf      Contact[]      @relation("ContactUser")
-  proofs         Proof[]
-  mintQuotes     MintQuote[]
-  defaultMint    Mint           @relation(fields: [defaultMintUrl], references: [url])
-  defaultMintUrl String
-  allowedUnits   String[]
-  receiving      Boolean        @default(false)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  Notification   Notification[]
+  id                  Int            @id @default(autoincrement())
+  pubkey              String         @unique
+  username            String?        @unique
+  nostrPubkey         String?
+  contacts            Contact[]      @relation("UserContacts")
+  contactOf           Contact[]      @relation("ContactUser")
+  proofs              Proof[]
+  mintQuotes          MintQuote[]
+  defaultMint         Mint           @relation(fields: [defaultMintUrl], references: [url])
+  defaultMintUrl      String
+  allowedUnits        String[]
+  receiving           Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  hideFromLeaderboard Boolean        @default(false)
+  Notification        Notification[]
+  // custom gifts created by this user
+  customGifts         Gift[]         @relation("CustomGifts")
+  // UserCustomGift UserConditionalGift[]
+  createdTokens       Token[]        @relation("TokenCreatedBy")
+  receivedTokens      Token[]        @relation("TokenRecipient")
 }
 
 model Contact {
@@ -91,7 +98,92 @@ model Notification {
   userPubkey String
   type       String // "token" | "new-contact"
   data       String
+  tokenId    String?
+  token      Token?   @relation(fields: [tokenId], references: [id])
   isRead     Boolean  @default(false)
   user       User     @relation(fields: [userPubkey], references: [pubkey])
   createdAt  DateTime @default(now())
 }
+
+model Token {
+  id              String         @id
+  token           String
+  createdAt       DateTime       @default(now())
+  redeemedAt      DateTime?
+  gift            String?
+  Notification    Notification[]
+  createdByPubkey String?
+  recipientPubkey String?
+  // whether or not this token is a fee
+  isFee           Boolean        @default(false)
+  recipient       User?          @relation(fields: [recipientPubkey], references: [pubkey], name: "TokenRecipient")
+  createdBy       User?          @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
+}
+
+model Gift {
+  id                 Int     @id @default(autoincrement())
+  name               String  @unique
+  amount             Int
+  unit               String  @default("usd")
+  description        String?
+  // path to image (relative path or full url)
+  imageUrlSelected   String
+  imageUrlUnselected String
+  // null -> anyone can send/receive;
+  creatorPubkey      String?
+  // the creator of the gift
+  creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
+
+  // fee in cents user has to pay to send
+  fee Int?
+  // // true -> anyone can send/receive; false -> only the creator can send/receive
+  // isGlobal    Boolean @default(true)
+  // // whether or not there are `conditions`
+  // isConditional     Boolean               @default(false)
+  // // set of condiditions that must be met to send the gift
+  // sendConditions    GiftCondition[]       @relation("SendConditions")
+  // // receive conditions -> user cannot receive the gift unless they meet these conditions
+  // receiveConditions GiftCondition[]       @relation("ReceiveConditions")
+  // // the users that can send the gift
+  // userGifts         UserConditionalGift[]
+
+  @@index([creatorPubkey])
+  @@index([name])
+}
+
+model PendingOtp {
+  id          Int      @id @default(autoincrement())
+  userPubkey  String // user trying to login
+  nostrPubkey String // nostr pubkey to authenticate
+  otpCode     String   @unique
+  createdAt   DateTime @default(now())
+
+  @@index([otpCode])
+}
+
+// model GiftCondition {
+//   id                      Int    @id @default(autoincrement())
+//   giftId                  Int
+//   // one time use, limited supply, expiry, unlimited supply
+//   conditionType           String
+//   // number of gifts, expiry date, etc
+//   conditionValue          Json
+//   // array of gifts that are conditionally sendable
+//   conditionalSendGifts    Gift[] @relation("SendConditions")
+//   // array of gifts that are conditionally receivable
+//   conditionalReceiveGifts Gift[] @relation("ReceiveConditions")
+
+//   @@index([giftId])
+// }
+
+// model UserConditionalGift {
+//   id               Int  @id @default(autoincrement())
+//   userId           Int
+//   giftId           Int
+//   conditionsStatus Json
+//   user             User @relation(fields: [userId], references: [id])
+//   gift             Gift @relation(fields: [giftId], references: [id])
+
+//   @@index([userId])
+//   @@index([giftId])
+// }

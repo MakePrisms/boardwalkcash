@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { CashuMint, CashuWallet, MintKeys } from '@cashu/cashu-ts';
 import { Wallet as StoredKeyset } from '@/types';
 import { useAppDispatch } from '@/redux/store';
@@ -15,6 +15,7 @@ interface CashuContextType {
    connectReserve: (usdKeyset: MintKeys, mintUrl: string) => void;
    setToMain: (keysetId: string) => void;
    addWallet: (usdKeyset: MintKeys, mintUrl: string, opts?: { active: boolean }) => void;
+   isMintTrusted: (mintUrl: string) => boolean;
 }
 
 const CashuContext = createContext<CashuContextType | undefined>(undefined);
@@ -109,6 +110,19 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
    const getMint = (url: string) => mints.get(url);
 
+   /**
+    * Returns true if mint is already added, false otherwise
+    * @param mintUrl
+    * @returns boolean
+    */
+   const isMintTrusted = useCallback(
+      (mintUrl: string) => {
+         const walletMints = Array.from(wallets.values()).map(wallet => wallet.mint.mintUrl);
+         return walletMints.includes(mintUrl);
+      },
+      [wallets],
+   );
+
    return (
       <CashuContext.Provider
          value={{
@@ -122,6 +136,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             connectReserve,
             setToMain,
             addWallet,
+            isMintTrusted,
          }}
       >
          {children}

@@ -5,7 +5,6 @@ import { Modal } from 'flowbite-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import ViewContactsModalBody from './ViewContactsModalBody';
-import AddContactModalBody from './AddContactModalBody';
 
 interface ContactsModalProps {
    isOpen: boolean;
@@ -45,18 +44,6 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
       }
    };
 
-   const onAddContactClicked = () => {
-      setAddingContact(true);
-   };
-
-   const onContactAdded = () => {
-      setAddingContact(false);
-   };
-
-   const onCancelAddContact = () => {
-      setAddingContact(false);
-   };
-
    useEffect(() => {
       if (addingContact) {
          setModalTitle('Add Contact');
@@ -70,15 +57,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    return (
       <Modal show={isOpen} onClose={onClose} size={'sm'}>
          <Modal.Header>{modalTitle}</Modal.Header>
-         {addingContact ? (
-            <AddContactModalBody onContactAdded={onContactAdded} onCancel={onCancelAddContact} />
-         ) : (
-            <ViewContactsModalBody
-               mode={mode}
-               onSelectContact={handleContactClick}
-               onAddContactClicked={onAddContactClicked}
-            />
-         )}
+         <ViewContactsModalBody mode={mode} onSelectContact={handleContactClick} />
       </Modal>
    );
 };

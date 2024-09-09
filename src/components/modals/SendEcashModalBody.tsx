@@ -1,17 +1,18 @@
 import { Modal, Spinner } from 'flowbite-react';
-import React, { useEffect, useState } from 'react';
-import AnimatedQRCode from '../AnimatedQR';
+import React, { useEffect, useMemo, useState } from 'react';
+import AnimatedQRCode from '../utility/AnimatedQR';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import QRCode from 'qrcode.react';
 import CustomCarousel from '../Carousel/CustomCarousel';
-import ErrorBoundary from '../ErrorBoundary';
+import ErrorBoundary from '../utility/ErrorBoundary';
 
 interface SendEcashModalBodyProps {
    token?: string;
+   txid?: string;
    onClose: () => void;
 }
 
-const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
+const SendEcashModalBody = ({ onClose, token, txid }: SendEcashModalBodyProps) => {
    const [carouselSlides, setCarouselSlides] = useState<React.ReactNode[]>([]);
    const [qrError, setQrError] = useState(false);
 
@@ -54,6 +55,15 @@ const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
       return () => {};
    }, [token]);
 
+   const toCopy = useMemo(() => {
+      const base = `${window.location.protocol}//${window.location.host}/wallet?`;
+      if (txid) {
+         return `${base}txid=${txid}`;
+      } else {
+         return `${base}token=${token}`;
+      }
+   }, [token, txid]);
+
    if (!token) {
       return (
          <Modal.Body>
@@ -75,7 +85,7 @@ const SendEcashModalBody = ({ onClose, token }: SendEcashModalBodyProps) => {
                   </div>
                   <div className='flex space-x-3'>
                      <ClipboardButton
-                        toCopy={`${window.location.protocol}//${window.location.host}/wallet?token=${token}`}
+                        toCopy={toCopy}
                         toShow={`Link`}
                         onClick={onClose}
                         className='btn-primary'

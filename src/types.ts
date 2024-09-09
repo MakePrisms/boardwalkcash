@@ -7,7 +7,7 @@ import {
    ApiError as CashuApiError,
    Token,
 } from '@cashu/cashu-ts';
-import { Notification } from '@prisma/client';
+import { Gift, Notification, Token as TokenPrisma } from '@prisma/client';
 
 export interface ProofData {
    proofId: string;
@@ -64,6 +64,13 @@ export class ReserveError extends CashuError {
    }
 }
 
+export class AlreadyClaimedError extends CashuError {
+   constructor(message?: string) {
+      super(`eCash already claimed`);
+      this.name = 'AlreadyClaimedError';
+   }
+}
+
 export interface CrossMintQuoteResult {
    mintQuote: MintQuoteResponse;
    meltQuote: MeltQuoteResponse;
@@ -109,12 +116,16 @@ export type TokenProps = {
 
    /** Whether or not the token is from the contact's default mint */
    isTrustedMint: boolean | null;
+
+   /** Gift asset */
+   gift?: GiftAsset;
 };
 
 export enum NotificationType {
    Token = 'token',
    NewContact = 'new-contact',
    TIP = 'tip',
+   Gift = 'gift', // TODO: add this to notifications
 }
 
 export type MarkNotificationsAsReadRequest = {
@@ -131,12 +142,16 @@ export type DeleteNotificationsResponse = {
    ids: number[];
 };
 
-export type GetNotificationResponse = Notification & { contact: PublicContact };
+export type GetNotificationResponse = Notification & {
+   contact: PublicContact;
+   token: TokenPrisma | null;
+};
 
 export type GetNotificationsResponse = Array<GetNotificationResponse>;
 
 export type NotifyTokenReceivedRequest = {
    token: string;
+   txid?: string;
 };
 
 export type LightningTipResponse = {
@@ -157,6 +172,8 @@ export type TokenNotificationData = {
    isTip: boolean;
    timeAgo: string;
    tokenState: 'claimed' | 'unclaimed';
+   gift?: string;
+   isFee: boolean;
 };
 
 export type ContactNotificationData = {
@@ -187,3 +204,90 @@ export const isContactNotification = (
    }
    return false;
 };
+
+export type PostTokenRequest = {
+   token: string;
+   gift?: string;
+   createdByPubkey?: string;
+   isFee?: boolean;
+};
+
+export type PostTokenResponse = {
+   txid: string;
+};
+
+export type GetTokenResponse = {
+   token: string;
+   gift?: string;
+};
+
+export type GetAllGiftsResponse = {
+   gifts: Gift[];
+};
+
+export type GetGiftResponse = Gift;
+
+export interface GiftAsset {
+   amountCents: number;
+   name: string;
+   selectedSrc: string;
+   unselectedSrc: string;
+   description: string | null;
+   creatorPubkey: string | null;
+   fee?: number;
+}
+
+export interface InvoicePollingRequest {
+   pubkey: string;
+   amount: number;
+   keysetId: string;
+   mintUrl: string;
+   gift?: string;
+   fee?: number;
+}
+
+export type GiftMetrics = {
+   total: number;
+   giftCount: { [giftName: string]: number };
+   totalAmountCents: number;
+   username: string;
+};
+
+export interface LeaderboardResponse {
+   [timePeriod: string]: {
+      // senderMetrics: Record<string, GiftMetrics>;
+      receiverMetrics: Record<string, GiftMetrics>;
+      userData?: {
+         sent: GiftMetrics;
+         received: GiftMetrics;
+      };
+   };
+}
+
+export interface GenerateNostrOtpRequest {
+   nostrPubkey: string;
+}
+
+export interface VerifyNostrOtpRequest {
+   otp: string;
+}
+
+export interface VerifyNostrOtpResponse {
+   error?: string;
+   nostrPubkey?: string;
+}
+
+export interface DiscoverContactsResponse {
+   users: {
+      pubkey: string;
+      username: string | null;
+      nostrPubkey: string;
+   }[];
+}
+
+export class NostrError extends Error {
+   constructor(message: string) {
+      super(message);
+      this.name = 'NostrError';
+   }
+}

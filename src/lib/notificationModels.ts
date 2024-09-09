@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { NotificationType } from '@/types';
-import { Notification } from '@prisma/client';
+import { Notification, Token } from '@prisma/client';
 
 /**
  *
@@ -13,23 +13,30 @@ export async function createNotification(
    userPubkey: string,
    type: NotificationType,
    data: string,
+   tokenId?: string,
 ): Promise<Notification> {
    return prisma.notification.create({
       data: {
          userPubkey,
          type,
          data,
+         tokenId,
       },
    });
 }
 
-export async function getUserNotifications(userPubkey: string): Promise<Notification[]> {
+export async function getUserNotifications(
+   userPubkey: string,
+): Promise<(Notification & { token: Token | null })[]> {
    return prisma.notification.findMany({
       where: {
          userPubkey,
       },
       orderBy: {
          createdAt: 'desc',
+      },
+      include: {
+         token: true,
       },
    });
 }
@@ -75,12 +82,13 @@ export async function deleteReadNotifications(userPubkey: string): Promise<{ cou
    });
 }
 
-export async function notifyTokenReceived(receiverPubkey: string, token: string) {
+export async function notifyTokenReceived(receiverPubkey: string, token: string, tokenId?: string) {
    return prisma.notification.create({
       data: {
          userPubkey: receiverPubkey,
          type: NotificationType.Token,
          data: token,
+         tokenId,
       },
    });
 }

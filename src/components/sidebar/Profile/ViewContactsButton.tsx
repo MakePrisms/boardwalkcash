@@ -2,12 +2,15 @@ import ContactsModal from '@/components/modals/ContactsModal/ContactsModal';
 import { Button } from 'flowbite-react';
 import { useState } from 'react';
 
-const ViewContactsButton = () => {
+const ViewContactsButton = ({ className }: { className?: string }) => {
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
 
    return (
-      <div className='flex justify-end'>
-         <Button onClick={() => setIsContactsModalOpen(true)} className='btn-primary'>
+      <>
+         <Button
+            onClick={() => setIsContactsModalOpen(true)}
+            className={`btn-primary ${className}`}
+         >
             Contacts
          </Button>
          <ContactsModal
@@ -15,7 +18,7 @@ const ViewContactsButton = () => {
             onClose={() => setIsContactsModalOpen(false)}
             mode='view'
          />
-      </div>
+      </>
    );
 };
 

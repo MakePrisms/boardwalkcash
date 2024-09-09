@@ -23,6 +23,10 @@ module.exports = {
          colors: {
             'cyan-teal': '#26A69A',
             'cyan-teal-dark': '#1E7A6E',
+            'boardwalk-blue': 'var(--boardwalk-blue)',
+         },
+         fontSize: {
+            xxs: '0.6rem',
          },
       },
    },

@@ -8,37 +8,37 @@
          "type": "image/x-icon"
       },
       {
-         "src": "logo120.png",
+         "src": "pwaLogos/logo120.png",
          "type": "image/png",
          "sizes": "120x120"
       },
       {
-         "src": "logo152.png",
+         "src": "pwaLogos/logo152.png",
          "type": "image/png",
          "sizes": "152x152"
       },
       {
-         "src": "logo167.png",
+         "src": "pwaLogos/logo167.png",
          "type": "image/png",
          "sizes": "167x167"
       },
       {
-         "src": "logo180.png",
+         "src": "pwaLogos/logo180.png",
          "type": "image/png",
          "sizes": "180x180"
       },
       {
-         "src": "logo192.png",
+         "src": "pwaLogos/logo192.png",
          "type": "image/png",
          "sizes": "192x192"
       },
       {
-         "src": "logo512.png",
+         "src": "pwaLogos/logo512.png",
          "type": "image/png",
          "sizes": "512x512"
       }
    ],
-   "start_url": ".",
+   "start_url": "/wallet",
    "display": "standalone",
    "theme_color": "#000000",
    "background_color": "#0f3470"

@@ -30,7 +30,7 @@ const EcashTapsSettings = () => {
    return (
       <div>
          <div className='mb-9'>Create one-tap sharable ecash</div>
-         <div className='flex justify-around mb-4'>
+         <div className='flex justify-around mb-8'>
             {tapAmounts.map((tap, idx) => (
                <div key={idx} className='flex items-center justify-center max-w-32'>
                   <button onClick={() => handleSetTapAmount(tap.value)}>

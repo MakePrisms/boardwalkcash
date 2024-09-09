@@ -6,11 +6,14 @@ import MintSidebarItem from './Mints/MintSidebarItem';
 import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
-import DrawerCollapse from '../DrawerCollapse';
-import { BookOpenIcon, BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
-import { BanknoteIcon } from '../EcashTapButton';
+import DrawerCollapse from '../utility/DrawerCollapse';
+import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
 import ProfileSettings from './Profile/ProfileSetting';
+import LeaderboardDrawer from '../leaderboards/LeaderboardDrawer';
+import EcashIcon from '../icons/EcashIcon';
+import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
+import FlameIcon from '../icons/FlameIcon';
 
 const SettingsCog = () => (
    <svg
@@ -35,6 +38,16 @@ export const SettingsSidebar = () => {
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
+   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+
+   const handleOpenLeaderboard = () => {
+      setIsLeaderboardOpen(true);
+      setHidden(true);
+   };
+
+   const handleClose = () => {
+      setHidden(true);
+   };
 
    return (
       <>
@@ -43,35 +56,40 @@ export const SettingsSidebar = () => {
                {hidden && <SettingsCog />}
             </button>
          </div>
-         <Drawer
-            open={!hidden}
-            onClose={() => setHidden(true)}
-            edge={false}
-            position='right'
-            className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
-            theme={customDrawerTheme}
-         >
-            <Drawer.Header
-               title='Settings'
-               titleIcon={() => null}
-               className='drawer-header'
-               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
-            />
-            <Drawer.Items className='md:w-96 max-w-screen-sm'>
-               <div className='flex align-middle items-center justify-around '></div>
+         {/* makes it so all drawers close when hidden */}
+         {!hidden && (
+            <Drawer
+               open={!hidden}
+               onClose={handleClose}
+               edge={false}
+               position='right'
+               className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
+               theme={customDrawerTheme}
+            >
+               <Drawer.Header
+                  title='Settings'
+                  titleIcon={() => null}
+                  className='drawer-header'
+                  closeIcon={() => <XMarkIcon className='h-8 w-8' />}
+               />
+               <Drawer.Items className='md:w-96 max-w-screen-sm'>
+                  <div className='flex align-middle items-center justify-around '></div>
 
-               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse label='Mints' icon={<BuildingLibraryIcon className='size-4' />}>
-                     <div className='text-lg mb-2'></div>
-                     {Object.keys(keysets).map((id, idx) => (
-                        <MintSidebarItem keyset={keysets[id]} key={idx} />
-                     ))}
-                     <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
-                        <AddMintButton keysets={keysets} />
-                     </div>
-                  </DrawerCollapse>
-               </div>
-               {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                     <DrawerCollapse
+                        label='Mints'
+                        icon={<BuildingLibraryIcon className='size-4' />}
+                     >
+                        <div className='text-lg mb-2'></div>
+                        {Object.keys(keysets).map((id, idx) => (
+                           <MintSidebarItem keyset={keysets[id]} key={idx} />
+                        ))}
+                        <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
+                           <AddMintButton keysets={keysets} />
+                        </div>
+                     </DrawerCollapse>
+                  </div>
+                  {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
@@ -85,18 +103,27 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div> */}
-               <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                  <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
-                     <ProfileSettings />
-                  </DrawerCollapse>
-               </div>
-               <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
-                  <DrawerCollapse label='Cash Taps' icon={<BanknoteIcon className='size-4' />}>
-                     <EcashTapsSettings />
-                  </DrawerCollapse>
-               </div>
-            </Drawer.Items>
-         </Drawer>
+                  <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                     <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
+                        <ProfileSettings />
+                     </DrawerCollapse>
+                  </div>
+                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0'>
+                     <DrawerCollapse
+                        label='Cash Taps'
+                        icon={<EcashIcon type='solid' className='size-4' />}
+                     >
+                        <EcashTapsSettings />
+                     </DrawerCollapse>
+                  </div>
+                  {/* <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
+                     <DrawerCollapse label='Leaderboard' icon={<FlameIcon className='size-4' />}>
+                        <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />
+                     </DrawerCollapse>
+                  </div> */}
+               </Drawer.Items>
+            </Drawer>
+         )}
          <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')} className='text-black'>
             <Modal.Header>New Wallet Connection</Modal.Header>
             <Modal.Body className='flex flex-col space-y-3'>
@@ -107,6 +134,12 @@ export const SettingsSidebar = () => {
                <ClipboardButton className='self-end' toCopy={nwcUri} toShow={'Copy Connection'} />
             </Modal.Body>
          </Modal>
+         {isLeaderboardOpen && (
+            <LeaderboardDrawer
+               isOpen={isLeaderboardOpen}
+               onClose={() => setIsLeaderboardOpen(false)}
+            />
+         )}
       </>
    );
 };

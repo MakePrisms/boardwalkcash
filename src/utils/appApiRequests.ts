@@ -4,10 +4,16 @@ import { PostMintQuoteApiResponse } from '@/pages/api/quotes/mint';
 import { PollingApiResponse } from '@/pages/api/invoice/polling/[slug]';
 import { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { calculateSha256 } from './crypto';
-import { UserWithContacts } from '@/pages/api/users/[slug]';
+import { UserWithContacts } from '@/pages/api/users/[pubkey]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
-import { LightningTipResponse, LightningTipStatusResponse } from '@/types';
+import {
+   GetTokenResponse,
+   LightningTipResponse,
+   LightningTipStatusResponse,
+   PostTokenRequest,
+   PostTokenResponse,
+} from '@/types';
 
 export class HttpResponseError extends Error {
    status: number;
@@ -47,6 +53,9 @@ export const request = async <T>(url: string, method: string, body?: any): Promi
    const response = await fetch(url, {
       method,
       body: JSON.stringify(body),
+      headers: {
+         'Content-Type': 'application/json',
+      },
    });
    if (!response.ok) {
       throw new HttpResponseError(response.statusText, response.status);
@@ -74,7 +83,8 @@ export const authenticatedRequest = async <T>(
       body: JSON.stringify(body),
    });
    if (!response.ok) {
-      throw new HttpResponseError(response.statusText, response.status);
+      const errorMessage = await response.text();
+      throw new HttpResponseError(errorMessage || response.statusText, response.status);
    } else if (response.status === 204) {
       // no content breaks the json parsing
       return undefined as unknown as T;
@@ -147,9 +157,14 @@ export const getProofsFromServer = async (pubkey: string) => {
    );
 };
 
-export const getInvoiceForTip = async (pubkey: string, amount: number) => {
+export const getInvoiceForTip = async (
+   pubkey: string,
+   amount: number,
+   gift?: string,
+   fee?: number,
+) => {
    return await request<LightningTipResponse>(
-      `/api/tip/${pubkey}?amount=${amount}&unit=usd`,
+      `/api/tip/${pubkey}?amount=${amount}&unit=usd&gift=${gift}${fee ? `&fee=${fee}` : ''}`,
       'GET',
       undefined,
    );
@@ -161,4 +176,21 @@ export const getTipStatus = async (quoteId: string) => {
       'GET',
       undefined,
    );
+};
+
+export const postTokenToDb = async (token: string, gift?: string, isFee?: boolean) => {
+   console.log('posting token to db', token);
+   const pubkey = window.localStorage.getItem('pubkey');
+   return (
+      await request<PostTokenResponse>(`/api/token`, 'POST', {
+         token,
+         gift,
+         isFee,
+         createdByPubkey: pubkey,
+      } as PostTokenRequest)
+   ).txid;
+};
+
+export const getTokenFromDb = async (txid: string) => {
+   return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
 };

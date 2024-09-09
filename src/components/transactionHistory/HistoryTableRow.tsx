@@ -17,11 +17,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import VaultIcon from '../icons/VaultIcon';
 import { useProofStorage } from '@/hooks/cashu/useProofStorage';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import GiftIcon from '../icons/GiftIcon';
+import { formatCents } from '@/utils/formatting';
 
 const HistoryTableRow: React.FC<{
    tx: Transaction;
    openSendEcashModal: (tx: EcashTransaction) => void;
-}> = ({ tx, openSendEcashModal }) => {
+   openViewGiftModal: (tx: EcashTransaction & { gift: string }) => void;
+}> = ({ tx, openSendEcashModal, openViewGiftModal }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -38,6 +41,9 @@ const HistoryTableRow: React.FC<{
       }
 
       if (isEcashTransaction(tx)) {
+         if (tx.gift) {
+            return <GiftIcon className='h-5 w-5' />;
+         }
          return <BanknotesIcon className='h-5 w-5' />;
       } else if (isLightningTransaction(tx)) {
          return <BoltIcon className='h-5 w-5' />;
@@ -51,17 +57,11 @@ const HistoryTableRow: React.FC<{
       const [hour, minute, second] = time.split(':');
       return `${month}/${day}, ${hour}:${minute} ${period}`;
    };
-   const formatAmount = (amount: number) => {
-      let color;
-      if (amount < 0) {
-         color = 'text-white';
-      } else {
-         color = 'text-green-500';
-      }
+   const formatAmount = (amount: number, fee?: number) => {
+      let color = amount < 0 ? 'text-white' : 'text-green-500';
+      const text = formatCents(Math.abs(amount) + (fee || 0));
 
-      const text = `$${(Math.abs(amount) / 100).toFixed(2)}`;
-
-      return <span className={color}>{text}</span>;
+      return <span className={`${color} flex items-center`}>{text}</span>;
    };
 
    const handleReclaim = async (transaction: EcashTransaction) => {
@@ -138,12 +138,25 @@ const HistoryTableRow: React.FC<{
          handleSpentToken(tx);
          return;
       }
-      openSendEcashModal(tx);
+      if (tx.gift) {
+         openViewGiftModal(tx as EcashTransaction & { gift: string });
+      } else {
+         openSendEcashModal(tx);
+      }
    };
 
    const getStatusCell = useCallback(
       (tx: Transaction) => {
          if (tx.status === TxStatus.PENDING && isEcashTransaction(tx)) {
+            if (tx.gift) {
+               return (
+                  <div className='flex justify-center'>
+                     <button className='underline' onClick={() => handleLockedToken(tx)}>
+                        eGift
+                     </button>
+                  </div>
+               );
+            }
             if (tx.pubkey !== undefined && tx.pubkey !== user.pubkey) {
                return (
                   <div className='flex justify-center'>
@@ -175,7 +188,9 @@ const HistoryTableRow: React.FC<{
    return (
       <Table.Row>
          <Table.Cell className='pe-0 md:pe-6'>{formatDate(tx.date)}</Table.Cell>
-         <Table.Cell className='pe-0 md:pe-6'>{formatAmount(tx.amount)}</Table.Cell>
+         <Table.Cell className='pe-0 md:pe-6'>
+            {formatAmount(tx.amount, isEcashTransaction(tx) ? tx.fee : undefined)}
+         </Table.Cell>
          <Table.Cell className='flex justify-center min-w-[116px]'>{getStatusCell(tx)}</Table.Cell>
       </Table.Row>
    );

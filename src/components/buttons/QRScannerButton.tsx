@@ -1,7 +1,7 @@
 import { QrCodeIcon } from '@heroicons/react/20/solid';
 import { Button, Modal } from 'flowbite-react';
 import { useRef, useState } from 'react';
-import QrReaderComponent from '../QRReader';
+import QrReaderComponent from '../utility/QRReader';
 
 const QRScannerButton: React.FC<{ onScan: (result: string) => void }> = ({ onScan }) => {
    const [isScannerOpen, setIsScannerOpen] = useState(false);

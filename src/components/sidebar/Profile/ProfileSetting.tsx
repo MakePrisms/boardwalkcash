@@ -1,12 +1,14 @@
 import { useToast } from '@/hooks/util/useToast';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { ShareIcon } from '@heroicons/react/20/solid';
+import { CheckIcon } from '@heroicons/react/20/solid';
+import { PencilSquareIcon, ShareIcon } from '@heroicons/react/24/outline';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
-import { Button, TextInput } from 'flowbite-react';
+import { Spinner, TextInput } from 'flowbite-react';
 import ViewContactsButton from './ViewContactsButton';
 import { updateUsernameAction } from '@/redux/slices/UserSlice';
 import { HttpResponseError, updateUser } from '@/utils/appApiRequests';
+import DiscoverButton from './DiscoverButton';
 const ProfileSettings = () => {
    const { username, pubkey } = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
@@ -63,6 +65,7 @@ const ProfileSettings = () => {
          'support',
          'help',
          'info',
+         'leaderboard',
       ];
       if (reservedWords.includes(username)) {
          return 'This username is reserved and cannot be used.';
@@ -108,38 +111,45 @@ const ProfileSettings = () => {
 
    return (
       <div>
-         <div className='flex justify-between mb-9'>
-            <div className='flex items-center space-x-4'>
-               {isEditing ? (
+         <div className='flex items-center justify-between mb-9'>
+            {isEditing ? (
+               <div className='w-full'>
                   <TextInput
                      type='text'
                      value={newUsername}
                      onChange={e => setNewUsername(e.target.value.toLowerCase())}
-                     className='text-black'
+                     className='text-black h-9 font-bold flex-grow mr-4 w-2/3'
                   />
-               ) : (
-                  <div className='font-bold text-lg'>{username}</div>
-               )}
+               </div>
+            ) : (
+               <div className='font-bold text-lg h-9 flex-grow mr-4'>{username}</div>
+            )}
+            <div className='flex items-center space-x-4'>
+               <button
+                  onClick={() => {
+                     if (isEditing) {
+                        handleUpdateUsername();
+                     } else {
+                        setIsEditing(true);
+                     }
+                  }}
+               >
+                  {isSavingUsername ? (
+                     <Spinner size='sm' />
+                  ) : isEditing ? (
+                     <CheckIcon className='h-5 w-5' />
+                  ) : (
+                     <PencilSquareIcon className='h-5 w-5' />
+                  )}
+               </button>
+               <button onClick={handleShareLink}>
+                  <ShareIcon className='size-6' />
+               </button>
             </div>
-            <button className='mr-3' onClick={handleShareLink}>
-               {<ShareIcon className='size-6' />}
-            </button>
          </div>
-         <div className='flex justify-between align-middle mb-9'>
-            <Button
-               isProcessing={isSavingUsername}
-               onClick={() => {
-                  if (isEditing) {
-                     handleUpdateUsername();
-                  } else {
-                     setIsEditing(true);
-                  }
-               }}
-               className='btn-primary'
-            >
-               {isEditing ? 'Save' : 'Edit'}
-            </Button>
-            <ViewContactsButton />
+         <div className='flex justify-end align-middle mb-9 space-x-4'>
+            {/* <DiscoverButton className='w-1/3' /> */}
+            <ViewContactsButton className='w-1/3' />
          </div>
       </div>
    );

@@ -14,6 +14,9 @@ import { UserIcon } from '@heroicons/react/20/solid';
 import ContactsModal from './ContactsModal/ContactsModal';
 import { PublicContact } from '@/types';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
+import GiftIcon from '../icons/GiftIcon';
+import GiftModal from '../eGifts/GiftModal';
+import { postTokenToDb } from '@/utils/appApiRequests';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -38,7 +41,9 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [ecashToken, setEcashToken] = useState<string | undefined>();
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
+   const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
    const { sendTokenAsNotification } = useNotifications();
+   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -55,6 +60,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setEcashToken(undefined);
       setLockTo(undefined);
       setIsContactsModalOpen(false);
+      setIsGiftModalOpen(false);
       onClose();
    };
 
@@ -131,10 +137,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             // TODO: right now we don't support generic p2pk lock, but if lockTo is not a contact,
             // we should not do this.
             await sendTokenAsNotification(token);
+            const txid = await postTokenToDb(token);
+            setTxid(txid);
          }
-      } catch (error) {
+      } catch (error: any) {
          console.error(error);
-         addToast('An error occurred while creating the ecash token.', 'error');
          resetModalState();
       }
    };
@@ -178,7 +185,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       const cleanedText = decodedText.toLowerCase().replace('lightning:', '');
       if (cleanedText.startsWith('lnbc')) {
          setInputValue(cleanedText);
-         handleInputSubmit();
+         /* wait for next tick */
+         Promise.resolve().then(() => handleInputSubmit());
       } else {
          setScanError('Invalid QR code. Please scan a valid Lightning invoice.');
          setTimeout(() => setScanError(null), 6000);
@@ -210,13 +218,13 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                   />
                   {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                   <div className='flex justify-between mx-3'>
-                     <div className='flex flex-row gap-2'>
+                     <div className='flex flex-row gap-4'>
                         <QRScannerButton onScan={handleQRScan} />
-                        <button
-                           className='p-2 rounded-full'
-                           onClick={() => setIsContactsModalOpen(true)}
-                        >
+                        <button onClick={() => setIsContactsModalOpen(true)}>
                            <UserIcon className='w-6 h-6 text-gray-500' />
+                        </button>
+                        <button onClick={() => setIsGiftModalOpen(true)}>
+                           <GiftIcon className='w-6 h-6 text-gray-500' />
                         </button>
                      </div>
                      <Button className='btn-primary' onClick={handleInputSubmit}>
@@ -273,7 +281,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             );
 
          case SendFlow.Ecash:
-            return <SendEcashModalBody token={ecashToken} onClose={resetModalState} />;
+            return <SendEcashModalBody token={ecashToken} txid={txid} onClose={resetModalState} />;
 
          default:
             return null;
@@ -302,6 +310,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             onSelectContact={handleSendToUser}
             mode='select'
          />
+         <GiftModal isOpen={isGiftModalOpen} onClose={() => resetModalState()} />
       </>
    );
 };
