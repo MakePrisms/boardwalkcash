@@ -9,6 +9,8 @@
    --background-end-rgb: #0f3470;
    --boardwalk-blue: #4f91c8;
    --btn-bg-primary: #5a708a;
+   --cyan-teal: #26a69a;
+   --btn-primary-bg: #26a69a;
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -148,7 +150,7 @@ body {
 }
 
 .btn-primary {
-   @apply bg-cyan-teal text-white border-cyan-teal border-none outline-none;
+   @apply bg-[var(--btn-primary-bg)] text-white border-[var(--btn-primary-bg)] border-none outline-none;
 }
 
 button:focus,
@@ -194,21 +196,4 @@ button:focus-visible {
 
 .btn-primary:hover {
    background-color: var(--btn-bg-primary) !important;
-}
-
-@media (hover: hover) {
-   .etip-button:hover {
-      background-color: var(--btn-bg-primary) !important;
-      border: none !important;
-      outline: none !important;
-   }
-
-   .btn-bg-blend:hover {
-      border: none !important;
-      outline: none !important;
-   }
-
-   .btn-primary:hover {
-      background-color: var(--btn-bg-primary) !important;
-   }
 }

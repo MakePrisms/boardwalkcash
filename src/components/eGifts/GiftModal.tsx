@@ -313,7 +313,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                                  <ClipboardButton
                                     toCopy={`${window.location.origin}/wallet?txid=${computeTxId(token)}`}
                                     toShow={'Share'}
-                                    className='btn-primary w-full h-full'
+                                    className='btn-primary hover:!bg-[var(--btn-primary-bg)] w-full h-full'
                                     key={`gift-share`}
                                     btnId='share-button'
                                  />
