@@ -5,6 +5,7 @@ const nostrData: any = {
    names: {
       gudnuf: 'c67cd3e1a83daa56cff16f635db2fdb9ed9619300298d4701a58e68e84098345',
       bob: 'c35ff8c340449f0d68af1aec4844bb44a9c0b8c1dd4f4d4efbc65e12039a348a',
+      boardwalk: 'e8f0ecf0c478acdc21e787e577d0e00bd4458d1308af5c43b1e8eaa8088940c3',
       // PrismGrow: "870251b35749f809292870bc88646015e776418a4526bcd40cd3777fe3942030",
       // PrismGrow: "b86918762b2019994732dcaab0e520611e1355ac8c4d29a4f6dfcc92269f0556"
    },
