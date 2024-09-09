@@ -223,7 +223,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                            window.localStorage.removeItem('privkey');
                            window.localStorage.removeItem('pubkey');
 
-                           dispatch(initializeUser()).then(() => router.reload());
+                           router.reload();
                         } catch (e: any) {
                            console.error(e);
                            addToast('Failed to reset account' + e.message, 'error');

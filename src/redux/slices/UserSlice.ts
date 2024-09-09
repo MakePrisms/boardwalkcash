@@ -50,14 +50,6 @@ export const initializeUser = createAsyncThunk<
 
          const keysets = JSON.parse(localStorage.getItem('keysets') || '[]');
 
-         if (keysets.length === 0) {
-            throw new Error('No keysets were found in local storage.');
-         }
-
-         if (keysets.length > 1) {
-            throw new Error('Multiple keysets were found in local storage.');
-         }
-
          const defaultMintUrl = keysets[0].url;
 
          const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
