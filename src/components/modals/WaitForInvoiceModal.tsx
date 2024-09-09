@@ -69,9 +69,7 @@ export const WaitForInvoiceModalBody: React.FC<
                   </button>
                </div>
             ) : (
-               <div>
-                  <Spinner /> Waiting for payment...
-               </div>
+               <div>Waiting for payment...</div>
             )}
          </div>
       </div>
