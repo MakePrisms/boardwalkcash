@@ -56,9 +56,9 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
       if (user.status !== 'succeeded') {
          setLoadingState(true);
       } else if (user.status === 'succeeded') {
-         setTimeout(() => {
-            setLoadingState(false);
-         }, 1000);
+         // setTimeout(() => {
+         setLoadingState(false);
+         // }, 600);
       }
    }, [user]);
 
@@ -264,7 +264,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          <SettingsSidebar />
          <TransactionHistoryDrawer />
          <EcashTapButton isMobile={isMobile} />
-         {tokenDecoded && !newUser.current && ecashReceiveModalOpen && !loadingGifts && (
+         {tokenDecoded && !newUser.current && !loadingGifts && (
             <ConfirmEcashReceiveModal
                token={tokenDecoded}
                isOpen={ecashReceiveModalOpen}
@@ -280,6 +280,10 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
                   setEcashReceiveModalOpen(false);
                }}
                isUserInitialized={!!window.localStorage.getItem('keysets')}
+               onSuccess={() => {
+                  setEcashReceiveModalOpen(false);
+                  router.replace('/wallet');
+               }}
             />
          )}
       </>
