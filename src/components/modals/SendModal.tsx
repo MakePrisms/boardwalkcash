@@ -140,9 +140,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             const txid = await postTokenToDb(token);
             setTxid(txid);
          }
-      } catch (error) {
+      } catch (error: any) {
          console.error(error);
-         addToast('An error occurred while creating the ecash token.', 'error');
          resetModalState();
       }
    };
