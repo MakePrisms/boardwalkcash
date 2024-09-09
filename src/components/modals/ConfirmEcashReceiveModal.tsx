@@ -136,11 +136,6 @@ const ConfirmEcashReceiveModal = ({
             // disable if trying to swap to or from test mints
             setDisableClaim(true);
          }
-         if (await isTokenSpent(token)) {
-            /* stop loading so /wallet page shows the ecash still */
-            setLoading(false);
-            throw new AlreadyClaimedError();
-         }
          const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
          setTokenUnit(proofsUnit);
          if (proofsUnit !== 'usd') {
@@ -148,6 +143,11 @@ const ConfirmEcashReceiveModal = ({
          }
          const unitTotal = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
          setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
+         if (await isTokenSpent(token)) {
+            /* stop loading so /wallet page shows the ecash still */
+            setLoading(false);
+            throw new AlreadyClaimedError();
+         }
       };
 
       const loadGift = async () => {
@@ -346,8 +346,8 @@ const ConfirmEcashReceiveModal = ({
             <Modal.Header>{title}</Modal.Header>
 
             <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
-               <Tooltip content='Copy token'>
-                  <div className='hover:cursor-pointer' onClick={handleCopy}>
+               <div className={`hover:cursor-pointer ${isUserInitialized ? '' : 'my-10'}`}>
+                  <Tooltip content='Copy token'>
                      {gift ? (
                         <div className='flex flex-row justify-center'>
                            <StickerItem
@@ -361,8 +361,8 @@ const ConfirmEcashReceiveModal = ({
                      ) : (
                         <h3 className='text-5xl text-center'>{receiveAmountString()}</h3>
                      )}
-                  </div>
-               </Tooltip>
+                  </Tooltip>
+               </div>
 
                {isUserInitialized === true && (
                   <div className='flex items-center'>
