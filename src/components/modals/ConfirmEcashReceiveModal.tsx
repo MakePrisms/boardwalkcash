@@ -224,9 +224,9 @@ const ConfirmEcashReceiveModal = ({
    };
 
    const title = useMemo(() => {
-      const forText = tokenContact?.username ? (
+      const contactText = tokenContact?.username ? (
          <>
-            for{' '}
+            {contact !== undefined ? 'from' : 'for'}{' '}
             <a className='underline' target='_blank' href={`/${tokenContact.username}`}>
                {tokenContact.username}
             </a>
@@ -235,12 +235,12 @@ const ConfirmEcashReceiveModal = ({
          ''
       );
       if (gift) {
-         return <>eGift {forText}</>;
+         return <>eGift {contactText}</>;
       } else if (lockedTo) {
-         return <>eTip {forText}</>;
+         return <>eTip {contactText}</>;
       }
       return 'Confirm Ecash Receive';
-   }, [lockedTo, gift, tokenContact]);
+   }, [lockedTo, gift, tokenContact, contact]);
 
    const getUsdKeyset = async (mint: CashuMint) => {
       let keysets: MintKeys[] = [];
@@ -347,7 +347,7 @@ const ConfirmEcashReceiveModal = ({
 
             <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
                <div className={`hover:cursor-pointer ${isUserInitialized ? '' : 'my-10'}`}>
-                  <Tooltip content='Copy token'>
+                  <Tooltip content='Copy token' onClick={handleCopy}>
                      {gift ? (
                         <div className='flex flex-row justify-center'>
                            <StickerItem

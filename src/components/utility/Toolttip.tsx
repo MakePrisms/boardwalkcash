@@ -6,6 +6,7 @@ interface TooltipProps {
    className?: string;
    position?: 'top' | 'bottom' | 'left' | 'right';
    trigger?: 'hover' | 'click';
+   onClick?: () => void;
 }
 
 const Tooltip = ({
@@ -14,6 +15,7 @@ const Tooltip = ({
    className = '',
    position = 'bottom',
    trigger = 'hover',
+   onClick,
 }: TooltipProps) => {
    const [isVisible, setIsVisible] = useState(false);
 
@@ -46,7 +48,7 @@ const Tooltip = ({
    };
 
    return (
-      <div className='relative inline-block'>
+      <div className='relative inline-block' onClick={onClick}>
          <div
             className='inline-block'
             onMouseEnter={trigger === 'hover' ? () => setIsVisible(true) : undefined}
