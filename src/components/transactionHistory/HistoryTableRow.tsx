@@ -46,6 +46,14 @@ const HistoryTableRow: React.FC<{
          }
          return <BanknotesIcon className='h-5 w-5' />;
       } else if (isLightningTransaction(tx)) {
+         if (!tx.quote && !tx.mint) {
+            return (
+               <span>
+                  <BoltIcon className='h-5 w-5' />
+                  (nwc)
+               </span>
+            );
+         }
          return <BoltIcon className='h-5 w-5' />;
       }
    };
