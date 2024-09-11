@@ -51,7 +51,7 @@ const Receive = () => {
          if (!isNaN(parsedAmount)) {
             setAmountUsdCents(parsedAmount * 100);
          } else {
-            addToast('Invalid amount', 'error');
+            addToast('Invalid amount' + parsedAmount + '' + inputValue, 'error');
          }
       };
 
