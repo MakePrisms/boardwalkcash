@@ -19,16 +19,16 @@ const MintSettings = () => {
          {Object.keys(keysets).map((id, idx) => (
             <MintSidebarItem keyset={keysets[id]} key={idx} />
          ))}
-         <div className='mt-4 space-y-4 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
-            <div className='flex justify-between'>
+         <div className='mt-4 space-y-4 border-t pt-6 mb-6 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
+            <div className='flex justify-between mb-6 '>
                <button
-                  className={`btn ${activeView === 'addMint' ? 'underline' : ''}`}
+                  className={`btn ${activeView === 'addMint' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
                   onClick={() => toggleView('addMint')}
                >
                   Add a Mint
                </button>
                <button
-                  className={`btn ${activeView === 'goMintless' ? 'underline' : ''}`}
+                  className={`btn ${activeView === 'goMintless' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
                   onClick={() => toggleView('goMintless')}
                >
                   Go Mintless

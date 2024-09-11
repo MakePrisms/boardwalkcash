@@ -62,22 +62,25 @@ const GoMintless = () => {
                </Button>
             </form>
          ) : (
-            <div className='flex flex-col items-start  mb-5 space-y-5'>
+            <div className='flex flex-col items-start space-y-5'>
                <div className='flex justify-between space-x-4 w-full'>
-                  <div>In mintless mode!</div>
-                  <Button color='failure' size='xs' onClick={handleDisconnect}>
+                  <button onClick={toggleReceiveMode}>
+                     Receive: {user.receiveMode === 'mintless' ? '✅' : '❌'}
+                  </button>
+                  <button onClick={toggleSendMode}>
+                     Send: {user.sendMode === 'mintless' ? '✅' : '❌'}
+                  </button>
+               </div>
+               <div className='flex justify-between space-x-4 w-full'>
+                  <p>{user.lud16}</p>
+                  <Button
+                     color='failure'
+                     size='xs'
+                     onClick={handleDisconnect}
+                     className='xss-button !p-0'
+                  >
                      Disconnect
                   </Button>
-               </div>
-               <button onClick={toggleSendMode}>
-                  Send Mintless: {user.sendMode === 'mintless' ? 'true' : 'false'}
-               </button>
-               <button onClick={toggleReceiveMode}>
-                  Receive Mintless: {user.receiveMode === 'mintless' ? 'true' : 'false'}
-               </button>
-
-               <div>
-                  <p>{user.lud16}</p>
                </div>
             </div>
          )}
