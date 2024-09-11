@@ -13,6 +13,7 @@ model User {
   pubkey               String               @unique
   username             String?              @unique
   nostrPubkey          String?
+  lud16                String?
   contacts             Contact[]            @relation("UserContacts")
   contactOf            Contact[]            @relation("ContactUser")
   proofs               Proof[]
@@ -122,10 +123,10 @@ model Token {
 }
 
 model Gift {
-  id                 Int     @id @default(autoincrement())
-  name               String  @unique
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique
   amount             Int
-  unit               String  @default("usd")
+  unit               String              @default("usd")
   description        String?
   // path to image (relative path or full url)
   imageUrlSelected   String
@@ -133,11 +134,11 @@ model Gift {
   // null -> anyone can send/receive;
   creatorPubkey      String?
   // the creator of the gift
-  creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
+  creator            User?               @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
   // fee in cents user has to pay to send
   fee                Int?
   // don't show if inactive
-  active Boolean @default(true)
+  active             Boolean             @default(true)
   // // true -> anyone can send/receive; false -> only the creator can send/receive
   // isGlobal    Boolean @default(true)
   // // whether or not there are `conditions`

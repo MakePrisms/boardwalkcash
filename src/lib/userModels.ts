@@ -63,6 +63,7 @@ async function updateUser(
       receiving?: boolean;
       mintUrl?: string;
       nostrPubkey?: string | null;
+      lud16?: string | null;
    },
 ) {
    let defaultMint;

@@ -307,3 +307,11 @@ export type PostSendGiftResponse = {
    txid: string;
    token: string;
 };
+
+export type PayInvoiceResponse =
+   | {
+        preimage: string | null; // not all pay invoice responses have a preimage, but they SHOULD
+        amountUsd: number;
+        feePaid: number;
+     }
+   | undefined;

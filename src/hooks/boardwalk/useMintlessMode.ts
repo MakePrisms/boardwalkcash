@@ -1,0 +1,139 @@
+import { RootState, useAppDispatch } from '@/redux/store';
+import { PayInvoiceResponse } from '@/types';
+import { getAmountFromInvoice } from '@/utils/bolt11';
+import { nwc } from '@getalby/sdk';
+import { useSelector } from 'react-redux';
+import { useExchangeRate } from '../util/useExchangeRate';
+import { setSuccess } from '@/redux/slices/ActivitySlice';
+import { formatCents } from '@/utils/formatting';
+import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
+import { getCallbackFromLightningAddress, getInvoiceFromLightningAddress } from '@/utils/lud16';
+import {
+   setReceiveModeAction,
+   setSendModeAction,
+   setUserLud16Action,
+   setUserNWCAction,
+} from '@/redux/slices/UserSlice';
+import { updateUser } from '@/utils/appApiRequests';
+import { useToast } from '../util/useToast';
+
+const useMintlessMode = () => {
+   const { nwcUri, pubkey, lud16, sendMode, receiveMode } = useSelector(
+      (state: RootState) => state.user,
+   );
+   const { satsToUnit, unitToSats } = useExchangeRate();
+   const dispatch = useAppDispatch();
+   const { addToast } = useToast();
+
+   const connect = async (nwcUri: string, lud16: string) => {
+      try {
+         const client = new nwc.NWCClient({
+            nostrWalletConnectUrl: nwcUri,
+         });
+         const nwcInfo = await client.getInfo();
+         const supportedMethods = nwcInfo.methods;
+         if (!supportedMethods.includes('pay_invoice')) {
+            throw new Error('NWC does not support pay_invoice');
+         }
+         const lud16Callback = await getCallbackFromLightningAddress(lud16);
+         if (!lud16Callback) {
+            throw new Error('Failed to fetch lightning address');
+         }
+         await updateUser(pubkey!, { lud16 });
+         dispatch(setUserNWCAction(nwcUri));
+         dispatch(setUserLud16Action(lud16));
+         dispatch(setSendModeAction('mintless'));
+         dispatch(setReceiveModeAction('mintless'));
+      } catch (error: any) {
+         console.error('Error connecting to NWC:', error);
+         const msg = error.message || 'Failed to connect to NWC';
+         addToast(msg, 'error');
+      }
+   };
+
+   const disconnect = async () => {
+      await updateUser(pubkey!, { lud16: null });
+      dispatch(setUserNWCAction(null));
+      dispatch(setUserLud16Action(null));
+      dispatch(setSendModeAction('default_mint'));
+      dispatch(setReceiveModeAction('default_mint'));
+   };
+
+   const toggleSendMode = async () => {
+      if (sendMode === 'mintless') {
+         dispatch(setSendModeAction('default_mint'));
+      } else {
+         dispatch(setSendModeAction('mintless'));
+      }
+   };
+
+   const toggleReceiveMode = async () => {
+      if (receiveMode === 'mintless') {
+         dispatch(setReceiveModeAction('default_mint'));
+      } else {
+         dispatch(setReceiveModeAction('mintless'));
+      }
+   };
+
+   const initNwc = async () => {
+      if (!nwcUri) throw new Error('No NWC URI found');
+
+      const client = new nwc.NWCClient({
+         nostrWalletConnectUrl: nwcUri,
+      });
+
+      return client;
+   };
+
+   const payInvoice = async (invoice: string): Promise<PayInvoiceResponse> => {
+      const nwc = await initNwc();
+
+      const res = await nwc.payInvoice({ invoice });
+
+      const amountSats = getAmountFromInvoice(invoice);
+      const amountUsdCents = await satsToUnit(amountSats, 'usd');
+
+      dispatch(setSuccess(`Sent ${formatCents(amountUsdCents)}!`));
+      dispatch(
+         addTransaction({
+            type: 'lightning',
+            transaction: {
+               amount: -amountUsdCents,
+               unit: 'usd',
+               date: new Date().toLocaleString(),
+               status: TxStatus.PAID,
+               mint: null,
+               quote: null,
+            },
+         }),
+      );
+
+      return {
+         preimage: res.preimage,
+         amountUsd: amountUsdCents,
+         feePaid: 0,
+      };
+   };
+
+   const receiveLightningPayment = async (amountUsdCents: number) => {
+      const amountUsd = Number((amountUsdCents / 100).toFixed(2));
+      const amountSats = await unitToSats(amountUsd, 'usd');
+      if (!lud16) {
+         throw new Error('No lud16 found');
+      }
+      const amountMsats = amountSats * 1000;
+      const invoice = await getInvoiceFromLightningAddress(lud16, amountMsats);
+      return invoice;
+   };
+
+   return {
+      nwcPayInvoice: payInvoice,
+      mintlessReceive: receiveLightningPayment,
+      toggleSendMode,
+      toggleReceiveMode,
+      connect,
+      disconnect,
+   };
+};
+
+export default useMintlessMode;

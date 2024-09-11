@@ -24,8 +24,8 @@ export interface LightningTransaction {
    amount: number;
    date: string;
    status: TxStatus;
-   mint: string;
-   quote: string;
+   mint: string | null; // null for mintless
+   quote: string | null; // null for mintless
    memo?: string;
    appName?: string;
    pubkey?: string;

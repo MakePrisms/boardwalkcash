@@ -18,6 +18,7 @@ import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/Ac
 import {
    CrossMintQuoteResult,
    InsufficientBalanceError,
+   PayInvoiceResponse,
    ReserveError,
    TransactionError,
 } from '@/types';
@@ -427,7 +428,7 @@ export const useCashu = () => {
       invoice: string,
       meltQuote?: MeltQuoteResponse,
       wallet?: CashuWallet,
-   ) => {
+   ): Promise<PayInvoiceResponse> => {
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');

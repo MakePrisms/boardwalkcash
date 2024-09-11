@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Drawer, Modal } from 'flowbite-react';
-import MintSidebarItem from './Mints/MintSidebarItem';
-import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../utility/DrawerCollapse';
@@ -14,6 +12,7 @@ import LeaderboardDrawer from '../leaderboards/LeaderboardDrawer';
 import EcashIcon from '../icons/EcashIcon';
 import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
 import FlameIcon from '../icons/FlameIcon';
+import MintSettings from './Mints/MintSettings';
 
 const SettingsCog = () => (
    <svg
@@ -35,7 +34,6 @@ const SettingsCog = () => (
 
 export const SettingsSidebar = () => {
    const [hidden, setHidden] = useState(true);
-   const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -80,13 +78,7 @@ export const SettingsSidebar = () => {
                         label='Mints'
                         icon={<BuildingLibraryIcon className='size-4' />}
                      >
-                        <div className='text-lg mb-2'></div>
-                        {Object.keys(keysets).map((id, idx) => (
-                           <MintSidebarItem keyset={keysets[id]} key={idx} />
-                        ))}
-                        <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
-                           <AddMintButton keysets={keysets} />
-                        </div>
+                        <MintSettings />
                      </DrawerCollapse>
                   </div>
                   {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>

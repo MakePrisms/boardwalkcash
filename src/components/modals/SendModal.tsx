@@ -17,6 +17,7 @@ import useNotifications from '@/hooks/boardwalk/useNotifications';
 import GiftIcon from '../icons/GiftIcon';
 import GiftModal from '../eGifts/GiftModal';
 import { postTokenToDb } from '@/utils/appApiRequests';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -48,7 +49,9 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
+   const { nwcPayInvoice } = useMintlessMode();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const user = useSelector((state: RootState) => state.user);
    const dispatch = useDispatch();
 
    const resetModalState = () => {
@@ -104,6 +107,9 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleInvoiceFlow = async (invoiceToProcess: string) => {
       setIsProcessing(true);
+      if (user.sendMode === 'mintless') {
+         return handlePayInvoice(invoiceToProcess);
+      }
       try {
          const quote = await getMeltQuote(invoiceToProcess);
          if (!quote) {
@@ -146,7 +152,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       }
    };
 
-   const handlePayInvoice = async () => {
+   const handlePayInvoice = async (invoiceToPay?: string) => {
+      if (user.sendMode === 'mintless' && invoiceToPay) {
+         await nwcPayInvoice(invoiceToPay);
+         return resetModalState();
+      }
       if (!meltQuote || !invoice) {
          resetModalState();
          throw new Error('Missing melt quote or invoice');
@@ -273,7 +283,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
                      </Button>
-                     <Button className='btn-primary' onClick={handlePayInvoice}>
+                     <Button className='btn-primary' onClick={() => handlePayInvoice()}>
                         Pay
                      </Button>
                   </div>

@@ -18,6 +18,7 @@ import {
 import { getTokenFromUrl } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -33,9 +34,11 @@ const Receive = () => {
 
    const { decodeToken } = useCashu();
    const { activeWallet } = useCashuContext();
+   const { mintlessReceive } = useMintlessMode();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const user = useSelector((state: RootState) => state.user);
 
    /* process input every time the input value changes */
    useEffect(() => {
@@ -95,6 +98,15 @@ const Receive = () => {
 
       try {
          setFetchingInvoice(true);
+         if (user.receiveMode === 'mintless') {
+            console.log('using mintless mode');
+            const invoice = await mintlessReceive(amountUsdCents);
+            setInvoiceToPay(invoice);
+            setCheckingId(undefined);
+            setFetchingInvoice(false);
+            setCurrentPage('invoice');
+            return;
+         }
          const { invoice, checkingId } = await getInvoiceForLNReceive(pubkey, amountUsdCents);
          setInvoiceToPay(invoice);
          setCheckingId(checkingId);

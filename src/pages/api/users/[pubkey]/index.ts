@@ -53,6 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                defaultMintUrl: mintUrl,
                hideFromLeaderboard,
                nostrPubkey,
+               lud16,
             } = req.body;
             let updates = {};
             if (username) {
@@ -67,6 +68,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             /* only allow removing nostr pubkey, otherwise otp is required to authenticate */
             if (nostrPubkey === null) {
                updates = { ...updates, nostrPubkey };
+            }
+            if (lud16 || lud16 === null) {
+               updates = { ...updates, lud16 };
             }
             if (Object.keys(updates).length > 0) {
                const updatedUser = await updateUser(pubkey, updates);
