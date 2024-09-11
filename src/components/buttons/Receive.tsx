@@ -60,7 +60,7 @@ const Receive = () => {
          if (!isNaN(parsedAmount)) {
             setAmountUsdCents(parsedAmount * 100);
          } else {
-            addToast('Invalid amount' + parsedAmount + '' + inputValue, 'error');
+            addToast('Invalid amount', 'error');
          }
       };
 
@@ -69,7 +69,7 @@ const Receive = () => {
 
          if (inputValue.includes('http') || inputValue.includes('cashu')) {
             handleTokenInput();
-         } else {
+         } else if (!isNaN(parseFloat(inputValue))) {
             handleAmountInput();
          }
       };
