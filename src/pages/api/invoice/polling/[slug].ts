@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { CashuMint, CashuWallet, getEncodedToken, Proof } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, getEncodedTokenV4, Proof } from '@cashu/cashu-ts';
 import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
                });
 
-               const feeToken = getEncodedToken({
+               const feeToken = getEncodedTokenV4({
                   token: [{ proofs: lockedFeeProofs, mint: wallet.mint.mintUrl }],
                });
 
@@ -157,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             let token: string | undefined;
             if (isTip) {
                /* if its a tip, send as a notification */
-               token = getEncodedToken({
+               token = getEncodedTokenV4({
                   token: [{ proofs: proofsToSendToUser, mint: wallet.mint.mintUrl }],
                });
                /* not sure why gift is ending up as 'undefined' */

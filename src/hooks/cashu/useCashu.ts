@@ -3,10 +3,10 @@ import {
    MeltQuoteResponse,
    MintQuoteResponse,
    Proof,
-   getEncodedToken,
    getDecodedToken,
    MintQuoteState,
    Token,
+   getEncodedTokenV4,
 } from '@cashu/cashu-ts';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
@@ -341,7 +341,7 @@ export const useCashu = () => {
             const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
                pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
             });
-            const feeToken = getEncodedToken({
+            const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
                unit: 'usd',
             });
@@ -351,7 +351,7 @@ export const useCashu = () => {
             }
          }
 
-         const token = getEncodedToken({
+         const token = getEncodedTokenV4({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
             unit: 'usd',
          });

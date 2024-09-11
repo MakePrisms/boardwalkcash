@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedToken } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { Button, Modal, Spinner } from 'flowbite-react';
 import Tooltip from '@/components/utility/Toolttip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -84,7 +84,7 @@ const ConfirmEcashReceiveModal = ({
             addTransaction({
                type: 'ecash',
                transaction: {
-                  token: getEncodedToken(token),
+                  token: getEncodedTokenV4(token),
                   amount: amountUsd * 100,
                   mint: mintUrl,
                   date: new Date().toLocaleString(),
@@ -333,7 +333,7 @@ const ConfirmEcashReceiveModal = ({
 
    const handleCopy = () => {
       try {
-         navigator.clipboard.writeText(getEncodedToken(token));
+         navigator.clipboard.writeText(getEncodedTokenV4(token));
          addToast('Copied to clipboard', 'info');
       } catch (e) {
          addToast('Failed to copy to clipboard', 'error');
