@@ -87,14 +87,11 @@ function calculateMetrics(gifts: any[], type: 'sender' | 'receiver'): Record<str
 
          const decodedToken = getDecodedToken(t.token);
          const tokenMintUrl = decodedToken.token[0].mint;
-
          /* only include trusted mints in the leaderboard */
-         if (
-            isProduction &&
-            (!tokenMintUrl.includes('stablenut.umint.cash') ||
-               !tokenMintUrl.includes('mint.lnvoltz.com'))
-         )
+         const trustedMints = ['stablenut.umint.cash', 'mint.lnvoltz.com'];
+         if (isProduction && !trustedMints.some(mint => tokenMintUrl.includes(mint))) {
             return acc;
+         }
 
          if (!acc[pubkey]) {
             acc[pubkey] = {
