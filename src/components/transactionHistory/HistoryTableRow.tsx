@@ -54,8 +54,8 @@ const HistoryTableRow: React.FC<{
       const [datePart, timePart] = date.split(', ');
       const [month, day] = datePart.split('/').slice(0, 2);
       const [time, period] = timePart.split(' ');
-      const [hour, minute, second] = time.split(':');
-      return `${month}/${day}, ${hour}:${minute} ${period}`;
+      const [hour, minute, _] = time.split(':');
+      return `${month}/${day}, ${hour}:${minute} ${period || ''}`;
    };
    const formatAmount = (amount: number, fee?: number) => {
       let color = amount < 0 ? 'text-white' : 'text-green-500';
