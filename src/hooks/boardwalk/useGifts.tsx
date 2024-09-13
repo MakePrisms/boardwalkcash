@@ -3,7 +3,7 @@ import { request } from '@/utils/appApiRequests';
 import { computeTxId } from '@/utils/cashu';
 import { GetAllGiftsResponse, GetGiftResponse, GiftAsset } from '@/types';
 import { Gift } from '@prisma/client';
-import { Token, getEncodedToken } from '@cashu/cashu-ts';
+import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import useContacts from './useContacts';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
@@ -124,7 +124,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
 
    const getGiftFromToken = async (token: string | Token): Promise<GiftAsset | null> => {
       const txid =
-         typeof token === 'string' ? computeTxId(token) : computeTxId(getEncodedToken(token));
+         typeof token === 'string' ? computeTxId(token) : computeTxId(getEncodedTokenV4(token));
       console.log('txid', txid);
       const { gift } = await request<{ gift: string }>(`/api/token/${txid}`, 'GET');
       console.log('gift', gift);

@@ -44,17 +44,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             parseFloat(amount as string),
          );
 
-         axios.post(
-            `${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}?isTip=true`,
-            {
-               pubkey: user.pubkey,
-               amount: amount,
-               keysetId: wallet.keys.id,
-               mintUrl: wallet.mint.mintUrl,
-               gift,
-               fee,
-            },
-         );
+         const host = req.headers.host;
+         const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+         const baseUrl = `${protocol}://${host}`;
+
+         axios.post(`${baseUrl}/api/invoice/polling/${quote}?isTip=true`, {
+            pubkey: user.pubkey,
+            amount: amount,
+            keysetId: wallet.keys.id,
+            mintUrl: wallet.mint.mintUrl,
+            gift,
+            fee,
+         });
 
          return res.status(200).json({
             invoice,

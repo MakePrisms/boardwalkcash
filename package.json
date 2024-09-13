@@ -15,7 +15,7 @@
       "deluser": "ts-node -r tsconfig-paths/register src/scripts/delUser.js"
    },
    "dependencies": {
-      "@cashu/cashu-ts": "^1.0.0-rc.12",
+      "@cashu/cashu-ts": "^1.1.0",
       "@cashu/crypto": "^0.2.6",
       "@gandlaf21/bc-ur": "^1.1.12",
       "@heroicons/react": "^2.1.1",

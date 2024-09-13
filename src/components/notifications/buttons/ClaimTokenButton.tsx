@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { EcashTransaction, TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useAppDispatch } from '@/redux/store';
 import { isTokenSpent } from '@/utils/cashu';
-import { Token, getEncodedToken } from '@cashu/cashu-ts';
+import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { Spinner } from 'flowbite-react';
 import { useState } from 'react';
 
@@ -33,7 +33,7 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
                addTransaction({
                   type: 'ecash',
                   transaction: {
-                     token: getEncodedToken(token),
+                     token: getEncodedTokenV4(token),
                      amount: token.token[0].proofs.reduce((acc, p) => acc + p.amount, 0),
                      unit: 'usd',
                      mint: token.token[0].mint,

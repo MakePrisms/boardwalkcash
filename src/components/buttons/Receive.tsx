@@ -9,9 +9,15 @@ import { Token } from '@cashu/cashu-ts';
 import QRScannerButton from './QRScannerButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
-import { postUserMintQuote, pollForInvoicePayment } from '@/utils/appApiRequests';
+import {
+   postUserMintQuote,
+   pollForInvoicePayment,
+   getInvoiceForLNReceive,
+   getInvoiceStatus,
+} from '@/utils/appApiRequests';
 import { getTokenFromUrl } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -22,8 +28,11 @@ const Receive = () => {
    const [amountUsdCents, setAmountUsdCents] = useState<number | null>(null);
    const [currentPage, setCurrentPage] = useState<'input' | 'invoice'>('input');
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
+   const [invoiceTimeout, setInvoiceTimeout] = useState(false);
+   const [checkingId, setCheckingId] = useState<string | undefined>();
 
-   const { requestMintInvoice, decodeToken } = useCashu();
+   const { decodeToken } = useCashu();
+   const { activeWallet } = useCashuContext();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -51,7 +60,7 @@ const Receive = () => {
          if (!isNaN(parsedAmount)) {
             setAmountUsdCents(parsedAmount * 100);
          } else {
-            addToast('Invalid amount' + parsedAmount + '' + inputValue, 'error');
+            addToast('Invalid amount', 'error');
          }
       };
 
@@ -60,7 +69,7 @@ const Receive = () => {
 
          if (inputValue.includes('http') || inputValue.includes('cashu')) {
             handleTokenInput();
-         } else {
+         } else if (!isNaN(parseFloat(inputValue))) {
             handleAmountInput();
          }
       };
@@ -86,15 +95,14 @@ const Receive = () => {
 
       try {
          setFetchingInvoice(true);
-         const { quote, request } = await requestMintInvoice(amountUsdCents);
-         setInvoiceToPay(request);
+         const { invoice, checkingId } = await getInvoiceForLNReceive(pubkey, amountUsdCents);
+         setInvoiceToPay(invoice);
+         setCheckingId(checkingId);
          setFetchingInvoice(false);
-
-         await postUserMintQuote(pubkey, quote, request, activeWallet.url, activeWallet.id);
 
          setCurrentPage('invoice');
 
-         waitForPayment(pubkey, quote, amountUsdCents, activeWallet.url, activeWallet.id);
+         waitForPayment(pubkey, checkingId, amountUsdCents, activeWallet.url);
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();
@@ -103,26 +111,36 @@ const Receive = () => {
 
    const waitForPayment = async (
       pubkey: string,
-      quote: string,
+      checkingId: string,
       amountUsdCents: number,
       mintUrl: string,
-      walletId: string,
    ) => {
-      try {
-         const pollingResponse = await pollForInvoicePayment(
-            pubkey,
-            quote,
-            amountUsdCents,
-            mintUrl,
-            walletId,
-         );
-
-         if (pollingResponse.success) {
-            handlePaymentSuccess(amountUsdCents, mintUrl, quote);
+      let attempts = 0;
+      const maxAttempts = 4;
+      const interval = setInterval(async () => {
+         const success = await checkPaymentStatus(pubkey, checkingId);
+         if (success) {
+            clearInterval(interval);
+            handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
          }
+         if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            setInvoiceTimeout(true);
+            return;
+         } else {
+            attempts++;
+         }
+         console.log('looking up payment for ', checkingId + '...');
+      }, 5000);
+   };
+
+   const checkPaymentStatus = async (pubkey: string, checkingId: string) => {
+      try {
+         const statusResponse = await getInvoiceStatus(pubkey, checkingId);
+         return statusResponse.paid;
       } catch (error) {
-         addToast('Error receiving', 'error');
-         console.error('Error polling for invoice payment:', error);
+         console.error('Error fetching tip status', error);
+         return false;
       }
    };
 
@@ -152,7 +170,24 @@ const Receive = () => {
       setCurrentPage('input');
    };
 
-   const handleCheckAgain = async () => {};
+   const handleCheckAgain = async () => {
+      if (!checkingId || !amountUsdCents) throw new Error('Missing required parameters');
+      setInvoiceTimeout(false);
+      const pubkey = window.localStorage.getItem('pubkey');
+      if (!pubkey) {
+         throw new Error('No pubkey found');
+      }
+      const mintUrl = activeWallet?.mint.mintUrl;
+      if (!mintUrl) {
+         throw new Error('No mint url found for active wallet');
+      }
+      const paid = await checkPaymentStatus(pubkey, checkingId);
+      if (paid) {
+         handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
+      } else {
+         setInvoiceTimeout(true);
+      }
+   };
 
    return (
       <>
@@ -188,7 +223,7 @@ const Receive = () => {
                   <WaitForInvoiceModalBody
                      invoice={invoiceToPay}
                      amountUsdCents={amountUsdCents || 0}
-                     invoiceTimeout={false}
+                     invoiceTimeout={invoiceTimeout}
                      onCheckAgain={handleCheckAgain}
                   />
                )}
