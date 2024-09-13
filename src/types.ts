@@ -100,6 +100,12 @@ export type PublicContact = {
 
    /** The date the contact was created */
    createdAt: Date;
+
+   /** The lud16 of the contact */
+   lud16: string | null;
+
+   /** Default mint url of the contact */
+   defaultMintUrl: string | null;
 };
 
 export type TokenProps = {

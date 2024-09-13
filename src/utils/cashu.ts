@@ -364,3 +364,7 @@ export const getMintFromToken = (token: string | Token) => {
    const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
    return decodedToken.token[0].mint;
 };
+
+export const isTestMint = (url: string) => {
+   return url.includes('test');
+};

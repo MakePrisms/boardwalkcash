@@ -33,7 +33,17 @@ async function findUserByPubkey(pubkey: string) {
       },
       include: {
          contacts: {
-            select: { linkedUser: { select: { pubkey: true, username: true, nostrPubkey: true } } },
+            select: {
+               linkedUser: {
+                  select: {
+                     pubkey: true,
+                     username: true,
+                     nostrPubkey: true,
+                     lud16: true,
+                     defaultMintUrl: true,
+                  },
+               },
+            },
          },
       },
    });

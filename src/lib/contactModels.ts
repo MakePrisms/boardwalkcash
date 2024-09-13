@@ -8,6 +8,8 @@ const findContactByUsername = async (username: string): Promise<PublicContact | 
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
       },
    });
    return contact;
@@ -20,6 +22,8 @@ const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
       },
    });
    return contact;

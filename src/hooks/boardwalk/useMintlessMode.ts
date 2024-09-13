@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { PayInvoiceResponse } from '@/types';
+import { PayInvoiceResponse, PublicContact } from '@/types';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { nwc } from '@getalby/sdk';
 import { useSelector } from 'react-redux';
@@ -16,6 +16,8 @@ import {
 } from '@/redux/slices/UserSlice';
 import { updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
+import { initializeUsdWallet, isTestMint } from '@/utils/cashu';
+import { getEncodedTokenV4 } from '@cashu/cashu-ts';
 
 const useMintlessMode = () => {
    const { nwcUri, pubkey, lud16, sendMode, receiveMode } = useSelector(
@@ -126,9 +128,42 @@ const useMintlessMode = () => {
       return invoice;
    };
 
+   const createToken = async (amountUsdCents: number, recipient: PublicContact) => {
+      if (!recipient.defaultMintUrl) {
+         addToast('Contact does not have a default mint', 'error');
+         throw new Error('Contact does not have a default mint');
+      }
+      if (isTestMint(recipient.defaultMintUrl)) {
+         addToast('Contact is using a test mint', 'error');
+         throw new Error('Cannot send to test mints');
+      }
+      try {
+         const usdWallet = await initializeUsdWallet(recipient.defaultMintUrl);
+         const { quote, request } = await usdWallet.createMintQuote(amountUsdCents);
+         const res = await payInvoice(request);
+         if (!res) {
+            throw new Error('Failed to pay invoice');
+         }
+         const { proofs } = await usdWallet.mintTokens(amountUsdCents, quote, {
+            keysetId: usdWallet.keys.id,
+            pubkey: '02' + recipient.pubkey,
+         });
+         const token = getEncodedTokenV4({
+            token: [{ proofs, mint: recipient.defaultMintUrl }],
+            unit: 'usd',
+         });
+         return token;
+      } catch (error: any) {
+         console.error('Error creating token:', error);
+         const msg = error.message || 'Failed to create token';
+         addToast(msg, 'error');
+      }
+   };
+
    return {
       nwcPayInvoice: payInvoice,
       mintlessReceive: receiveLightningPayment,
+      createMintlessToken: createToken,
       toggleSendMode,
       toggleReceiveMode,
       connect,

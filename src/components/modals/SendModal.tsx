@@ -49,7 +49,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
-   const { nwcPayInvoice } = useMintlessMode();
+   const { nwcPayInvoice, createMintlessToken } = useMintlessMode();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const dispatch = useDispatch();
@@ -131,9 +131,19 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setAmountUsd(amount.toString());
       setCurrentFlow(SendFlow.Ecash);
       try {
-         const token = await createSendableToken(Math.round(amount * 100), {
-            pubkey: lockTo ? `02${lockTo.pubkey}` : undefined,
-         });
+         let token: string | undefined;
+         if (user.sendMode === 'mintless') {
+            if (!lockTo) {
+               addToast('Can only send locked ecash in mintless mode', 'error');
+               throw new Error('Can only send locked ecash in mintless mode');
+            }
+
+            token = await createMintlessToken(Math.round(amount * 100), lockTo);
+         } else {
+            token = await createSendableToken(Math.round(amount * 100), {
+               pubkey: lockTo ? `02${lockTo.pubkey}` : undefined,
+            });
+         }
          if (!token) {
             throw new Error('Failed to create ecash token');
          }
