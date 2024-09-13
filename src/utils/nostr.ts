@@ -8,7 +8,7 @@ import NDK, {
    NDKTag,
    NostrEvent,
 } from '@nostr-dev-kit/ndk';
-import { nip04 } from 'nostr-tools';
+import { nip04, nip19 } from 'nostr-tools';
 
 const defaultRelays = [
    'wss://nostr.mutinywallet.com',
@@ -25,7 +25,10 @@ const defaultRelays = [
 ];
 
 const initializeNDK = async () => {
-   const privkey = process.env.BOARDWALK_NOSTR_PRIVKEY;
+   let privkey = process.env.BOARDWALK_NOSTR_PRIVKEY;
+   if (privkey?.startsWith('nsec1')) {
+      privkey = nip19.decode(privkey).data as string;
+   }
    if (!privkey) {
       throw new Error('Boardwalk Nostr private key not found');
    }
