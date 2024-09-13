@@ -290,6 +290,8 @@ export interface DiscoverContactsResponse {
       pubkey: string;
       username: string | null;
       nostrPubkey: string;
+      lud16: string | null;
+      defaultMintUrl: string | null;
    }[];
 }
 

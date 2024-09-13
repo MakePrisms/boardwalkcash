@@ -49,6 +49,8 @@ const findManyContacts = async (pubkeys: string[]) => {
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
       },
    });
    return contacts;
