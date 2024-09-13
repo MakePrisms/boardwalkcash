@@ -128,7 +128,7 @@ const useMintlessMode = () => {
       return invoice;
    };
 
-   const createToken = async (amountUsdCents: number, recipient: PublicContact) => {
+   const createToken = async (amountUsdCents: number, recipient: PublicContact, gift?: string) => {
       if (!recipient.defaultMintUrl) {
          addToast('Contact does not have a default mint', 'error');
          throw new Error('Contact does not have a default mint');
@@ -152,6 +152,21 @@ const useMintlessMode = () => {
             token: [{ proofs, mint: recipient.defaultMintUrl }],
             unit: 'usd',
          });
+         // dispatch(
+         //    addTransaction({
+         //       type: 'ecash',
+         //       transaction: {
+         //          token: token,
+         //          amount: -amountUsdCents,
+         //          unit: 'usd',
+         //          mint: recipient.defaultMintUrl,
+         //          status: TxStatus.PENDING,
+         //          date: new Date().toLocaleString(),
+         //          pubkey: '02' + recipient.pubkey,
+         //          gift: gift,
+         //       },
+         //    }),
+         // );
          return token;
       } catch (error: any) {
          console.error('Error creating token:', error);

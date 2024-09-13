@@ -15,6 +15,9 @@ import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatCents } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 import Tooltip from '../utility/Toolttip';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 import useGifts from '@/hooks/boardwalk/useGifts';
 
 interface GiftModalProps {
@@ -45,6 +48,8 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [token, setToken] = useState<string | null>(null);
    const { createSendableToken } = useCashu();
    const { sendTokenAsNotification } = useNotifications();
+   const { createMintlessToken } = useMintlessMode();
+   const user = useSelector((state: RootState) => state.user);
    const [sending, setSending] = useState(false);
    const { addToast } = useToast();
    /* only used when using an invoice, on profile page */
@@ -161,47 +166,59 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          throw new Error('Oops, didnt select a gift');
       }
       setSending(true);
-      if (gift?.campaingId) {
-         if (!selectedContact) throw new Error('No contact selected');
-         const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(
-            e => {
+      try {
+         if (gift?.campaingId) {
+            if (!selectedContact) throw new Error('No contact selected');
+            const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(e => {
                const errMsg = e.message || 'Failed to send eGift';
                addToast(errMsg, 'error');
                setSending(false);
                return { token: null };
-            },
-         );
-         if (token) {
-            addToast(`eGift sent to ${selectedContact?.username}`, 'success');
-            setToken(token);
-            setCurrentStep(GiftStep.ShareGift);
+            });
+            if (token) {
+               addToast(`eGift sent to ${selectedContact?.username}`, 'success');
+               setToken(token);
+               setCurrentStep(GiftStep.ShareGift);
+            }
+            setSending(false);
+            return;
+         } else if (useInvoice) {
+            handleLightningTip(amountCents, gift?.fee);
+            return;
          }
+         let sendableToken: string | undefined;
+         if (user.sendMode === 'mintless') {
+            if (!selectedContact) {
+               throw new Error('No contact selected');
+            }
+            sendableToken = await createMintlessToken(amountCents, selectedContact, gift?.name);
+         } else {
+            sendableToken = await createSendableToken(amountCents, {
+               pubkey: `02${selectedContact?.pubkey}`,
+               gift: gift?.name,
+               feeCents: gift?.fee,
+            });
+         }
+
+         if (!sendableToken) {
+            /* this error case is handled in useCashu */
+            return;
+         }
+
+         const txid = await postTokenToDb(sendableToken, gift?.name);
+         // TODO: won't work if tokes are not locked
+         await sendTokenAsNotification(sendableToken, txid);
+         setToken(sendableToken);
+
+         setCurrentStep(GiftStep.ShareGift);
+
          setSending(false);
-         return;
-      } else if (useInvoice) {
-         handleLightningTip(amountCents, gift?.fee);
-         return;
+         addToast(`eGift sent (${formatCents(amountCents + (gift?.fee || 0))})`, 'success');
+      } catch (error: any) {
+         console.error('Error sending token:', error);
+         const msg = error.message || 'Failed to send token';
+         addToast(msg, 'error');
       }
-      const sendableToken = await createSendableToken(amountCents, {
-         pubkey: `02${selectedContact?.pubkey}`,
-         gift: gift?.name,
-         feeCents: gift?.fee,
-      });
-
-      if (!sendableToken) {
-         /* this error case is handled in useCashu */
-         return;
-      }
-
-      const txid = await postTokenToDb(sendableToken, gift?.name);
-      // TODO: won't work if tokes are not locked
-      await sendTokenAsNotification(sendableToken, txid);
-      setToken(sendableToken);
-
-      setCurrentStep(GiftStep.ShareGift);
-
-      setSending(false);
-      addToast(`eGift sent (${formatCents(amountCents + (gift?.fee || 0))})`, 'success');
    };
 
    const renderContent = () => {
