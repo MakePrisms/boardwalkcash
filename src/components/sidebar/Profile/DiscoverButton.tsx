@@ -17,7 +17,7 @@ const DiscoverButton = ({ className }: { className?: string }) => {
       if (user.nostrPubkey) {
          return 'Discover Contacts';
       }
-      return 'Authenticate Nostr Pubkey';
+      return 'Link Nostr Account';
    }, [user.nostrPubkey]);
 
    return (

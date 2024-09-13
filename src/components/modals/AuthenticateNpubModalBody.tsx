@@ -110,7 +110,7 @@ const AuthenticateNpubModalBody = () => {
                   onChange={e => setPubkey(e.target.value)}
                   helperText={
                      <>
-                        <p>Boardwalk will send you a DM with your one time password</p>
+                        <p>Boardwalk will send you a DM with your one-time code.</p>
                         <button
                            className='underline cursor-pointer text-xs'
                            onClick={() => setShowOtpInput(true)}
@@ -130,10 +130,10 @@ const AuthenticateNpubModalBody = () => {
                <TextInput
                   type='text'
                   id='otp'
-                  placeholder='Enter OTP'
+                  placeholder='Enter code'
                   value={otp}
                   onChange={e => setOtp(e.target.value)}
-                  helperText={'Enter the OTP sent to your npub'}
+                  helperText={'Enter the code sent to your npub.'}
                />
                {otpError && <p className='text-red-500'>{otpError}</p>}
                <Button isProcessing={loading} type='submit' className='btn-primary'>

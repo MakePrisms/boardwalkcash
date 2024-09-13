@@ -147,8 +147,8 @@ const ProfileSettings = () => {
                </button>
             </div>
          </div>
-         <div className='flex justify-end align-middle mb-9 space-x-4'>
-            {/* <DiscoverButton className='w-1/3' /> */}
+         <div className='flex justify-between align-middle mb-9 space-x-4'>
+            <DiscoverButton className='w-1/3' />
             <ViewContactsButton className='w-1/3' />
          </div>
       </div>
