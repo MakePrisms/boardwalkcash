@@ -199,7 +199,7 @@ export type ContactNotificationData = {
 export type MintlessTransactionNotificationData = {
    id: string;
    amount: number;
-   contact: PublicContact;
+   contact?: PublicContact; // TODO should be required
    isFee: boolean;
    timeAgo: string;
    gift: string | null;

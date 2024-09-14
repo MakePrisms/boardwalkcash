@@ -22,11 +22,11 @@ const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotif
          const getArticle = (word: string) => {
             return ['a', 'e', 'i', 'o', 'u'].includes(word.toLowerCase()[0]) ? 'an' : 'a';
          };
-         return `${contact.username} sent you ${getArticle(gift)} ${gift}`;
+         return `${contact?.username} sent you ${getArticle(gift)} ${gift}`;
       } else {
-         return `${contact.username} sent you ${formattedAmount}`;
+         return `${contact?.username} sent you ${formattedAmount}`;
       }
-   }, [contact.username, amount, gift]);
+   }, [contact?.username, amount, gift]);
 
    const buttons = useMemo(() => {
       return [
