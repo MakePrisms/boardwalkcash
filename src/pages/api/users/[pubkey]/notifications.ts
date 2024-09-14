@@ -18,7 +18,7 @@ import { NotifyTokenReceivedRequest } from '@/types';
 import { proofsLockedTo } from '@/utils/cashu';
 import { getDecodedToken } from '@cashu/cashu-ts';
 import { notifyTokenReceived } from '@/lib/notificationModels';
-import { Notification, Prisma, Token } from '@prisma/client';
+import { MintlessTransaction, Notification, Prisma, Token } from '@prisma/client';
 import { findManyContacts } from '@/lib/contactModels';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -63,12 +63,20 @@ async function handleGetNotifications(userPubkey: string, res: NextApiResponse) 
 function extractContactPubkeys(notifications: Notification[]): string[] {
    const newContactPubkeys = notifications
       .filter(n => n.type === NotificationType.NewContact)
-      .map(n => n.data);
+      .map(n => {
+         if (!n.data) {
+            throw new Error('Notification data is null');
+         }
+         return n.data;
+      });
 
    const tokenContactPubkeys = notifications
       .filter(n => n.type === NotificationType.Token)
       .map(n => {
          try {
+            if (!n.data) {
+               throw new Error('Notification data is null');
+            }
             return JSON.parse(n.data).from || null;
          } catch {
             return null;
@@ -80,7 +88,10 @@ function extractContactPubkeys(notifications: Notification[]): string[] {
 }
 
 function attachContactsToNotifications(
-   notifications: (Notification & { token: Token | null })[],
+   notifications: (Notification & {
+      token: Token | null;
+      mintlessTransaction: MintlessTransaction | null;
+   })[],
    contacts: PublicContact[],
 ): (Notification & { token: Token | null })[] {
    return notifications.map(n => {
@@ -92,16 +103,23 @@ function attachContactsToNotifications(
    });
 }
 
-function getPubkeyFromNotification(notification: Notification): string | null {
+function getPubkeyFromNotification(
+   notification: Notification & { mintlessTransaction: MintlessTransaction | null },
+): string | null {
    switch (notification.type) {
       case NotificationType.NewContact:
          return notification.data;
       case NotificationType.Token:
+         if (!notification.data) {
+            throw new Error('Notification data is null');
+         }
          try {
             return JSON.parse(notification.data).from;
          } catch {
             return null;
          }
+      case NotificationType.MintlessTransaction:
+         return notification.mintlessTransaction?.createdByPubkey || null;
       default:
          return null;
    }

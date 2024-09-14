@@ -25,6 +25,8 @@ model User {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   hideFromLeaderboard  Boolean              @default(false)
+  // whether or not this user is in mintless mode to receive
+  mintlessReceive     Boolean        @default(false)
   Notification         Notification[]
   // custom gifts created by this user
   customGifts          Gift[]               @relation("CustomGifts")
@@ -96,15 +98,18 @@ model MintKeyset {
 }
 
 model Notification {
-  id         Int      @id @default(autoincrement())
-  userPubkey String
-  type       String // "token" | "new-contact"
-  data       String
-  tokenId    String?
-  token      Token?   @relation(fields: [tokenId], references: [id])
-  isRead     Boolean  @default(false)
-  user       User     @relation(fields: [userPubkey], references: [pubkey])
-  createdAt  DateTime @default(now())
+  id                    Int                  @id @default(autoincrement())
+  userPubkey            String
+  // made type and data with the plan to deprecate, only deprecated for mintless transactions
+  type                  String // "token" | "new-contact"
+  data                  String?
+  tokenId               String?
+  mintlessTransactionId String?
+  token                 Token?               @relation(fields: [tokenId], references: [id])
+  isRead                Boolean              @default(false)
+  user                  User                 @relation(fields: [userPubkey], references: [pubkey])
+  mintlessTransaction   MintlessTransaction? @relation(fields: [mintlessTransactionId], references: [id])
+  createdAt             DateTime             @default(now())
 }
 
 model Token {
@@ -120,6 +125,18 @@ model Token {
   isFee           Boolean        @default(false)
   recipient       User?          @relation(fields: [recipientPubkey], references: [pubkey], name: "TokenRecipient")
   createdBy       User?          @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
+}
+
+model MintlessTransaction {
+  id              String         @id @default(uuid())
+  gift            String?
+  notificationId  String
+  amount          Int
+  recipientPubkey String
+  createdByPubkey String
+  createdAt       DateTime       @default(now())
+  isFee           Boolean        @default(false)
+  Notification    Notification[]
 }
 
 model Gift {

@@ -48,7 +48,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [token, setToken] = useState<string | null>(null);
    const { createSendableToken } = useCashu();
    const { sendTokenAsNotification } = useNotifications();
-   const { createMintlessToken } = useMintlessMode();
+   const { createMintlessToken, sendToMintlessUser } = useMintlessMode();
    const user = useSelector((state: RootState) => state.user);
    const [sending, setSending] = useState(false);
    const { addToast } = useToast();
@@ -187,11 +187,13 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return;
          }
          let sendableToken: string | undefined;
-         if (user.sendMode === 'mintless') {
+         if (user.sendMode === 'mintless' && !selectedContact?.mintlessReceive) {
             if (!selectedContact) {
                throw new Error('No contact selected');
             }
             sendableToken = await createMintlessToken(amountCents, selectedContact, gift?.name);
+         } else if (selectedContact?.mintlessReceive) {
+            return handleMintlessReceive(amountCents, selectedContact, gift);
          } else {
             sendableToken = await createSendableToken(amountCents, {
                pubkey: `02${selectedContact?.pubkey}`,
@@ -219,6 +221,19 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          const msg = error.message || 'Failed to send token';
          addToast(msg, 'error');
       }
+   };
+
+   const handleMintlessReceive = async (
+      amountCents: number,
+      contact: PublicContact,
+      gift?: GiftAsset,
+   ) => {
+      if (!contact.lud16) {
+         throw new Error('Contact does not have a lightning address');
+      }
+      const transaction = await sendToMintlessUser(amountCents, contact, gift?.name);
+      addToast('Mintless transaction sent', 'success');
+      handleClose();
    };
 
    const renderContent = () => {

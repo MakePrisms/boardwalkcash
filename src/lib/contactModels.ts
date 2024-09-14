@@ -10,6 +10,7 @@ const findContactByUsername = async (username: string): Promise<PublicContact | 
          createdAt: true,
          lud16: true,
          defaultMintUrl: true,
+         mintlessReceive: true,
       },
    });
    return contact;
@@ -24,6 +25,7 @@ const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null
          createdAt: true,
          lud16: true,
          defaultMintUrl: true,
+         mintlessReceive: true,
       },
    });
    return contact;
@@ -51,6 +53,7 @@ const findManyContacts = async (pubkeys: string[]) => {
          createdAt: true,
          lud16: true,
          defaultMintUrl: true,
+         mintlessReceive: true,
       },
    });
    return contacts;

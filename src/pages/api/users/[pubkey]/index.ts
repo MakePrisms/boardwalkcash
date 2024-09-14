@@ -54,6 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                hideFromLeaderboard,
                nostrPubkey,
                lud16,
+               mintlessReceive,
             } = req.body;
             let updates = {};
             if (username) {
@@ -71,6 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
             if (lud16 || lud16 === null) {
                updates = { ...updates, lud16 };
+            }
+            if (mintlessReceive !== undefined) {
+               updates = { ...updates, mintlessReceive };
             }
             if (Object.keys(updates).length > 0) {
                const updatedUser = await updateUser(pubkey, updates);

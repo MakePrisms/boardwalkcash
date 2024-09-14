@@ -49,7 +49,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
-   const { nwcPayInvoice, createMintlessToken } = useMintlessMode();
+   const { nwcPayInvoice, createMintlessToken, sendToMintlessUser } = useMintlessMode();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const dispatch = useDispatch();
@@ -132,14 +132,18 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setCurrentFlow(SendFlow.Ecash);
       try {
          let token: string | undefined;
-         if (user.sendMode === 'mintless') {
+         if (user.sendMode === 'mintless' && !lockTo?.mintlessReceive) {
+            /* if we are making a lightning payment to a user with a mint */
             if (!lockTo) {
                addToast('Can only send locked ecash in mintless mode', 'error');
                throw new Error('Can only send locked ecash in mintless mode');
             }
-
             token = await createMintlessToken(Math.round(amount * 100), lockTo);
+         } else if (lockTo?.mintlessReceive) {
+            /* user wants to receive to their lud16 */
+            return handleMintlessReceive(amount * 100, lockTo);
          } else {
+            /* regular send */
             token = await createSendableToken(Math.round(amount * 100), {
                pubkey: lockTo ? `02${lockTo.pubkey}` : undefined,
             });
@@ -160,6 +164,18 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          console.error(error);
          resetModalState();
       }
+   };
+
+   const handleMintlessReceive = async (amountUsdCents: number, contact: PublicContact) => {
+      console.log('mintless receive', contact);
+      if (!contact.lud16) {
+         addToast('Contact does not have a lightning address', 'error');
+         return;
+      }
+      const transaction = await sendToMintlessUser(amountUsdCents, contact);
+      addToast('Mintless transaction sent', 'success');
+      resetModalState();
+      console.log('transaction', transaction);
    };
 
    const handlePayInvoice = async (invoiceToPay?: string) => {

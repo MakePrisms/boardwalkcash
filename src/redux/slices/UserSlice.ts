@@ -54,7 +54,7 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
 
             const user = await createUser(newPubKey, placeholderUsername, defaultMintUrl);
 
-            const { username, hideFromLeaderboard, nostrPubkey } = user;
+            const { username, hideFromLeaderboard, nostrPubkey, mintlessReceive } = user;
 
             return {
                pubkey: newPubKey,
@@ -66,7 +66,7 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
                nwcUri: null,
                lud16: null,
                sendMode: 'default_mint',
-               receiveMode: 'default_mint',
+               receiveMode: mintlessReceive ? 'mintless' : 'default_mint',
                status: 'succeeded',
 
                error: null,
@@ -74,7 +74,8 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
          } else {
             const user = await fetchUser(storedPubKey);
 
-            let { username, contacts, hideFromLeaderboard, nostrPubkey, lud16 } = user;
+            let { username, contacts, hideFromLeaderboard, nostrPubkey, lud16, mintlessReceive } =
+               user;
 
             if (!username) {
                username = `user-${storedPubKey.slice(0, 5)}`;
@@ -83,7 +84,6 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
 
             const storedNwcUri = localStorage.getItem('nwcUri') || null;
             const storedSendMode = localStorage.getItem('sendMode') || 'default_mint';
-            const storedReceiveMode = localStorage.getItem('receiveMode') || 'default_mint';
 
             return {
                pubkey: storedPubKey,
@@ -95,7 +95,7 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
                nwcUri: storedNwcUri,
                lud16,
                sendMode: storedSendMode as 'mintless' | 'default_mint',
-               receiveMode: storedReceiveMode as 'mintless' | 'default_mint',
+               receiveMode: mintlessReceive ? 'mintless' : 'default_mint',
                status: 'succeeded',
                error: null,
             };

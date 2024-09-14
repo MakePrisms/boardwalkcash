@@ -14,16 +14,18 @@ import {
    setUserLud16Action,
    setUserNWCAction,
 } from '@/redux/slices/UserSlice';
-import { updateUser } from '@/utils/appApiRequests';
+import { authenticatedRequest, updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
 import { initializeUsdWallet, isTestMint } from '@/utils/cashu';
 import { getEncodedTokenV4 } from '@cashu/cashu-ts';
+import { useCashu } from '../cashu/useCashu';
 
 const useMintlessMode = () => {
    const { nwcUri, pubkey, lud16, sendMode, receiveMode } = useSelector(
       (state: RootState) => state.user,
    );
    const { satsToUnit, unitToSats } = useExchangeRate();
+   const { payInvoice: cashuPayInvoice } = useCashu();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
 
@@ -41,7 +43,7 @@ const useMintlessMode = () => {
          if (!lud16Callback) {
             throw new Error('Failed to fetch lightning address');
          }
-         await updateUser(pubkey!, { lud16 });
+         await updateUser(pubkey!, { lud16, mintlessReceive: true });
          dispatch(setUserNWCAction(nwcUri));
          dispatch(setUserLud16Action(lud16));
          dispatch(setSendModeAction('mintless'));
@@ -54,7 +56,7 @@ const useMintlessMode = () => {
    };
 
    const disconnect = async () => {
-      await updateUser(pubkey!, { lud16: null });
+      await updateUser(pubkey!, { lud16: null, mintlessReceive: false });
       dispatch(setUserNWCAction(null));
       dispatch(setUserLud16Action(null));
       dispatch(setSendModeAction('default_mint'));
@@ -71,8 +73,10 @@ const useMintlessMode = () => {
 
    const toggleReceiveMode = async () => {
       if (receiveMode === 'mintless') {
+         await updateUser(pubkey!, { mintlessReceive: false });
          dispatch(setReceiveModeAction('default_mint'));
       } else {
+         await updateUser(pubkey!, { mintlessReceive: true });
          dispatch(setReceiveModeAction('mintless'));
       }
    };
@@ -133,6 +137,10 @@ const useMintlessMode = () => {
          addToast('Contact does not have a default mint', 'error');
          throw new Error('Contact does not have a default mint');
       }
+      if (recipient.mintlessReceive) {
+         addToast('Contact is in mintless receive mode', 'error');
+         throw new Error('Contact is in mintless receive mode');
+      }
       if (isTestMint(recipient.defaultMintUrl)) {
          addToast('Contact is using a test mint', 'error');
          throw new Error('Cannot send to test mints');
@@ -175,10 +183,40 @@ const useMintlessMode = () => {
       }
    };
 
+   const sendToMintlessUser = async (
+      amountUsdCents: number,
+      contact: PublicContact,
+      gift?: string,
+   ) => {
+      if (!contact.lud16) {
+         throw new Error('Contact does not have a lightning address');
+      }
+      if (!contact.mintlessReceive) {
+         throw new Error('Contact is not in mintless receive mode');
+      }
+      const amountUsd = Number((amountUsdCents / 100).toFixed(2));
+      const amountSats = await unitToSats(amountUsd, 'usd');
+      const invoice = await getInvoiceFromLightningAddress(contact.lud16, amountSats * 1000);
+      let tx: PayInvoiceResponse | undefined;
+      if (sendMode === 'mintless') {
+         tx = await payInvoice(invoice);
+      } else {
+         tx = await cashuPayInvoice(invoice);
+      }
+      const res = await authenticatedRequest<undefined>(`/api/mintless/transaction`, 'POST', {
+         gift,
+         amount: amountUsdCents,
+         recipientPubkey: contact.pubkey,
+         createdByPubkey: pubkey!,
+         isFee: false,
+      });
+   };
+
    return {
       nwcPayInvoice: payInvoice,
       mintlessReceive: receiveLightningPayment,
       createMintlessToken: createToken,
+      sendToMintlessUser,
       toggleSendMode,
       toggleReceiveMode,
       connect,
