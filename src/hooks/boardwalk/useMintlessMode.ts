@@ -203,6 +203,10 @@ const useMintlessMode = () => {
       } else {
          tx = await cashuPayInvoice(invoice);
       }
+      if (!pubkey) {
+         alert('Bug: pubkey is null');
+         throw new Error('Bug: pubkey is null');
+      }
       const res = await authenticatedRequest<undefined>(`/api/mintless/transaction`, 'POST', {
          gift,
          amount: amountUsdCents,
