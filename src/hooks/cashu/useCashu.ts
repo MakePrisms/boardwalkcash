@@ -108,10 +108,11 @@ export const useCashu = () => {
             console.log('Found valid quotes');
             return { mintQuote, meltQuote, amountToMint };
          }
-         amountToMint = amountToMint - meltQuote.fee_reserve - 1;
+         const difference = meltQuote.amount + meltQuote.fee_reserve - totalProofsAmount;
+         amountToMint = amountToMint - difference;
       }
 
-      throw new Error('Failed to find valid quotes after maximum attempts');
+      throw new Error('Failed to find valid quotes after maximum attempts. ');
    };
 
    /**
