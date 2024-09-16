@@ -47,19 +47,19 @@ const initializeNDK = async () => {
 export const sendOtp = async (sendTo: { pubkey: string }, otp: string) => {
    const { ndk, privkey } = await initializeNDK();
 
-   const user = ndk.getUser(sendTo);
+   // const user = ndk.getUser(sendTo);
 
-   /* make sure the user exists */
-   const userProfile = await user.fetchProfile();
-   if (!userProfile) {
-      throw new NostrError('Failed to fetch user profile from Nostr');
-   }
-   /* if user has relays, prefer those */
-   const { relayUrls } = user;
-   let relays: string[] | undefined;
-   if (relayUrls.length > 0) {
-      relays = relayUrls;
-   }
+   // /* make sure the user exists */
+   // const userProfile = await user.fetchProfile();
+   // if (!userProfile) {
+   //    throw new NostrError('Failed to fetch user profile from Nostr');
+   // }
+   // /* if user has relays, prefer those */
+   // const { relayUrls } = user;
+   // let relays: string[] | undefined;
+   // if (relayUrls.length > 0) {
+   //    relays = relayUrls;
+   // }
 
    const dmEvent = {
       kind: NDKKind.EncryptedDirectMessage,
@@ -67,7 +67,7 @@ export const sendOtp = async (sendTo: { pubkey: string }, otp: string) => {
       tags: [['p', sendTo.pubkey]],
    } as NostrEvent;
 
-   await publishNostrEvent(ndk, dmEvent, relays);
+   await publishNostrEvent(ndk, dmEvent, undefined);
 };
 
 export const getNostrContacts = async (pubkey: string) => {
