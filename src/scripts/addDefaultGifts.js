@@ -122,7 +122,7 @@ const giftsV3 = [
       amount: 1000,
       description: 'A magical mermaid',
       imageUrlSelected: '/eGifts/selected/mermaid_1000.png',
-      imageUrlUnselected: '/eGifts/unselected/mermaid_1000.png',
+      imageUrlUnselected: '/eGifts/unselected/mermaid2_1000.png',
    },
    {
       name: 'Beer',
