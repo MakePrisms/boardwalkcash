@@ -147,6 +147,7 @@ export const useCashu = () => {
       }
 
       let success = false;
+      let swappedToUnlock = false;
 
       try {
          if (from.mint.mintUrl.includes('test') || to.mint.mintUrl.includes('test')) {
@@ -157,15 +158,6 @@ export const useCashu = () => {
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
             return success;
-         }
-         // need to swap for proofs that are not locked before melting
-         if (opts.privkey) {
-            try {
-               proofsToMelt = await unlockProofs(from, proofsToMelt);
-            } catch (e) {
-               toastSwapError(e);
-               return success;
-            }
          }
 
          const totalProofAmount = proofsToMelt.reduce((acc, p) => acc + p.amount, 0);
@@ -178,9 +170,35 @@ export const useCashu = () => {
             totalProofAmount,
          );
 
-         const { preimage, isPaid, change } = await from.meltTokens(meltQuote, proofsToMelt, {
-            keysetId: from.keys.id,
-         });
+         // need to swap for proofs that are not locked before melting
+         if (opts.privkey) {
+            try {
+               proofsToMelt = await unlockProofs(from, proofsToMelt);
+               swappedToUnlock = true;
+            } catch (e) {
+               toastSwapError(e);
+               return success;
+            }
+         }
+
+         const { preimage, isPaid, change } = await from
+            .meltTokens(meltQuote, proofsToMelt, {
+               keysetId: from.keys.id,
+            })
+            .catch(e => {
+               if (swappedToUnlock) {
+                  /* only adding because I'm assuming these are proofs being claimed */
+                  addProofs(proofsToMelt || []);
+                  alert(
+                     `Lightning payment from ${from.mint.mintUrl} to ${to.mint.mintUrl} failed. In order to get your funds back, you will need to add ${from.mint.mintUrl} to your wallet. Go to settings -> "Mints" -> "Add a Mint" and add ${from.mint.mintUrl} to your wallet.`,
+                  );
+                  throw new Error(
+                     `Lightning payment from ${from.mint.mintUrl} to ${to.mint.mintUrl} failed`,
+                  );
+               } else {
+                  throw e;
+               }
+            });
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
          if (!isPaid) {
@@ -533,6 +551,10 @@ export const useCashu = () => {
             mint: wallet.mint.mintUrl,
          },
          { privkey },
+      );
+      console.log(
+         'recoverme',
+         getEncodedTokenV4({ token: [{ proofs: newProofs, mint: wallet.mint.mintUrl }] }),
       );
       return newProofs;
    };
