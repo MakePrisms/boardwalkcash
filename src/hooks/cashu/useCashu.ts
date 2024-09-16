@@ -553,10 +553,6 @@ export const useCashu = () => {
          },
          { privkey },
       );
-      console.log(
-         'recoverme',
-         getEncodedTokenV4({ token: [{ proofs: newProofs, mint: wallet.mint.mintUrl }] }),
-      );
       return newProofs;
    };
 
