@@ -32,19 +32,17 @@ const ActiveCampaignsPage = () => {
    const { getActiveCampaigns, getInactiveCampaigns, deleteCampaign } = useAdmin();
    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
    const [inactiveCampaigns, setInactiveCampaigns] = useState<Campaign[]>([]);
+   const [isLoading, setIsLoading] = useState(true);
 
    useEffect(() => {
       getActiveCampaigns().then(fetchedCampaigns => {
-         setCampaigns(fetchedCampaigns);
+         setCampaigns(fetchedCampaigns.campaigns);
+         getInactiveCampaigns().then(fetchedCampaigns => {
+            setInactiveCampaigns(fetchedCampaigns.campaigns);
+            setIsLoading(false);
+         });
       });
    }, []);
-
-   useEffect(() => {
-      getInactiveCampaigns().then(fetchedCampaigns => {
-         setInactiveCampaigns(fetchedCampaigns);
-      });
-   }, []);
-
    const handleDeleteCampaign = async (id: number, isActive: boolean) => {
       try {
          await deleteCampaign(id);
@@ -87,6 +85,10 @@ const ActiveCampaignsPage = () => {
       </div>
    );
 
+   if (isLoading) {
+      return <div>Loading...</div>;
+   }
+
    return (
       <div>
          <Button as={Link} href='/admin/campaigns'>
@@ -94,12 +96,11 @@ const ActiveCampaignsPage = () => {
          </Button>
          <h1 className='text-2xl font-bold m-4'>Active Campaigns</h1>
          <div className='grid grid-cols-0 md:grid-cols-2 lg:grid-cols-4 gap-6 px-0 sm:px-6'>
-            {Array.isArray(campaigns) && campaigns.map(campaign => renderCampaign(campaign, true))}
+            {campaigns.map(campaign => renderCampaign(campaign, true))}
          </div>
          <h1 className='text-2xl font-bold m-4'>Inactive Campaigns</h1>
          <div className='grid grid-cols-0 md:grid-cols-2 lg:grid-cols-4 gap-6 px-0 sm:px-6'>
-            {Array.isArray(inactiveCampaigns) &&
-               inactiveCampaigns.map(campaign => renderCampaign(campaign, false))}
+            {inactiveCampaigns.map(campaign => renderCampaign(campaign, false))}
          </div>
       </div>
    );
