@@ -95,6 +95,51 @@ const giftsV2 = [
    },
 ];
 
+const halloweenGifts = [
+   {
+      name: 'Bat',
+      amount: 500,
+      description: 'A spooky bat',
+      imageUrlSelected: '/eGifts/selected/bat_5.png',
+      imageUrlUnselected: '/eGifts/unselected/bat_5.png',
+   },
+   {
+      name: 'Cat',
+      amount: 200,
+      description: 'A mysterious black cat',
+      imageUrlSelected: '/eGifts/selected/cat_2.png',
+      imageUrlUnselected: '/eGifts/unselected/cat_2.png',
+   },
+   {
+      name: 'Ghost',
+      amount: 10,
+      description: 'A haunting ghost',
+      imageUrlSelected: '/eGifts/selected/ghost_10.png',
+      imageUrlUnselected: '/eGifts/unselected/ghost_10.png',
+   },
+   {
+      name: 'Pumpkin',
+      amount: 25,
+      description: 'A jack-o-lantern',
+      imageUrlSelected: '/eGifts/selected/pumpkin_25.png',
+      imageUrlUnselected: '/eGifts/unselected/pumpkin_25.png',
+   },
+   {
+      name: 'Skull',
+      amount: 100,
+      description: 'A creepy skull',
+      imageUrlSelected: '/eGifts/selected/skull_1.png',
+      imageUrlUnselected: '/eGifts/unselected/skull_1.png',
+   },
+   {
+      name: 'Wizard',
+      amount: 1000,
+      description: 'A magical wizard',
+      imageUrlSelected: '/eGifts/selected/wizard_10.png',
+      imageUrlUnselected: '/eGifts/unselected/wizard_10.png',
+   },
+];
+
 const giftsV3 = [
    {
       name: 'Rose',
@@ -253,7 +298,32 @@ async function addV3DefaultGifts() {
    }
 }
 
+async function addHalloweenGifts() {
+   try {
+      for (const gift of halloweenGifts) {
+         await prisma.gift.create({
+            data: {
+               name: gift.name,
+               amount: gift.amount,
+               description: gift.description,
+               imageUrlSelected: gift.imageUrlSelected,
+               imageUrlUnselected: gift.imageUrlUnselected,
+               unit: 'usd', // Using the default value
+               fee: gift.fee,
+            },
+         });
+         console.log(`Added gift: ${gift.name}`);
+      }
+      console.log('All default gifts have been added successfully.');
+   } catch (error) {
+      console.error('Error adding default gifts:', error);
+   } finally {
+      await prisma.$disconnect();
+   }
+}
+
 // addDefaultGifts();
 // addV2DefaultGifts();
-addV3DefaultGifts();
+// addV3DefaultGifts();
 // addV2DefaultGifts();
+addHalloweenGifts();
