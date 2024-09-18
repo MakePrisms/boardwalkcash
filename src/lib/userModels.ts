@@ -191,6 +191,33 @@ const removeContactFromUser = async (pubkey: string, contactPubkey: string) => {
    });
 };
 
+export const getUserClaimedCampaignGifts = async (pubkey: string) => {
+   const user = await prisma.user.findUnique({
+      where: {
+         pubkey,
+      },
+      select: {
+         claimedCampaingGifts: {
+            select: {
+               gift: {
+                  select: {
+                     id: true,
+                  },
+               },
+            },
+         },
+      },
+   });
+
+   if (!user) {
+      throw new Error('User not found');
+   } else if (!user.claimedCampaingGifts) {
+      return [];
+   }
+
+   return user.claimedCampaingGifts.map(campaign => campaign.gift.id);
+};
+
 export {
    createUser,
    findUserById,

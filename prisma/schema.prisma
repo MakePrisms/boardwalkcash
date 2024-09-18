@@ -9,27 +9,28 @@ generator client {
 }
 
 model User {
-  id                  Int            @id @default(autoincrement())
-  pubkey              String         @unique
-  username            String?        @unique
-  nostrPubkey         String?
-  contacts            Contact[]      @relation("UserContacts")
-  contactOf           Contact[]      @relation("ContactUser")
-  proofs              Proof[]
-  mintQuotes          MintQuote[]
-  defaultMint         Mint           @relation(fields: [defaultMintUrl], references: [url])
-  defaultMintUrl      String
-  allowedUnits        String[]
-  receiving           Boolean        @default(false)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  hideFromLeaderboard Boolean        @default(false)
-  Notification        Notification[]
+  id                   Int                  @id @default(autoincrement())
+  pubkey               String               @unique
+  username             String?              @unique
+  nostrPubkey          String?
+  contacts             Contact[]            @relation("UserContacts")
+  contactOf            Contact[]            @relation("ContactUser")
+  proofs               Proof[]
+  mintQuotes           MintQuote[]
+  defaultMint          Mint                 @relation(fields: [defaultMintUrl], references: [url])
+  defaultMintUrl       String
+  allowedUnits         String[]
+  receiving            Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  hideFromLeaderboard  Boolean              @default(false)
+  Notification         Notification[]
   // custom gifts created by this user
-  customGifts         Gift[]         @relation("CustomGifts")
+  customGifts          Gift[]               @relation("CustomGifts")
   // UserCustomGift UserConditionalGift[]
-  createdTokens       Token[]        @relation("TokenCreatedBy")
-  receivedTokens      Token[]        @relation("TokenRecipient")
+  createdTokens        Token[]              @relation("TokenCreatedBy")
+  receivedTokens       Token[]              @relation("TokenRecipient")
+  claimedCampaingGifts SingleGiftCampaign[]
 }
 
 model Contact {
@@ -135,7 +136,7 @@ model Gift {
   creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
 
   // fee in cents user has to pay to send
-  fee Int?
+  fee                Int?
   // // true -> anyone can send/receive; false -> only the creator can send/receive
   // isGlobal    Boolean @default(true)
   // // whether or not there are `conditions`
@@ -146,6 +147,7 @@ model Gift {
   // receiveConditions GiftCondition[]       @relation("ReceiveConditions")
   // // the users that can send the gift
   // userGifts         UserConditionalGift[]
+  SingleGiftCampaign SingleGiftCampaign?
 
   @@index([creatorPubkey])
   @@index([name])
@@ -159,6 +161,26 @@ model PendingOtp {
   createdAt   DateTime @default(now())
 
   @@index([otpCode])
+}
+
+model SingleGiftCampaign {
+  id          Int       @id @default(autoincrement())
+  // set to false when expired or max gifts have been claimed
+  active      Boolean   @default(true)
+  name        String
+  description String?
+  // funding source for this campaign
+  nwcUri      String
+  // which gift is given out
+  giftId      Int       @unique
+  // max gifts that can be claimed
+  totalGifts  Int
+  // all users that have claimed this campaign
+  claimedBy   User[]
+  // optionally expires and becomes inactive
+  expiresAt   DateTime?
+  gift        Gift      @relation(fields: [giftId], references: [id])
+  createdAt   DateTime  @default(now())
 }
 
 // model GiftCondition {

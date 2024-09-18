@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { request } from '@/utils/appApiRequests';
+import { authenticatedRequest, request } from '@/utils/appApiRequests';
 import { computeTxId } from '@/utils/cashu';
-import { GetAllGiftsResponse, GetGiftResponse, GiftAsset } from '@/types';
+import { GetAllGiftsResponse, GetGiftResponse, GiftAsset, PostSendGiftResponse } from '@/types';
 import { Gift } from '@prisma/client';
 import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import useContacts from './useContacts';
@@ -16,6 +16,10 @@ interface GiftContextType {
    loadingGifts: boolean;
    fetchGift: (identifier: string) => Promise<GiftAsset | null>;
    loadUserCustomGifts: (creatorPubkey: string) => Promise<void>;
+   sendCampaignGift: (
+      campaignId: number,
+      recipientPubkey: string,
+   ) => Promise<{ txid: string; token: string }>;
 }
 
 const GiftContext = createContext<GiftContextType | undefined>(undefined);
@@ -35,7 +39,16 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       const fetchGifts = async () => {
          setIsFetching(true);
          try {
-            const apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
+            let apiGifts: GetAllGiftsResponse;
+            if (user.pubkey) {
+               apiGifts = await authenticatedRequest<GetAllGiftsResponse>(
+                  '/api/gifts',
+                  'GET',
+                  undefined,
+               );
+            } else {
+               apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
+            }
             const normalizedGifts = normalizeGifts(apiGifts.gifts);
             setGiftAssets(normalizedGifts);
             await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.selectedSrc));
@@ -57,7 +70,10 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       setGiftAssets(prevGifts => ({ ...prevGifts, ...normalizedGifts }));
    };
 
-   const normalizeGifts = (apiGifts: Gift[], force: boolean = false): Record<string, GiftAsset> => {
+   const normalizeGifts = (
+      apiGifts: GetAllGiftsResponse['gifts'],
+      force: boolean = false,
+   ): Record<string, GiftAsset> => {
       return apiGifts.reduce(
          (acc, gift) => {
             const userLoaded = user.status === 'succeeded';
@@ -81,6 +97,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                unselectedSrc: gift.imageUrlUnselected,
                description: gift.description,
                creatorPubkey: gift.creatorPubkey,
+               campaingId: gift.campaignId,
                fee: gift.fee ? gift.fee : undefined,
             };
             acc[gift.name] = giftAsset;
@@ -137,6 +154,28 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       }
    };
 
+   const sendCampaignGift = async (
+      campaignId: number,
+      recipientPubkey: string,
+   ): Promise<PostSendGiftResponse> => {
+      try {
+         const response = await authenticatedRequest<PostSendGiftResponse>(
+            '/api/campaigns/single-gift/send',
+            'POST',
+            { campaignId, recipientPubkey },
+         );
+
+         if (response && response.txid && response.token) {
+            return { txid: response.txid, token: response.token };
+         } else {
+            throw new Error('Invalid response from server');
+         }
+      } catch (error) {
+         console.error('Error sending campaign gift:', error);
+         throw error;
+      }
+   };
+
    const value: GiftContextType = {
       giftAssets,
       getGiftByIdentifier,
@@ -144,6 +183,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       loadingGifts: isFetching,
       fetchGift,
       loadUserCustomGifts,
+      sendCampaignGift,
    };
 
    return <GiftContext.Provider value={value}>{children}</GiftContext.Provider>;

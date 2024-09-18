@@ -15,6 +15,7 @@ import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatCents } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 import Tooltip from '../utility/Toolttip';
+import useGifts from '@/hooks/boardwalk/useGifts';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -50,6 +51,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [invoice, setInvoice] = useState<string | null>(null);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [quoteId, setQuoteId] = useState('');
+   const { sendCampaignGift } = useGifts();
 
    const handleClose = () => {
       onClose();
@@ -159,7 +161,24 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          throw new Error('Oops, didnt select a gift');
       }
       setSending(true);
-      if (useInvoice) {
+      if (gift?.campaingId) {
+         if (!selectedContact) throw new Error('No contact selected');
+         const { token } = await sendCampaignGift(gift.campaingId, selectedContact?.pubkey).catch(
+            e => {
+               const errMsg = e.message || 'Failed to send eGift';
+               addToast(errMsg, 'error');
+               setSending(false);
+               return { token: null };
+            },
+         );
+         if (token) {
+            addToast(`eGift sent to ${selectedContact?.username}`, 'success');
+            setToken(token);
+            setCurrentStep(GiftStep.ShareGift);
+         }
+         setSending(false);
+         return;
+      } else if (useInvoice) {
          handleLightningTip(amountCents, gift?.fee);
          return;
       }
