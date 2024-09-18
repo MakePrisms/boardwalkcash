@@ -94,11 +94,12 @@ const ActiveCampaignsPage = () => {
          </Button>
          <h1 className='text-2xl font-bold m-4'>Active Campaigns</h1>
          <div className='grid grid-cols-0 md:grid-cols-2 lg:grid-cols-4 gap-6 px-0 sm:px-6'>
-            {campaigns.map(campaign => renderCampaign(campaign, true))}
+            {Array.isArray(campaigns) && campaigns.map(campaign => renderCampaign(campaign, true))}
          </div>
          <h1 className='text-2xl font-bold m-4'>Inactive Campaigns</h1>
          <div className='grid grid-cols-0 md:grid-cols-2 lg:grid-cols-4 gap-6 px-0 sm:px-6'>
-            {inactiveCampaigns.map(campaign => renderCampaign(campaign, false))}
+            {Array.isArray(inactiveCampaigns) &&
+               inactiveCampaigns.map(campaign => renderCampaign(campaign, false))}
          </div>
       </div>
    );
