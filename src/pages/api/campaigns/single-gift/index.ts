@@ -26,7 +26,12 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
          } else {
             /* get all campaigns */
             const campaigns = await getAllSingleGiftCampaigns(active === 'true');
-            return res.status(200).json(campaigns);
+            return res.status(200).json({
+               campaigns: campaigns.map(c => {
+                  const { nwcUri, ...campaign } = c;
+                  return campaign;
+               }),
+            });
          }
       } catch (error: any) {
          return res.status(500).json({ message: error.message });
