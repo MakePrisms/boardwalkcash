@@ -34,22 +34,58 @@ async function getMetrics(startDate, endDate) {
       // Average contacts per user (for users created in this period)
       const avgContactsPerUser = totalContacts / totalUsers || 0;
 
-      const lockedTokens = await prisma.token.findMany();
-
-      const tokenData = lockedTokens.map(t => {
-         const { token, createdByPubkey, recipientPubkey } = t;
-         const decoded = getDecodedToken(token);
-         const amountCents = decoded.token[0].proofs.reduce((acc, p) => acc + p.amount, 0);
-         const mintUrl = decoded.token[0].mint;
-         const gift = t.gift;
-         return {
-            lockedTo: recipientPubkey,
-            amountCents,
-            mintUrl,
-            gift,
-            createdByPubkey,
-         };
+      const lockedTokens = await prisma.token.findMany({
+         where: { createdAt: { gte: startDate, lte: endDate } },
       });
+
+      const tokenData = lockedTokens
+         .map(t => {
+            const { token, createdByPubkey, recipientPubkey } = t;
+            const decoded = getDecodedToken(token);
+            const amountCents = decoded.token[0].proofs.reduce((acc, p) => acc + p.amount, 0);
+            const mintUrl = decoded.token[0].mint;
+            if (mintUrl.includes('test')) return null;
+            const gift = t.gift;
+            return {
+               lockedTo: recipientPubkey,
+               amountCents,
+               mintUrl,
+               gift,
+               createdByPubkey,
+            };
+         })
+         .filter(t => t !== null);
+
+      const { totalETips, eTipDollarValue } = tokenData.reduce(
+         (acc, t) => {
+            if (t.gift === null) {
+               acc.totalETips += 1;
+               acc.eTipDollarValue += t.amountCents;
+            }
+            return acc;
+         },
+         { totalETips: 0, eTipDollarValue: 0 },
+      );
+      const { totalEGifts, eGiftDollarValue } = tokenData.reduce(
+         (acc, t) => {
+            if (t.gift !== null) {
+               acc.totalEGifts += 1;
+               acc.eGiftDollarValue += t.amountCents;
+            }
+            return acc;
+         },
+         { totalEGifts: 0, eGiftDollarValue: 0 },
+      );
+      const { totalFees, feeDollarValue } = tokenData.reduce(
+         (acc, t) => {
+            if (t.isFee) {
+               acc.totalFees += 1;
+               acc.feeDollarValue += t.amountCents;
+            }
+            return acc;
+         },
+         { totalFees: 0, feeDollarValue: 0 },
+      );
 
       console.log('tokenData', tokenData);
 
@@ -110,6 +146,12 @@ async function getMetrics(startDate, endDate) {
          customUsernameCount,
          newContacts: totalContacts,
          avgContactsPerUser: parseFloat(avgContactsPerUser.toFixed(2)),
+         totalETips,
+         eTipDollarValue: parseFloat((eTipDollarValue / 100).toFixed(2)),
+         totalEGifts,
+         eGiftDollarValue: parseFloat((eGiftDollarValue / 100).toFixed(2)),
+         totalFees,
+         feeDollarValue: parseFloat((feeDollarValue / 100).toFixed(2)),
          // newMintQuotes: totalMintQuotes,
          // newPaidMintQuotes: paidMintQuotes,
          // totalMints,
@@ -295,7 +337,7 @@ async function batchGetMetrics(days = 30) {
       data.unshift(...batchResults);
    }
 
-   return data;
+   return data.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 async function generateHTMLGraph(data) {
@@ -378,6 +420,12 @@ function generateCSV(data) {
       'Custom Username Count',
       'New Contacts',
       'Avg Contacts per User',
+      'eTips',
+      'eTip Value $',
+      'eGifts',
+      'eGift Value $',
+      'Fees',
+      'Fee Value $',
    ];
 
    const csvRows = [
@@ -389,6 +437,12 @@ function generateCSV(data) {
             row.customUsernameCount,
             row.newContacts,
             row.avgContactsPerUser,
+            row.totalETips,
+            row.eTipDollarValue,
+            row.totalEGifts,
+            row.eGiftDollarValue,
+            row.totalFees,
+            row.feeDollarValue,
          ].join(','),
       ),
    ];
@@ -400,16 +454,16 @@ function generateCSV(data) {
 }
 
 // Example usage:
-const endDate = new Date(); // Current date and time
-const startDate = new Date(endDate);
-startDate.setDate(endDate.getDate() - 3);
-getMetrics(startDate, endDate);
+// const endDate = new Date(); // Current date and time
+// const startDate = new Date(endDate);
+// startDate.setDate(endDate.getDate() - 3);
+// getMetrics(startDate, endDate);
 // generateTerminalGraph(30);
-// batchGetMetrics(30).then(datasets => {
-//    generateHTMLGraph(datasets);
-//    generateTerminalGraph(datasets);
-//    generateCSV(datasets);
-// });
+batchGetMetrics(7).then(datasets => {
+   // generateHTMLGraph(datasets);
+   // generateTerminalGraph(datasets);
+   generateCSV(datasets);
+});
 // generateTerminalGraph(datasets);
 // generateHTMLGraph(datasets);
 // getMintMetics();
