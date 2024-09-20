@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { setCookie, getCookie } from 'cookies-next';
 import dynamic from 'next/dynamic';
+import { FaTimes } from 'react-icons/fa';
+import { ImArrowUp } from 'react-icons/im';
 
 const ModuleLoading = () => <p className='animate-bounce text-white font-bold'>Loading...</p>;
 const AddToIosSafari = dynamic(() => import('./AddToIosSafari'), {
@@ -84,26 +86,13 @@ export default function AddToHomeScreen() {
       <>
          {
             {
-               safari: <AddToIosSafari closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />,
-               chrome: (
-                  <AddToMobileChrome closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />
-               ),
-               firefox: (
-                  <AddToMobileFirefox closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />
-               ),
-               firefoxIos: (
-                  <AddToMobileFirefoxIos
-                     closePrompt={closePrompt}
-                     doNotShowAgain={doNotShowAgain}
-                  />
-               ),
-               chromeIos: (
-                  <AddToMobileChromeIos closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />
-               ),
-               samsung: <AddToSamsung closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />,
-               other: (
-                  <AddToOtherBrowser closePrompt={closePrompt} doNotShowAgain={doNotShowAgain} />
-               ),
+               safari: <AddToIosSafari doNotShowAgain={doNotShowAgain} />,
+               chrome: <AddToMobileChrome doNotShowAgain={doNotShowAgain} />,
+               firefox: <AddToMobileFirefox doNotShowAgain={doNotShowAgain} />,
+               firefoxIos: <AddToMobileFirefoxIos doNotShowAgain={doNotShowAgain} />,
+               chromeIos: <AddToMobileChromeIos doNotShowAgain={doNotShowAgain} />,
+               samsung: <AddToSamsung doNotShowAgain={doNotShowAgain} />,
+               other: <AddToOtherBrowser doNotShowAgain={doNotShowAgain} />,
                '': <></>,
             }[displayPrompt]
          }
@@ -113,14 +102,32 @@ export default function AddToHomeScreen() {
    return (
       <>
          {displayPrompt !== '' ? (
-            <>
+            <div
+               className='fixed top-0 left-0 right-0 bottom-0 bg-black/70 z-50'
+               onClick={closePrompt}
+            >
                <div
-                  className='fixed top-0 left-0 right-0 bottom-0 bg-black/70 z-50'
-                  onClick={closePrompt}
+                  className={
+                     'fixed bottom-0 left-0 right-0 z-50 px-4 text-white bg-[var(--background-start-rgb)]' +
+                     (displayPrompt === 'samsung' || displayPrompt === 'firefoxIos'
+                        ? ' h-[70%]'
+                        : ' h-[58%]')
+                  }
                >
-                  <Prompt />
+                  <div className='relative bg-primary p-4 h-full rounded-xl flex flex-col justify-start items-center text-center'>
+                     <button className='absolute top-0 right-0 p-3 pe-0' onClick={closePrompt}>
+                        <FaTimes className='text-2xl' />
+                     </button>
+                     <div className='mt-7'>
+                        <p className=' mb-4'>
+                           For the best experience, we recommend installing Boardwalk to your home
+                           screen!
+                        </p>
+                        <Prompt />
+                     </div>
+                  </div>
                </div>
-            </>
+            </div>
          ) : (
             <></>
          )}
