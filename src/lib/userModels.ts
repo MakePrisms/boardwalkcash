@@ -191,6 +191,57 @@ const removeContactFromUser = async (pubkey: string, contactPubkey: string) => {
    });
 };
 
+export const getUserClaimedCampaignGifts = async (pubkey: string) => {
+   const user = await prisma.user.findUnique({
+      where: {
+         pubkey,
+      },
+      select: {
+         claimedCampaingGifts: {
+            select: {
+               gift: {
+                  select: {
+                     id: true,
+                  },
+               },
+            },
+         },
+         nostrPubkey: true,
+      },
+   });
+
+   if (!user) {
+      throw new Error('User not found');
+   }
+
+   let allClaimedGifts = user.claimedCampaingGifts || [];
+
+   if (user.nostrPubkey) {
+      const sameUsers = await prisma.user.findMany({
+         where: {
+            nostrPubkey: user.nostrPubkey,
+         },
+         select: {
+            claimedCampaingGifts: {
+               select: {
+                  gift: {
+                     select: {
+                        id: true,
+                     },
+                  },
+               },
+            },
+         },
+      });
+
+      sameUsers.forEach(sameUser => {
+         allClaimedGifts = allClaimedGifts.concat(sameUser.claimedCampaingGifts || []);
+      });
+   }
+
+   return Array.from(new Set(allClaimedGifts.map(campaign => campaign.gift.id)));
+};
+
 export {
    createUser,
    findUserById,

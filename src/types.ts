@@ -8,6 +8,7 @@ import {
    Token,
 } from '@cashu/cashu-ts';
 import { Gift, Notification, Token as TokenPrisma } from '@prisma/client';
+import { NextApiRequest } from 'next';
 
 export interface ProofData {
    proofId: string;
@@ -222,10 +223,10 @@ export type GetTokenResponse = {
 };
 
 export type GetAllGiftsResponse = {
-   gifts: Gift[];
+   gifts: (Gift & { campaignId?: number })[];
 };
 
-export type GetGiftResponse = Gift;
+export type GetGiftResponse = Gift & { campaignId?: number };
 
 export interface GiftAsset {
    amountCents: number;
@@ -234,6 +235,7 @@ export interface GiftAsset {
    unselectedSrc: string;
    description: string | null;
    creatorPubkey: string | null;
+   campaingId?: number;
    fee?: number;
 }
 
@@ -291,3 +293,17 @@ export class NostrError extends Error {
       this.name = 'NostrError';
    }
 }
+
+export type AuthenticatedRequest = NextApiRequest & {
+   authenticatedPubkey?: string;
+};
+
+export type PostSingleGiftCampaignSendRequest = {
+   campaignId: number;
+   recipientPubkey: string;
+};
+
+export type PostSendGiftResponse = {
+   txid: string;
+   token: string;
+};

@@ -12,6 +12,8 @@ import { ProofProvider } from '@/hooks/cashu/useProofStorage';
 import { CashuProvider } from '@/hooks/contexts/cashuContext';
 import { GiftProvider } from '@/hooks/boardwalk/useGifts';
 import AddToHomeScreen from '@/components/AddToHomeScreen.tsx/AddToHomeScreen';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
 interface CustomPageProps {
    pageTitle?: string;
@@ -26,8 +28,35 @@ type CustomAppProps = AppProps<CustomPageProps>;
 export default function App({ Component, pageProps }: CustomAppProps) {
    const { pageTitle, pageDescription, giftPath } = pageProps;
    useViewportHeight();
+   const router = useRouter();
 
    const previewImg = `https://dev.boardwalkcash.com${giftPath || '/logo-url-preview.png'}`;
+
+   useEffect(() => {
+      const checkAdminAccess = () => {
+         const isAdminPath = router.pathname.startsWith('/admin');
+         const isAdminLoginPath = router.pathname === '/admin';
+         const adminPassword = localStorage.getItem('adminPassword');
+
+         if (isAdminPath && !adminPassword && !isAdminLoginPath) {
+            router.push('/admin', undefined, { shallow: true });
+         }
+      };
+
+      checkAdminAccess();
+
+      const handleRouteChange = (url: string) => {
+         if (!url.startsWith('/admin')) {
+            checkAdminAccess();
+         }
+      };
+
+      router.events.on('routeChangeComplete', handleRouteChange);
+
+      return () => {
+         router.events.off('routeChangeComplete', handleRouteChange);
+      };
+   }, [router]);
 
    return (
       <>
