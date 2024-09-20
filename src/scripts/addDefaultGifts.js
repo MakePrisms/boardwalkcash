@@ -227,6 +227,39 @@ const giftsV3 = [
    },
 ];
 
+const freeStar = [
+   {
+      name: 'Star',
+      amount: 100,
+      description: null,
+      imageUrlSelected: '/eGifts/selected/star_100.png',
+      imageUrlUnselected: '/eGifts/unselected/star_100.png',
+   },
+];
+
+async function addGifts(gifts) {
+   try {
+      for (const gift of gifts) {
+         await prisma.gift.create({
+            data: {
+               name: gift.name,
+               amount: gift.amount,
+               description: gift.description,
+               imageUrlSelected: gift.imageUrlSelected,
+               imageUrlUnselected: gift.imageUrlUnselected,
+               unit: 'usd', // Using the default value
+               fee: gift.fee,
+            },
+         });
+         console.log(`Added gift: ${gift.name}`);
+      }
+   } catch (error) {
+      console.error('Error adding default gifts:', error);
+   } finally {
+      await prisma.$disconnect();
+   }
+}
+
 async function addDefaultGifts() {
    try {
       for (const gift of gifts) {
@@ -322,8 +355,4 @@ async function addHalloweenGifts() {
    }
 }
 
-// addDefaultGifts();
-// addV2DefaultGifts();
-// addV3DefaultGifts();
-// addV2DefaultGifts();
-addHalloweenGifts();
+addGifts(freeStar);
