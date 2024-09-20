@@ -13,7 +13,7 @@ export default async function handler(
       await runAuthMiddleware(req, res, true);
 
       try {
-         let gifts = await getAllGifts();
+         let gifts = await getAllGifts(true);
          if (!req.authenticatedPubkey) {
             /* if not authenticated, filter out campaign gifts */
             gifts = gifts.filter(g => !g.SingleGiftCampaign);

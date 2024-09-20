@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import useAdmin from '@/hooks/boardwalk/useAdmin';
-import useGifts from '@/hooks/boardwalk/useGifts';
 
 const CampaignsPage = ({ gifts }: { gifts: GetAllGiftsResponse['gifts'] }) => {
+   const router = useRouter();
    const { createCampaign, isLoading, error } = useAdmin();
    const { addToast } = useToast();
    const [formData, setFormData] = useState({
@@ -43,6 +43,7 @@ const CampaignsPage = ({ gifts }: { gifts: GetAllGiftsResponse['gifts'] }) => {
             giftId: '',
             totalGifts: '',
          });
+         router.push('/admin/campaigns/active');
          addToast('Campaign created!', 'success');
       } catch (err) {
          console.error('Error creating campaign:', err);
@@ -152,10 +153,12 @@ import StickerItem from '@/components/eGifts/stickers/StickerItem';
 import { Button } from 'flowbite-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/util/useToast';
+import { useRouter } from 'next/router';
 
 export const getServerSideProps: GetServerSideProps = async () => {
    try {
-      const gifts = await getAllGifts();
+      /* only show inactive gifts for creating a campaign */
+      const gifts = await getAllGifts(false);
       console.log('gifts', gifts);
       return {
          props: {

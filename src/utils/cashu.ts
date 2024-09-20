@@ -359,3 +359,8 @@ export const getTokenFromUrl = async (url: string) => {
       return null;
    }
 };
+
+export const getMintFromToken = (token: string | Token) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   return decodedToken.token[0].mint;
+};

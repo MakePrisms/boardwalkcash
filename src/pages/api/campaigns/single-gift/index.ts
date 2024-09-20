@@ -5,7 +5,7 @@ import {
    getAllSingleGiftCampaigns,
    getSingleGiftCampaign,
 } from '@/lib/campaignModels';
-import { getGiftById } from '@/lib/gifts';
+import { getGiftById, setGiftStatus } from '@/lib/gifts';
 import { AuthenticatedRequest } from '@/types';
 import { basicAuthMiddleware, runMiddleware } from '@/utils/middleware';
 
@@ -73,6 +73,9 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             },
             totalGifts,
          });
+         
+         /* make sure gift is active */
+         await setGiftStatus(giftId, true);
 
          return res.status(200).json({ message: 'Campaign created' });
       } catch (error: any) {

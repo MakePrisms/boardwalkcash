@@ -16,6 +16,7 @@ import { computeTxId, initializeUsdWallet } from '@/utils/cashu';
 import { getEncodedTokenV4, MintQuoteState } from '@cashu/cashu-ts';
 import { createTokenInDb } from '@/lib/tokenModels';
 import { notifyTokenReceived } from '@/lib/notificationModels';
+import { setGiftStatus } from '@/lib/gifts';
 
 export default async function handler(req: AuthenticatedRequest, res: NextApiResponse<any>) {
    if (req.method === 'POST') {
@@ -53,6 +54,7 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
 
          if (campaign.claimedBy.length >= campaign.totalGifts) {
             await setCampaignInactive(id);
+            await setGiftStatus(campaign.giftId, false);
             return res.status(400).json({ message: 'Campaign is full' });
          }
 
@@ -125,11 +127,15 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             return res.status(500).json({ message: 'Failed to notify token received' });
          }
 
+         const isFull = campaign.claimedBy.length + 1 === campaign.totalGifts;
          await addUserToClaimedCampaignGifts(
             id,
             req.authenticatedPubkey,
-            campaign.claimedBy.length + 1 < campaign.totalGifts,
+            !isFull,
          );
+         if (isFull) {
+            await setGiftStatus(campaign.giftId, false);
+         }
 
          await res.status(200).json({ txid, token } as PostSendGiftResponse);
       } catch (error) {

@@ -163,7 +163,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setSending(true);
       if (gift?.campaingId) {
          if (!selectedContact) throw new Error('No contact selected');
-         const { token } = await sendCampaignGift(gift.campaingId, selectedContact?.pubkey).catch(
+         const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(
             e => {
                const errMsg = e.message || 'Failed to send eGift';
                addToast(errMsg, 'error');

@@ -134,9 +134,10 @@ model Gift {
   creatorPubkey      String?
   // the creator of the gift
   creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
-
   // fee in cents user has to pay to send
   fee                Int?
+  // don't show if inactive
+  active Boolean @default(true)
   // // true -> anyone can send/receive; false -> only the creator can send/receive
   // isGlobal    Boolean @default(true)
   // // whether or not there are `conditions`
