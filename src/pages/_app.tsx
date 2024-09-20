@@ -11,6 +11,7 @@ import useViewportHeight from '@/hooks/util/useViewportHeigh';
 import { ProofProvider } from '@/hooks/cashu/useProofStorage';
 import { CashuProvider } from '@/hooks/contexts/cashuContext';
 import { GiftProvider } from '@/hooks/boardwalk/useGifts';
+import AddToHomeScreen from '@/components/AddToHomeScreen.tsx/AddToHomeScreen';
 
 interface CustomPageProps {
    pageTitle?: string;
@@ -84,6 +85,7 @@ export default function App({ Component, pageProps }: CustomAppProps) {
                </ToastProvider>
             </PersistGate>
          </Provider>
+         <AddToHomeScreen />
       </>
    );
 }
