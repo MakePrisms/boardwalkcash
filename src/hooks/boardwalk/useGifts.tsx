@@ -175,24 +175,29 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                );
                return newGifts;
             });
-            
+
             const mint = getMintFromToken(response.token);
-            dispatch(addTransaction({ type: 'ecash', transaction: {
-               amount: gift.amountCents,
-               date: new Date().toLocaleString(),
-               token: response.token,
-               status: TxStatus.PENDING,
-               unit: 'usd',
-               mint: mint,
-               gift: gift.name,
-               fee: undefined,
-            }}))
-            
+            dispatch(
+               addTransaction({
+                  type: 'ecash',
+                  transaction: {
+                     amount: gift.amountCents,
+                     date: new Date().toLocaleString(),
+                     token: response.token,
+                     status: TxStatus.PENDING,
+                     unit: 'usd',
+                     mint: mint,
+                     gift: gift.name,
+                     fee: undefined,
+                     pubkey: '02' + recipientPubkey,
+                  },
+               }),
+            );
+
             return { txid: response.txid, token: response.token };
          } else {
             throw new Error('Invalid response from server');
          }
-
       } catch (error) {
          console.error('Error sending campaign gift:', error);
          throw error;

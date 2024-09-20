@@ -55,13 +55,13 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
          if (campaign.claimedBy.length >= campaign.totalGifts) {
             await setCampaignInactive(id);
             await setGiftStatus(campaign.giftId, false);
-            return res.status(400).json({ message: 'Campaign is full' });
+            return res.status(400).json({ message: 'Too late! This campaign has ended.' });
          }
 
          const userClaimedGiftIds = await getUserClaimedCampaignGifts(req.authenticatedPubkey);
 
          if (userClaimedGiftIds.some(id => id === campaign.giftId)) {
-            return res.status(400).json({ message: 'You have already claimed this gift.' });
+            return res.status(400).json({ message: 'You have already claimed this campaign.' });
          }
 
          const receivingUser = await findUserByPubkey(recipientPubkey);
@@ -128,11 +128,7 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
          }
 
          const isFull = campaign.claimedBy.length + 1 === campaign.totalGifts;
-         await addUserToClaimedCampaignGifts(
-            id,
-            req.authenticatedPubkey,
-            !isFull,
-         );
+         await addUserToClaimedCampaignGifts(id, req.authenticatedPubkey, !isFull);
          if (isFull) {
             await setGiftStatus(campaign.giftId, false);
          }
