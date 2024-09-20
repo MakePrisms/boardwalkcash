@@ -47,11 +47,6 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
                         alt={formatCents(giftAsset.amountCents)}
                      />
                   </button>
-                  {giftAsset.campaingId && (
-                     <div className='flex justify-center mt-2'>
-                        <p className='text-xs text-gray-500'>Campaign</p>
-                     </div>
-                  )}
                </div>
             ))}
       </div>
