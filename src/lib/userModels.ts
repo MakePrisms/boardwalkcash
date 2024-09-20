@@ -206,16 +206,40 @@ export const getUserClaimedCampaignGifts = async (pubkey: string) => {
                },
             },
          },
+         nostrPubkey: true,
       },
    });
 
    if (!user) {
       throw new Error('User not found');
-   } else if (!user.claimedCampaingGifts) {
-      return [];
    }
 
-   return user.claimedCampaingGifts.map(campaign => campaign.gift.id);
+   let allClaimedGifts = user.claimedCampaingGifts || [];
+
+   if (user.nostrPubkey) {
+      const sameUsers = await prisma.user.findMany({
+         where: {
+            nostrPubkey: user.nostrPubkey,
+         },
+         select: {
+            claimedCampaingGifts: {
+               select: {
+                  gift: {
+                     select: {
+                        id: true,
+                     },
+                  },
+               },
+            },
+         },
+      });
+
+      sameUsers.forEach(sameUser => {
+         allClaimedGifts = allClaimedGifts.concat(sameUser.claimedCampaingGifts || []);
+      });
+   }
+
+   return Array.from(new Set(allClaimedGifts.map(campaign => campaign.gift.id)));
 };
 
 export {
