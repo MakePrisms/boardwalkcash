@@ -37,6 +37,10 @@ body {
    height: calc(var(--vh, 1vh) * 100);
 }
 
+input {
+   color: black;
+}
+
 .qr-video {
    width: auto;
    height: auto;

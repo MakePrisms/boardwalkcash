@@ -35,7 +35,7 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
          {processedGifts
             /* sort greatest to least by amount */
             .map(giftAsset => (
-               <div key={giftAsset.name} className='flex justify-center'>
+               <div key={giftAsset.name} className='flex flex-col justify-center'>
                   <button
                      onClick={() => handleStickerClick(giftAsset.name)}
                      className='flex  justify-center '
