@@ -28,6 +28,7 @@
       "asciichart": "^1.5.25",
       "axios": "^1.6.7",
       "base64url": "^3.0.1",
+      "cookies-next": "^4.2.1",
       "cors": "^2.8.5",
       "elliptic": "^6.5.4",
       "embla-carousel-react": "^8.1.0",
