@@ -73,7 +73,7 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             },
             totalGifts,
          });
-         
+
          /* make sure gift is active */
          await setGiftStatus(giftId, true);
 
