@@ -37,7 +37,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance, proofsLockedTo } = useCashu();
+   const { balanceByWallet, proofsLockedTo } = useCashu();
    const { addWalletFromMintUrl } = useCashuContext();
 
    const dispatch = useAppDispatch();
@@ -239,7 +239,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             className='flex flex-col items-center justify-center mx-auto'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Balance balance={balance} />
+            <Balance balanceByWallet={balanceByWallet} />
             <ActivityIndicator />
             <div className=' flex flex-col justify-center py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto space-x-9'>

@@ -1,50 +1,51 @@
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import React, { useState, useEffect } from 'react';
 
-const Balance = ({ balance }: { balance: number }) => {
-   const [usdBtc, setUsdBtc] = useState(0);
-   const [unit, setUnit] = useState('usd');
-   const [usdBalance, setUsdBalance] = useState('0.00');
-   const [exchangeError, setExchangeError] = useState(false);
-
-   const updateUsdBalance = (newBalance = balance) => {
-      const balanceCents = newBalance;
-      if (balanceCents <= 0) {
-         setUsdBalance('0.00');
-      } else {
-         // console.log('balanceCents:', balanceCents);
-         const balanceDollars = balanceCents / 100;
-         // console.log('balanceDollars:', balanceDollars);
-         setUsdBalance(balanceDollars.toFixed(2));
-      }
-   };
+const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> }) => {
+   const [unit, setUnit] = useState<'usd' | 'sats'>('usd');
+   const [usdBalance, setUsdBalance] = useState(0);
+   const [satBalance, setSatBalance] = useState(0);
+   const { wallets } = useCashuContext();
 
    useEffect(() => {
-      updateUsdBalance();
-   }, [balance, usdBtc, unit]);
+      if (!wallets.size) return;
+      let newUsdBalance = 0;
+      let newSatBalance = 0;
+
+      for (const [keysetId, balance] of Object.entries(balanceByWallet)) {
+         const wallet = wallets.get(keysetId);
+         if (!wallet) continue;
+         if (wallet.keys.unit === 'usd') {
+            newUsdBalance += balance;
+         } else if (wallet.keys.unit === 'sat') {
+            newSatBalance += balance;
+         } else {
+            throw new Error('Invalid unit');
+         }
+      }
+
+      setUsdBalance(newUsdBalance);
+      setSatBalance(newSatBalance);
+   }, [balanceByWallet, wallets]);
 
    const handleClick = () => {
-      // Toggle unit and optionally update usdBalance if switching to "usd"
-      setUnit(prevUnit => {
-         const newUnit = prevUnit === 'sats' ? 'usd' : 'sats';
-         if (newUnit === 'usd') {
-            updateUsdBalance();
-         }
-         return newUnit;
-      });
+      setUnit(prevUnit => (prevUnit === 'sats' ? 'usd' : 'sats'));
    };
 
+   const formatUsdBalance = (balance: number) => {
+      return (balance / 100).toFixed(2);
+   };
+
+   const unitSymbol = unit === 'usd' ? '$' : '₿';
+
    return (
-      <div className='flex flex-col items-center justify-center w-full  mb-14'>
-         <h1 className='mb-4'>
+      <div className='flex flex-col items-center justify-center w-full mb-14'>
+         <button className='' onClick={handleClick}>
+            <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
             <span className='font-teko text-6xl font-bold'>
-               {/* {unit === 'sats' ? balance : usdBalance} */}
-               {isNaN(Number(usdBalance)) ? '0.00' : usdBalance}
+               {unit === 'usd' ? formatUsdBalance(usdBalance) : satBalance}
             </span>{' '}
-            <span className='font-5xl text-cyan-teal font-bold'>{unit}</span>
-         </h1>
-         {exchangeError && unit === 'usd' && (
-            <p className='text-red-600'>error fetching exchange rate</p>
-         )}
+         </button>
       </div>
    );
 };
