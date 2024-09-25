@@ -43,10 +43,15 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
    return (
       <div className='flex flex-col items-center justify-center w-full mb-14'>
          <button className='' onClick={handleClick}>
-            <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+            {unit === 'usd' && (
+               <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+            )}
             <span className='font-teko text-6xl font-bold'>
                {unit === 'usd' ? formatUsdBalance(usdBalance) : satBalance}
             </span>{' '}
+            {unit === 'sat' && (
+               <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+            )}
          </button>
       </div>
    );

@@ -40,7 +40,7 @@ export const formatCents = (cents: number, decimals = true) => {
    return `$${(cents / 100).toFixed(decimals ? 2 : 0)}`;
 };
 
-export const formatSats = (sats: number) => `₿${sats.toLocaleString()}`;
+export const formatSats = (sats: number) => `${sats.toLocaleString()} ₿`;
 
 export const shortenString = (str: string, maxLength: number) => {
    if (str.length <= maxLength) {
