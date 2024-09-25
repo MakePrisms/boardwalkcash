@@ -2,10 +2,12 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import React, { useState, useEffect } from 'react';
 
 const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> }) => {
-   const [unit, setUnit] = useState<'usd' | 'sats'>('usd');
+   const { wallets, activeWallet } = useCashuContext();
+   const [unit, setUnit] = useState<'usd' | 'sat'>(
+      (activeWallet?.keys.unit as 'usd' | 'sat') || 'usd',
+   );
    const [usdBalance, setUsdBalance] = useState(0);
    const [satBalance, setSatBalance] = useState(0);
-   const { wallets } = useCashuContext();
 
    useEffect(() => {
       if (!wallets.size) return;
@@ -29,7 +31,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
    }, [balanceByWallet, wallets]);
 
    const handleClick = () => {
-      setUnit(prevUnit => (prevUnit === 'sats' ? 'usd' : 'sats'));
+      setUnit(prevUnit => (prevUnit === 'sat' ? 'usd' : 'sat'));
    };
 
    const formatUsdBalance = (balance: number) => {
