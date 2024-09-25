@@ -90,7 +90,10 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          if (!localKeysets) {
             newUser.current = true;
             try {
-               addWalletFromMintUrl(url);
+               if (decoded.unit !== 'usd' && decoded.unit !== 'sat') {
+                  throw new Error('Invalid unit. Only supports usd and sat');
+               }
+               await addWalletFromMintUrl(url, decoded.unit);
 
                addToast('Mint added successfully', 'success');
 

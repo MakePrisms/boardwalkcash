@@ -19,7 +19,7 @@ interface CashuContextType {
       mintUrl: string,
       opts?: { activeUnit?: string; currencies?: string[] },
    ) => void;
-   addWalletFromMintUrl: (url: string) => void;
+   addWalletFromMintUrl: (url: string, activeUnit?: 'usd' | 'sat') => Promise<void>;
    isMintTrusted: (mintUrl: string) => boolean;
 }
 
@@ -101,12 +101,15 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dispatch(setMainKeyset(keysetId));
    };
 
-   const addWalletFromMintUrl = async (url: string) => {
+   const addWalletFromMintUrl = async (url: string, activeUnit?: 'usd' | 'sat') => {
       const mint = new CashuMint(url);
 
       const activeKeysets = await mint.getKeys();
 
-      addWallet(activeKeysets, url, { activeUnit: 'usd', currencies: ['usd', 'sat'] });
+      return addWallet(activeKeysets, url, {
+         activeUnit: activeUnit || 'usd',
+         currencies: ['usd', 'sat'],
+      });
    };
 
    const addWallet = (
