@@ -21,7 +21,7 @@ import EcashTapButton from '@/components/buttons/EcashTapButton';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { PublicContact, TokenProps, GiftAsset } from '@/types';
+import { PublicContact, TokenProps, GiftAsset, Currency } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
@@ -30,8 +30,9 @@ import { formatCents } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
-import { Button } from 'flowbite-react';
+import { Button, Dropdown } from 'flowbite-react';
 import { runMigrations } from '@/migrations/localStorage.migrations';
+import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -39,7 +40,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
    const { balanceByWallet, proofsLockedTo } = useCashu();
-   const { addWalletFromMintUrl } = useCashuContext();
+   const { addWalletFromMintUrl, activeUnit, setActiveUnit } = useCashuContext();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -245,9 +246,10 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
             <Balance balanceByWallet={balanceByWallet} />
+            <ToggleCurrencyDropdown />
             <ActivityIndicator />
             <div className=' flex flex-col justify-center py-8 w-full'>
-               <div className='flex flex-row justify-center mx-auto space-x-9'>
+               <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
                   <Receive />
                   <Send />
                </div>

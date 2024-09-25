@@ -47,10 +47,10 @@ export const setMainKeyset = createAsyncThunk(
          throw new Error('Keyset not found');
       }
 
-      if (toSetMain.active) {
-         console.log('This keyset is already active.');
-         return;
-      }
+      // if (toSetMain.active) {
+      //    console.log('This keyset is already active.');
+      //    return;
+      // }
 
       try {
          const pubkey = localStorage.getItem('pubkey');
@@ -147,11 +147,11 @@ export const walletSlice = createSlice({
             const keyset = state.keysets[keysetId];
             if (keyset) {
                keyset.active = active;
-               Object.values(state.keysets).forEach(k => {
-                  if (k.id !== keysetId) {
-                     k.active = false;
-                  }
-               });
+               // Object.values(state.keysets).forEach(k => {
+               //    if (k.id !== keysetId) {
+               //       k.active = false;
+               //    }
+               // });
                updateKeysetLocalStorage(state.keysets);
             }
          });

@@ -264,6 +264,7 @@ export const initializeWallet = async (
    }
 
    if (!matchingKeyset) {
+      console.error(opts);
       throw new Error(`No matching keyset found for mint ${mintUrl} with specified options`);
    }
 

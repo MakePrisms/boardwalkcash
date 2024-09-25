@@ -2,10 +2,7 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import React, { useState, useEffect } from 'react';
 
 const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> }) => {
-   const { wallets, activeWallet } = useCashuContext();
-   const [unit, setUnit] = useState<'usd' | 'sat'>(
-      (activeWallet?.keys.unit as 'usd' | 'sat') || 'usd',
-   );
+   const { wallets, activeWallet, activeUnit: unit } = useCashuContext();
    const [usdBalance, setUsdBalance] = useState(0);
    const [satBalance, setSatBalance] = useState(0);
 
@@ -31,7 +28,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
    }, [balanceByWallet, wallets]);
 
    const handleClick = () => {
-      setUnit(prevUnit => (prevUnit === 'sat' ? 'usd' : 'sat'));
+      // setUnit(prevUnit => (prevUnit === 'sat' ? 'usd' : 'sat'));
    };
 
    const formatUsdBalance = (balance: number) => {
@@ -42,7 +39,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
 
    return (
       <div className='flex flex-col items-center justify-center w-full mb-14'>
-         <button className='' onClick={handleClick}>
+         <div className='' onClick={handleClick}>
             {unit === 'usd' && (
                <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
@@ -52,7 +49,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
             {unit === 'sat' && (
                <span className=' text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
-         </button>
+         </div>
       </div>
    );
 };

@@ -38,8 +38,12 @@ const Receive = () => {
    const { mintlessReceive } = useMintlessMode();
    const { addToast } = useToast();
    const dispatch = useDispatch();
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
+
+   useEffect(() => {
+      console.log('activeWallet', activeWallet);
+      return () => {};
+   }, [activeWallet]);
 
    /* process input every time the input value changes */
    useEffect(() => {
@@ -91,9 +95,10 @@ const Receive = () => {
    }, [inputValue]);
 
    const handleReceive = async () => {
-      const activeWallet = Object.values(wallets).find(w => w.active);
-      if (!activeWallet) throw new Error('No active wallet is set');
-
+      if (!activeWallet) {
+         addToast('No active wallet found', 'error');
+         return;
+      }
       if (!amountUnit) {
          addToast('Please enter a valid amount.', 'warning');
          return;
@@ -128,7 +133,14 @@ const Receive = () => {
 
          setCurrentPage('invoice');
 
-         waitForPayment(pubkey, checkingId, amountUnit, activeWallet);
+         waitForPayment(pubkey, checkingId, amountUnit, {
+            url: activeWallet.mint.mintUrl,
+            keys: activeWallet.keys,
+            id: activeWallet.keys.id,
+            proofs: [],
+            isReserve: false,
+            active: true,
+         });
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();

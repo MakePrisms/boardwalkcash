@@ -2,7 +2,12 @@ import { Mint } from '@prisma/client';
 import { findOrCreateMint } from './mintModels';
 import prisma from '@/lib/prisma';
 
-async function createUser(pubkey: string, defaultMint: Mint, username?: string) {
+async function createUser(
+   pubkey: string,
+   defaultMint: Mint,
+   username?: string,
+   defaultUnit?: string,
+) {
    const user = await prisma.user.create({
       data: {
          pubkey,
@@ -12,6 +17,7 @@ async function createUser(pubkey: string, defaultMint: Mint, username?: string) 
                url: defaultMint.url,
             },
          },
+         defaultUnit: defaultUnit || 'usd',
       },
    });
    return user;

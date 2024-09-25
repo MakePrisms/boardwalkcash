@@ -8,6 +8,7 @@ import { UserWithContacts } from '@/pages/api/users/[pubkey]';
 import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
 import {
+   Currency,
    GetTokenResponse,
    LightningTipResponse,
    LightningTipStatusResponse,
@@ -136,11 +137,17 @@ export const updateUser = async (
    return await authenticatedRequest<UserWithContacts>(`/api/users/${pubkey}`, 'PUT', updates);
 };
 
-export const createUser = async (pubkey: string, username: string, mintUrl: string) => {
+export const createUser = async (
+   pubkey: string,
+   username: string,
+   mintUrl: string,
+   defaultUnit: Currency,
+) => {
    return await authenticatedRequest<UserWithContacts>(`/api/users`, 'POST', {
       pubkey,
       username,
       mintUrl,
+      defaultUnit,
    });
 };
 

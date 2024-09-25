@@ -325,7 +325,7 @@ export interface DiscoverContactsResponse {
       lud16: string | null;
       defaultMintUrl: string | null;
       mintlessReceive: boolean;
-      defaultUnit: 'usd' | 'sat'
+      defaultUnit: 'usd' | 'sat';
    }[];
 }
 
@@ -370,3 +370,8 @@ export type MintlessTransactionResponse = {
    id: string;
    notificationId: string;
 };
+
+export enum Currency {
+   USD = 'usd',
+   SAT = 'sat',
+}

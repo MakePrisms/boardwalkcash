@@ -75,7 +75,7 @@ export const SettingsSidebar = () => {
 
                   <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                      <DrawerCollapse
-                        label='Mints'
+                        label='Accounts'
                         icon={<BuildingLibraryIcon className='size-4' />}
                      >
                         <MintSettings />

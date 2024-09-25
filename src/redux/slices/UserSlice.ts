@@ -1,4 +1,4 @@
-import { PublicContact } from '@/types';
+import { Currency, PublicContact } from '@/types';
 import { createUser, fetchUser, updateUser } from '@/utils/appApiRequests';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
@@ -16,6 +16,7 @@ interface UserState {
    lud16: string | null;
    sendMode: 'mintless' | 'default_mint';
    receiveMode: 'mintless' | 'default_mint';
+   defaultUnit: Currency;
 }
 
 const initialState: UserState = {
@@ -29,6 +30,7 @@ const initialState: UserState = {
    lud16: null,
    sendMode: 'default_mint',
    receiveMode: 'default_mint',
+   defaultUnit: Currency.USD,
 };
 
 export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: string }>(
@@ -48,11 +50,18 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
 
             const keysets = JSON.parse(localStorage.getItem('keysets') || '[]');
 
-            const defaultMintUrl = keysets[0].url;
+            const defaultKeyset = keysets[0];
+            const defaultMintUrl = defaultKeyset.url;
+            const defaultUnit = defaultKeyset.keys.unit as Currency;
 
             const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
 
-            const user = await createUser(newPubKey, placeholderUsername, defaultMintUrl);
+            const user = await createUser(
+               newPubKey,
+               placeholderUsername,
+               defaultMintUrl,
+               defaultUnit,
+            );
 
             const { username, hideFromLeaderboard, nostrPubkey, mintlessReceive } = user;
 
@@ -68,14 +77,24 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
                sendMode: 'default_mint',
                receiveMode: mintlessReceive ? 'mintless' : 'default_mint',
                status: 'succeeded',
+               defaultUnit,
 
                error: null,
             };
          } else {
             const user = await fetchUser(storedPubKey);
 
-            let { username, contacts, hideFromLeaderboard, nostrPubkey, lud16, mintlessReceive } =
-               user;
+            let {
+               username,
+               contacts,
+               hideFromLeaderboard,
+               nostrPubkey,
+               lud16,
+               mintlessReceive,
+               defaultUnit,
+            } = user;
+
+            console.log('defaultUnit straigt from user', defaultUnit);
 
             if (!username) {
                username = `user-${storedPubKey.slice(0, 5)}`;
@@ -98,6 +117,7 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
                receiveMode: mintlessReceive ? 'mintless' : 'default_mint',
                status: 'succeeded',
                error: null,
+               defaultUnit: defaultUnit as Currency,
             };
          }
       } catch (error) {
@@ -170,6 +190,7 @@ const userSlice = createSlice({
                   state.lud16 = action.payload.lud16;
                   state.sendMode = action.payload.sendMode;
                   state.receiveMode = action.payload.receiveMode;
+                  state.defaultUnit = action.payload.defaultUnit;
                }
             },
          )
