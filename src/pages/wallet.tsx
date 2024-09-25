@@ -26,7 +26,7 @@ import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels'
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
-import { formatCents } from '@/utils/formatting';
+import { formatCents, formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
@@ -362,14 +362,14 @@ export const getServerSideProps: GetServerSideProps = async (
 
 const pageTitle = (tokenData: TokenProps | null) => {
    if (tokenData) {
-      const { amount, contact, gift } = tokenData;
+      const { amount, contact, gift, token } = tokenData;
       if (gift) {
          return `${gift.name} eGift`;
       }
       if (contact) {
-         return `${formatCents(amount)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
+         return `${formatTokenAmount(token)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
       }
-      return `${formatCents(amount)} eCash`;
+      return `${formatTokenAmount(token)} eCash`;
    }
 };
 
