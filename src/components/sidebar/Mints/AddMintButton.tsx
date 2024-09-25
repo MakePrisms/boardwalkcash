@@ -32,18 +32,10 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
       try {
          setFetchingMint(true);
 
-         const { keysets } = await mint.getKeys();
+         const activeKeys = await mint.getKeys();
 
-         const seenUnits = new Set<string>();
-
-         const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-         if (!usdKeyset) {
-            addToast("Mint doesn't support USD", 'error');
-            return;
-         }
-
-         addWallet(usdKeyset, url);
+         // TODO: more like initWallets
+         addWallet(activeKeys, url, { currencies: ['usd', 'sat'], activeUnit: 'usd' });
 
          setMintUrl('');
 

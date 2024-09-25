@@ -19,6 +19,7 @@ import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -57,6 +58,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [quoteId, setQuoteId] = useState('');
    const { sendCampaignGift } = useGifts();
+   const { activeWallet } = useCashuContext();
 
    const handleClose = () => {
       onClose();
@@ -167,6 +169,9 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       setSending(true);
       try {
+         if (activeWallet?.keys.unit !== 'usd') {
+            throw new Error('only support usd');
+         }
          if (gift?.campaingId) {
             if (!selectedContact) throw new Error('No contact selected');
             const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(e => {
@@ -326,7 +331,8 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <WaitForInvoiceModalBody
                         invoice={invoice}
-                        amountUsdCents={amountCents! + (gift?.fee || 0)}
+                        amount={amountCents! + (gift?.fee || 0)}
+                        unit={'usd'}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />

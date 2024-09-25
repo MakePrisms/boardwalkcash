@@ -4,8 +4,14 @@ import { createManyProofs } from '@/lib/proofModels';
 import { findUserByPubkey } from '@/lib/userModels';
 import { CashuMint, CashuWallet, Proof } from '@cashu/cashu-ts';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { ProofData } from '@/types';
 
-const handleTokensFound = async (quote: MintQuote, keysetId: string, proofs: Proof[]) => {
+const handleTokensFound = async (
+   quote: MintQuote,
+   keysetId: string,
+   proofs: Proof[],
+   unit: 'usd' | 'sat',
+) => {
    await updateMintQuote(quote.id, { paid: true });
 
    const user = await findUserByPubkey(quote.pubkey);
@@ -14,7 +20,7 @@ const handleTokensFound = async (quote: MintQuote, keysetId: string, proofs: Pro
       throw new Error('User not found');
    }
 
-   let proofsPayload = proofs.map(proof => {
+   let proofsPayload: ProofData[] = proofs.map(proof => {
       return {
          proofId: proof.id,
          secret: proof.secret,
@@ -22,6 +28,7 @@ const handleTokensFound = async (quote: MintQuote, keysetId: string, proofs: Pro
          C: proof.C,
          userId: user.id,
          mintKeysetId: keysetId,
+         unit: unit,
       };
    });
 
@@ -65,7 +72,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          });
          console.log('Proofs:', proofs);
          if (proofs.length > 0) {
-            await handleTokensFound(quote, quote.mintKeysetId, proofs);
+            await handleTokensFound(
+               quote,
+               quote.mintKeysetId,
+               proofs,
+               keyset.unit as 'usd' | 'sat',
+            );
          }
       } catch (e) {
          if (e instanceof Error && e.message.includes('not paid')) {

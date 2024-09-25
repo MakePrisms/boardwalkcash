@@ -73,15 +73,19 @@ async function updateUser(
       username?: string;
       receiving?: boolean;
       mintUrl?: string;
+      defaultKeysetId?: string;
+      defaultUnit?: string;
       nostrPubkey?: string | null;
       lud16?: string | null;
    },
 ) {
    let defaultMint;
    if (updates.mintUrl) {
-      const mintLocal = await findOrCreateMint(updates.mintUrl);
+      console.log('UPDATES', updates);
+      const mintLocal = await findOrCreateMint(updates.mintUrl, updates.defaultKeysetId);
 
       delete updates.mintUrl;
+      delete updates.defaultKeysetId;
 
       defaultMint = {
          connect: {

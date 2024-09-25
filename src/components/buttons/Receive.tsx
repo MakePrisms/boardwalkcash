@@ -26,7 +26,7 @@ const Receive = () => {
    const [invoiceToPay, setInvoiceToPay] = useState('');
    const [showEcashReceiveModal, setShowEcashReceiveModal] = useState(false);
    const [token, setToken] = useState<Token | null>(null);
-   const [amountUsdCents, setAmountUsdCents] = useState<number | null>(null);
+   const [amountUnit, setAmountUnit] = useState<number | null>(null);
    const [currentPage, setCurrentPage] = useState<'input' | 'invoice'>('input');
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
@@ -61,7 +61,16 @@ const Receive = () => {
       const handleAmountInput = () => {
          const parsedAmount = parseFloat(inputValue);
          if (!isNaN(parsedAmount)) {
-            setAmountUsdCents(parsedAmount * 100);
+            switch (activeWallet?.keys.unit) {
+               case 'usd':
+                  setAmountUnit(parsedAmount * 100);
+                  break;
+               case 'sat':
+                  setAmountUnit(parsedAmount);
+                  break;
+               default:
+                  throw new Error('Invalid unit');
+            }
          } else {
             addToast('Invalid amount', 'error');
          }
@@ -84,7 +93,7 @@ const Receive = () => {
       const activeWallet = Object.values(wallets).find(w => w.active);
       if (!activeWallet) throw new Error('No active wallet is set');
 
-      if (!amountUsdCents) {
+      if (!amountUnit) {
          addToast('Please enter a valid amount.', 'warning');
          return;
       }
@@ -100,21 +109,25 @@ const Receive = () => {
          setFetchingInvoice(true);
          if (user.receiveMode === 'mintless') {
             console.log('using mintless mode');
-            const invoice = await mintlessReceive(amountUsdCents);
+            const invoice = await mintlessReceive(amountUnit);
             setInvoiceToPay(invoice);
             setCheckingId(undefined);
             setFetchingInvoice(false);
             setCurrentPage('invoice');
             return;
          }
-         const { invoice, checkingId } = await getInvoiceForLNReceive(pubkey, amountUsdCents);
+         const { invoice, checkingId } = await getInvoiceForLNReceive(
+            pubkey,
+            amountUnit,
+            activeWallet.keys.id,
+         );
          setInvoiceToPay(invoice);
          setCheckingId(checkingId);
          setFetchingInvoice(false);
 
          setCurrentPage('invoice');
 
-         waitForPayment(pubkey, checkingId, amountUsdCents, activeWallet.url);
+         waitForPayment(pubkey, checkingId, amountUnit, activeWallet.url);
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();
@@ -177,13 +190,13 @@ const Receive = () => {
       setIsReceiveModalOpen(false);
       setInvoiceToPay('');
       setInputValue('');
-      setAmountUsdCents(null);
+      setAmountUnit(null);
       setShowEcashReceiveModal(false);
       setCurrentPage('input');
    };
 
    const handleCheckAgain = async () => {
-      if (!checkingId || !amountUsdCents) throw new Error('Missing required parameters');
+      if (!checkingId || !amountUnit) throw new Error('Missing required parameters');
       setInvoiceTimeout(false);
       const pubkey = window.localStorage.getItem('pubkey');
       if (!pubkey) {
@@ -195,7 +208,7 @@ const Receive = () => {
       }
       const paid = await checkPaymentStatus(pubkey, checkingId);
       if (paid) {
-         handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
+         handlePaymentSuccess(amountUnit, mintUrl, checkingId);
       } else {
          setInvoiceTimeout(true);
       }
@@ -212,12 +225,17 @@ const Receive = () => {
             <Modal.Body>
                {currentPage === 'input' ? (
                   <div className='space-y-6'>
-                     <textarea
-                        className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
-                        placeholder='Paste token or enter amount USD (eg. 0.21)'
-                        value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
-                     />
+                     <div className='relative'>
+                        <span className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500'>
+                           {activeWallet?.keys.unit === 'usd' ? '$' : '₿'}
+                        </span>
+                        <textarea
+                           className='form-control block w-full pl-8 pr-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
+                           placeholder={`Paste token or enter amount`}
+                           value={inputValue}
+                           onChange={e => setInputValue(e.target.value)}
+                        />
+                     </div>
                      <div className='flex items-center justify-between mx-3'>
                         <div className='mb-3 md:mb-0'>
                            <QRScannerButton onScan={setInputValue} />
@@ -232,12 +250,16 @@ const Receive = () => {
                      </div>
                   </div>
                ) : (
-                  <WaitForInvoiceModalBody
-                     invoice={invoiceToPay}
-                     amountUsdCents={amountUsdCents || 0}
-                     invoiceTimeout={invoiceTimeout}
-                     onCheckAgain={handleCheckAgain}
-                  />
+                  amountUnit &&
+                  activeWallet && (
+                     <WaitForInvoiceModalBody
+                        invoice={invoiceToPay}
+                        amount={amountUnit}
+                        unit={activeWallet.keys.unit as 'sat' | 'usd'}
+                        invoiceTimeout={invoiceTimeout}
+                        onCheckAgain={handleCheckAgain}
+                     />
+                  )
                )}
             </Modal.Body>
          </Modal>

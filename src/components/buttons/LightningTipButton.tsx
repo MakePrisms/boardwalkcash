@@ -28,6 +28,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
    const [invoice, setInvoice] = useState('');
    const [token, setToken] = useState('');
    const [quoteId, setQuoteId] = useState('');
+   const [unit, setUnit] = useState<'usd' | 'sat'>('usd');
    const {
       register,
       handleSubmit,
@@ -173,7 +174,8 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
             return (
                <WaitForInvoiceModalBody
                   invoice={invoice}
-                  amountUsdCents={parseFloat(Number(amount).toFixed(2)) * 100}
+                  amount={amount}
+                  unit={unit}
                   invoiceTimeout={invoiceTimeout}
                   onCheckAgain={handleCheckAgain}
                />

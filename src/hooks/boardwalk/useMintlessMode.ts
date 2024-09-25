@@ -16,7 +16,7 @@ import {
 } from '@/redux/slices/UserSlice';
 import { authenticatedRequest, updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
-import { initializeUsdWallet, isTestMint } from '@/utils/cashu';
+import { initializeWallet, isTestMint } from '@/utils/cashu';
 import { getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { useCashu } from '../cashu/useCashu';
 
@@ -146,14 +146,14 @@ const useMintlessMode = () => {
          throw new Error('Cannot send to test mints');
       }
       try {
-         const usdWallet = await initializeUsdWallet(recipient.defaultMintUrl);
-         const { quote, request } = await usdWallet.createMintQuote(amountUsdCents);
+         const wallet = await initializeWallet(recipient.defaultMintUrl, { unit: 'usd' });
+         const { quote, request } = await wallet.createMintQuote(amountUsdCents);
          const res = await payInvoice(request);
          if (!res) {
             throw new Error('Failed to pay invoice');
          }
-         const { proofs } = await usdWallet.mintTokens(amountUsdCents, quote, {
-            keysetId: usdWallet.keys.id,
+         const { proofs } = await wallet.mintTokens(amountUsdCents, quote, {
+            keysetId: wallet.keys.id,
             pubkey: '02' + recipient.pubkey,
          });
          const token = getEncodedTokenV4({

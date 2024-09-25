@@ -10,6 +10,8 @@ import { Prisma, User } from '@prisma/client';
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
 import { createNotification } from '@/lib/notificationModels';
 import { NotificationType } from '@/types';
+import { findOrCreateMint } from '@/lib/mintModels';
+import { CashuMint } from '@cashu/cashu-ts';
 
 export type UserWithContacts = User & { contacts: ContactData[] };
 
@@ -51,6 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const {
                username,
                defaultMintUrl: mintUrl,
+               defaultKeysetId,
                hideFromLeaderboard,
                nostrPubkey,
                lud16,
@@ -61,7 +64,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                updates = { ...updates, username };
             }
             if (mintUrl) {
-               updates = { ...updates, mintUrl };
+               // if (!defaultKeysetId) {
+               //    return res
+               //       .status(400)
+               //       .json({ message: 'Must specify default unit when updating mint' });
+               // }
+               // /* make sure we we have the mint's keyset and that its active */
+               // const mint = await findOrCreateMint(mintUrl);
+               // let mintClass: CashuMint;
+
+               // const hasKeyset = mint.keysets.some(k => k.id === defaultKeysetId);
+               // if (hasKeyset) {
+               //    // mintClass = new CashuMint(mintUrl);
+               // } else {
+               //    await addKeysetToMint(mintUrl, defaultKeysetId);
+               // }
+               // const activeKeysets = await mint.getKeys();
+
+               // const keyset = activeKeysets.keysets.find(k => k.id === defaultKeysetId);
+               // if (!keyset) {
+               //    return res.status(400).json({ message: 'Default keyset not found for mint' });
+               // }
+               if (!defaultKeysetId) {
+                  return res
+                     .status(400)
+                     .json({ message: 'Must specify default unit when updating mint' });
+               }
+               updates = { ...updates, mintUrl, defaultKeysetId };
             }
             if (hideFromLeaderboard !== undefined) {
                updates = { ...updates, hideFromLeaderboard };

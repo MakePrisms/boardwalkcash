@@ -7,6 +7,7 @@ import { CashuWallet, CashuMint } from '@cashu/cashu-ts';
 import { RootState } from '@/redux/store';
 import { useProofStorage } from './useProofStorage';
 import { getProofsFromServer, deleteProofById } from '@/utils/appApiRequests';
+import { formatUnit } from '@/utils/formatting';
 
 export const useProofManager = () => {
    const dispatch = useDispatch();
@@ -96,6 +97,7 @@ export const useProofManager = () => {
             amount: proof.amount,
             id: proof.proofId,
             secret: proof.secret,
+            unit: proof.MintKeyset.unit,
          }));
 
          const localProofs = getProofs();
@@ -114,7 +116,7 @@ export const useProofManager = () => {
                .map((proof: Proof) => proof.amount)
                .reduce((a: number, b: number) => a + b, 0);
 
-            dispatch(setSuccess(`Received $${(totalReceived / 100).toFixed(2)}!`));
+            dispatch(setSuccess(`Received ${formatUnit(totalReceived, newProofs[0].unit)}!`));
 
             // Delete new proofs from the database
             // get the index as well
@@ -141,7 +143,7 @@ export const useProofManager = () => {
       }
    };
 
-   const fetchUnitFromProofs = async (mintUrl: string, proofs: Proof[]) => {
+   const fetchUnitFromProofs = async (mintUrl: string, proofs: Proof[]): Promise<'sat' | 'usd'> => {
       if (proofs.length === 0) {
          throw new Error('fetchUnitFromProofs failed: No proofs');
       }
@@ -158,6 +160,10 @@ export const useProofManager = () => {
 
       if (!keyset) {
          throw new Error('fetchUnitFromProofs failed: No keyset found');
+      }
+
+      if (keyset.unit !== 'usd' && keyset.unit !== 'sat') {
+         throw new Error('fetchUnitFromProofs failed: Invalid unit');
       }
 
       return keyset.unit;

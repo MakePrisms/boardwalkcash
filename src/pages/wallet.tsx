@@ -38,7 +38,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
    const { balance, proofsLockedTo } = useCashu();
-   const { addWallet } = useCashuContext();
+   const { addWalletFromMintUrl } = useCashuContext();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -90,18 +90,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          if (!localKeysets) {
             newUser.current = true;
             try {
-               const mint = new CashuMint(url);
-
-               const { keysets } = await mint.getKeys();
-
-               const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-               if (!usdKeyset) {
-                  addToast("Mint doesn't support USD", 'error');
-                  return;
-               }
-
-               addWallet(usdKeyset, url, { active: true });
+               addWalletFromMintUrl(url);
 
                addToast('Mint added successfully', 'success');
 

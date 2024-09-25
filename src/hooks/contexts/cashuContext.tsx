@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { CashuMint, CashuWallet, MintKeys } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, MintActiveKeys, MintKeys } from '@cashu/cashu-ts';
 import { Wallet as StoredKeyset } from '@/types';
 import { useAppDispatch } from '@/redux/store';
 import { addKeyset, setMainKeyset, updateKeysetStatus } from '@/redux/slices/Wallet.slice';
@@ -14,7 +14,12 @@ interface CashuContextType {
    setKeysetNotReserve: () => void;
    connectReserve: (usdKeyset: MintKeys, mintUrl: string) => void;
    setToMain: (keysetId: string) => void;
-   addWallet: (usdKeyset: MintKeys, mintUrl: string, opts?: { active: boolean }) => void;
+   addWallet: (
+      keysets: MintActiveKeys,
+      mintUrl: string,
+      opts?: { activeUnit?: string; currencies?: string[] },
+   ) => void;
+   addWalletFromMintUrl: (url: string) => void;
    isMintTrusted: (mintUrl: string) => boolean;
 }
 
@@ -96,15 +101,39 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dispatch(setMainKeyset(keysetId));
    };
 
-   const addWallet = (usdKeyset: MintKeys, mintUrl: string, opts?: { active: boolean }) => {
-      const mint = mints.get(mintUrl) || new CashuMint(mintUrl);
-      const wallet = new CashuWallet(mint, { keys: usdKeyset });
-      setWallets(new Map(wallets.set(usdKeyset.id, wallet)));
-      if (opts?.active) {
-         setActiveWallet(wallet);
-      }
-      dispatch(addKeyset({ keyset: usdKeyset, url: mintUrl, active: opts?.active || false }));
+   const addWalletFromMintUrl = async (url: string) => {
+      const mint = new CashuMint(url);
+
+      const activeKeysets = await mint.getKeys();
+
+      addWallet(activeKeysets, url, { activeUnit: 'usd', currencies: ['usd', 'sat'] });
    };
+
+   const addWallet = (
+      activeKeys: MintActiveKeys,
+      mintUrl: string,
+      opts?: { activeUnit?: string; currencies?: string[] },
+   ) => {
+      const mint = mints.get(mintUrl) || new CashuMint(mintUrl);
+      const newWallets = new Map(wallets);
+      const { keysets } = activeKeys;
+      for (const currency of opts?.currencies || ['usd']) {
+         const k = keysets.find(k => k.unit === currency);
+         if (k) {
+            const wallet = new CashuWallet(mint, { keys: k });
+            newWallets.set(k.id, wallet);
+            const active = opts?.activeUnit === k.unit;
+            dispatch(addKeyset({ keyset: k, url: mintUrl, active }));
+         }
+      }
+      console.log('setting wallets', newWallets);
+      setWallets(newWallets);
+   };
+   //TODO
+   // if (opts?.active) {
+   //    setActiveWallet(wallet);
+   // }
+   // };
 
    const getWallet = (id: string) => wallets.get(id);
 
@@ -136,6 +165,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             connectReserve,
             setToMain,
             addWallet,
+            addWalletFromMintUrl,
             isMintTrusted,
          }}
       >

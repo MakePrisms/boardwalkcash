@@ -129,7 +129,10 @@ export const fetchUser = async (pubkey: string) => {
    return await authenticatedRequest<UserWithContacts>(`/api/users/${pubkey}`, 'GET', undefined);
 };
 
-export const updateUser = async (pubkey: string, updates: Partial<UserWithContacts>) => {
+export const updateUser = async (
+   pubkey: string,
+   updates: Partial<UserWithContacts & { defaultKeysetId?: string }>,
+) => {
    return await authenticatedRequest<UserWithContacts>(`/api/users/${pubkey}`, 'PUT', updates);
 };
 
@@ -151,11 +154,10 @@ export const deleteProofById = async (proofId: number) => {
 };
 
 export const getProofsFromServer = async (pubkey: string) => {
-   return await authenticatedRequest<{ proofs: Proof[]; receiving: boolean }>(
-      `/api/proofs/${pubkey}`,
-      'GET',
-      undefined,
-   );
+   return await authenticatedRequest<{
+      proofs: (Proof & { MintKeyset: { unit: 'usd' | 'sat' } })[];
+      receiving: boolean;
+   }>(`/api/proofs/${pubkey}`, 'GET', undefined);
 };
 
 export const getInvoiceForTip = async (
@@ -196,9 +198,9 @@ export const getTokenFromDb = async (txid: string) => {
    return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
 };
 
-export const getInvoiceForLNReceive = async (pubkey: string, amount: number) => {
+export const getInvoiceForLNReceive = async (pubkey: string, amount: number, keysetId: string) => {
    return await authenticatedRequest<LightningTipResponse>(
-      `/api/users/${pubkey}/receive?amount=${amount}&unit=usd`,
+      `/api/users/${pubkey}/receive?amount=${amount}&keysetId=${keysetId}`,
       'GET',
       undefined,
    );

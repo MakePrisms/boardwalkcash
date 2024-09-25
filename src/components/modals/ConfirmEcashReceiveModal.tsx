@@ -13,9 +13,10 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import StickerItem from '../eGifts/stickers/StickerItem';
-import { formatCents } from '@/utils/formatting';
+import { formatCents, formatUnit } from '@/utils/formatting';
 import { isTokenSpent } from '@/utils/cashu';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { format } from 'path';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -39,9 +40,10 @@ const ConfirmEcashReceiveModal = ({
    const wallet = useSelector((state: RootState) => state.wallet);
    const [mintUrl, setMintUrl] = useState<string>('');
    const [proofs, setProofs] = useState<Proof[]>([]);
-   const [tokenUnit, setTokenUnit] = useState<string | null>(null);
+   const [tokenUnit, setTokenUnit] = useState<'usd' | 'sat' | null>(null);
    const [fromActiveMint, setFromActiveMint] = useState(true);
-   const [amountUsd, setAmountUsd] = useState<number | null>(null);
+   // const [amountUsd, setAmountUsd] = useState<number | null>(null);
+   const [amountUnit, setAmountUnit] = useState<number | null>(null);
    const [lockedTo, setLockedTo] = useState<string | null>(null);
    const user = useSelector((state: RootState) => state.user);
    const [tokenContact, setTokenContact] = useState<PublicContact | null>(null);
@@ -66,7 +68,7 @@ const ConfirmEcashReceiveModal = ({
       setProofs([]);
       setTokenUnit(null);
       setFromActiveMint(true);
-      setAmountUsd(null);
+      setAmountUnit(null);
       setLockedTo(null);
       setTokenContact(null);
       setGift(null);
@@ -79,23 +81,24 @@ const ConfirmEcashReceiveModal = ({
    const addEcashTransaction = useCallback(
       (status: TxStatus) => {
          if (!token) return;
-         if (!amountUsd) return;
+         if (!amountUnit) return;
+         if (!tokenUnit) return;
          dispatch(
             addTransaction({
                type: 'ecash',
                transaction: {
                   token: getEncodedTokenV4(token),
-                  amount: amountUsd * 100,
+                  amount: amountUnit,
                   mint: mintUrl,
                   date: new Date().toLocaleString(),
                   status,
-                  unit: 'usd',
+                  unit: tokenUnit,
                   gift: gift?.name,
                },
             }),
          );
       },
-      [dispatch, token, amountUsd, mintUrl, gift],
+      [dispatch, token, amountUnit, mintUrl, gift, tokenUnit],
    );
 
    useEffect(() => {
@@ -138,11 +141,12 @@ const ConfirmEcashReceiveModal = ({
          }
          const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
          setTokenUnit(proofsUnit);
-         if (proofsUnit !== 'usd') {
-            throw new Error('Can only receive eCash in USD');
-         }
+         // if (proofsUnit !== 'usd') {
+         //    throw new Error('Can only receive eCash in USD');
+         // }
          const unitTotal = proofs.reduce((acc, proof) => (acc += proof.amount), 0);
-         setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
+         setAmountUnit(unitTotal);
+         // setAmountUsd(parseFloat((unitTotal / 100).toFixed(2)));
          if (await isTokenSpent(token)) {
             /* stop loading so /wallet page shows the ecash still */
             setLoading(false);
@@ -207,13 +211,17 @@ const ConfirmEcashReceiveModal = ({
       onClose();
 
       const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
-      const usdKeyset = await getUsdKeyset(swapFromMint);
+      const keys = await swapFromMint.getKeys(proofs[0].id).then(({ keysets }) => keysets[0]);
+      // const usdKeyset = await getUsdKeyset(swapFromMint);
 
       let privkey = lockedTo ? user.privkey : undefined;
 
       const success = await swapToActiveWallet(
-         new CashuWallet(swapFromMint, { unit: tokenUnit, keys: usdKeyset }),
-         { proofs, privkey },
+         new CashuWallet(swapFromMint, { unit: tokenUnit, keys }),
+         {
+            proofs,
+            privkey,
+         },
       ).finally(() => setSwapping(false)); /* Closes swap modal */
 
       addEcashTransaction(TxStatus.PAID);
@@ -266,56 +274,57 @@ const ConfirmEcashReceiveModal = ({
       return usdKeyset;
    };
 
-   const addUsdKeysetAndGetWallet = async (url: string) => {
-      const swapFromMint = getMint(url) || new CashuMint(url);
-      const usdKeyset = await getUsdKeyset(swapFromMint);
+   // const addUsdKeysetAndGetWallet = async (url: string) => {
+   //    const swapFromMint = getMint(url) || new CashuMint(url);
+   //    const usdKeyset = await getUsdKeyset(swapFromMint);
 
-      if (!usdKeyset) {
-         addToast("Mint doesn't support USD", 'error');
-         return;
-      }
+   //    if (!usdKeyset) {
+   //       addToast("Mint doesn't support USD", 'error');
+   //       return;
+   //    }
 
-      // this means we haven't added the mint yet
-      if (!mintTrusted) {
-         console.log("Mint isn't trusted. Adding it: ", url);
-         addWallet(usdKeyset, url);
-         addToast('Mint added successfully', 'success');
-      }
+   //    // this means we haven't added the mint yet
+   //    if (!mintTrusted) {
+   //       console.log("Mint isn't trusted. Adding it: ", url);
+   //       addWallet(usdKeyset, url);
+   //       addToast('Mint added successfully', 'success');
+   //    }
 
-      return new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset });
-   };
+   //    return new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset });
+   // };
 
    /* trust and claim or claim to source mint */
    const handleAddMint = async () => {
-      console.log('Adding mint', mintUrl);
-      let wallet = getWallet(proofs[0].id);
+      throw new Error('TODO: handleAddMint');
 
-      /* if we don't have the wallet, make sure it supports usd, then add keyset */
-      if (!wallet) {
-         wallet = await addUsdKeysetAndGetWallet(mintUrl);
-         if (!wallet) {
-            return;
-         }
-      }
-      console.log('Swapping');
+      // console.log('Adding mint', mintUrl);
+      // let wallet = getWallet(proofs[0].id);
 
-      const privkey = lockedTo ? user.privkey : undefined;
-      const success = await swapToClaimProofs(wallet, proofs, { privkey });
+      // /* if we don't have the wallet, make sure it supports usd, then add keyset */
+      // if (!wallet) {
+      //    wallet = await addUsdKeysetAndGetWallet(mintUrl);
+      //    if (!wallet) {
+      //       return;
+      //    }
+      // }
+      // console.log('Swapping');
 
-      // TOOD: move to cashu2
-      addEcashTransaction(TxStatus.PAID);
+      // const privkey = lockedTo ? user.privkey : undefined;
+      // const success = await swapToClaimProofs(wallet, proofs, { privkey });
 
-      handleModalClose();
+      // // TOOD: move to cashu2
+      // addEcashTransaction(TxStatus.PAID);
 
-      if (onSuccess && success) {
-         onSuccess();
-      }
+      // handleModalClose();
+
+      // if (onSuccess && success) {
+      //    onSuccess();
+      // }
    };
 
    const receiveAmountString = () => {
-      const symbol = tokenUnit !== 'usd' ? '~' : '';
-      const total = amountUsd;
-      return `${symbol}$${total?.toFixed(2)}`;
+      if (!amountUnit || !tokenUnit) return '';
+      return formatUnit(amountUnit, tokenUnit);
    };
 
    if (loading) {

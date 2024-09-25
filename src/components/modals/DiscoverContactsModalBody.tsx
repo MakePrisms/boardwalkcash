@@ -82,6 +82,7 @@ const DiscoverContactsModalBody = () => {
                                        lud16: user.lud16,
                                        defaultMintUrl: user.defaultMintUrl,
                                        mintlessReceive: user.mintlessReceive,
+                                       defaultUnit: user.defaultUnit,
                                     })
                                  }
                                  className='btn-primary'

@@ -1,3 +1,11 @@
+export const formatUnit = (amount: number, unit: string) => {
+   if (unit === 'sat') {
+      return formatSats(amount);
+   } else if (unit === 'usd') {
+      return formatCents(amount);
+   }
+};
+
 export const formatCents = (cents: number, decimals = true) => {
    if (cents < 0) {
       throw new Error('Cents must be a non-negative number');
@@ -19,7 +27,7 @@ export const formatCents = (cents: number, decimals = true) => {
    return `$${(cents / 100).toFixed(decimals ? 2 : 0)}`;
 };
 
-export const formatSats = (sats: number) => `${sats.toLocaleString()} sats`;
+export const formatSats = (sats: number) => `₿${sats.toLocaleString()}`;
 
 export const shortenString = (str: string, maxLength: number) => {
    if (str.length <= maxLength) {

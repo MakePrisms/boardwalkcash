@@ -22,7 +22,7 @@ import {
    ReserveError,
    TransactionError,
 } from '@/types';
-import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
+import { initializeWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
 import { postTokenToDb } from '@/utils/appApiRequests';
 
@@ -296,7 +296,7 @@ export const useCashu = () => {
       let fromWallet = getWallet(token.token[0].proofs[0].id);
       if (!fromWallet) {
          const mintUrl = token.token[0].mint;
-         fromWallet = await initializeUsdWallet(mintUrl);
+         fromWallet = await initializeWallet(mintUrl, { unit: token.unit });
       }
       return await swapToActiveWallet(fromWallet, { proofs: token.token[0].proofs, privkey });
    };
@@ -363,7 +363,7 @@ export const useCashu = () => {
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
-               unit: 'usd',
+               unit: wallet.keys.unit,
             });
             if (feeToken) {
                const txid = await postTokenToDb(feeToken, opts?.gift, true);
@@ -373,7 +373,7 @@ export const useCashu = () => {
 
          const token = getEncodedTokenV4({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
-            unit: 'usd',
+            unit: wallet.keys.unit,
          });
 
          dispatch(
@@ -382,7 +382,7 @@ export const useCashu = () => {
                transaction: {
                   token: token,
                   amount: -amount,
-                  unit: 'usd',
+                  unit: wallet.keys.unit === 'usd' ? 'usd' : 'sat',
                   mint: wallet.mint.mintUrl,
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
@@ -447,7 +447,10 @@ export const useCashu = () => {
       dispatch(setSending('Sending...'));
 
       try {
-         const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
+         const proofsToSend = await getProofsToSend(
+            meltQuote.amount + meltQuote.fee_reserve,
+            wallet,
+         );
 
          const { preimage, isPaid, change } = await wallet
             .meltTokens(meltQuote, proofsToSend, {

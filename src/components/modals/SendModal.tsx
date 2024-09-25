@@ -18,6 +18,7 @@ import GiftIcon from '../icons/GiftIcon';
 import GiftModal from '../eGifts/GiftModal';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -34,7 +35,7 @@ enum SendFlow {
 export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [currentFlow, setCurrentFlow] = useState<SendFlow>(SendFlow.Input);
    const [inputValue, setInputValue] = useState('');
-   const [amountUsd, setAmountUsd] = useState('');
+   const [amountUnit, setAmountUnit] = useState('');
    const [invoice, setInvoice] = useState('');
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | null>(null);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -45,6 +46,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
    const { sendTokenAsNotification } = useNotifications();
    const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+   const { activeWallet } = useCashuContext();
 
    const { addToast } = useToast();
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
@@ -57,7 +59,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const resetModalState = () => {
       setCurrentFlow(SendFlow.Input);
       setInputValue('');
-      setAmountUsd('');
+      setAmountUnit('');
       setInvoice('');
       setMeltQuote(null);
       setEcashToken(undefined);
@@ -86,14 +88,18 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    };
 
    const handleAmountSubmit = async () => {
-      if (!amountUsd) {
+      if (!amountUnit) {
          addToast('Please enter an amount.', 'warning');
+         return;
+      }
+      if (!activeWallet) {
+         addToast('No active wallet found', 'error');
          return;
       }
 
       setIsProcessing(true);
       try {
-         const amountSats = await unitToSats(parseFloat(amountUsd), 'usd');
+         const amountSats = await unitToSats(parseFloat(amountUnit), activeWallet?.keys.unit);
          const fetchedInvoice = await getInvoiceFromLightningAddress(inputValue, amountSats * 1000);
          setInvoice(fetchedInvoice);
          await handleInvoiceFlow(fetchedInvoice);
@@ -116,7 +122,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             throw new Error('Failed to get a melt quote');
          }
          setMeltQuote(quote);
-         setAmountUsd((quote.amount / 100).toFixed(2));
+         setAmountUnit((quote.amount / 100).toFixed(2));
          setCurrentFlow(SendFlow.Invoice);
       } catch (error) {
          console.error(error);
@@ -128,8 +134,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    };
 
    const handleEcashFlow = async (amount: number) => {
-      setAmountUsd(amount.toString());
+      setAmountUnit(amount.toString());
       setCurrentFlow(SendFlow.Ecash);
+      if (!activeWallet) throw new Error('No active wallet found');
+      const unit = activeWallet.keys.unit;
+      const amountToSend = unit === 'usd' ? amount * 100 : amount;
       try {
          let token: string | undefined;
          if (user.sendMode === 'mintless' && !lockTo?.mintlessReceive) {
@@ -138,13 +147,19 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                addToast('Can only send locked ecash in mintless mode', 'error');
                throw new Error('Can only send locked ecash in mintless mode');
             }
-            token = await createMintlessToken(Math.round(amount * 100), lockTo);
+            if (unit !== 'usd') {
+               throw new Error('mintless only supports usd');
+            }
+            token = await createMintlessToken(Math.round(amountToSend), lockTo);
          } else if (lockTo?.mintlessReceive) {
+            if (unit !== 'usd') {
+               throw new Error('mintless only supports usd');
+            }
             /* user wants to receive to their lud16 */
-            return handleMintlessReceive(amount * 100, lockTo);
+            return handleMintlessReceive(amountToSend, lockTo);
          } else {
             /* regular send */
-            token = await createSendableToken(Math.round(amount * 100), {
+            token = await createSendableToken(Math.round(amountToSend), {
                pubkey: lockTo ? `02${lockTo.pubkey}` : undefined,
             });
          }
@@ -246,8 +261,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
                      placeholder={
                         lockTo
-                           ? `Amount USD to ${lockTo.username}`
-                           : `Amount USD, Lightning address, or invoice`
+                           ? `Amount ${activeWallet?.keys.unit.toUpperCase()} to ${lockTo.username}`
+                           : `Amount ${activeWallet?.keys.unit.toUpperCase()}, Lightning address, or invoice`
                      }
                      value={inputValue}
                      onChange={e => setInputValue(e.target.value)}
@@ -273,13 +288,18 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          case SendFlow.Amount:
             return (
                <Modal.Body>
-                  <input
-                     className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
-                     type='number'
-                     placeholder='Amount in USD (eg. 0.21)'
-                     value={amountUsd}
-                     onChange={e => setAmountUsd(e.target.value)}
-                  />
+                  <div className='relative'>
+                     <span className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500'>
+                        {activeWallet?.keys.unit === 'usd' ? '$' : '₿'}
+                     </span>
+                     <input
+                        className='form-control block w-full pl-8 pr-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
+                        type='number'
+                        placeholder={`Amount (eg. ${activeWallet?.keys.unit === 'usd' ? '$0.21' : '₿21'})`}
+                        value={amountUnit}
+                        onChange={e => setAmountUnit(e.target.value)}
+                     />
+                  </div>
                   <div className='flex justify-between mx-3'>
                      <Button color='failure' onClick={() => setCurrentFlow(SendFlow.Input)}>
                         Back
@@ -302,7 +322,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      Estimated Fee: ${(meltQuote!.fee_reserve / 100).toFixed(2)}
                      <br />
                      Total amount to pay: $
-                     {(parseFloat(amountUsd) + meltQuote!.fee_reserve / 100).toFixed(2)}
+                     {(parseFloat(amountUnit) + meltQuote!.fee_reserve / 100).toFixed(2)}
                   </div>
                   <div className='flex items-center flex-row justify-between mx-3'>
                      {' '}

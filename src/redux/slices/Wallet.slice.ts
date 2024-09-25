@@ -54,7 +54,11 @@ export const setMainKeyset = createAsyncThunk(
 
       try {
          const pubkey = localStorage.getItem('pubkey');
-         await updateUser(pubkey!, { defaultMintUrl: toSetMain.url });
+         await updateUser(pubkey!, {
+            defaultMintUrl: toSetMain.url,
+            defaultKeysetId: toSetMain.id,
+            defaultUnit: toSetMain.keys.unit,
+         });
       } catch (e) {
          throw new Error(`Failed to update user: ${e}`);
       }

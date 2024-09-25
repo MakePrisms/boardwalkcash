@@ -101,16 +101,9 @@ export default function Home() {
       try {
          const mint = new CashuMint(url);
 
-         const { keysets } = await mint.getKeys();
+         const activeKeysets = await mint.getKeys();
 
-         const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-         if (!usdKeyset) {
-            addToast("Mint doesn't support USD", 'error');
-            return;
-         }
-
-         addWallet(usdKeyset, url, { active: true });
+         addWallet(activeKeysets, url, { activeUnit: 'usd', currencies: ['usd', 'sat'] });
 
          addToast('Mint added successfully', 'success');
 

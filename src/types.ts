@@ -17,6 +17,7 @@ export interface ProofData {
    C: string;
    userId: number;
    mintKeysetId: string;
+   unit: 'usd' | 'sat';
 }
 
 export interface NWAEventContent {
@@ -106,6 +107,9 @@ export type PublicContact = {
 
    /** Default mint url of the contact */
    defaultMintUrl: string | null;
+
+   /** Unit of proofs this user uses */
+   defaultUnit: 'usd' | 'sat';
 
    mintlessReceive: boolean;
 };
@@ -321,6 +325,7 @@ export interface DiscoverContactsResponse {
       lud16: string | null;
       defaultMintUrl: string | null;
       mintlessReceive: boolean;
+      defaultUnit: 'usd' | 'sat'
    }[];
 }
 

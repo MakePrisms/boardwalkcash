@@ -7,6 +7,7 @@ import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { formatUnit } from '@/utils/formatting';
 
 interface MintSidebarItemProps {
    keyset: Wallet;
@@ -54,13 +55,19 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
       }
    };
 
-   useEffect(() => {
-      const thisBalanceCents = balanceByWallet[keyset.id] || 0;
+   // useEffect(() => {
+   //    const thisBalanceUnit = balanceByWallet[keyset.id] || 0;
 
-      const thisBalance = (thisBalanceCents / 100).toFixed(2);
+   //    console.log('thisBalanceUnit', thisBalanceUnit);
 
-      setMintBalance(thisBalance.toString());
-   }, [keyset, balanceByWallet]);
+   //    if (keyset.keys.unit === 'sat') {
+   //       setMintBalance(thisBalanceUnit.toString());
+   //    } else if (keyset.keys.unit === 'usd') {
+   //       /* convert from cents to dollars */
+   //       const thisBalance = (thisBalanceUnit / 100).toFixed(2);
+   //       setMintBalance(thisBalance.toString());
+   //    }
+   // }, [keyset, balanceByWallet]);
 
    const formattedMintUrl = () => {
       const mintHostDomain = keyset.url.replace('https://', '');
@@ -74,7 +81,8 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
          <>
             <div className='flex flex-col justify-between min-w-full mb-5'>
                <div className='flex justify-between'>
-                  {formattedMintUrl()} <Badge>${mintBalance}</Badge>
+                  {formattedMintUrl()}{' '}
+                  <Badge>{formatUnit(balanceByWallet[keyset.id] || 0, keyset.keys.unit)}</Badge>
                </div>
                <div className='flex justify-between align-middle min-w-max'>
                   <div className='flex space-x-4'>
