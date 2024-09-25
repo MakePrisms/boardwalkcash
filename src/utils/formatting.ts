@@ -1,8 +1,21 @@
-export const formatUnit = (amount: number, unit: string) => {
+import { getDecodedToken, Token } from '@cashu/cashu-ts';
+
+export const formatTokenAmount = (token: Token | string) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const amount = decodedToken.token[0].proofs.reduce((acc, p) => acc + p.amount, 0);
+   return formatUnit(amount, decodedToken.unit);
+};
+
+export const formatUnit = (amount: number, unit?: string) => {
    if (unit === 'sat') {
       return formatSats(amount);
    } else if (unit === 'usd') {
       return formatCents(amount);
+   } else if (unit === undefined) {
+      /* the token probably didn't have the unit or unsupported unit */
+      return amount.toString();
+   } else {
+      return `${amount.toString()} ${unit}`;
    }
 };
 

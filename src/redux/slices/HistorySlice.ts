@@ -26,6 +26,7 @@ export interface LightningTransaction {
    status: TxStatus;
    mint: string | null; // null for mintless
    quote: string | null; // null for mintless
+   unit: 'usd' | 'sat';
    memo?: string;
    appName?: string;
    pubkey?: string;
@@ -33,7 +34,7 @@ export interface LightningTransaction {
 
 export type Transaction = EcashTransaction | LightningTransaction;
 
-interface HistoryState {
+export interface HistoryState {
    ecash: EcashTransaction[];
    lightning: LightningTransaction[];
 }
@@ -70,6 +71,9 @@ const historySlice = createSlice({
          if (type === 'ecash' && isEcashTransaction(transaction)) {
             state.ecash.push(transaction);
          } else if (type === 'lightning' && isLightningTransaction(transaction)) {
+            if (!transaction.unit) {
+               throw new Error('Lightning transactions must have a unit');
+            }
             state.lightning.push(transaction);
          } else if (type === 'reserve' && isEcashTransaction(transaction)) {
             state.ecash.push({ ...transaction, isReserve: true });

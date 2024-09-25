@@ -1,5 +1,5 @@
 import { TokenNotificationData } from '@/types';
-import { formatCents } from '@/utils/formatting';
+import { formatTokenAmount } from '@/utils/formatting';
 import { useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import ViewTokenButton from './buttons/ViewTokenButton';
@@ -24,7 +24,7 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
    );
 
    const notificationText = useMemo(() => {
-      const formattedAmount = formatCents(amountCents);
+      const formattedAmount = formatTokenAmount(token);
       if (isFee === true) {
          return `${contact?.username} sent ${gift}: ${formattedAmount} fee`;
       }

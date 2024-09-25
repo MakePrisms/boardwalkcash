@@ -25,6 +25,7 @@ import {
 import { initializeWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
 import { postTokenToDb } from '@/utils/appApiRequests';
+import { formatUnit } from '@/utils/formatting';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -472,7 +473,7 @@ export const useCashu = () => {
          const feePaid = meltQuote.fee_reserve - change.reduce((acc, p) => acc + p.amount, 0);
          const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';
 
-         dispatch(setSuccess(`Sent $${meltQuote.amount / 100}!`));
+         dispatch(setSuccess(`Sent ${formatUnit(meltQuote.amount + feePaid, wallet.keys.unit)}!`));
          return { preimage, amountUsd: meltQuote.amount, feePaid };
       } catch (error) {
          toastSwapError(error);

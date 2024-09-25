@@ -19,6 +19,7 @@ import GiftModal from '../eGifts/GiftModal';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { formatUnit } from '@/utils/formatting';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -215,7 +216,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                   type: 'lightning',
                   transaction: {
                      amount: -meltQuote.amount,
-                     unit: 'usd',
+                     unit: activeWallet.keys.unit as 'usd' | 'sat',
                      mint: activeWallet.url,
                      status: TxStatus.PAID,
                      date: new Date().toLocaleString(),
@@ -319,10 +320,13 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             return (
                <Modal.Body>
                   <div className='text-sm text-black mb-4'>
-                     Estimated Fee: ${(meltQuote!.fee_reserve / 100).toFixed(2)}
+                     Estimated Fee: {formatUnit(meltQuote!.fee_reserve, activeWallet?.keys.unit!)}
                      <br />
-                     Total amount to pay: $
-                     {(parseFloat(amountUnit) + meltQuote!.fee_reserve / 100).toFixed(2)}
+                     Total amount to pay:
+                     {formatUnit(
+                        meltQuote!.amount + meltQuote!.fee_reserve,
+                        activeWallet?.keys.unit!,
+                     )}
                   </div>
                   <div className='flex items-center flex-row justify-between mx-3'>
                      {' '}

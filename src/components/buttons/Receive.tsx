@@ -19,6 +19,7 @@ import { getTokenFromUrl } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { Wallet } from '@/types';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -127,7 +128,7 @@ const Receive = () => {
 
          setCurrentPage('invoice');
 
-         waitForPayment(pubkey, checkingId, amountUnit, activeWallet.url);
+         waitForPayment(pubkey, checkingId, amountUnit, activeWallet);
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();
@@ -138,7 +139,7 @@ const Receive = () => {
       pubkey: string,
       checkingId: string,
       amountUsdCents: number,
-      mintUrl: string,
+      wallet: Wallet,
    ) => {
       let attempts = 0;
       const maxAttempts = 4;
@@ -146,7 +147,7 @@ const Receive = () => {
          const success = await checkPaymentStatus(pubkey, checkingId);
          if (success) {
             clearInterval(interval);
-            handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
+            handlePaymentSuccess(amountUsdCents, wallet, checkingId);
          }
          if (attempts >= maxAttempts) {
             clearInterval(interval);
@@ -169,7 +170,7 @@ const Receive = () => {
       }
    };
 
-   const handlePaymentSuccess = (amountUsdCents: number, mintUrl: string, quote: string) => {
+   const handlePaymentSuccess = (amountUsdCents: number, wallet: Wallet, quote: string) => {
       handleModalClose();
       addToast('Payment received!', 'success');
       dispatch(
@@ -179,8 +180,9 @@ const Receive = () => {
                amount: amountUsdCents,
                date: new Date().toLocaleString(),
                status: TxStatus.PAID,
-               mint: mintUrl,
+               mint: wallet.url,
                quote,
+               unit: wallet.keys.unit as 'usd' | 'sat',
             },
          }),
       );
@@ -202,13 +204,19 @@ const Receive = () => {
       if (!pubkey) {
          throw new Error('No pubkey found');
       }
-      const mintUrl = activeWallet?.mint.mintUrl;
-      if (!mintUrl) {
-         throw new Error('No mint url found for active wallet');
+      if (!activeWallet) {
+         throw new Error('No active wallet found');
       }
       const paid = await checkPaymentStatus(pubkey, checkingId);
       if (paid) {
-         handlePaymentSuccess(amountUnit, mintUrl, checkingId);
+         // TODO: get rid of `Wallet` type
+         const wallet = {
+            url: activeWallet.mint.mintUrl,
+            keys: activeWallet.keys,
+            id: activeWallet.keys.id,
+            active: true,
+         } as Wallet;
+         handlePaymentSuccess(amountUnit, wallet, checkingId);
       } else {
          setInvoiceTimeout(true);
       }

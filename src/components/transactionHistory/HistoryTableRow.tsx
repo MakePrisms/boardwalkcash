@@ -18,7 +18,7 @@ import VaultIcon from '../icons/VaultIcon';
 import { useProofStorage } from '@/hooks/cashu/useProofStorage';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import GiftIcon from '../icons/GiftIcon';
-import { formatCents } from '@/utils/formatting';
+import { formatUnit } from '@/utils/formatting';
 
 const HistoryTableRow: React.FC<{
    tx: Transaction;
@@ -65,9 +65,9 @@ const HistoryTableRow: React.FC<{
       const [hour, minute, _] = time.split(':');
       return `${month}/${day}, ${hour}:${minute} ${period || ''}`;
    };
-   const formatAmount = (amount: number, fee?: number) => {
+   const formatAmount = (amount: number, unit: string, fee?: number) => {
       let color = amount < 0 ? 'text-white' : 'text-green-500';
-      const text = formatCents(Math.abs(amount) + (fee || 0));
+      const text = formatUnit(Math.abs(amount) + (fee || 0), unit);
 
       return <span className={`${color} flex items-center`}>{text}</span>;
    };
@@ -197,7 +197,7 @@ const HistoryTableRow: React.FC<{
       <Table.Row>
          <Table.Cell className='pe-0 md:pe-6'>{formatDate(tx.date)}</Table.Cell>
          <Table.Cell className='pe-0 md:pe-6'>
-            {formatAmount(tx.amount, isEcashTransaction(tx) ? tx.fee : undefined)}
+            {formatAmount(tx.amount, tx.unit, isEcashTransaction(tx) ? tx.fee : undefined)}
          </Table.Cell>
          <Table.Cell className='flex justify-center min-w-[116px]'>{getStatusCell(tx)}</Table.Cell>
       </Table.Row>

@@ -13,10 +13,9 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import StickerItem from '../eGifts/stickers/StickerItem';
-import { formatCents, formatUnit } from '@/utils/formatting';
+import { formatUnit } from '@/utils/formatting';
 import { isTokenSpent } from '@/utils/cashu';
 import useGifts from '@/hooks/boardwalk/useGifts';
-import { format } from 'path';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -363,7 +362,7 @@ const ConfirmEcashReceiveModal = ({
                               selectedSrc={gift.selectedSrc}
                               unselectedSrc={gift.unselectedSrc}
                               isSelected={true}
-                              alt={formatCents(gift.amountCents)}
+                              alt={formatUnit(gift.amountCents, tokenUnit || undefined)}
                               size='lg'
                            />
                         </div>

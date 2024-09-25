@@ -31,6 +31,7 @@ import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { Button } from 'flowbite-react';
+import { runMigrations } from '@/migrations/localStorage.migrations';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -61,6 +62,10 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          // }, 600);
       }
    }, [user]);
+
+   useEffect(() => {
+      runMigrations();
+   }, []);
 
    useEffect(() => {
       if (!router.isReady) return;
