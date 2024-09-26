@@ -262,8 +262,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
                      placeholder={
                         lockTo
-                           ? `Amount ${activeWallet?.keys.unit.toUpperCase()} to ${lockTo.username}`
-                           : `Amount ${activeWallet?.keys.unit.toUpperCase()}, Lightning address, or invoice`
+                           ? `Amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'} to ${lockTo.username}`
+                           : `Amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'}, Lightning address, or invoice`
                      }
                      value={inputValue}
                      onChange={e => setInputValue(e.target.value)}
@@ -296,7 +296,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                      <input
                         className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
                         type='number'
-                        placeholder={`Amount (eg. ${activeWallet?.keys.unit === 'usd' ? '0.21' : '21'}`}
+                        placeholder={`Amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'}`}
                         value={amountUnit}
                         onChange={e => setAmountUnit(e.target.value)}
                      />

@@ -250,15 +250,13 @@ const Receive = () => {
                      <div className='relative'>
                         <textarea
                            className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
-                           placeholder={`Paste token or enter amount`}
+                           placeholder={`Paste token or enter amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'}`}
                            value={inputValue}
                            onChange={e => setInputValue(e.target.value)}
                         />
                      </div>
-                     <div className='flex items-center justify-between mx-3'>
-                        <div className='mb-3 md:mb-0'>
-                           <QRScannerButton onScan={setInputValue} />
-                        </div>
+                     <div className='flex items-center justify-between space-x-4'>
+                        <QRScannerButton onScan={setInputValue} />
                         <Button
                            isProcessing={fetchingInvoice}
                            className='btn-primary'

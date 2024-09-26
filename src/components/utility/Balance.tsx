@@ -45,7 +45,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
          return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance.toLocaleString();
       } else {
          if (activeUnit === 'usd') {
-            const sats = await unitToSats(usdBalance, 'usd');
+            const sats = await unitToSats(usdBalance / 100, 'usd');
             return sats.toLocaleString();
          } else {
             const usd = await satsToUnit(satBalance, 'usd');
@@ -74,10 +74,13 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
             {activeUnit === 'usd' && !showFxValue && (
                <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
-            <span className='font-teko text-6xl font-bold'>{displayBalance}</span>{' '}
-            {(activeUnit === 'sat' || showFxValue) && (
+            {activeUnit === 'sat' && showFxValue && (
                <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
+            <span className='font-teko text-6xl font-bold'>{displayBalance}</span>
+            {(activeUnit === 'sat' && !showFxValue) || (activeUnit === 'usd' && showFxValue) ? (
+               <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+            ) : null}
          </div>
       </div>
    );
