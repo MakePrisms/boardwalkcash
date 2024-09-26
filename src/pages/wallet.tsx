@@ -245,9 +245,15 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             className='flex flex-col items-center justify-center mx-auto'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Balance balanceByWallet={balanceByWallet} />
-            <ToggleCurrencyDropdown />
-            <ActivityIndicator />
+            <div className='mb-7'>
+               <Balance balanceByWallet={balanceByWallet} />
+            </div>
+            <div className='mb-7'>
+               <ActivityIndicator />
+            </div>
+            <div className='mb-10'>
+               <ToggleCurrencyDropdown />
+            </div>
             <div className=' flex flex-col justify-center py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
                   <Receive />

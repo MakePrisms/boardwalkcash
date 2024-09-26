@@ -69,7 +69,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
         : '₿';
 
    return (
-      <div className='flex flex-col items-center justify-center w-full mb-14'>
+      <div className='flex flex-col items-center justify-center w-full'>
          <div className='cursor-pointer' onClick={handleClick}>
             {activeUnit === 'usd' && !showFxValue && (
                <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
