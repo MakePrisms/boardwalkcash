@@ -35,7 +35,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
          const activeKeys = await mint.getKeys();
 
          // TODO: more like initWallets
-         addWallet(activeKeys, url, { currencies: ['usd', 'sat'], activeUnit: 'usd' });
+         addWallet(activeKeys, url, { currencies: ['usd', 'sat'] });
 
          setMintUrl('');
 
