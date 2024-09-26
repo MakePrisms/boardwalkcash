@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 
 interface MintWithWallets {
    mint: CashuMint;
-   wallets: Map<Currency, string>; // Currency to wallet keyset id
+   wallets: Map<Currency, string>; // Currency to wallet keyset Fid
 }
 
 interface CashuContextType {
@@ -105,7 +105,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
          if (activeUnit === Currency.USD) {
             body.style.backgroundColor = '#0f3470';
          } else {
-            body.style.backgroundColor = '#4a2c91';
+            body.style.backgroundColor = '#1D4D98';
          }
       }
       return () => {

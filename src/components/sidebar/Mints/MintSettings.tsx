@@ -20,7 +20,12 @@ const MintSettings = () => {
 
    return (
       <>
-         <Tabs titles={['Bitcoin', 'USD']} onActiveTabChange={setActiveTab} className='mb-4' />
+         <Tabs
+            titles={['Bitcoin', 'USD']}
+            onActiveTabChange={setActiveTab}
+            className='mb-4'
+            borderColor='white'
+         />
          {activeTab === 0 &&
             bitcoinKeysets.map((id, idx) => <MintSidebarItem keyset={keysets[id]} key={idx} />)}
          {activeTab === 1 &&

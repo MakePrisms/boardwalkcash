@@ -18,23 +18,15 @@ const ToggleCurrencyDropdown = () => {
    };
 
    return (
-      <button onClick={handleClick}>
-         <div className='flex items-center space-x-2'>
-            {activeUnit.toUpperCase()}
-            {activeUnit === Currency.USD ? (
-               <ChevronDownIcon className='h-5 w-5' />
-            ) : (
-               <ChevronUpIcon className='h-5 w-5' />
-            )}
-         </div>
-      </button>
-      // <Dropdown onClick={handleClick} label={activeUnit.toUpperCase()} inline>
-      //    {/* {availableUnits.map(unit => (
-      //       <Dropdown.Item key={unit} onClick={() => setActiveUnit(unit as Currency)}>
-      //          {unit.toUpperCase()}
-      //       </Dropdown.Item>
-      //    ))} */}
-      // </Dropdown>
+      <Dropdown onClick={handleClick} label={activeUnit === Currency.USD ? 'USD' : 'BTC'} inline>
+         {availableUnits
+            .filter(unit => unit !== activeUnit)
+            .map(unit => (
+               <Dropdown.Item key={unit} onClick={() => setActiveUnit(unit as Currency)}>
+                  {unit === Currency.USD ? 'USD' : 'BTC'}
+               </Dropdown.Item>
+            ))}
+      </Dropdown>
    );
 };
 

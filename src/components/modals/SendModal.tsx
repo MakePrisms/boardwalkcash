@@ -289,14 +289,14 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          case SendFlow.Amount:
             return (
                <Modal.Body>
-                  <div className='relative'>
-                     <span className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500'>
-                        {activeWallet?.keys.unit === 'usd' ? '$' : '₿'}
-                     </span>
+                  <div className='mb-4'>
+                     <label className='block text-sm font-medium text-gray-700 mb-2'>
+                        {activeWallet?.keys.unit === 'usd' ? 'Send $' : 'Send Bitcoin'}
+                     </label>
                      <input
-                        className='form-control block w-full pl-8 pr-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none mb-4'
+                        className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
                         type='number'
-                        placeholder={`Amount (eg. ${activeWallet?.keys.unit === 'usd' ? '$0.21' : '₿21'})`}
+                        placeholder={`Amount (eg. ${activeWallet?.keys.unit === 'usd' ? '0.21' : '21'}`}
                         value={amountUnit}
                         onChange={e => setAmountUnit(e.target.value)}
                      />
@@ -353,7 +353,11 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          <Modal show={isOpen} onClose={resetModalState}>
             <Modal.Header>
                {!lockTo || currentFlow !== SendFlow.Ecash
-                  ? 'Send'
+                  ? activeWallet
+                     ? activeWallet.keys.unit === 'usd'
+                        ? 'Send $'
+                        : 'Send Bitcoin'
+                     : 'Send'
                   : `eTip ${lockTo.username && 'for ' + lockTo.username}`}
             </Modal.Header>
             {isProcessing ? (

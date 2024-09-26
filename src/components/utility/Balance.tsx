@@ -42,7 +42,7 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
 
    const getDisplayBalance = async () => {
       if (!showFxValue) {
-         return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance.toString();
+         return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance.toLocaleString();
       } else {
          if (activeUnit === 'usd') {
             const sats = await unitToSats(usdBalance, 'usd');
