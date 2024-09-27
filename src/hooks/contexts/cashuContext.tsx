@@ -100,19 +100,66 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    }, [defaultUnit]);
 
    useEffect(() => {
-      const body = document.querySelector('body');
-      if (body) {
-         if (activeUnit === Currency.USD) {
-            body.style.backgroundColor = '#0f3470';
-         } else {
-            body.style.backgroundColor = '#1D4D98';
+      const changeStatusBarColor = (color: string) => {
+         // For Android
+         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+         if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', color);
          }
-      }
-      return () => {
-         if (body) {
-            body.style.backgroundColor = '';
+
+         // For iOS
+         const metaAppleStatusBar = document.querySelector(
+            'meta[name="apple-mobile-web-app-status-bar-style"]',
+         );
+         if (metaAppleStatusBar) {
+            metaAppleStatusBar.setAttribute('content', 'black-translucent');
          }
+
+         // Create or update a style tag for iOS status bar and body
+         let style = document.getElementById('ios-status-bar-style');
+         if (!style) {
+            style = document.createElement('style');
+            style.id = 'ios-status-bar-style';
+            document.head.appendChild(style);
+         }
+         style.innerHTML = `
+          @supports (-webkit-touch-callout: none) {
+            body::after {
+              content: '';
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: env(safe-area-inset-top);
+              background-color: ${color};
+              z-index: 10000;
+            }
+          }
+          body {
+            background-color: ${color};
+          }
+        `;
+
+         // Create a new style tag for the transition
+         const transitionStyle = document.createElement('style');
+         transitionStyle.innerHTML = `
+           body, body::after {
+             transition: background-color 0.3s ease;
+           }
+         `;
+         document.head.appendChild(transitionStyle);
+
+         // Remove the transition style after the transition is complete
+         setTimeout(() => {
+            transitionStyle.remove();
+         }, 300);
       };
+
+      if (activeUnit === Currency.USD) {
+         changeStatusBarColor('#0f3470');
+      } else {
+         changeStatusBarColor('#1D4D98');
+      }
    }, [activeUnit]);
 
    const setKeysetNotReserve = () => {
