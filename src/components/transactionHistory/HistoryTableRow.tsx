@@ -19,6 +19,8 @@ import { useProofStorage } from '@/hooks/cashu/useProofStorage';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import GiftIcon from '../icons/GiftIcon';
 import { formatUnit } from '@/utils/formatting';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { getProofsFromToken } from '@/utils/cashu';
 
 const HistoryTableRow: React.FC<{
    tx: Transaction;
@@ -27,8 +29,8 @@ const HistoryTableRow: React.FC<{
 }> = ({ tx, openSendEcashModal, openViewGiftModal }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const { addProofs } = useProofStorage();
+   const { getWallet } = useCashuContext();
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
@@ -73,15 +75,13 @@ const HistoryTableRow: React.FC<{
    };
 
    const handleReclaim = async (transaction: EcashTransaction) => {
-      const keyset = Object.values(wallets).find(keyset => keyset.url === transaction.mint);
-      if (!keyset) {
-         addToast('Keyset not found', 'error');
+      const proofs = getProofsFromToken(transaction.token);
+      const keysetId = proofs[0].id;
+      const wallet = getWallet(keysetId);
+      if (!wallet) {
+         addToast('Wallet not found', 'error');
          return;
       }
-
-      const wallet = new CashuWallet(new CashuMint(transaction.mint), { ...keyset });
-
-      const proofs = getDecodedToken(transaction.token).token[0].proofs;
 
       let privkey: string | undefined;
       if (proofsLockedTo(proofs) === '02' + user.pubkey) {
@@ -105,11 +105,10 @@ const HistoryTableRow: React.FC<{
       } else {
          const newProofs = await wallet.receive(transaction.token, { privkey });
 
+         const amtReclaimed = proofs.reduce((a, b) => a + b.amount, 0);
+
          addProofs(newProofs);
-         addToast(
-            `Reclaimed $${(newProofs.reduce((a, b) => (a += b.amount), 0) / 100).toFixed(2)}`,
-            'success',
-         );
+         addToast(`Reclaimed ${formatUnit(amtReclaimed, wallet.keys.unit)}`, 'success');
          dispatch(
             updateTransactionStatus({
                type: 'ecash',
@@ -117,13 +116,6 @@ const HistoryTableRow: React.FC<{
                status: TxStatus.PAID,
             }),
          );
-
-         const newBalance = (JSON.parse(localStorage.getItem('proofs') || '[]') as Proof[]).reduce(
-            (a, b) => a + b.amount,
-            0,
-         );
-
-         dispatch(setBalance({ usd: newBalance }));
       }
 
       setReclaiming(false);
