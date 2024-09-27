@@ -70,7 +70,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    };
 
    const handleGiftSelected = (gift: GiftAsset) => {
-      setAmountCents(gift.amountCents);
+      setAmountCents(gift.amount);
       setStickerPath(gift.selectedSrc);
       setGift(gift);
    };
@@ -169,9 +169,6 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       }
       setSending(true);
       try {
-         if (activeWallet?.keys.unit !== 'usd') {
-            throw new Error('only support usd');
-         }
          if (gift?.campaingId) {
             if (!selectedContact) throw new Error('No contact selected');
             const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(e => {

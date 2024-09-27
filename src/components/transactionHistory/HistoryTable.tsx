@@ -92,7 +92,7 @@ const HistoryTable: React.FC<{
                onClose={closeViewGiftModal}
                stickerPath={selectedGift.selectedSrc}
                selectedContact={tokenLockedTo}
-               amountCents={selectedGift.amountCents}
+               amountCents={selectedGift.amount}
                txid={txid}
             />
          )}

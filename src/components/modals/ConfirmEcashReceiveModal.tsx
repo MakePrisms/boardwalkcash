@@ -362,7 +362,7 @@ const ConfirmEcashReceiveModal = ({
                               selectedSrc={gift.selectedSrc}
                               unselectedSrc={gift.unselectedSrc}
                               isSelected={true}
-                              alt={formatUnit(gift.amountCents, tokenUnit || undefined)}
+                              alt={formatUnit(gift.amount, tokenUnit || undefined)}
                               size='lg'
                            />
                         </div>

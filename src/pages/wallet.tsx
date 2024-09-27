@@ -314,7 +314,7 @@ export const getServerSideProps: GetServerSideProps = async (
             gift = await getGiftByName(tokenEntry.gift as string).then(g => {
                if (!g) return;
                return {
-                  amountCents: g.amount,
+                  amount: g.amount,
                   name: g.name,
                   selectedSrc: g.imageUrlSelected,
                   unselectedSrc: g.imageUrlUnselected,

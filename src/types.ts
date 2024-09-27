@@ -267,7 +267,8 @@ export type GetAllGiftsResponse = {
 export type GetGiftResponse = Gift & { campaignId?: number };
 
 export interface GiftAsset {
-   amountCents: number;
+   amount: number;
+   unit: Currency;
    name: string;
    selectedSrc: string;
    unselectedSrc: string;

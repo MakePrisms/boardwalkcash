@@ -227,6 +227,33 @@ const giftsV3 = [
    },
 ];
 
+const satGiftsRound1 = [
+   {
+      name: 'Orange Heart',
+      amount: 100,
+      unit: 'sat',
+      description: 'An orange heart',
+      imageUrlSelected: '/eGifts/selected/orangeheart_100.png',
+      imageUrlUnselected: '/eGifts/unselected/orangeheart_100.png',
+   },
+   {
+      name: 'Salute',
+      amount: 1000,
+      unit: 'sat',
+      description: 'A salute gesture',
+      imageUrlSelected: '/eGifts/selected/salute_1,000.png',
+      imageUrlUnselected: '/eGifts/unselected/salute_1,000.png',
+   },
+   {
+      name: 'Thumbs Up',
+      amount: 500,
+      unit: 'sat',
+      description: 'A thumbs up gesture',
+      imageUrlSelected: '/eGifts/selected/thumbsup_500.png',
+      imageUrlUnselected: '/eGifts/unselected/thumbsup_500.png',
+   },
+];
+
 const freeStar = [
    {
       name: 'Star',
@@ -247,7 +274,7 @@ async function addGifts(gifts) {
                description: gift.description,
                imageUrlSelected: gift.imageUrlSelected,
                imageUrlUnselected: gift.imageUrlUnselected,
-               unit: 'usd', // Using the default value
+               unit: gift.unit || 'usd', // Using the default values
                fee: gift.fee,
             },
          });
@@ -355,4 +382,4 @@ async function addHalloweenGifts() {
    }
 }
 
-addGifts(freeStar);
+addGifts(satGiftsRound1);
