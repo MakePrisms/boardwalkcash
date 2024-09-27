@@ -72,14 +72,14 @@ const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> 
       <div className='flex flex-col items-center justify-center w-full'>
          <div className='cursor-pointer' onClick={handleClick}>
             {activeUnit === 'usd' && !showFxValue && (
-               <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45rem]  text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
             {activeUnit === 'sat' && showFxValue && (
-               <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45rem]  text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
             <span className='font-teko text-6xl font-bold'>{displayBalance}</span>
             {(activeUnit === 'sat' && !showFxValue) || (activeUnit === 'usd' && showFxValue) ? (
-               <span className='text-5xl text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45em]  text-cyan-teal font-bold'>{unitSymbol}</span>
             ) : null}
          </div>
       </div>
