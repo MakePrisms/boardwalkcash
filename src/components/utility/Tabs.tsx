@@ -54,11 +54,11 @@ const ActiveTab = ({
    borderColor: string;
 }) => {
    return (
-      <button
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} text-white`}
+      <div
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} text-white hover:cursor-pointer`}
       >
          {children}
-      </button>
+      </div>
    );
 };
 
@@ -72,11 +72,11 @@ export const InactiveTab = ({
    borderColor: string;
 }) => {
    return (
-      <button
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-4 border-transparent text-white hover:border-${borderColor} transition-colors duration-200`}
+      <div
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-white hover:border-${borderColor} hover:cursor-pointer`}
          onClick={onClick}
       >
          {children}
-      </button>
+      </div>
    );
 };
