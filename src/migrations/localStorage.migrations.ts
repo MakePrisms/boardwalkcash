@@ -51,19 +51,24 @@ const migrations: Array<Migration> = [
          });
          const satKeysets: StoredKeyset[] = await Promise.all(
             mintsWithoutSatKeysets.map(async url => {
-               const mint = new CashuMint(url);
-               const { keysets } = await mint.getKeys();
-               const satKeyset = keysets.find(k => k.unit === 'sat');
-               if (!satKeyset) return null;
-               return {
-                  id: satKeyset.id,
-                  keys: satKeyset,
-                  unit: 'sat',
-                  url,
-                  isReserve: false,
-                  active: false,
-                  proofs: [] as Proof[],
-               };
+               try {
+                  const mint = new CashuMint(url);
+                  const { keysets } = await mint.getKeys();
+                  const satKeyset = keysets.find(k => k.unit === 'sat');
+                  if (!satKeyset) return null;
+                  return {
+                     id: satKeyset.id,
+                     keys: satKeyset,
+                     unit: 'sat',
+                     url,
+                     isReserve: false,
+                     active: false,
+                     proofs: [] as Proof[],
+                  };
+               } catch (error) {
+                  console.error(`Failed to get keys for mint ${url}:`, error);
+                  return null;
+               }
             }),
          ).then(res => res.filter(k => k !== null) as StoredKeyset[]);
          if (satKeysets.length === 0) return;
