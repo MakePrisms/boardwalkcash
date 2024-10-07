@@ -18,6 +18,8 @@ import {
 import { getTokenFromUrl } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { Wallet } from '@/types';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -25,17 +27,23 @@ const Receive = () => {
    const [invoiceToPay, setInvoiceToPay] = useState('');
    const [showEcashReceiveModal, setShowEcashReceiveModal] = useState(false);
    const [token, setToken] = useState<Token | null>(null);
-   const [amountUsdCents, setAmountUsdCents] = useState<number | null>(null);
+   const [amountUnit, setAmountUnit] = useState<number | null>(null);
    const [currentPage, setCurrentPage] = useState<'input' | 'invoice'>('input');
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [checkingId, setCheckingId] = useState<string | undefined>();
 
    const { decodeToken } = useCashu();
-   const { activeWallet } = useCashuContext();
+   const { activeWallet, activeUnit } = useCashuContext();
+   const { mintlessReceive } = useMintlessMode();
    const { addToast } = useToast();
    const dispatch = useDispatch();
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const user = useSelector((state: RootState) => state.user);
+
+   useEffect(() => {
+      console.log('activeWallet', activeWallet);
+      return () => {};
+   }, [activeWallet]);
 
    /* process input every time the input value changes */
    useEffect(() => {
@@ -58,7 +66,16 @@ const Receive = () => {
       const handleAmountInput = () => {
          const parsedAmount = parseFloat(inputValue);
          if (!isNaN(parsedAmount)) {
-            setAmountUsdCents(parsedAmount * 100);
+            switch (activeUnit) {
+               case 'usd':
+                  setAmountUnit(parsedAmount * 100);
+                  break;
+               case 'sat':
+                  setAmountUnit(parsedAmount);
+                  break;
+               default:
+                  throw new Error('Invalid unit');
+            }
          } else {
             addToast('Invalid amount', 'error');
          }
@@ -78,10 +95,11 @@ const Receive = () => {
    }, [inputValue]);
 
    const handleReceive = async () => {
-      const activeWallet = Object.values(wallets).find(w => w.active);
-      if (!activeWallet) throw new Error('No active wallet is set');
-
-      if (!amountUsdCents) {
+      if (!activeWallet) {
+         addToast('No active wallet found', 'error');
+         return;
+      }
+      if (!amountUnit) {
          addToast('Please enter a valid amount.', 'warning');
          return;
       }
@@ -95,14 +113,38 @@ const Receive = () => {
 
       try {
          setFetchingInvoice(true);
-         const { invoice, checkingId } = await getInvoiceForLNReceive(pubkey, amountUsdCents);
+         if (user.receiveMode === 'mintless') {
+            if (activeUnit === 'usd') {
+               addToast('Switch to BTC or disable mintless receive', 'error');
+               throw new Error('Cannot receive mintless in usd mode');
+            }
+            console.log('using mintless mode');
+            const invoice = await mintlessReceive(amountUnit);
+            setInvoiceToPay(invoice);
+            setCheckingId(undefined);
+            setFetchingInvoice(false);
+            setCurrentPage('invoice');
+            return;
+         }
+         const { invoice, checkingId } = await getInvoiceForLNReceive(
+            pubkey,
+            amountUnit,
+            activeWallet.keys.id,
+         );
          setInvoiceToPay(invoice);
          setCheckingId(checkingId);
          setFetchingInvoice(false);
 
          setCurrentPage('invoice');
 
-         waitForPayment(pubkey, checkingId, amountUsdCents, activeWallet.url);
+         waitForPayment(pubkey, checkingId, amountUnit, {
+            url: activeWallet.mint.mintUrl,
+            keys: activeWallet.keys,
+            id: activeWallet.keys.id,
+            proofs: [],
+            isReserve: false,
+            active: true,
+         });
       } catch (error) {
          console.error('Error receiving ', error);
          handleModalClose();
@@ -113,7 +155,7 @@ const Receive = () => {
       pubkey: string,
       checkingId: string,
       amountUsdCents: number,
-      mintUrl: string,
+      wallet: Wallet,
    ) => {
       let attempts = 0;
       const maxAttempts = 4;
@@ -121,7 +163,7 @@ const Receive = () => {
          const success = await checkPaymentStatus(pubkey, checkingId);
          if (success) {
             clearInterval(interval);
-            handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
+            handlePaymentSuccess(amountUsdCents, wallet, checkingId);
          }
          if (attempts >= maxAttempts) {
             clearInterval(interval);
@@ -144,7 +186,7 @@ const Receive = () => {
       }
    };
 
-   const handlePaymentSuccess = (amountUsdCents: number, mintUrl: string, quote: string) => {
+   const handlePaymentSuccess = (amountUsdCents: number, wallet: Wallet, quote: string) => {
       handleModalClose();
       addToast('Payment received!', 'success');
       dispatch(
@@ -154,8 +196,9 @@ const Receive = () => {
                amount: amountUsdCents,
                date: new Date().toLocaleString(),
                status: TxStatus.PAID,
-               mint: mintUrl,
+               mint: wallet.url,
                quote,
+               unit: activeUnit,
             },
          }),
       );
@@ -165,25 +208,31 @@ const Receive = () => {
       setIsReceiveModalOpen(false);
       setInvoiceToPay('');
       setInputValue('');
-      setAmountUsdCents(null);
+      setAmountUnit(null);
       setShowEcashReceiveModal(false);
       setCurrentPage('input');
    };
 
    const handleCheckAgain = async () => {
-      if (!checkingId || !amountUsdCents) throw new Error('Missing required parameters');
+      if (!checkingId || !amountUnit) throw new Error('Missing required parameters');
       setInvoiceTimeout(false);
       const pubkey = window.localStorage.getItem('pubkey');
       if (!pubkey) {
          throw new Error('No pubkey found');
       }
-      const mintUrl = activeWallet?.mint.mintUrl;
-      if (!mintUrl) {
-         throw new Error('No mint url found for active wallet');
+      if (!activeWallet) {
+         throw new Error('No active wallet found');
       }
       const paid = await checkPaymentStatus(pubkey, checkingId);
       if (paid) {
-         handlePaymentSuccess(amountUsdCents, mintUrl, checkingId);
+         // TODO: get rid of `Wallet` type
+         const wallet = {
+            url: activeWallet.mint.mintUrl,
+            keys: activeWallet.keys,
+            id: activeWallet.keys.id,
+            active: true,
+         } as Wallet;
+         handlePaymentSuccess(amountUnit, wallet, checkingId);
       } else {
          setInvoiceTimeout(true);
       }
@@ -196,20 +245,22 @@ const Receive = () => {
             <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
          <Modal show={isReceiveModalOpen} onClose={handleModalClose}>
-            <Modal.Header>Receive</Modal.Header>
+            <Modal.Header>
+               {activeWallet?.keys.unit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
+            </Modal.Header>
             <Modal.Body>
                {currentPage === 'input' ? (
                   <div className='space-y-6'>
-                     <textarea
-                        className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
-                        placeholder='Paste token or enter amount USD (eg. 0.21)'
-                        value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
-                     />
-                     <div className='flex items-center justify-between mx-3'>
-                        <div className='mb-3 md:mb-0'>
-                           <QRScannerButton onScan={setInputValue} />
-                        </div>
+                     <div className='relative'>
+                        <textarea
+                           className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
+                           placeholder={`Paste token or enter amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'}`}
+                           value={inputValue}
+                           onChange={e => setInputValue(e.target.value)}
+                        />
+                     </div>
+                     <div className='flex items-center justify-between space-x-4'>
+                        <QRScannerButton onScan={setInputValue} />
                         <Button
                            isProcessing={fetchingInvoice}
                            className='btn-primary'
@@ -220,12 +271,16 @@ const Receive = () => {
                      </div>
                   </div>
                ) : (
-                  <WaitForInvoiceModalBody
-                     invoice={invoiceToPay}
-                     amountUsdCents={amountUsdCents || 0}
-                     invoiceTimeout={invoiceTimeout}
-                     onCheckAgain={handleCheckAgain}
-                  />
+                  amountUnit &&
+                  activeWallet && (
+                     <WaitForInvoiceModalBody
+                        invoice={invoiceToPay}
+                        amount={amountUnit}
+                        unit={activeUnit}
+                        invoiceTimeout={invoiceTimeout}
+                        onCheckAgain={handleCheckAgain}
+                     />
+                  )
                )}
             </Modal.Body>
          </Modal>

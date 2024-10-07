@@ -2,7 +2,12 @@ import { Mint } from '@prisma/client';
 import { findOrCreateMint } from './mintModels';
 import prisma from '@/lib/prisma';
 
-async function createUser(pubkey: string, defaultMint: Mint, username?: string) {
+async function createUser(
+   pubkey: string,
+   defaultMint: Mint,
+   username?: string,
+   defaultUnit?: string,
+) {
    const user = await prisma.user.create({
       data: {
          pubkey,
@@ -12,6 +17,7 @@ async function createUser(pubkey: string, defaultMint: Mint, username?: string) 
                url: defaultMint.url,
             },
          },
+         defaultUnit: defaultUnit || 'usd',
       },
    });
    return user;
@@ -33,7 +39,19 @@ async function findUserByPubkey(pubkey: string) {
       },
       include: {
          contacts: {
-            select: { linkedUser: { select: { pubkey: true, username: true, nostrPubkey: true } } },
+            select: {
+               linkedUser: {
+                  select: {
+                     pubkey: true,
+                     username: true,
+                     nostrPubkey: true,
+                     lud16: true,
+                     defaultMintUrl: true,
+                     defaultUnit: true,
+                     mintlessReceive: true,
+                  },
+               },
+            },
          },
       },
    });
@@ -62,14 +80,19 @@ async function updateUser(
       username?: string;
       receiving?: boolean;
       mintUrl?: string;
+      defaultKeysetId?: string;
+      defaultUnit?: string;
       nostrPubkey?: string | null;
+      lud16?: string | null;
    },
 ) {
    let defaultMint;
    if (updates.mintUrl) {
-      const mintLocal = await findOrCreateMint(updates.mintUrl);
+      console.log('UPDATES', updates);
+      const mintLocal = await findOrCreateMint(updates.mintUrl, updates.defaultKeysetId);
 
       delete updates.mintUrl;
+      delete updates.defaultKeysetId;
 
       defaultMint = {
          connect: {

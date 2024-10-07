@@ -12,7 +12,7 @@ import {
 } from '@/lib/campaignModels';
 import { findUserByPubkey, getUserClaimedCampaignGifts } from '@/lib/userModels';
 import { nwc } from '@getalby/sdk';
-import { computeTxId, initializeUsdWallet } from '@/utils/cashu';
+import { computeTxId, initializeWallet } from '@/utils/cashu';
 import { getEncodedTokenV4, MintQuoteState } from '@cashu/cashu-ts';
 import { createTokenInDb } from '@/lib/tokenModels';
 import { notifyTokenReceived } from '@/lib/notificationModels';
@@ -70,7 +70,9 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             return res.status(404).json({ message: 'User not found' });
          }
 
-         const wallet = await initializeUsdWallet(receivingUser.defaultMintUrl);
+         const wallet = await initializeWallet(receivingUser.defaultMintUrl, {
+            unit: user.defaultUnit,
+         });
 
          const { request: invoice, quote } = await wallet.createMintQuote(campaign.gift.amount);
 

@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { NotificationType } from '@/types';
-import { Notification, Token } from '@prisma/client';
+import { MintlessTransaction, Notification, Token } from '@prisma/client';
 
 /**
  *
@@ -12,7 +12,7 @@ import { Notification, Token } from '@prisma/client';
 export async function createNotification(
    userPubkey: string,
    type: NotificationType,
-   data: string,
+   data: string | null,
    tokenId?: string,
 ): Promise<Notification> {
    return prisma.notification.create({
@@ -25,9 +25,50 @@ export async function createNotification(
    });
 }
 
+export async function createMintlessTransactionAndNotification(
+   gift: string | null,
+   amount: number,
+   recipientPubkey: string,
+   createdByPubkey: string,
+   isFee: boolean = false,
+): Promise<{ mintlessTransaction: MintlessTransaction; notification: Notification }> {
+   return prisma.$transaction(async prisma => {
+      const notification = await prisma.notification.create({
+         data: {
+            userPubkey: recipientPubkey,
+            type: NotificationType.MintlessTransaction,
+            isRead: false,
+         },
+      });
+
+      const mintlessTransaction = await prisma.mintlessTransaction.create({
+         data: {
+            gift,
+            notificationId: notification.id.toString(),
+            amount,
+            recipientPubkey,
+            createdByPubkey,
+            isFee,
+            Notification: {
+               connect: { id: notification.id },
+            },
+         },
+      });
+
+      await prisma.notification.update({
+         where: { id: notification.id },
+         data: { mintlessTransactionId: mintlessTransaction.id },
+      });
+
+      return { mintlessTransaction, notification };
+   });
+}
+
 export async function getUserNotifications(
    userPubkey: string,
-): Promise<(Notification & { token: Token | null })[]> {
+): Promise<
+   (Notification & { token: Token | null; mintlessTransaction: MintlessTransaction | null })[]
+> {
    return prisma.notification.findMany({
       where: {
          userPubkey,
@@ -37,6 +78,7 @@ export async function getUserNotifications(
       },
       include: {
          token: true,
+         mintlessTransaction: true,
       },
    });
 }

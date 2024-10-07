@@ -6,7 +6,12 @@ import { updateMintQuote } from '@/lib/mintQuoteModels';
 import { InvoicePollingRequest, NotificationType, ProofData } from '@/types';
 import { findMintByUrl } from '@/lib/mintModels';
 import { createNotification, notifyTokenReceived } from '@/lib/notificationModels';
-import { computeTxId, createPreferredProofsForFee, getProofsForPreference } from '@/utils/cashu';
+import {
+   computeTxId,
+   createPreferredProofsForFee,
+   getProofsForPreference,
+   initializeWallet,
+} from '@/utils/cashu';
 import { createTokenInDb } from '@/lib/tokenModels';
 
 export type PollingApiResponse = {
@@ -28,30 +33,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
    }
 
-   const mintLocal = await findMintByUrl(mintUrl);
+   // const mint = new CashuMint(mintUrl);
+   // const keys = await mint.getKeys(keysetId);
+   // // const keyset = activeKeys.keysets.find(keyset => keyset.id === keysetId);
 
-   const keyset = mintLocal.keysets.find(keyset => keyset.id === keysetId);
-   if (!keyset) {
-      res.status(404).send({ success: false, message: 'Keyset not found.' });
-      return;
-   }
+   // const mintLocal = await findMintByUrl(mintUrl);
 
-   const keys = keyset.keys.reduce(
-      (acc, key) => {
-         const [tokenAmt, pubkey] = key.split(':');
-         acc[tokenAmt] = pubkey;
-         return acc;
-      },
-      {} as Record<string, string>,
-   );
+   // const keyset = mintLocal.keysets.find(keyset => keyset.id === keysetId);
+   // if (!keyset) {
+   //    res.status(404).send({ success: false, message: 'Keyset not found.' });
+   //    return;
+   // }
 
-   const wallet = new CashuWallet(new CashuMint(mintLocal.url), {
-      keys: {
-         id: keysetId,
-         keys,
-         unit: keyset.unit,
-      },
-   });
+   // const keys = keyset.keys.reduce(
+   //    (acc, key) => {
+   //       const [tokenAmt, pubkey] = key.split(':');
+   //       acc[tokenAmt] = pubkey;
+   //       return acc;
+   //    },
+   //    {} as Record<string, string>,
+   // );
+
+   // const wallet = new CashuWallet(new CashuMint(mintLocal.url), {
+   //    keys: {
+   //       id: keysetId,
+   //       keys,
+   //       unit: keyset.unit,
+   //    },
+   // });
+
+   // NOTE: this should currently throw an error if the keyset is no longer active
+   const wallet = await initializeWallet(mintUrl, { keysetId: keysetId });
 
    if (typeof slug !== 'string') {
       res.status(400).send({ success: false, message: 'Invalid hash provided.' });
@@ -85,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             let proofsToSendToUser: Proof[] = [];
             if (fee === 0) {
                const { proofs } = await wallet.mintTokens(amount, slug, {
-                  keysetId: keyset.id,
+                  keysetId: keysetId,
                   pubkey: isTip ? `02${pubkey}` : undefined, // if its a tip, we should lock the tokens. TOOD: always lock to pubkey, this will just require that the frontend unlocks them when polling to updateProofsAndBalance. We know the pubkey that's recieving the proofs, so we can lock to that
                });
                proofsToSendToUser = proofs;
@@ -100,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* create all the unlocked proofs */
                const { proofs } = await wallet.mintTokens(amount, slug, {
-                  keysetId: keyset.id,
+                  keysetId: keysetId,
                   preference: [...amountPreference, ...feePreference],
                });
 
@@ -114,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                if (isTip) {
                   /* lock the user's tokens */
                   const { send: lockedUserProofs } = await wallet.send(amount - fee, amountProofs, {
-                     keysetId: keyset.id,
+                     keysetId: keysetId,
                      pubkey: '02' + pubkey,
                   });
                   proofsToSendToUser = lockedUserProofs;
@@ -124,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* lock the fee to Boardwalk */
                const { send: lockedFeeProofs } = await wallet.send(fee, feeProofs, {
-                  keysetId: keyset.id,
+                  keysetId: keysetId,
                   pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
                });
 
@@ -150,6 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   C: proof.C,
                   userId: user.id,
                   mintKeysetId: keysetId,
+                  unit: wallet.keys.unit as 'usd' | 'sat',
                };
             });
 

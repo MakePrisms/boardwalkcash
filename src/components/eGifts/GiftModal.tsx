@@ -12,10 +12,14 @@ import ViewContactsModalBody from '../modals/ContactsModal/ViewContactsModalBody
 import { useToast } from '@/hooks/util/useToast';
 import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
-import { formatCents } from '@/utils/formatting';
+import { formatUnit } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
 import Tooltip from '../utility/Toolttip';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface GiftModalProps {
    isOpen: boolean;
@@ -38,13 +42,15 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       contact ? GiftStep.SelectGift : GiftStep.SelectContact,
    );
    const [selectedContact, setSelectedContact] = useState<PublicContact | null>(contact || null);
-   const [amountCents, setAmountCents] = useState<number | null>(null);
+   const [amountUnit, setAmountUnit] = useState<number | null>(null);
    const [stickerPath, setStickerPath] = useState<string | null>(null);
    const [gift, setGift] = useState<GiftAsset | undefined>(undefined);
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [token, setToken] = useState<string | null>(null);
    const { createSendableToken } = useCashu();
    const { sendTokenAsNotification } = useNotifications();
+   const { createMintlessToken, sendToMintlessUser } = useMintlessMode();
+   const user = useSelector((state: RootState) => state.user);
    const [sending, setSending] = useState(false);
    const { addToast } = useToast();
    /* only used when using an invoice, on profile page */
@@ -52,18 +58,20 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [quoteId, setQuoteId] = useState('');
    const { sendCampaignGift } = useGifts();
+   const { activeWallet, activeUnit, nwcIsMain } = useCashuContext();
 
    const handleClose = () => {
       onClose();
       setCurrentStep(GiftStep.SelectContact);
       setToken(null);
       setSelectedContact(null);
-      setAmountCents(null);
+      setAmountUnit(null);
       setStickerPath(null);
+      setSending(false);
    };
 
    const handleGiftSelected = (gift: GiftAsset) => {
-      setAmountCents(gift.amountCents);
+      setAmountUnit(gift.amount);
       setStickerPath(gift.selectedSrc);
       setGift(gift);
    };
@@ -81,14 +89,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.SelectGift);
    };
 
-   const handleLightningTip = async (amountCents: number, feeCents?: number) => {
+   const handleLightningTip = async (amountUnit: number, feeCents?: number) => {
       if (!selectedContact) {
          throw new Error('No contact selected');
       }
       try {
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
-            amountCents + (feeCents || 0),
+            amountUnit + (feeCents || 0),
             gift?.name,
             feeCents,
          );
@@ -157,51 +165,88 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
    };
 
    const onSendGift = async () => {
-      if (!amountCents || !stickerPath) {
+      if (!amountUnit || !stickerPath) {
          throw new Error('Oops, didnt select a gift');
       }
       setSending(true);
-      if (gift?.campaingId) {
-         if (!selectedContact) throw new Error('No contact selected');
-         const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(
-            e => {
+      try {
+         if (gift?.campaingId) {
+            if (!selectedContact) throw new Error('No contact selected');
+            const { token } = await sendCampaignGift(gift, selectedContact?.pubkey).catch(e => {
                const errMsg = e.message || 'Failed to send eGift';
                addToast(errMsg, 'error');
                setSending(false);
                return { token: null };
-            },
-         );
-         if (token) {
-            addToast(`eGift sent to ${selectedContact?.username}`, 'success');
-            setToken(token);
-            setCurrentStep(GiftStep.ShareGift);
+            });
+            if (token) {
+               addToast(`eGift sent to ${selectedContact?.username}`, 'success');
+               setToken(token);
+               setCurrentStep(GiftStep.ShareGift);
+            }
+            setSending(false);
+            return;
+         } else if (useInvoice) {
+            handleLightningTip(amountUnit, gift?.fee);
+            return;
          }
+         let sendableToken: string | undefined;
+         if (user.sendMode === 'mintless' && !selectedContact?.mintlessReceive) {
+            if (!selectedContact) {
+               throw new Error('No contact selected');
+            }
+            console.log('creating mintless token for', selectedContact);
+            sendableToken = await createMintlessToken(
+               amountUnit,
+               activeUnit,
+               selectedContact,
+               gift?.name,
+            );
+         } else if (selectedContact?.mintlessReceive) {
+            return handleMintlessReceive(amountUnit, selectedContact, gift);
+         } else {
+            sendableToken = await createSendableToken(amountUnit, {
+               pubkey: `02${selectedContact?.pubkey}`,
+               gift: gift?.name,
+               feeCents: gift?.fee,
+            });
+         }
+
+         if (!sendableToken) {
+            /* this error case is handled in useCashu */
+            return;
+         }
+
+         const txid = await postTokenToDb(sendableToken, gift?.name);
+         // TODO: won't work if tokes are not locked
+         await sendTokenAsNotification(sendableToken, txid);
+         setToken(sendableToken);
+
+         setCurrentStep(GiftStep.ShareGift);
+
          setSending(false);
-         return;
-      } else if (useInvoice) {
-         handleLightningTip(amountCents, gift?.fee);
-         return;
+         addToast(
+            `eGift sent (${formatUnit(amountUnit + (gift?.fee || 0), activeUnit)})`,
+            'success',
+         );
+      } catch (error: any) {
+         console.error('Error sending token:', error);
+         const msg = error.message || 'Failed to send token';
+         addToast(msg, 'error');
+         setSending(false);
       }
-      const sendableToken = await createSendableToken(amountCents, {
-         pubkey: `02${selectedContact?.pubkey}`,
-         gift: gift?.name,
-         feeCents: gift?.fee,
-      });
+   };
 
-      if (!sendableToken) {
-         /* this error case is handled in useCashu */
-         return;
+   const handleMintlessReceive = async (
+      amountUnit: number,
+      contact: PublicContact,
+      gift?: GiftAsset,
+   ) => {
+      if (!contact.lud16) {
+         throw new Error('Contact does not have a lightning address');
       }
-
-      const txid = await postTokenToDb(sendableToken, gift?.name);
-      // TODO: won't work if tokes are not locked
-      await sendTokenAsNotification(sendableToken, txid);
-      setToken(sendableToken);
-
-      setCurrentStep(GiftStep.ShareGift);
-
-      setSending(false);
-      addToast(`eGift sent (${formatCents(amountCents + (gift?.fee || 0))})`, 'success');
+      const transaction = await sendToMintlessUser(amountUnit, activeUnit, contact, gift?.name);
+      addToast(`eGift sent`, 'success');
+      handleClose();
    };
 
    const renderContent = () => {
@@ -238,14 +283,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                </>
             );
          case GiftStep.ConfirmGift:
-            if (!amountCents || !stickerPath) {
+            if (!amountUnit || !stickerPath) {
                throw new Error('Oops, didnt select a gift');
             }
             return (
                <>
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
-                        <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                        <ViewGiftModalBody amountCents={amountUnit} stickerPath={stickerPath} />
                         {gift?.fee && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>
@@ -258,7 +303,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                                           <LockClosedIcon className='h-3 w-3 text-gray-500' />
                                        </div>
                                     </Tooltip>
-                                    {`${formatCents(gift.fee, false)}`}
+                                    {/* {`${formatCents(gift.fee, false)}`} */}
                                  </span>
                               </p>
                            </div>
@@ -294,7 +339,8 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <WaitForInvoiceModalBody
                         invoice={invoice}
-                        amountUsdCents={amountCents! + (gift?.fee || 0)}
+                        amount={amountUnit! + (gift?.fee || 0)}
+                        unit={'usd'}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />
@@ -302,14 +348,14 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                </>
             );
          case GiftStep.ShareGift:
-            if (!amountCents || !stickerPath) {
+            if (!amountUnit || !stickerPath) {
                throw new Error('Oops, didnt select a gift');
             }
             return (
                <>
                   <Modal.Body>
                      <div className='flex flex-col w-full text-black'>
-                        <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} />
+                        <ViewGiftModalBody amountCents={amountUnit} stickerPath={stickerPath} />
                         {gift?.fee && (
                            <div className='flex justify-center mb-2'>
                               <p className='text-xs flex items-center text-gray-500'>

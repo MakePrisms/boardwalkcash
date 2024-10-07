@@ -1,12 +1,15 @@
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useToast } from '@/hooks/util/useToast';
 import { EcashTransaction, TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
-import { useAppDispatch } from '@/redux/store';
-import { isTokenSpent } from '@/utils/cashu';
+import { RootState, useAppDispatch } from '@/redux/store';
+import { initializeWallet, isTokenSpent, proofsLockedTo } from '@/utils/cashu';
+import { formatSats } from '@/utils/formatting';
 import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { Spinner } from 'flowbite-react';
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 
 interface ClaimTokenButtonProps {
    token: Token;
@@ -19,6 +22,8 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
    const { activeWallet } = useCashuContext();
+   const { mintlessClaimToken } = useMintlessMode();
+   const user = useSelector((state: RootState) => state.user);
    const handleClaim = async () => {
       const privkey = window.localStorage.getItem('privkey');
       if (!privkey) {
@@ -26,6 +31,35 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
       }
       setClaiming(true);
       try {
+         if (user.receiveMode === 'mintless') {
+            console.log('claiming mintless token');
+            if (!user.lud16) throw new Error('No lud16 found');
+
+            const lockedTo = proofsLockedTo(token.token[0].proofs);
+
+            let privkey: string | undefined;
+            if (lockedTo) {
+               privkey = user.privkey;
+            }
+
+            const wallet = await initializeWallet(token.token[0].mint, { unit: token.unit });
+
+            try {
+               const { amountMeltedSat } = await mintlessClaimToken(wallet, token, {
+                  privkey,
+               });
+               if (!amountMeltedSat) throw new Error('Failed to claim token');
+               addToast(`Claimed ${formatSats(amountMeltedSat)} to Lightning Wallet`, 'success');
+               clearNotification();
+            } catch (error: any) {
+               console.error('Error claiming token:', error);
+               const msg = error.message || 'Failed to claim token';
+               addToast(msg, 'error');
+            } finally {
+               setClaiming(false);
+               return;
+            }
+         }
          if (await claimToken(token, privkey)) {
             clearNotification();
             // TODO: move all tx history logic to useCashu or something like that rather than in all the componenents
@@ -56,7 +90,7 @@ const ClaimTokenButton = ({ token, clearNotification }: ClaimTokenButtonProps) =
       }
    };
 
-   if (token.token[0].mint !== activeWallet?.mint.mintUrl) {
+   if (token.token[0].mint !== activeWallet?.mint.mintUrl && user.receiveMode !== 'mintless') {
       return null;
    }
 

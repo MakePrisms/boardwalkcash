@@ -1,4 +1,4 @@
-import { EcashTransaction, LightningTransaction } from '@/redux/slices/HistorySlice';
+import { EcashTransaction, LightningTransaction, Transaction } from '@/redux/slices/HistorySlice';
 import { Modal, Table } from 'flowbite-react';
 import React, { useState } from 'react';
 import HistoryTableRow from './HistoryTableRow';
@@ -11,7 +11,7 @@ import useGifts from '@/hooks/boardwalk/useGifts';
 import { txHistoryTableTheme } from '@/themes/tableThemes';
 
 const HistoryTable: React.FC<{
-   history: (EcashTransaction | LightningTransaction)[];
+   history: Transaction[];
 }> = ({ history }) => {
    const [lockedToken, setLockedToken] = useState<string>('');
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -70,7 +70,7 @@ const HistoryTable: React.FC<{
       <>
          <Table theme={txHistoryTableTheme} className='text-white'>
             <Table.Body>
-               {history.map((tx: EcashTransaction | LightningTransaction, i) => (
+               {history.map((tx: Transaction, i) => (
                   <HistoryTableRow
                      key={i}
                      tx={tx}
@@ -92,7 +92,7 @@ const HistoryTable: React.FC<{
                onClose={closeViewGiftModal}
                stickerPath={selectedGift.selectedSrc}
                selectedContact={tokenLockedTo}
-               amountCents={selectedGift.amountCents}
+               amountCents={selectedGift.amount}
                txid={txid}
             />
          )}

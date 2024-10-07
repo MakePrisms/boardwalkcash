@@ -7,6 +7,12 @@ import SetMainButton from './SetMainButton';
 import SwapToMainButton from './SwapToMainButton';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { formatUnit } from '@/utils/formatting';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
+import { useProofStorage } from '@/hooks/cashu/useProofStorage';
+import { getDecodedToken, getEncodedToken, getEncodedTokenV4 } from '@cashu/cashu-ts';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 interface MintSidebarItemProps {
    keyset: Wallet;
@@ -18,9 +24,12 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
    const [setMainOpen, setSetMainOpen] = useState(false);
    const [swapping, setSwapping] = useState(false);
 
-   const { swapToActiveWallet, getWallet, balanceByWallet } = useCashu();
+   const { swapToActiveWallet, balanceByWallet } = useCashu();
    const { addToast } = useToast();
-   const { setToMain } = useCashuContext();
+   const { setToMain, getWallet } = useCashuContext();
+   const { getAllProofsByKeysetId, removeProofs } = useProofStorage();
+   const { mintlessClaimToken } = useMintlessMode();
+   const user = useSelector((state: RootState) => state.user);
 
    const handleSetMain = async () => {
       setToMain(keyset.id);
@@ -41,6 +50,30 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
          return;
       }
 
+      if (user.receiveMode === 'mintless') {
+         const proofs = getAllProofsByKeysetId(thisWallet.keys.id);
+         const token = getDecodedToken(
+            getEncodedTokenV4({
+               token: [{ proofs, mint: thisWallet.mint.mintUrl }],
+               unit: thisWallet.keys.unit,
+            }),
+         );
+         return mintlessClaimToken(thisWallet, token)
+            .then(({ amountMeltedSat }) => {
+               addToast(
+                  `Claimed ${formatUnit(amountMeltedSat, 'sat')} to your Lightning Address`,
+                  'success',
+               );
+               removeProofs(proofs);
+            })
+            .catch((error: any) => {
+               console.error('Error claiming token:', error);
+               const msg = error.message || 'Failed to claim token';
+               addToast(msg, 'error');
+            })
+            .finally(() => setSwapping(false));
+      }
+
       swapToActiveWallet(thisWallet, { max: true }).finally(() => setSwapping(false));
    };
 
@@ -54,13 +87,19 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
       }
    };
 
-   useEffect(() => {
-      const thisBalanceCents = balanceByWallet[keyset.id] || 0;
+   // useEffect(() => {
+   //    const thisBalanceUnit = balanceByWallet[keyset.id] || 0;
 
-      const thisBalance = (thisBalanceCents / 100).toFixed(2);
+   //    console.log('thisBalanceUnit', thisBalanceUnit);
 
-      setMintBalance(thisBalance.toString());
-   }, [keyset, balanceByWallet]);
+   //    if (keyset.keys.unit === 'sat') {
+   //       setMintBalance(thisBalanceUnit.toString());
+   //    } else if (keyset.keys.unit === 'usd') {
+   //       /* convert from cents to dollars */
+   //       const thisBalance = (thisBalanceUnit / 100).toFixed(2);
+   //       setMintBalance(thisBalance.toString());
+   //    }
+   // }, [keyset, balanceByWallet]);
 
    const formattedMintUrl = () => {
       const mintHostDomain = keyset.url.replace('https://', '');
@@ -74,7 +113,8 @@ export const MintSidebarItem = ({ keyset }: MintSidebarItemProps) => {
          <>
             <div className='flex flex-col justify-between min-w-full mb-5'>
                <div className='flex justify-between'>
-                  {formattedMintUrl()} <Badge>${mintBalance}</Badge>
+                  {formattedMintUrl()}{' '}
+                  <Badge>{formatUnit(balanceByWallet[keyset.id] || 0, keyset.keys.unit)}</Badge>
                </div>
                <div className='flex justify-between align-middle min-w-max'>
                   <div className='flex space-x-4'>

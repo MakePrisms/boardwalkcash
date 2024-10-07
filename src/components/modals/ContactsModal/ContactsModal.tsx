@@ -5,6 +5,7 @@ import { Modal } from 'flowbite-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import ViewContactsModalBody from './ViewContactsModalBody';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface ContactsModalProps {
    isOpen: boolean;
@@ -24,6 +25,7 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
    const { sortedContacts } = useContacts();
    const [addingContact, setAddingContact] = useState(false);
    const [modalTitle, setModalTitle] = useState('Contacts');
+   const { activeWallet } = useCashuContext();
 
    const filteredContacts = useMemo(() => {
       const f = [
@@ -31,6 +33,10 @@ const ContactsModal: React.FC<ContactsModalProps> = ({
          {
             username: user.username ? `${user.username} (me)` : '(me)',
             pubkey: user.pubkey!,
+            lud16: user.lud16,
+            mintlessReceive: user.receiveMode === 'mintless',
+            defaultMintUrl: activeWallet?.mint.mintUrl,
+            defaultUnit: activeWallet?.keys.unit,
          } as PublicContact,
       ].filter(contact => contact.username?.toLowerCase().includes(searchTerm.toLowerCase()));
 
