@@ -1,12 +1,12 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { PayInvoiceResponse, PublicContact } from '@/types';
+import { Currency, PayInvoiceResponse, PublicContact } from '@/types';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import { nwc } from '@getalby/sdk';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
-import { formatCents } from '@/utils/formatting';
-import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
+import { formatSats } from '@/utils/formatting';
+import { addTransaction, MintlessTransaction, TxStatus } from '@/redux/slices/HistorySlice';
 import { getCallbackFromLightningAddress, getInvoiceFromLightningAddress } from '@/utils/lud16';
 import {
    setReceiveModeAction,
@@ -17,15 +17,19 @@ import {
 import { authenticatedRequest, updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
 import { initializeWallet, isTestMint } from '@/utils/cashu';
-import { getEncodedTokenV4 } from '@cashu/cashu-ts';
+import { CashuWallet, getEncodedTokenV4, MeltQuoteResponse, Token } from '@cashu/cashu-ts';
 import { useCashu } from '../cashu/useCashu';
+import { useProofStorage } from '../cashu/useProofStorage';
+import { useCashuContext } from '../contexts/cashuContext';
 
 const useMintlessMode = () => {
    const { nwcUri, pubkey, lud16, sendMode, receiveMode } = useSelector(
       (state: RootState) => state.user,
    );
-   const { satsToUnit, unitToSats } = useExchangeRate();
-   const { payInvoice: cashuPayInvoice } = useCashu();
+   const { satsToUnit, convertToUnit } = useExchangeRate();
+   const { payInvoice: cashuPayInvoice, unlockProofs } = useCashu();
+   const { activeUnit } = useCashuContext();
+   const { addProofs } = useProofStorage();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
 
@@ -91,39 +95,42 @@ const useMintlessMode = () => {
       return client;
    };
 
+   const getNwcBalance = async () => {
+      const nwc = await initNwc();
+      const { balance: balanceMsat } = await nwc.getBalance();
+      return balanceMsat / 1000;
+   };
+
    const payInvoice = async (invoice: string): Promise<PayInvoiceResponse> => {
       const nwc = await initNwc();
 
       const res = await nwc.payInvoice({ invoice });
 
       const amountSats = getAmountFromInvoice(invoice);
-      const amountUsdCents = await satsToUnit(amountSats, 'usd');
 
-      dispatch(setSuccess(`Sent ${formatCents(amountUsdCents)}!`));
+      dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));
       dispatch(
          addTransaction({
-            type: 'lightning',
+            type: 'mintless',
             transaction: {
-               amount: -amountUsdCents,
-               unit: 'usd',
+               amount: -amountSats,
+               unit: Currency.SAT,
+               type: 'mintless',
+               gift: null,
                date: new Date().toLocaleString(),
-               status: TxStatus.PAID,
-               mint: null,
-               quote: null,
-            },
+            } as MintlessTransaction,
          }),
       );
 
       return {
          preimage: res.preimage,
-         amountUsd: amountUsdCents,
+         amountUsd: amountSats,
          feePaid: 0,
       };
    };
 
-   const receiveLightningPayment = async (amountUsdCents: number) => {
-      const amountUsd = Number((amountUsdCents / 100).toFixed(2));
-      const amountSats = await unitToSats(amountUsd, 'usd');
+   // TODO: get payment status from lightning wallet
+   const receiveLightningPayment = async (amountSats: number) => {
       if (!lud16) {
          throw new Error('No lud16 found');
       }
@@ -132,13 +139,18 @@ const useMintlessMode = () => {
       return invoice;
    };
 
-   const createToken = async (amountUsdCents: number, recipient: PublicContact, gift?: string) => {
+   const createToken = async (
+      amountUnit: number,
+      unit: Currency,
+      recipient: PublicContact,
+      gift?: string,
+   ) => {
       if (!recipient.defaultMintUrl) {
          addToast('Contact does not have a default mint', 'error');
          throw new Error('Contact does not have a default mint');
       }
       if (recipient.mintlessReceive) {
-         addToast('Contact is in mintless receive mode', 'error');
+         addToast('Contact is in Lightning wallet mode', 'error');
          throw new Error('Contact is in mintless receive mode');
       }
       if (isTestMint(recipient.defaultMintUrl)) {
@@ -146,35 +158,29 @@ const useMintlessMode = () => {
          throw new Error('Cannot send to test mints');
       }
       try {
-         const wallet = await initializeWallet(recipient.defaultMintUrl, { unit: 'usd' });
-         const { quote, request } = await wallet.createMintQuote(amountUsdCents);
+         console.log('creating mintless token', recipient.defaultUnit);
+         const wallet = await initializeWallet(recipient.defaultMintUrl, {
+            unit: recipient.defaultUnit,
+         });
+         let amount: number;
+         if (unit !== recipient.defaultUnit) {
+            amount = await convertToUnit(amountUnit, unit, recipient.defaultUnit);
+         } else {
+            amount = amountUnit;
+         }
+         const { quote, request } = await wallet.createMintQuote(amount);
          const res = await payInvoice(request);
          if (!res) {
             throw new Error('Failed to pay invoice');
          }
-         const { proofs } = await wallet.mintTokens(amountUsdCents, quote, {
+         const { proofs } = await wallet.mintTokens(amount, quote, {
             keysetId: wallet.keys.id,
             pubkey: '02' + recipient.pubkey,
          });
          const token = getEncodedTokenV4({
             token: [{ proofs, mint: recipient.defaultMintUrl }],
-            unit: 'usd',
+            unit: wallet.keys.unit,
          });
-         // dispatch(
-         //    addTransaction({
-         //       type: 'ecash',
-         //       transaction: {
-         //          token: token,
-         //          amount: -amountUsdCents,
-         //          unit: 'usd',
-         //          mint: recipient.defaultMintUrl,
-         //          status: TxStatus.PENDING,
-         //          date: new Date().toLocaleString(),
-         //          pubkey: '02' + recipient.pubkey,
-         //          gift: gift,
-         //       },
-         //    }),
-         // );
          return token;
       } catch (error: any) {
          console.error('Error creating token:', error);
@@ -184,24 +190,42 @@ const useMintlessMode = () => {
    };
 
    const sendToMintlessUser = async (
-      amountUsdCents: number,
+      amountUnit: number,
+      unit: Currency,
       contact: PublicContact,
       gift?: string,
    ) => {
+      console.log('sendToMintlessUser');
       if (!contact.lud16) {
          throw new Error('Contact does not have a lightning address');
       }
       if (!contact.mintlessReceive) {
          throw new Error('Contact is not in mintless receive mode');
       }
-      const amountUsd = Number((amountUsdCents / 100).toFixed(2));
-      const amountSats = await unitToSats(amountUsd, 'usd');
+      const amountSats = await convertToUnit(amountUnit, unit, 'sat');
       const invoice = await getInvoiceFromLightningAddress(contact.lud16, amountSats * 1000);
       let tx: PayInvoiceResponse | undefined;
       if (sendMode === 'mintless') {
          tx = await payInvoice(invoice);
       } else {
+         console.log('paying invoice with cashu', invoice);
          tx = await cashuPayInvoice(invoice);
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  amount: amountSats,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PAID,
+                  mint: null,
+                  quote: null,
+                  unit: 'sat',
+                  memo: undefined,
+                  appName: undefined,
+                  pubkey: undefined,
+               },
+            }),
+         );
       }
       if (!pubkey) {
          alert('Bug: pubkey is null');
@@ -209,17 +233,110 @@ const useMintlessMode = () => {
       }
       const res = await authenticatedRequest<undefined>(`/api/mintless/transaction`, 'POST', {
          gift,
-         amount: amountUsdCents,
+         amount: amountSats,
          recipientPubkey: contact.pubkey,
          createdByPubkey: pubkey!,
          isFee: false,
       });
+      addToast(`Sent ${formatSats(amountSats)} to ${contact.username || contact.lud16}`, 'success');
+   };
+
+   const mintlessClaimToken = async (
+      wallet: CashuWallet,
+      token: Token,
+      opts?: { privkey?: string },
+   ) => {
+      const totalProofAmount = token.token[0].proofs.reduce((a, b) => a + b.amount, 0);
+      let amountToMelt = totalProofAmount;
+      const maxAttempts = 5;
+      let attempts = 0;
+      let meltQuote: MeltQuoteResponse | null = null;
+      let invoice: string;
+
+      while (attempts < maxAttempts) {
+         attempts++;
+         console.log(`Attempt ${attempts} to find valid melt quote`);
+
+         if (amountToMelt < 1) {
+            throw new Error('Amount to claim is too small for a lightning payment.');
+         }
+
+         const amountSats = await convertToUnit(amountToMelt, token.unit as string, 'sat');
+         invoice = await receiveLightningPayment(amountSats);
+
+         meltQuote = await wallet.createMeltQuote(invoice);
+
+         if (meltQuote.amount + meltQuote.fee_reserve <= totalProofAmount) {
+            console.log('Found valid melt quote');
+            break;
+         }
+
+         const difference = meltQuote.amount + meltQuote.fee_reserve - totalProofAmount;
+         amountToMelt = amountToMelt - difference;
+      }
+      if (attempts >= maxAttempts) {
+         throw new Error('Failed to find valid melt quote after maximum attempts.');
+      }
+
+      if (!meltQuote) {
+         throw new Error('Failed to find valid melt quote');
+      }
+
+      const swapToUnlock = opts?.privkey ? true : false;
+
+      const proofs = swapToUnlock
+         ? await unlockProofs(wallet, token.token[0].proofs)
+         : token.token[0].proofs;
+
+      const { change, isPaid, preimage } = await wallet.meltTokens(meltQuote, proofs).catch(e => {
+         if (swapToUnlock) {
+            /* only adding because I'm assuming these are proofs being claimed */
+            addProofs(proofs || []);
+            alert(
+               `Lightning payment from ${wallet.mint.mintUrl} to ${lud16} failed. In order to get your funds back, you will need to add ${wallet.mint.mintUrl} to your wallet. Go to settings -> "Mints" -> "Add a Mint" and add ${wallet.mint.mintUrl} to your wallet.`,
+            );
+            throw new Error(`Lightning payment from ${wallet.mint.mintUrl} to ${lud16} failed`);
+         } else {
+            throw e;
+         }
+      });
+
+      if (!isPaid) {
+         throw new Error('Melt failed');
+      }
+
+      if (change) {
+         await addProofs(change);
+      }
+
+      const amountSat = await convertToUnit(amountToMelt, token.unit as string, 'sat');
+
+      dispatch(
+         addTransaction({
+            type: 'mintless',
+            transaction: {
+               amount: amountToMelt,
+               unit: token.unit as Currency,
+               gift: null,
+               type: 'mintless',
+               date: new Date().toLocaleString(),
+            } as MintlessTransaction,
+         }),
+      );
+
+      return {
+         preimage,
+         amountMelted: amountToMelt,
+         amountMeltedSat: amountSat,
+      };
    };
 
    return {
       nwcPayInvoice: payInvoice,
       mintlessReceive: receiveLightningPayment,
       createMintlessToken: createToken,
+      mintlessClaimToken,
+      getNwcBalance,
       sendToMintlessUser,
       toggleSendMode,
       toggleReceiveMode,

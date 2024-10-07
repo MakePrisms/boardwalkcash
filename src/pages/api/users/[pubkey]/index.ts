@@ -71,6 +71,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                      .json({ message: 'Must specify default unit when updating mint' });
                }
                updates = { ...updates, mintUrl, defaultKeysetId, defaultUnit };
+            } else if (defaultUnit) {
+               updates = { ...updates, defaultUnit };
             }
             if (hideFromLeaderboard !== undefined) {
                updates = { ...updates, hideFromLeaderboard };

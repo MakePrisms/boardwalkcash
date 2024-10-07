@@ -203,6 +203,7 @@ export type ContactNotificationData = {
 export type MintlessTransactionNotificationData = {
    id: string;
    amount: number;
+   unit: Currency;
    contact?: PublicContact; // TODO should be required
    isFee: boolean;
    timeAgo: string;

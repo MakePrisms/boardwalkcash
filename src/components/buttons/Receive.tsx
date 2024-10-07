@@ -34,7 +34,7 @@ const Receive = () => {
    const [checkingId, setCheckingId] = useState<string | undefined>();
 
    const { decodeToken } = useCashu();
-   const { activeWallet } = useCashuContext();
+   const { activeWallet, activeUnit } = useCashuContext();
    const { mintlessReceive } = useMintlessMode();
    const { addToast } = useToast();
    const dispatch = useDispatch();
@@ -66,7 +66,7 @@ const Receive = () => {
       const handleAmountInput = () => {
          const parsedAmount = parseFloat(inputValue);
          if (!isNaN(parsedAmount)) {
-            switch (activeWallet?.keys.unit) {
+            switch (activeUnit) {
                case 'usd':
                   setAmountUnit(parsedAmount * 100);
                   break;
@@ -114,6 +114,10 @@ const Receive = () => {
       try {
          setFetchingInvoice(true);
          if (user.receiveMode === 'mintless') {
+            if (activeUnit === 'usd') {
+               addToast('Switch to BTC or disable mintless receive', 'error');
+               throw new Error('Cannot receive mintless in usd mode');
+            }
             console.log('using mintless mode');
             const invoice = await mintlessReceive(amountUnit);
             setInvoiceToPay(invoice);
@@ -194,7 +198,7 @@ const Receive = () => {
                status: TxStatus.PAID,
                mint: wallet.url,
                quote,
-               unit: wallet.keys.unit as 'usd' | 'sat',
+               unit: activeUnit,
             },
          }),
       );
@@ -272,7 +276,7 @@ const Receive = () => {
                      <WaitForInvoiceModalBody
                         invoice={invoiceToPay}
                         amount={amountUnit}
-                        unit={activeWallet.keys.unit as 'sat' | 'usd'}
+                        unit={activeUnit}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />

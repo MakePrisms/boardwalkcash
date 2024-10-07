@@ -1,5 +1,5 @@
 import { RootState, useAppDispatch } from '@/redux/store';
-import { CashuMint, CashuWallet, MintKeys, Proof, Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
+import { Proof, Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { Button, Modal, Spinner } from 'flowbite-react';
 import Tooltip from '@/components/utility/Toolttip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,9 +13,10 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import StickerItem from '../eGifts/stickers/StickerItem';
-import { formatUnit } from '@/utils/formatting';
-import { isTokenSpent } from '@/utils/cashu';
+import { formatSats, formatUnit } from '@/utils/formatting';
+import { initializeWallet, isTokenSpent } from '@/utils/cashu';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 interface ConfirmEcashReceiveModalProps {
    isOpen: boolean;
@@ -41,7 +42,6 @@ const ConfirmEcashReceiveModal = ({
    const [proofs, setProofs] = useState<Proof[]>([]);
    const [tokenUnit, setTokenUnit] = useState<'usd' | 'sat' | null>(null);
    const [fromActiveMint, setFromActiveMint] = useState(true);
-   // const [amountUsd, setAmountUsd] = useState<number | null>(null);
    const [amountUnit, setAmountUnit] = useState<number | null>(null);
    const [lockedTo, setLockedTo] = useState<string | null>(null);
    const user = useSelector((state: RootState) => state.user);
@@ -54,11 +54,12 @@ const ConfirmEcashReceiveModal = ({
    const dispatch = useAppDispatch();
 
    const { fetchUnitFromProofs } = useProofManager();
-   const { getMint, getWallet, swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
-   const { addWallet, activeWallet, isMintTrusted } = useCashuContext();
+   const { swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
+   const { addWalletFromMintUrl, activeWallet, isMintTrusted, getWallet } = useCashuContext();
    const { addToast } = useToast();
    const { fetchContact } = useContacts();
    const { getGiftFromToken } = useGifts();
+   const { mintlessClaimToken } = useMintlessMode();
 
    const handleModalClose = () => {
       setMintTrusted(false);
@@ -76,29 +77,6 @@ const ConfirmEcashReceiveModal = ({
       setAlreadyClaimed(false);
       onClose();
    };
-
-   const addEcashTransaction = useCallback(
-      (status: TxStatus) => {
-         if (!token) return;
-         if (!amountUnit) return;
-         if (!tokenUnit) return;
-         dispatch(
-            addTransaction({
-               type: 'ecash',
-               transaction: {
-                  token: getEncodedTokenV4(token),
-                  amount: amountUnit,
-                  mint: mintUrl,
-                  date: new Date().toLocaleString(),
-                  status,
-                  unit: tokenUnit,
-                  gift: gift?.name,
-               },
-            }),
-         );
-      },
-      [dispatch, token, amountUnit, mintUrl, gift, tokenUnit],
-   );
 
    useEffect(() => {
       if (!isOpen) return;
@@ -198,6 +176,39 @@ const ConfirmEcashReceiveModal = ({
       load(token);
    }, [token, activeWallet, contact, wallet, isOpen, isMintTrusted]);
 
+   const handleMintlessReceive = async () => {
+      if (!mintUrl) throw new Error('No mint url found');
+      if (!tokenUnit) throw new Error('Token unit is not set');
+      if (!user.lud16) throw new Error('No lud16 found');
+
+      /* Opens swap modal */
+      setSwapping(true);
+
+      /* Closes main modal, keeps swap modal open */
+      onClose();
+
+      let privkey: string | undefined;
+      if (lockedTo) {
+         privkey = user.privkey;
+      }
+
+      const wallet = await initializeWallet(mintUrl, { unit: tokenUnit });
+
+      try {
+         const { amountMeltedSat } = await mintlessClaimToken(wallet, token, {
+            privkey,
+         });
+         if (!amountMeltedSat) throw new Error('Failed to claim token');
+         addToast(`Claimed ${formatSats(amountMeltedSat)} to Lightning Wallet`, 'success');
+      } catch (error: any) {
+         console.error('Error claiming token:', error);
+         const msg = error.message || 'Failed to claim token';
+         addToast(msg, 'error');
+      } finally {
+         setSwapping(false);
+      }
+   };
+
    const handleSwapToMain = async () => {
       console.log('Swapping to main mint');
       console.log('Token', token);
@@ -209,25 +220,57 @@ const ConfirmEcashReceiveModal = ({
       /* Closes main modal, keeps swap modal open */
       onClose();
 
-      const swapFromMint = getMint(mintUrl) || new CashuMint(mintUrl);
-      const keys = await swapFromMint.getKeys(proofs[0].id).then(({ keysets }) => keysets[0]);
-      // const usdKeyset = await getUsdKeyset(swapFromMint);
+      let wallet = getWallet(proofs[0].id);
+      if (!wallet) {
+         wallet = await initializeWallet(mintUrl, { unit: tokenUnit });
+         if (!wallet) {
+            return;
+         }
+      }
 
       let privkey = lockedTo ? user.privkey : undefined;
 
-      const success = await swapToActiveWallet(
-         new CashuWallet(swapFromMint, { unit: tokenUnit, keys }),
-         {
-            proofs,
-            privkey,
-         },
-      ).finally(() => setSwapping(false)); /* Closes swap modal */
-
-      addEcashTransaction(TxStatus.PAID);
+      const success = await swapToActiveWallet(wallet, {
+         proofs,
+         privkey,
+      }).finally(() => setSwapping(false)); /* Closes swap modal */
 
       if (onSuccess && success) {
          onSuccess();
       }
+   };
+
+   /* trust and claim or claim to source mint */
+   const handleAddMint = async () => {
+      if (!mintUrl) throw new Error('No mint url found');
+      if (!tokenUnit) throw new Error('No token unit found');
+
+      console.log('Adding mint', mintUrl);
+      let wallet = getWallet(proofs[0].id);
+
+      if (!wallet) {
+         wallet = await initializeWallet(mintUrl, { unit: tokenUnit });
+         await addWalletFromMintUrl(mintUrl, undefined);
+
+         if (!wallet) {
+            return;
+         }
+      }
+      console.log('Swapping');
+
+      const privkey = lockedTo ? user.privkey : undefined;
+      const success = await swapToClaimProofs(wallet, proofs, { privkey });
+
+      handleModalClose();
+
+      if (onSuccess && success) {
+         onSuccess();
+      }
+   };
+
+   const receiveAmountString = () => {
+      if (!amountUnit || !tokenUnit) return '';
+      return formatUnit(amountUnit, tokenUnit);
    };
 
    const title = useMemo(() => {
@@ -248,83 +291,6 @@ const ConfirmEcashReceiveModal = ({
       }
       return 'Confirm Ecash Receive';
    }, [lockedTo, gift, tokenContact, contact]);
-
-   const getUsdKeyset = async (mint: CashuMint) => {
-      let keysets: MintKeys[] = [];
-      try {
-         const res = await mint.getKeys();
-         keysets = res.keysets;
-      } catch (e: any) {
-         let errMsg = '';
-         if (e.detail || e.error) {
-            errMsg = e.detail || e.error;
-         }
-         addToast(`Failed to get keys from ${mint.mintUrl}: ${errMsg}`, 'error');
-         return;
-      }
-
-      const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-      if (!usdKeyset) {
-         addToast("Mint doesn't support USD", 'error');
-         return;
-      }
-
-      return usdKeyset;
-   };
-
-   // const addUsdKeysetAndGetWallet = async (url: string) => {
-   //    const swapFromMint = getMint(url) || new CashuMint(url);
-   //    const usdKeyset = await getUsdKeyset(swapFromMint);
-
-   //    if (!usdKeyset) {
-   //       addToast("Mint doesn't support USD", 'error');
-   //       return;
-   //    }
-
-   //    // this means we haven't added the mint yet
-   //    if (!mintTrusted) {
-   //       console.log("Mint isn't trusted. Adding it: ", url);
-   //       addWallet(usdKeyset, url);
-   //       addToast('Mint added successfully', 'success');
-   //    }
-
-   //    return new CashuWallet(swapFromMint, { unit: 'usd', keys: usdKeyset });
-   // };
-
-   /* trust and claim or claim to source mint */
-   const handleAddMint = async () => {
-      throw new Error('TODO: handleAddMint');
-
-      // console.log('Adding mint', mintUrl);
-      // let wallet = getWallet(proofs[0].id);
-
-      // /* if we don't have the wallet, make sure it supports usd, then add keyset */
-      // if (!wallet) {
-      //    wallet = await addUsdKeysetAndGetWallet(mintUrl);
-      //    if (!wallet) {
-      //       return;
-      //    }
-      // }
-      // console.log('Swapping');
-
-      // const privkey = lockedTo ? user.privkey : undefined;
-      // const success = await swapToClaimProofs(wallet, proofs, { privkey });
-
-      // // TOOD: move to cashu2
-      // addEcashTransaction(TxStatus.PAID);
-
-      // handleModalClose();
-
-      // if (onSuccess && success) {
-      //    onSuccess();
-      // }
-   };
-
-   const receiveAmountString = () => {
-      if (!amountUnit || !tokenUnit) return '';
-      return formatUnit(amountUnit, tokenUnit);
-   };
 
    if (loading) {
       return (
@@ -396,27 +362,36 @@ const ConfirmEcashReceiveModal = ({
 
                {!alreadyClaimed && (!lockedTo || lockedTo === '02' + user.pubkey) && (
                   <div className='flex items-center justify-center'>
-                     {disableClaim ? (
-                        <Tooltip content='testnut'>
-                           <Button
-                              disabled={disableClaim}
-                              onClick={handleSwapToMain}
-                              className='btn-primary w-36'
-                           >
-                              Claim
-                           </Button>
-                        </Tooltip>
-                     ) : (
-                        <Button onClick={handleSwapToMain} className='btn-primary w-36'>
-                           Claim
+                     {user.receiveMode === 'mintless' ? (
+                        <Button onClick={handleMintlessReceive} className='btn-primary w-48'>
+                           Claim to Lightning Wallet
                         </Button>
+                     ) : (
+                        <>
+                           {disableClaim ? (
+                              <Tooltip content='testnut'>
+                                 <Button
+                                    disabled={disableClaim}
+                                    onClick={handleSwapToMain}
+                                    className='btn-primary w-36'
+                                 >
+                                    Claim
+                                 </Button>
+                              </Tooltip>
+                           ) : (
+                              <Button onClick={handleSwapToMain} className='btn-primary w-36'>
+                                 Claim
+                              </Button>
+                           )}
+                        </>
                      )}
                   </div>
                )}
 
                {!alreadyClaimed &&
                   !fromActiveMint &&
-                  (!lockedTo || lockedTo === '02' + user.pubkey) && (
+                  (!lockedTo || lockedTo === '02' + user.pubkey) &&
+                  user.receiveMode !== 'mintless' && (
                      <div className='flex items-center'>
                         <Button
                            className={`btn-primary xss-button !p-0 ${mintTrusted ? 'w-30' : 'w-28'}`}

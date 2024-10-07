@@ -1,6 +1,6 @@
 import { MintKeys, Proof } from '@cashu/cashu-ts';
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Wallet } from '@/types';
+import { Currency, Wallet } from '@/types';
 import { RootState } from '../store';
 import { updateUser } from '@/utils/appApiRequests';
 
@@ -33,6 +33,17 @@ export const initializeKeysets = createAsyncThunk<{ keysets: Wallet[]; balance: 
          { usd: 0 },
       );
       return { keysets, balance };
+   },
+);
+
+export const setDefaultUnit = createAsyncThunk(
+   'wallet/setDefaultUnit',
+   async (unit: Currency, { getState, dispatch }) => {
+      const state = getState() as RootState;
+
+      const updatedUser = await updateUser(state.user.pubkey!, { defaultUnit: unit });
+
+      return updatedUser.defaultUnit;
    },
 );
 

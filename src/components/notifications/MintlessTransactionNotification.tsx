@@ -1,5 +1,5 @@
 import { MintlessTransactionNotificationData } from '@/types';
-import { formatCents } from '@/utils/formatting';
+import { formatSats } from '@/utils/formatting';
 import { useMemo } from 'react';
 import ClearNotificationButton from './buttons/ClearNotificationButton';
 import NotificationItemText from './NotificationItemText';
@@ -13,11 +13,11 @@ interface TokenNotificationProps {
 }
 
 const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotificationProps) => {
-   const { amount, contact, gift, timeAgo } = data;
+   const { amount, contact, gift, timeAgo, unit } = data;
    const user = useSelector((state: RootState) => state.user);
 
    const notificationText = useMemo(() => {
-      const formattedAmount = formatCents(amount);
+      const formattedAmount = formatSats(amount);
       if (gift) {
          const getArticle = (word: string) => {
             return ['a', 'e', 'i', 'o', 'u'].includes(word.toLowerCase()[0]) ? 'an' : 'a';
@@ -34,7 +34,8 @@ const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotif
          <ViewMintlessTransactionButton
             key={1}
             contact={contact}
-            amountUsdCents={amount}
+            amountUnit={amount}
+            unit={unit}
             giftName={gift}
          />,
       ];

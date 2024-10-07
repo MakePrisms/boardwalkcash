@@ -5,12 +5,13 @@ import {
    TxStatus,
    isEcashTransaction,
    isLightningTransaction,
+   isMintlessTransaction,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
 import { setBalance } from '@/redux/slices/Wallet.slice';
 import { RootState } from '@/redux/store';
 import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
-import { BanknotesIcon, BoltIcon } from '@heroicons/react/20/solid';
+import { BanknotesIcon, BoltIcon, WalletIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -38,6 +39,9 @@ const HistoryTableRow: React.FC<{
    const { proofsLockedTo, isTokenSpent } = useCashu();
 
    const getIcon = (tx: Transaction) => {
+      if (isMintlessTransaction(tx)) {
+         return <WalletIcon className='h-5 w-5' />;
+      }
       if (isEcashTransaction(tx) && tx.isReserve) {
          return <VaultIcon className='h-5 w-5' fill={true} />;
       }
@@ -51,8 +55,7 @@ const HistoryTableRow: React.FC<{
          if (!tx.quote && !tx.mint) {
             return (
                <span>
-                  <BoltIcon className='h-5 w-5' />
-                  (nwc)
+                  <BanknotesIcon className='h-5 w-5' />
                </span>
             );
          }
@@ -147,7 +150,7 @@ const HistoryTableRow: React.FC<{
 
    const getStatusCell = useCallback(
       (tx: Transaction) => {
-         if (tx.status === TxStatus.PENDING && isEcashTransaction(tx)) {
+         if (isEcashTransaction(tx) && tx.status === TxStatus.PENDING) {
             if (tx.gift) {
                return (
                   <div className='flex justify-center'>
@@ -182,7 +185,7 @@ const HistoryTableRow: React.FC<{
 
          return getIcon(tx);
       },
-      [reclaiming, user.pubkey, tx.pubkey],
+      [reclaiming, user.pubkey, tx],
    );
 
    return (

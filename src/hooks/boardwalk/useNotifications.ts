@@ -1,5 +1,6 @@
 import {
    ContactNotificationData,
+   Currency,
    DeleteNotificationsResponse,
    GetNotificationResponse,
    GetNotificationsResponse,
@@ -178,6 +179,7 @@ const useNotifications = () => {
          contact,
          isFee,
          gift,
+         unit: Currency.SAT /* assuming all mintless transactions are sats */,
          timeAgo: calculateTimeAgo(createdAt),
          type: NotificationType.MintlessTransaction,
       };

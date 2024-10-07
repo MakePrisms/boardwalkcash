@@ -1,13 +1,16 @@
 import ViewMintlessTransactionModal from '@/components/modals/ViewMintlessTransactionModal';
+import { Currency, PublicContact } from '@/types';
 import { useState } from 'react';
 
 const ViewMintlessTransactionButton = ({
    contact,
-   amountUsdCents,
    giftName,
+   amountUnit,
+   unit,
 }: {
-   contact: any;
-   amountUsdCents: number;
+   contact?: PublicContact;
+   amountUnit: number;
+   unit: Currency;
    giftName: string | null;
 }) => {
    const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,7 +22,8 @@ const ViewMintlessTransactionButton = ({
          <ViewMintlessTransactionModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            amountUsdCents={amountUsdCents}
+            amountUnit={amountUnit}
+            unit={unit}
             contact={contact}
             giftName={giftName}
          />

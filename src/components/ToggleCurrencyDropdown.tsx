@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dropdown } from 'flowbite-react';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { Currency } from '@/types';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 
 const ToggleCurrencyDropdown = () => {
-   const { activeUnit, setActiveUnit, defaultWallets } = useCashuContext();
+   const { activeUnit, setActiveUnit, defaultWallets, nwcIsMain } = useCashuContext();
 
-   const availableUnits = Array.from(defaultWallets.keys());
+   const availableUnits = useMemo(() => {
+      console.log('nwcIsMain', nwcIsMain);
+      const availableUnits = Array.from(defaultWallets.keys());
+      if (nwcIsMain) {
+         availableUnits.push(Currency.SAT);
+      }
+      return availableUnits;
+   }, [defaultWallets, nwcIsMain]);
 
    const handleClick = () => {
       const otherUnit = availableUnits.find(unit => unit !== activeUnit);

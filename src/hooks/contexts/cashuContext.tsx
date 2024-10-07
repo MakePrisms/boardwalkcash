@@ -2,8 +2,15 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { CashuMint, CashuWallet, MintActiveKeys, MintKeys } from '@cashu/cashu-ts';
 import { Currency, Wallet as StoredKeyset } from '@/types';
 import { RootState, useAppDispatch } from '@/redux/store';
-import { addKeyset, setMainKeyset, updateKeysetStatus } from '@/redux/slices/Wallet.slice';
+import {
+   addKeyset,
+   setDefaultUnit,
+   setMainKeyset,
+   updateKeysetStatus,
+} from '@/redux/slices/Wallet.slice';
 import { useSelector } from 'react-redux';
+import { setReceiveModeAction, setSendModeAction } from '@/redux/slices/UserSlice';
+import { updateUser } from '@/utils/appApiRequests';
 
 interface MintWithWallets {
    mint: CashuMint;
@@ -31,6 +38,9 @@ interface CashuContextType {
    isMintTrusted: (mintUrl: string) => boolean;
    activeUnit: Currency;
    setActiveUnit: (unit: Currency) => void;
+   setNWCAsMain: () => void;
+   toggleMintlessMode: (enable: boolean) => void;
+   nwcIsMain: boolean;
 }
 
 const CashuContext = createContext<CashuContextType | undefined>(undefined);
@@ -42,8 +52,8 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    const [defaultWallets, setDefaultWallets] = useState<Map<Currency, CashuWallet>>(new Map());
    const [reserveWallet, setReserveWallet] = useState<CashuWallet | null>(null);
    const [activeUnit, setActiveUnit] = useState<Currency>(Currency.USD);
-   const { defaultUnit } = useSelector((state: RootState) => state.user);
-
+   const [nwcIsMain, setNWCIsMain] = useState(false);
+   const user = useSelector((state: RootState) => state.user);
    const dispatch = useAppDispatch();
 
    useEffect(() => {
@@ -70,7 +80,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                mintWithWallets.wallets.set(k.keys.unit as Currency, k.id);
                if (k.active || storedDefaultWallets[k.keys.unit] === k.id) {
                   defaultWalletsMap.set(k.keys.unit as Currency, wallet);
-                  if (k.keys.unit === defaultUnit) {
+                  if (k.keys.unit === user.defaultUnit) {
                      setActiveWallet(wallet);
                   }
                }
@@ -81,6 +91,9 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
          });
          setWallets(walletMap);
          setDefaultWallets(defaultWalletsMap);
+         if (user.nwcUri && !defaultWalletsMap.has(Currency.SAT)) {
+            setNWCIsMain(true);
+         }
          localStorage.setItem(
             'defaultWallets',
             JSON.stringify(Object.fromEntries(defaultWalletsMap)),
@@ -89,15 +102,15 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const init = () => {
          console.log('init cashu context');
-         console.log('defaultUnit', defaultUnit);
+         console.log('defaultUnit', user.defaultUnit);
          const keysets = JSON.parse(localStorage.getItem('keysets') || '[]') as StoredKeyset[];
          const newMintsMap = initMints(keysets);
          initWallets(keysets, newMintsMap);
-         setActiveUnit(defaultUnit as Currency);
+         setActiveUnit(user.defaultUnit as Currency);
       };
 
       init();
-   }, [defaultUnit]);
+   }, [user.defaultUnit, user.nwcUri]);
 
    useEffect(() => {
       const changeStatusBarColor = (color: string) => {
@@ -197,6 +210,11 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
          return;
       }
       const unit = wallet.keys.unit as Currency;
+      if (unit === Currency.SAT) {
+         /* setting another sat wallet as main, disable mintless mode */
+         toggleMintlessMode(false);
+         setNWCIsMain(false);
+      }
       const previousDefaultWallet = defaultWallets.get(unit);
       if (previousDefaultWallet && previousDefaultWallet.keys.id !== wallet.keys.id) {
          dispatch(updateKeysetStatus({ id: previousDefaultWallet.keys.id, active: false }));
@@ -231,7 +249,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const activeKeysets = await mint.getKeys();
 
       return addWallet(activeKeysets, url, {
-         activeUnit: activeUnit || 'usd',
+         activeUnit: activeUnit,
          currencies: ['usd', 'sat'],
       });
    };
@@ -281,17 +299,75 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       [mints],
    );
 
+   const toggleMintlessMode = (enable: boolean) => {
+      /* if mintless mode is already enabled and trying to enable it, do nothing */
+      if (user.sendMode === 'mintless' && user.receiveMode === 'mintless' && enable) {
+         return;
+      }
+      /* if mintless mode is already disabled and trying to disable it, do nothing */
+      if (user.sendMode === 'default_mint' && user.receiveMode === 'default_mint' && !enable) {
+         return;
+      }
+
+      if (enable) {
+         dispatch(setSendModeAction('mintless'));
+         dispatch(setReceiveModeAction('mintless'));
+         updateUser(user.pubkey!, { mintlessReceive: true }).catch(console.error);
+      } else {
+         dispatch(setSendModeAction('default_mint'));
+         dispatch(setReceiveModeAction('default_mint'));
+         updateUser(user.pubkey!, { mintlessReceive: false }).catch(console.error);
+      }
+   };
+
    const setUnit = (unit: Currency) => {
       const defaultWallet = defaultWallets.get(unit);
       console.log('setting unit to ', unit);
+      const inMintlessMode = user.sendMode === 'mintless' && user.receiveMode === 'mintless';
+      if (inMintlessMode || nwcIsMain) {
+         if (unit === Currency.USD) {
+            console.log('disabling mintless mode');
+            toggleMintlessMode(false);
+            if (!defaultWallet) throw new Error('No default wallet found for USD');
+            setToMain(defaultWallet.keys.id);
+         } else if (unit === Currency.SAT && nwcIsMain) {
+            console.log('enabling mintless mode');
+            toggleMintlessMode(true);
+         }
+      }
       if (defaultWallet) {
          console.log('default wallet found for unit', defaultWallet);
          setToMain(defaultWallet.keys.id);
-      } else {
-         console.error('No default wallet found for unit', unit);
-         return;
       }
       setActiveUnit(unit);
+      dispatch(setDefaultUnit(unit));
+   };
+
+   const setNWCAsMain = () => {
+      if (!user.nwcUri) throw new Error('No NWC URI found');
+      const previousDefaultBTCWallet = defaultWallets.get(Currency.SAT);
+      if (previousDefaultBTCWallet) {
+         dispatch(updateKeysetStatus({ id: previousDefaultBTCWallet.keys.id, active: false }));
+      }
+      /* remove active sat wallet */
+      const newDefaultWallets = new Map(defaultWallets);
+      newDefaultWallets.delete(Currency.SAT);
+      setDefaultWallets(newDefaultWallets);
+      if (activeUnit === Currency.SAT) {
+         /* will use mintless mode instead of active wallet */
+         setActiveWallet(null);
+
+         /* Enable mintless mode */
+         toggleMintlessMode(true);
+      } else if (activeUnit === Currency.USD) {
+         // Disable mintless mode
+         if (user.receiveMode === 'mintless' && user.sendMode === 'mintless') {
+            toggleMintlessMode(false);
+         }
+      }
+
+      localStorage.setItem('defaultWallets', JSON.stringify(Object.fromEntries(newDefaultWallets)));
+      setNWCIsMain(true);
    };
 
    return (
@@ -313,6 +389,9 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             isMintTrusted,
             activeUnit,
             setActiveUnit: setUnit,
+            setNWCAsMain,
+            nwcIsMain,
+            toggleMintlessMode,
          }}
       >
          {children}

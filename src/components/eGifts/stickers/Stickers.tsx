@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { formatCents } from '@/utils/formatting';
+import { formatUnit } from '@/utils/formatting';
 import StickerItem from './StickerItem';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { GiftAsset, PublicContact } from '@/types';
@@ -47,7 +47,7 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
                         selectedSrc={giftAsset.selectedSrc}
                         unselectedSrc={giftAsset.unselectedSrc}
                         isSelected={selectedSticker?.name === giftAsset.name}
-                        alt={formatCents(giftAsset.amount)}
+                        alt={formatUnit(giftAsset.amount, giftAsset.unit)}
                      />
                   </button>
                </div>

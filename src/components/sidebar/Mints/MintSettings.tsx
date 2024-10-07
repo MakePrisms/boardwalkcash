@@ -2,12 +2,15 @@ import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import MintSidebarItem from './MintSidebarItem';
 import AddMintButton from './AddMintButton';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import GoMintless from './GoMintless';
 import { Tabs } from '@/components/utility/Tabs';
+import { Button } from 'flowbite-react';
+import NWCSidebarItem from './NWCSidebarItem';
 
 const MintSettings = () => {
    const keysets = useSelector((state: RootState) => state.wallet.keysets);
+   const user = useSelector((state: RootState) => state.user);
    const [activeView, setActiveView] = useState<'addMint' | 'goMintless' | null>(null);
    const [activeTab, setActiveTab] = useState(0);
 
@@ -18,6 +21,8 @@ const MintSettings = () => {
    const bitcoinKeysets = Object.keys(keysets).filter(id => keysets[id].keys.unit === 'sat');
    const usdKeysets = Object.keys(keysets).filter(id => keysets[id].keys.unit === 'usd');
 
+   const walletConnected = useMemo(() => !!user.nwcUri, [user.nwcUri]);
+
    return (
       <>
          <Tabs
@@ -26,27 +31,35 @@ const MintSettings = () => {
             className='mb-4'
             borderColor='white'
          />
-         {activeTab === 0 &&
-            bitcoinKeysets.map((id, idx) => <MintSidebarItem keyset={keysets[id]} key={idx} />)}
+         {activeTab === 0 && (
+            <>
+               {bitcoinKeysets.map((id, idx) => (
+                  <MintSidebarItem keyset={keysets[id]} key={idx} />
+               ))}
+               {walletConnected && <NWCSidebarItem />}
+            </>
+         )}
          {activeTab === 1 &&
             usdKeysets.map((id, idx) => <MintSidebarItem keyset={keysets[id]} key={idx} />)}
          <div className='mt-12 space-y-4 border-t pt-6 mb-6 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
             <div className='flex justify-between mb-6 '>
-               <button
-                  className={`btn ${activeView === 'addMint' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
+               <Button
+                  className={`btn-primary w-[120px] ${activeView === 'addMint' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
                   onClick={() => toggleView('addMint')}
                >
-                  Add a Mint
-               </button>
-               <button
-                  className={`btn ${activeView === 'goMintless' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
-                  onClick={() => toggleView('goMintless')}
-               >
-                  Go Mintless
-               </button>
+                  Add Mint
+               </Button>
+               {activeTab === 0 && !walletConnected && (
+                  <Button
+                     className={`btn-primary w-[120px] ${activeView === 'goMintless' ? 'underline' : activeView !== null ? 'opacity-50' : ''}`}
+                     onClick={() => toggleView('goMintless')}
+                  >
+                     Add Wallet
+                  </Button>
+               )}
             </div>
             {activeView === 'addMint' && <AddMintButton keysets={keysets} />}
-            {activeView === 'goMintless' && <GoMintless />}
+            {activeView === 'goMintless' && <GoMintless onSuccess={() => setActiveView(null)} />}
          </div>
       </>
    );

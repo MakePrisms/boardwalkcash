@@ -1,85 +1,21 @@
-import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import React, { useState, useEffect } from 'react';
-import { useExchangeRate } from '@/hooks/util/useExchangeRate';
-import { formatSats } from '@/utils/formatting';
-import { format } from 'path';
+import React from 'react';
+import { useBalance } from '@/hooks/boardwalk/useBalance';
 
-const Balance = ({ balanceByWallet }: { balanceByWallet: Record<string, number> }) => {
-   const { wallets, activeWallet, activeUnit } = useCashuContext();
-   const [usdBalance, setUsdBalance] = useState(0);
-   const [satBalance, setSatBalance] = useState(0);
-   const [showFxValue, setShowFxValue] = useState(false);
-   const { satsToUnit, unitToSats } = useExchangeRate();
-
-   useEffect(() => {
-      if (!wallets.size) return;
-      let newUsdBalance = 0;
-      let newSatBalance = 0;
-
-      for (const [keysetId, balance] of Object.entries(balanceByWallet)) {
-         const wallet = wallets.get(keysetId);
-         if (!wallet) continue;
-         if (wallet.keys.unit === 'usd') {
-            newUsdBalance += balance;
-         } else if (wallet.keys.unit === 'sat') {
-            newSatBalance += balance;
-         } else {
-            throw new Error('Invalid unit');
-         }
-      }
-
-      setUsdBalance(newUsdBalance);
-      setSatBalance(newSatBalance);
-   }, [balanceByWallet, wallets]);
-
-   const handleClick = () => {
-      setShowFxValue(prev => !prev);
-   };
-
-   const formatUsdBalance = (balance: number) => {
-      return (balance / 100).toFixed(2);
-   };
-
-   const getDisplayBalance = async () => {
-      if (!showFxValue) {
-         return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance.toLocaleString();
-      } else {
-         if (activeUnit === 'usd') {
-            const sats = await unitToSats(usdBalance / 100, 'usd');
-            return sats.toLocaleString();
-         } else {
-            const usd = await satsToUnit(satBalance, 'usd');
-            return formatUsdBalance(usd);
-         }
-      }
-   };
-
-   const [displayBalance, setDisplayBalance] = useState('');
-
-   useEffect(() => {
-      getDisplayBalance().then(setDisplayBalance);
-   }, [showFxValue, usdBalance, satBalance, activeUnit]);
-
-   const unitSymbol = showFxValue
-      ? activeUnit === 'usd'
-         ? '₿'
-         : '$'
-      : activeUnit === 'usd'
-        ? '$'
-        : '₿';
+const Balance = () => {
+   const { displayBalance, unitSymbol, toggleFxValue, showFxValue, activeUnit } = useBalance();
 
    return (
       <div className='flex flex-col items-center justify-center w-full'>
-         <div className='cursor-pointer' onClick={handleClick}>
+         <div className='cursor-pointer' onClick={toggleFxValue}>
             {activeUnit === 'usd' && !showFxValue && (
-               <span className='text-[3.45rem]  text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45rem] text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
             {activeUnit === 'sat' && showFxValue && (
-               <span className='text-[3.45rem]  text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45rem] text-cyan-teal font-bold'>{unitSymbol}</span>
             )}
-            <span className='font-teko text-6xl font-bold'>{displayBalance}</span>
+            <span className={`font-teko text-6xl font-bold`}>{displayBalance}</span>
             {(activeUnit === 'sat' && !showFxValue) || (activeUnit === 'usd' && showFxValue) ? (
-               <span className='text-[3.45em]  text-cyan-teal font-bold'>{unitSymbol}</span>
+               <span className='text-[3.45em] text-cyan-teal font-bold'>{unitSymbol}</span>
             ) : null}
          </div>
       </div>

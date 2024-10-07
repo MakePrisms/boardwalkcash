@@ -1,3 +1,4 @@
+import { Currency } from '@/types';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 export enum TxStatus {
@@ -32,28 +33,45 @@ export interface LightningTransaction {
    pubkey?: string;
 }
 
-export type Transaction = EcashTransaction | LightningTransaction;
+export interface MintlessTransaction {
+   type: 'mintless';
+   amount: number;
+   gift: string | null;
+   unit: Currency;
+   date: string;
+}
+
+export type Transaction = EcashTransaction | LightningTransaction | MintlessTransaction;
 
 export interface HistoryState {
    ecash: EcashTransaction[];
    lightning: LightningTransaction[];
+   mintless: MintlessTransaction[];
 }
 
 const initialState: HistoryState = {
    ecash: [],
    lightning: [],
+   mintless: [],
 };
 
-export const isEcashTransaction = (
-   transaction: LightningTransaction | EcashTransaction,
-): transaction is EcashTransaction => {
+export const isEcashTransaction = (transaction: Transaction): transaction is EcashTransaction => {
    return (transaction as EcashTransaction).token !== undefined;
 };
 
 export const isLightningTransaction = (
-   transaction: LightningTransaction | EcashTransaction,
+   transaction: Transaction,
 ): transaction is LightningTransaction => {
    return (transaction as LightningTransaction).quote !== undefined;
+};
+
+export const isMintlessTransaction = (
+   transaction: Transaction,
+): transaction is MintlessTransaction => {
+   if ('type' in transaction && transaction.type === 'mintless') {
+      return true;
+   }
+   return false;
 };
 
 const historySlice = createSlice({
@@ -63,8 +81,8 @@ const historySlice = createSlice({
       addTransaction: (
          state,
          action: PayloadAction<{
-            type: 'ecash' | 'lightning' | 'reserve';
-            transaction: LightningTransaction | EcashTransaction;
+            type: 'ecash' | 'lightning' | 'reserve' | 'mintless';
+            transaction: Transaction;
          }>,
       ) => {
          const { type, transaction } = action.payload;
@@ -77,6 +95,11 @@ const historySlice = createSlice({
             state.lightning.push(transaction);
          } else if (type === 'reserve' && isEcashTransaction(transaction)) {
             state.ecash.push({ ...transaction, isReserve: true });
+         } else if (type === 'mintless' && isMintlessTransaction(transaction)) {
+            if (!Array.isArray(state.mintless)) {
+               state.mintless = [];
+            }
+            state.mintless.push(transaction);
          }
       },
       updateTransactionStatus: (

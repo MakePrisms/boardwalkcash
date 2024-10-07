@@ -1,5 +1,5 @@
 import { NotificationType } from '@/types';
-import { UserCircleIcon } from '@heroicons/react/20/solid';
+import { UserCircleIcon, WalletIcon } from '@heroicons/react/20/solid';
 import { useMemo } from 'react';
 import { BanknoteIcon } from '@/components/buttons/EcashTapButton';
 import GiftIcon from '../icons/GiftIcon';
@@ -43,7 +43,7 @@ const NotificationItemContainer = ({
          case NotificationType.MintlessTransaction:
             return (
                <div className='w-6 h-6 text-gray-500'>
-                  {<VaultIcon className='w-6 h-6 text-white' />}
+                  {<WalletIcon className='w-6 h-6 text-white' />}
                </div>
             );
          default:

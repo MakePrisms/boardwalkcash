@@ -47,6 +47,7 @@ async function findUserByPubkey(pubkey: string) {
                      nostrPubkey: true,
                      lud16: true,
                      defaultMintUrl: true,
+                     defaultUnit: true,
                      mintlessReceive: true,
                   },
                },

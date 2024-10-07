@@ -1,3 +1,4 @@
+import { Currency } from '@/types';
 import { getDecodedToken, Token } from '@cashu/cashu-ts';
 
 export const formatTokenAmount = (token: Token | string) => {
@@ -47,4 +48,15 @@ export const shortenString = (str: string, maxLength: number) => {
       return str;
    }
    return `${str.slice(0, maxLength - 3)}...${str.slice(-4)}`;
+};
+
+export const getSymbolForUnit = (unit: Currency) => {
+   switch (unit) {
+      case 'sat':
+         return '₿';
+      case 'usd':
+         return '$';
+      default:
+         throw new Error('Invalid unit');
+   }
 };

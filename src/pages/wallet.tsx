@@ -26,13 +26,15 @@ import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels'
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
-import { formatCents, formatTokenAmount } from '@/utils/formatting';
+import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { Button, Dropdown } from 'flowbite-react';
 import { runMigrations } from '@/migrations/localStorage.migrations';
 import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
+import { useBalance } from '@/hooks/boardwalk/useBalance';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -49,20 +51,20 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
+   // const { loading: loadingBalance } = useBalance();
+   const { loading: loadingExchangeRate } = useExchangeRate();
+   const { loading: loadingBalance } = useBalance();
    const [loadingState, setLoadingState] = useState(true);
 
    useEffect(() => {
       if (user.status === 'failed') {
          setLoadingState(false);
-      }
-      if (user.status !== 'succeeded') {
+      } else if (user.status !== 'succeeded' || loadingExchangeRate || loadingBalance) {
          setLoadingState(true);
-      } else if (user.status === 'succeeded') {
-         // setTimeout(() => {
+      } else if (user.status === 'succeeded' && !loadingExchangeRate && !loadingBalance) {
          setLoadingState(false);
-         // }, 600);
       }
-   }, [user]);
+   }, [user, loadingExchangeRate, loadingBalance]);
 
    useEffect(() => {
       runMigrations();
@@ -246,7 +248,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
             <div className='mb-7'>
-               <Balance balanceByWallet={balanceByWallet} />
+               <Balance />
             </div>
             <div className='mb-7'>
                <ActivityIndicator />
