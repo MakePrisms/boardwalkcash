@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE "Proof" ADD COLUMN     "unit" TEXT NOT NULL;
+ALTER TABLE "Proof" ADD COLUMN     "unit" TEXT NOT NULL DEFAULT 'usd';
