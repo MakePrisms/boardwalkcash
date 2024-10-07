@@ -1,7 +1,10 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import { ThemeModeScript } from 'flowbite-react';
+import { RootState } from '@/redux/store';
+import { useSelector } from 'react-redux';
 
 export default function Document() {
+   // const { defaultUnit } = useSelector((state: RootState) => state.user);
    return (
       <Html>
          <Head>

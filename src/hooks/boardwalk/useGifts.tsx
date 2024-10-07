@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authenticatedRequest, request } from '@/utils/appApiRequests';
 import { computeTxId, getMintFromToken } from '@/utils/cashu';
-import { GetAllGiftsResponse, GetGiftResponse, GiftAsset, PostSendGiftResponse } from '@/types';
-import { Gift } from '@prisma/client';
+import {
+   Currency,
+   GetAllGiftsResponse,
+   GetGiftResponse,
+   GiftAsset,
+   PostSendGiftResponse,
+} from '@/types';
 import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import useContacts from './useContacts';
 import { RootState, useAppDispatch } from '@/redux/store';
@@ -93,7 +98,8 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
             }
 
             const giftAsset: GiftAsset = {
-               amountCents: gift.amount,
+               amount: gift.amount,
+               unit: gift.unit as Currency,
                name: gift.name,
                selectedSrc: gift.imageUrlSelected,
                unselectedSrc: gift.imageUrlUnselected,
@@ -181,7 +187,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                addTransaction({
                   type: 'ecash',
                   transaction: {
-                     amount: gift.amountCents,
+                     amount: gift.amount,
                      date: new Date().toLocaleString(),
                      token: response.token,
                      status: TxStatus.PENDING,

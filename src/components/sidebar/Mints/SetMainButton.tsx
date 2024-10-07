@@ -25,7 +25,7 @@ const SetMainButton = ({
             </div>
             <div className='px-3 py-2 mb-3'>
                <p className='whitespace-break-spaces break-words'>
-                  {`Set ${keyset.url} as main sending and receiving mint?`}
+                  {`Set ${keyset.url} as main sending and receiving account?`}
                </p>
             </div>
             <div className='flex justify-around mb-3 mr-3'>

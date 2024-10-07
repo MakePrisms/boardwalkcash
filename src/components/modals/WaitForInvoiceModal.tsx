@@ -9,33 +9,51 @@ interface WaitForInvoiceModalProps {
    isOpen: boolean;
    onClose: () => void;
    invoice: string;
-   amountUsdCents: number;
+   amount: number;
+   unit: 'usd' | 'sat';
    invoiceTimeout: boolean;
    onCheckAgain: () => void;
 }
 
 export const WaitForInvoiceModalBody: React.FC<
    Omit<WaitForInvoiceModalProps, 'isOpen' | 'onClose'>
-> = ({ invoice, amountUsdCents, invoiceTimeout, onCheckAgain }) => {
+> = ({ invoice, amount, unit, invoiceTimeout, onCheckAgain }) => {
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
    const [loading, setLoading] = useState(true);
-   const { unitToSats } = useExchangeRate();
+   const { unitToSats, satsToUnit } = useExchangeRate();
 
    useEffect(() => {
       setLoading(true);
-      unitToSats(amountUsdCents / 100, 'usd')
-         .then(amountSats => {
-            setAmountData({ amountUsdCents, amountSats });
-         })
-         .finally(() =>
-            setTimeout(() => {
-               setLoading(false);
-            }, 300),
-         );
-   }, [amountUsdCents, unitToSats]);
+      if (!amount || !unit) return;
+      console.log('amount', amount);
+      console.log('unit', unit);
+      if (unit === 'usd') {
+         unitToSats(amount / 100, 'usd')
+            .then(amountSats => {
+               setAmountData({ amountUsdCents: amount, amountSats });
+            })
+            .finally(() =>
+               setTimeout(() => {
+                  setLoading(false);
+               }, 300),
+            );
+      } else {
+         console.log('converting sats to usd', amount, unit);
+         satsToUnit(amount, 'usd')
+            .then(amountUsdCents => {
+               console.log('amountUsdCents', amountUsdCents);
+               setAmountData({ amountUsdCents, amountSats: amount });
+            })
+            .finally(() =>
+               setTimeout(() => {
+                  setLoading(false);
+               }, 300),
+            );
+      }
+   }, [, unitToSats]);
 
    if (loading) {
       return (
@@ -52,7 +70,7 @@ export const WaitForInvoiceModalBody: React.FC<
          {amountData && (
             <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
                <div className='flex items-center justify-center space-x-5 text-black'>
-                  <div>{formatCents(amountData.amountUsdCents)}</div>
+                  <div>{`${unit === 'sat' ? '~' : ''}${formatCents(amountData.amountUsdCents)}`}</div>
                   <div>|</div>
                   <div>{formatSats(amountData.amountSats)}</div>
                </div>

@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Drawer, Modal } from 'flowbite-react';
-import MintSidebarItem from './Mints/MintSidebarItem';
-import AddMintButton from './Mints/AddMintButton';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../utility/DrawerCollapse';
@@ -14,6 +12,7 @@ import LeaderboardDrawer from '../leaderboards/LeaderboardDrawer';
 import EcashIcon from '../icons/EcashIcon';
 import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
 import FlameIcon from '../icons/FlameIcon';
+import MintSettings from './Mints/MintSettings';
 
 const SettingsCog = () => (
    <svg
@@ -35,7 +34,6 @@ const SettingsCog = () => (
 
 export const SettingsSidebar = () => {
    const [hidden, setHidden] = useState(true);
-   const keysets = useSelector((state: RootState) => state.wallet.keysets);
    const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -77,16 +75,10 @@ export const SettingsSidebar = () => {
 
                   <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                      <DrawerCollapse
-                        label='Mints'
+                        label='Accounts'
                         icon={<BuildingLibraryIcon className='size-4' />}
                      >
-                        <div className='text-lg mb-2'></div>
-                        {Object.keys(keysets).map((id, idx) => (
-                           <MintSidebarItem keyset={keysets[id]} key={idx} />
-                        ))}
-                        <div className='mt-4 space-y-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0 border-gray-300'>
-                           <AddMintButton keysets={keysets} />
-                        </div>
+                        <MintSettings />
                      </DrawerCollapse>
                   </div>
                   {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
@@ -103,19 +95,19 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div> */}
-                  <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                      <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
                         <ProfileSettings />
                      </DrawerCollapse>
                   </div>
-                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0'>
+                  {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                      <DrawerCollapse
                         label='Cash Taps'
                         icon={<EcashIcon type='solid' className='size-4' />}
                      >
                         <EcashTapsSettings />
                      </DrawerCollapse>
-                  </div>
+                  </div> */}
                   {/* <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                      <DrawerCollapse label='Leaderboard' icon={<FlameIcon className='size-4' />}>
                         <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />

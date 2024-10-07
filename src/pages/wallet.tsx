@@ -21,24 +21,28 @@ import EcashTapButton from '@/components/buttons/EcashTapButton';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { PublicContact, TokenProps, GiftAsset } from '@/types';
+import { PublicContact, TokenProps, GiftAsset, Currency } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
 import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
-import { formatCents } from '@/utils/formatting';
+import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
 import { getGiftByName } from '@/lib/gifts';
 import useGifts from '@/hooks/boardwalk/useGifts';
-import { Button } from 'flowbite-react';
+import { Button, Dropdown } from 'flowbite-react';
+import { runMigrations } from '@/migrations/localStorage.migrations';
+import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
+import { useBalance } from '@/hooks/boardwalk/useBalance';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
-   const { balance, proofsLockedTo } = useCashu();
-   const { addWallet } = useCashuContext();
+   const { balanceByWallet, proofsLockedTo } = useCashu();
+   const { addWalletFromMintUrl, activeUnit, setActiveUnit } = useCashuContext();
 
    const dispatch = useAppDispatch();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
@@ -47,20 +51,24 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
+   // const { loading: loadingBalance } = useBalance();
+   const { loading: loadingExchangeRate } = useExchangeRate();
+   const { loading: loadingBalance } = useBalance();
    const [loadingState, setLoadingState] = useState(true);
 
    useEffect(() => {
       if (user.status === 'failed') {
          setLoadingState(false);
-      }
-      if (user.status !== 'succeeded') {
+      } else if (user.status !== 'succeeded' || loadingExchangeRate || loadingBalance) {
          setLoadingState(true);
-      } else if (user.status === 'succeeded') {
-         // setTimeout(() => {
+      } else if (user.status === 'succeeded' && !loadingExchangeRate && !loadingBalance) {
          setLoadingState(false);
-         // }, 600);
       }
-   }, [user]);
+   }, [user, loadingExchangeRate, loadingBalance]);
+
+   useEffect(() => {
+      runMigrations();
+   }, []);
 
    useEffect(() => {
       if (!router.isReady) return;
@@ -90,18 +98,10 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          if (!localKeysets) {
             newUser.current = true;
             try {
-               const mint = new CashuMint(url);
-
-               const { keysets } = await mint.getKeys();
-
-               const usdKeyset = keysets.find(keyset => keyset.unit === 'usd');
-
-               if (!usdKeyset) {
-                  addToast("Mint doesn't support USD", 'error');
-                  return;
+               if (decoded.unit !== 'usd' && decoded.unit !== 'sat') {
+                  throw new Error('Invalid unit. Only supports usd and sat');
                }
-
-               addWallet(usdKeyset, url, { active: true });
+               await addWalletFromMintUrl(url, decoded.unit);
 
                addToast('Mint added successfully', 'success');
 
@@ -247,10 +247,17 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             className='flex flex-col items-center justify-center mx-auto'
             style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
          >
-            <Balance balance={balance} />
-            <ActivityIndicator />
+            <div className='mb-7'>
+               <Balance />
+            </div>
+            <div className='mb-7'>
+               <ActivityIndicator />
+            </div>
+            <div className='mb-10'>
+               <ToggleCurrencyDropdown />
+            </div>
             <div className=' flex flex-col justify-center py-8 w-full'>
-               <div className='flex flex-row justify-center mx-auto space-x-9'>
+               <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
                   <Receive />
                   <Send />
                </div>
@@ -309,7 +316,7 @@ export const getServerSideProps: GetServerSideProps = async (
             gift = await getGiftByName(tokenEntry.gift as string).then(g => {
                if (!g) return;
                return {
-                  amountCents: g.amount,
+                  amount: g.amount,
                   name: g.name,
                   selectedSrc: g.imageUrlSelected,
                   unselectedSrc: g.imageUrlUnselected,
@@ -363,14 +370,14 @@ export const getServerSideProps: GetServerSideProps = async (
 
 const pageTitle = (tokenData: TokenProps | null) => {
    if (tokenData) {
-      const { amount, contact, gift } = tokenData;
+      const { amount, contact, gift, token } = tokenData;
       if (gift) {
          return `${gift.name} eGift`;
       }
       if (contact) {
-         return `${formatCents(amount)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
+         return `${formatTokenAmount(token)} eTip ${contact.username ? `for ${contact.username}` : ''}`;
       }
-      return `${formatCents(amount)} eCash`;
+      return `${formatTokenAmount(token)} eCash`;
    }
 };
 

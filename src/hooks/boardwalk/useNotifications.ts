@@ -1,8 +1,10 @@
 import {
    ContactNotificationData,
+   Currency,
    DeleteNotificationsResponse,
    GetNotificationResponse,
    GetNotificationsResponse,
+   MintlessTransactionNotificationData,
    NotificationType,
    NotificationWithData,
    PublicContact,
@@ -115,11 +117,14 @@ const useNotifications = () => {
    const processTokenNotification = async (
       notification: GetNotificationResponse,
    ): Promise<TokenNotificationData> => {
-      let rawToken: string = '';
+      let rawToken: string | null = null;
       let contact: PublicContact | null = null;
       if (notification.type === NotificationType.TIP) {
          rawToken = notification.data;
       } else if (notification.type === NotificationType.Token) {
+         if (!notification.data) {
+            throw new Error('Notification data is null');
+         }
          const { token, from } = JSON.parse(notification.data);
          rawToken = token;
          contact = notification.contact;
@@ -138,6 +143,7 @@ const useNotifications = () => {
          tokenState: 'unclaimed',
          gift,
          isFee: notification.token?.isFee || false,
+         type: NotificationType.Token,
       };
    };
 
@@ -155,6 +161,27 @@ const useNotifications = () => {
          contact,
          contactIsAdded,
          timeAgo: calculateTimeAgo(notification.createdAt),
+         type: NotificationType.NewContact,
+      };
+   };
+
+   const processMintlessTransactionNotification = (
+      notification: GetNotificationResponse,
+   ): MintlessTransactionNotificationData => {
+      if (!notification.mintlessTransaction) {
+         throw new Error('Mintless transaction is missing from notification');
+      }
+      const contact = notification.contact;
+      const { id, amount, isFee, gift, createdAt } = notification.mintlessTransaction;
+      return {
+         id,
+         amount,
+         contact,
+         isFee,
+         gift,
+         unit: Currency.SAT /* assuming all mintless transactions are sats */,
+         timeAgo: calculateTimeAgo(createdAt),
+         type: NotificationType.MintlessTransaction,
       };
    };
 
@@ -163,10 +190,17 @@ const useNotifications = () => {
    ): Promise<NotificationWithData[]> => {
       const processedNotifications = await Promise.all(
          notifications.map(async notification => {
-            const processedData =
-               notification.type === NotificationType.NewContact
-                  ? await processContactNotification(notification)
-                  : await processTokenNotification(notification);
+            let processedData;
+            switch (notification.type) {
+               case NotificationType.NewContact:
+                  processedData = await processContactNotification(notification);
+                  break;
+               case NotificationType.MintlessTransaction:
+                  processedData = processMintlessTransactionNotification(notification);
+                  break;
+               default:
+                  processedData = await processTokenNotification(notification);
+            }
             return {
                ...notification,
                processedData,

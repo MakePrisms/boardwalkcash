@@ -1,5 +1,10 @@
 import bolt11Decoder from 'light-bolt11-decoder';
 
+/**
+ * Extract the amount in sats from an invoice
+ * @param invoice
+ * @returns
+ */
 export const getAmountFromInvoice = (invoice: string) => {
    // Decode the invoice
    const decodedInvoice = bolt11Decoder.decode(invoice);

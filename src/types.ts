@@ -7,7 +7,7 @@ import {
    ApiError as CashuApiError,
    Token,
 } from '@cashu/cashu-ts';
-import { Gift, Notification, Token as TokenPrisma } from '@prisma/client';
+import { Gift, MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
 import { NextApiRequest } from 'next';
 
 export interface ProofData {
@@ -17,6 +17,7 @@ export interface ProofData {
    C: string;
    userId: number;
    mintKeysetId: string;
+   unit: 'usd' | 'sat';
 }
 
 export interface NWAEventContent {
@@ -100,6 +101,17 @@ export type PublicContact = {
 
    /** The date the contact was created */
    createdAt: Date;
+
+   /** The lud16 of the contact */
+   lud16: string | null;
+
+   /** Default mint url of the contact */
+   defaultMintUrl: string | null;
+
+   /** Unit of proofs this user uses */
+   defaultUnit: 'usd' | 'sat';
+
+   mintlessReceive: boolean;
 };
 
 export type TokenProps = {
@@ -127,6 +139,7 @@ export enum NotificationType {
    NewContact = 'new-contact',
    TIP = 'tip',
    Gift = 'gift', // TODO: add this to notifications
+   MintlessTransaction = 'mintless-transaction',
 }
 
 export type MarkNotificationsAsReadRequest = {
@@ -146,6 +159,7 @@ export type DeleteNotificationsResponse = {
 export type GetNotificationResponse = Notification & {
    contact: PublicContact;
    token: TokenPrisma | null;
+   mintlessTransaction: MintlessTransaction | null;
 };
 
 export type GetNotificationsResponse = Array<GetNotificationResponse>;
@@ -175,6 +189,7 @@ export type TokenNotificationData = {
    tokenState: 'claimed' | 'unclaimed';
    gift?: string;
    isFee: boolean;
+   type: NotificationType.Token;
 };
 
 export type ContactNotificationData = {
@@ -182,14 +197,29 @@ export type ContactNotificationData = {
    contact: PublicContact;
    contactIsAdded: boolean;
    timeAgo: string;
+   type: NotificationType.NewContact;
+};
+
+export type MintlessTransactionNotificationData = {
+   id: string;
+   amount: number;
+   unit: Currency;
+   contact?: PublicContact; // TODO should be required
+   isFee: boolean;
+   timeAgo: string;
+   gift: string | null;
+   type: NotificationType.MintlessTransaction;
 };
 
 export type NotificationWithData = Notification & {
-   processedData: TokenNotificationData | ContactNotificationData;
+   processedData:
+      | TokenNotificationData
+      | ContactNotificationData
+      | MintlessTransactionNotificationData;
 };
 
 export const isTokenNotification = (
-   data: TokenNotificationData | ContactNotificationData,
+   data: TokenNotificationData | ContactNotificationData | MintlessTransactionNotificationData,
 ): data is TokenNotificationData => {
    if ('token' in data || 'rawToken' in data) {
       return true;
@@ -198,9 +228,18 @@ export const isTokenNotification = (
 };
 
 export const isContactNotification = (
-   data: TokenNotificationData | ContactNotificationData,
+   data: TokenNotificationData | ContactNotificationData | MintlessTransactionNotificationData,
 ): data is ContactNotificationData => {
    if ('contactIsAdded' in data) {
+      return true;
+   }
+   return false;
+};
+
+export const isMintlessTransactionNotification = (
+   data: NotificationWithData['processedData'],
+): data is MintlessTransactionNotificationData => {
+   if ('type' in data && data.type === NotificationType.MintlessTransaction) {
       return true;
    }
    return false;
@@ -229,7 +268,8 @@ export type GetAllGiftsResponse = {
 export type GetGiftResponse = Gift & { campaignId?: number };
 
 export interface GiftAsset {
-   amountCents: number;
+   amount: number;
+   unit: Currency;
    name: string;
    selectedSrc: string;
    unselectedSrc: string;
@@ -284,6 +324,10 @@ export interface DiscoverContactsResponse {
       pubkey: string;
       username: string | null;
       nostrPubkey: string;
+      lud16: string | null;
+      defaultMintUrl: string | null;
+      mintlessReceive: boolean;
+      defaultUnit: 'usd' | 'sat';
    }[];
 }
 
@@ -307,3 +351,29 @@ export type PostSendGiftResponse = {
    txid: string;
    token: string;
 };
+
+export type PayInvoiceResponse =
+   | {
+        preimage: string | null; // not all pay invoice responses have a preimage, but they SHOULD
+        amountUsd: number;
+        feePaid: number;
+     }
+   | undefined;
+
+export type MintlessTransactionRequest = {
+   gift: string | null;
+   amount: number;
+   recipientPubkey: string;
+   createdByPubkey: string;
+   isFee: boolean;
+};
+
+export type MintlessTransactionResponse = {
+   id: string;
+   notificationId: string;
+};
+
+export enum Currency {
+   USD = 'usd',
+   SAT = 'sat',
+}

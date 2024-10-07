@@ -1,50 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useBalance } from '@/hooks/boardwalk/useBalance';
 
-const Balance = ({ balance }: { balance: number }) => {
-   const [usdBtc, setUsdBtc] = useState(0);
-   const [unit, setUnit] = useState('usd');
-   const [usdBalance, setUsdBalance] = useState('0.00');
-   const [exchangeError, setExchangeError] = useState(false);
-
-   const updateUsdBalance = (newBalance = balance) => {
-      const balanceCents = newBalance;
-      if (balanceCents <= 0) {
-         setUsdBalance('0.00');
-      } else {
-         // console.log('balanceCents:', balanceCents);
-         const balanceDollars = balanceCents / 100;
-         // console.log('balanceDollars:', balanceDollars);
-         setUsdBalance(balanceDollars.toFixed(2));
-      }
-   };
-
-   useEffect(() => {
-      updateUsdBalance();
-   }, [balance, usdBtc, unit]);
-
-   const handleClick = () => {
-      // Toggle unit and optionally update usdBalance if switching to "usd"
-      setUnit(prevUnit => {
-         const newUnit = prevUnit === 'sats' ? 'usd' : 'sats';
-         if (newUnit === 'usd') {
-            updateUsdBalance();
-         }
-         return newUnit;
-      });
-   };
+const Balance = () => {
+   const { displayBalance, unitSymbol, toggleFxValue, showFxValue, activeUnit } = useBalance();
 
    return (
-      <div className='flex flex-col items-center justify-center w-full  mb-14'>
-         <h1 className='mb-4'>
-            <span className='font-teko text-6xl font-bold'>
-               {/* {unit === 'sats' ? balance : usdBalance} */}
-               {isNaN(Number(usdBalance)) ? '0.00' : usdBalance}
-            </span>{' '}
-            <span className='font-5xl text-cyan-teal font-bold'>{unit}</span>
-         </h1>
-         {exchangeError && unit === 'usd' && (
-            <p className='text-red-600'>error fetching exchange rate</p>
-         )}
+      <div className='flex flex-col items-center justify-center w-full'>
+         <div className='cursor-pointer' onClick={toggleFxValue}>
+            {activeUnit === 'usd' && !showFxValue && (
+               <span className='text-[3.45rem] text-cyan-teal font-bold'>{unitSymbol}</span>
+            )}
+            {activeUnit === 'sat' && showFxValue && (
+               <span className='text-[3.45rem] text-cyan-teal font-bold'>{unitSymbol}</span>
+            )}
+            <span className={`font-teko text-6xl font-bold`}>{displayBalance}</span>
+            {(activeUnit === 'sat' && !showFxValue) || (activeUnit === 'usd' && showFxValue) ? (
+               <span className='text-[3.45em] text-cyan-teal font-bold'>{unitSymbol}</span>
+            ) : null}
+         </div>
       </div>
    );
 };

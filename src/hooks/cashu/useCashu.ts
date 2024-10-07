@@ -17,13 +17,17 @@ import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
 import {
    CrossMintQuoteResult,
+   Currency,
    InsufficientBalanceError,
+   PayInvoiceResponse,
    ReserveError,
    TransactionError,
 } from '@/types';
-import { initializeUsdWallet, proofsLockedTo } from '@/utils/cashu';
+import { initializeWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
 import { postTokenToDb } from '@/utils/appApiRequests';
+import { formatUnit, getSymbolForUnit } from '@/utils/formatting';
+import { useExchangeRate } from '../util/useExchangeRate';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
@@ -43,6 +47,7 @@ export const useCashu = () => {
       useNostrMintConnect();
    const { sendTokenAsNotification } = useNotifications();
    const { addToast, toastSwapSuccess, toastSwapError } = useToast();
+   const { satsToUnit, unitToSats } = useExchangeRate();
 
    const dispatch = useAppDispatch();
 
@@ -79,13 +84,12 @@ export const useCashu = () => {
       }
       return proofs;
    };
-
    /**
     * Gets a melt quote that is less than or equal to the totalProofsAmount and returns
     * the respective quotes from the source and destination mints.
     * @param fromWallet Wallet to melt tokens from
     * @param toWallet Wallet to mint tokens to
-    * @param totalProofsAmount Sum of proofs to melt
+    * @param totalProofsAmount Sum of proofs to melt in fromWallet's unit
     * @param maxAttempts Maximum number of attempts to find a valid quote
     * @returns CrossMintQuoteResult with the mint and melt quotes and the amount to mint
     * @throws Error if no valid quotes are found after maxAttempts
@@ -99,20 +103,64 @@ export const useCashu = () => {
       let attempts = 0;
       let amountToMint = totalProofsAmount;
 
+      console.log('getting cross mint quotes');
+      console.log('fromWallet', fromWallet);
+      console.log('toWallet', toWallet);
+      console.log('totalProofsAmount', totalProofsAmount);
+
       while (attempts < maxAttempts) {
          attempts++;
+         console.log('\n====-===============\n Attempt', attempts);
 
-         const mintQuote = await getMintQuote(toWallet, amountToMint);
+         /* convert amount to mint to toWallet's unit */
+         const convertedAmountToMint = await convertToUnit(
+            amountToMint,
+            fromWallet.keys.unit,
+            toWallet.keys.unit,
+         );
+
+         console.log('convertedAmountToMint', convertedAmountToMint);
+
+         if (convertedAmountToMint < 1) {
+            if (fromWallet.keys.unit === toWallet.keys.unit) {
+               // Units are the same, no conversion needed
+               throw new Error('Your balance is too low to withdrawl this amount.');
+            } else if (
+               fromWallet.keys.unit !== toWallet.keys.unit &&
+               fromWallet.keys.unit === 'sat'
+            ) {
+               throw new Error(
+                  'Amount to transfer is less than 1 cent. Try changing your active currency.',
+               );
+            } else {
+               throw new Error('Something went wrong.');
+            }
+         }
+
+         const mintQuote = await getMintQuote(toWallet, convertedAmountToMint);
          const meltQuote = await fromWallet.createMeltQuote(mintQuote.request);
+
+         console.log('mintQuote', mintQuote);
+         console.log('meltQuote', meltQuote);
+
+         /* convert melt amount to fromWallet's unit */
+         // const convertedMeltAmount = await convertToUnit(
+         //    meltQuote.amount,
+         //    fromWallet.keys.unit,
+         //    toWallet.keys.unit,
+         // );
+
+         // console.log('convertedMeltAmount', convertedMeltAmount);
+
          if (meltQuote.amount + meltQuote.fee_reserve <= totalProofsAmount) {
             console.log('Found valid quotes');
-            return { mintQuote, meltQuote, amountToMint };
+            return { mintQuote, meltQuote, amountToMint: convertedAmountToMint };
          }
          const difference = meltQuote.amount + meltQuote.fee_reserve - totalProofsAmount;
          amountToMint = amountToMint - difference;
       }
 
-      throw new Error('Failed to find valid quotes after maximum attempts. ');
+      throw new Error('Failed to find valid quotes after maximum attempts.');
    };
 
    /**
@@ -216,8 +264,29 @@ export const useCashu = () => {
             // this means we were not give then proofs to melt, so we need to remove the proofs from the storage
             await removeProofs(proofsToMelt);
          }
-         toastSwapSuccess(to, activeWallet, amountToMint);
+         const newProofAmt = newProofs.reduce((a, b) => a + b.amount, 0);
+         // const amountSwapped = await convertToUnit(amountToMint, from.keys.unit, to.keys.unit);
+         // console.log('amountSwapped', amountSwapped, from.keys.unit, '--->', to.keys.unit);
+         // toastSwapSuccess(to, activeWallet, amountSwapped);
+         toastSwapSuccess(to, activeWallet, newProofAmt);
          success = true;
+
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  token: getEncodedTokenV4({
+                     token: [{ proofs: newProofs, mint: to.mint.mintUrl }],
+                  }),
+                  amount: newProofAmt,
+                  mint: to.mint.mintUrl,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PAID,
+                  unit: to.keys.unit as Currency,
+                  gift: undefined,
+               },
+            }),
+         );
       } catch (error) {
          toastSwapError(error);
       } finally {
@@ -239,6 +308,11 @@ export const useCashu = () => {
          throw new Error('No active wallet set');
       }
       if (from.mint.mintUrl === activeWallet.mint.mintUrl) {
+         if (from.keys.unit !== activeWallet.keys.unit && !opts.proofs) {
+            addToast('Cannot transfer funds from the same mint to a different currency', 'error');
+            return;
+         }
+
          // TODO: consider other units
          if (!opts.proofs) {
             // could change this, just lazy
@@ -273,9 +347,29 @@ export const useCashu = () => {
 
          addProofs(newProofs);
 
-         const amountUsd = proofs.reduce((a, b) => a + b.amount, 0);
-         toastSwapSuccess(wallet, activeWallet, amountUsd);
+         const amountUnit = proofs.reduce((a, b) => a + b.amount, 0);
+
+         const amountSwapped = await convertToUnit(amountUnit, wallet.keys.unit, wallet.keys.unit);
+
+         toastSwapSuccess(wallet, activeWallet, amountSwapped);
          success = true;
+
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  token: getEncodedTokenV4({
+                     token: [{ proofs: newProofs, mint: wallet.mint.mintUrl }],
+                  }),
+                  amount: amountUnit,
+                  mint: wallet.mint.mintUrl,
+                  date: new Date().toLocaleString(),
+                  status: TxStatus.PAID,
+                  unit: wallet.keys.unit as Currency,
+                  gift: undefined,
+               },
+            }),
+         );
       } catch (error) {
          toastSwapError(error);
       } finally {
@@ -295,7 +389,7 @@ export const useCashu = () => {
       let fromWallet = getWallet(token.token[0].proofs[0].id);
       if (!fromWallet) {
          const mintUrl = token.token[0].mint;
-         fromWallet = await initializeUsdWallet(mintUrl);
+         fromWallet = await initializeWallet(mintUrl, { unit: token.unit });
       }
       return await swapToActiveWallet(fromWallet, { proofs: token.token[0].proofs, privkey });
    };
@@ -362,7 +456,7 @@ export const useCashu = () => {
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
-               unit: 'usd',
+               unit: wallet.keys.unit,
             });
             if (feeToken) {
                const txid = await postTokenToDb(feeToken, opts?.gift, true);
@@ -372,7 +466,7 @@ export const useCashu = () => {
 
          const token = getEncodedTokenV4({
             token: [{ proofs, mint: wallet.mint.mintUrl }],
-            unit: 'usd',
+            unit: wallet.keys.unit,
          });
 
          dispatch(
@@ -381,7 +475,7 @@ export const useCashu = () => {
                transaction: {
                   token: token,
                   amount: -amount,
-                  unit: 'usd',
+                  unit: wallet.keys.unit === 'usd' ? 'usd' : 'sat',
                   mint: wallet.mint.mintUrl,
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
@@ -427,7 +521,7 @@ export const useCashu = () => {
       invoice: string,
       meltQuote?: MeltQuoteResponse,
       wallet?: CashuWallet,
-   ) => {
+   ): Promise<PayInvoiceResponse> => {
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');
@@ -446,7 +540,10 @@ export const useCashu = () => {
       dispatch(setSending('Sending...'));
 
       try {
-         const proofsToSend = await getProofsToSend(meltQuote.amount, wallet);
+         const proofsToSend = await getProofsToSend(
+            meltQuote.amount + meltQuote.fee_reserve,
+            wallet,
+         );
 
          const { preimage, isPaid, change } = await wallet
             .meltTokens(meltQuote, proofsToSend, {
@@ -466,9 +563,12 @@ export const useCashu = () => {
          addProofs(change);
 
          const feePaid = meltQuote.fee_reserve - change.reduce((acc, p) => acc + p.amount, 0);
-         const feeMessage = feePaid > 0 ? ` + ${feePaid} sat${feePaid > 1 ? 's' : ''} fee` : '';
+         const feeMessage =
+            feePaid > 0 ? ` + ${feePaid}${getSymbolForUnit(wallet.keys.unit as Currency)} fee` : '';
 
-         dispatch(setSuccess(`Sent $${meltQuote.amount / 100}!`));
+         dispatch(
+            setSuccess(`Sent ${formatUnit(meltQuote.amount, wallet.keys.unit)} ${feeMessage}`),
+         );
          return { preimage, amountUsd: meltQuote.amount, feePaid };
       } catch (error) {
          toastSwapError(error);
@@ -511,6 +611,21 @@ export const useCashu = () => {
          const decodedToken = getDecodedToken(token);
          return decodedToken;
       } catch (e) {}
+   };
+
+   const convertToUnit = async (amount: number, fromUnit: string, toUnit: string) => {
+      if (fromUnit === toUnit) {
+         return amount;
+      } else if (fromUnit === 'usd') {
+         console.log('converting usd to sats', amount);
+         return await unitToSats(amount / 100, 'usd');
+      } else if (fromUnit === 'sat') {
+         console.log('converting sats to usd', amount);
+         return await satsToUnit(amount, toUnit);
+      } else {
+         console.error('Invalid unit', fromUnit, toUnit);
+         throw new Error('Invalid unit');
+      }
    };
 
    const isTokenSpent = async (token: string | Token) => {
@@ -578,5 +693,6 @@ export const useCashu = () => {
       proofsLockedTo,
       isTokenSpent,
       claimToken,
+      unlockProofs,
    };
 };

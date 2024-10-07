@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { findUserByPubkey } from '@/lib/userModels';
-import { initializeUsdWallet } from '@/utils/cashu';
+import { initializeWallet } from '@/utils/cashu';
 import { LightningTipResponse } from '@/types';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 import axios from 'axios';
@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          }
 
          // TOOD: initialize with keys stored in db
-         const wallet = await initializeUsdWallet(user.defaultMintUrl);
+         const wallet = await initializeWallet(user.defaultMintUrl, { unit: user.defaultUnit });
 
          const { request: invoice, quote } = await wallet.createMintQuote(
             parseFloat(amount as string),

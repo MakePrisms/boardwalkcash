@@ -14,6 +14,8 @@ import { GiftProvider } from '@/hooks/boardwalk/useGifts';
 import AddToHomeScreen from '@/components/AddToHomeScreen.tsx/AddToHomeScreen';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import { ExchangeRateProvider } from '@/hooks/util/useExchangeRate';
+import { BalanceProvider } from '@/hooks/boardwalk/useBalance';
 
 interface CustomPageProps {
    pageTitle?: string;
@@ -102,14 +104,18 @@ export default function App({ Component, pageProps }: CustomAppProps) {
             <PersistGate persistor={persistor} loading={null}>
                <ToastProvider>
                   <NDKProvider>
-                     <CashuProvider>
-                        <ProofProvider>
-                           <GiftProvider>
-                              <Analytics />
-                              <Component {...pageProps} />
-                           </GiftProvider>
-                        </ProofProvider>
-                     </CashuProvider>
+                     <ExchangeRateProvider>
+                        <CashuProvider>
+                           <ProofProvider>
+                              <GiftProvider>
+                                 <BalanceProvider>
+                                    <Analytics />
+                                    <Component {...pageProps} />
+                                 </BalanceProvider>
+                              </GiftProvider>
+                           </ProofProvider>
+                        </CashuProvider>
+                     </ExchangeRateProvider>
                   </NDKProvider>
                </ToastProvider>
             </PersistGate>
