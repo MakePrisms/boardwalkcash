@@ -236,20 +236,39 @@ export const areTokensSpent = async (tokenEntries: [string, string | Token][]) =
 };
 
 /**
- * Attempts to initialize a wallet with the mint's USD keyset
- * @param mintUrl
- * @throws Error if mint does not support USD
- * @returns
+ * Attempts to initialize a wallet
+ * @param mintUrl mint url
+ * @param opts options to init keyset for
+ * @throws Error if mint does not support specified options or if no options are provided
+ * @returns instance of CashuWallet with matching keyset
  */
-export const initializeUsdWallet = async (mintUrl: string) => {
+export const initializeWallet = async (
+   mintUrl: string,
+   opts: { unit?: string; keysetId?: string },
+) => {
+   if (!opts.unit && !opts.keysetId) {
+      throw new Error('Either unit or keysetId must be specified');
+   }
+
    const mint = new CashuMint(mintUrl);
    const keys = await mint.getKeys();
-   const usdKeyset = keys.keysets.find(key => key.unit === 'usd');
-   if (!usdKeyset) {
-      throw new Error(`Mint ${mintUrl} does not support USD`);
+
+   let matchingKeyset;
+
+   if (opts.unit && opts.keysetId) {
+      matchingKeyset = keys.keysets.find(key => key.id === opts.keysetId && key.unit === opts.unit);
+   } else if (opts.keysetId) {
+      matchingKeyset = keys.keysets.find(key => key.id === opts.keysetId);
+   } else if (opts.unit) {
+      matchingKeyset = keys.keysets.find(key => key.unit === opts.unit);
    }
-   const wallet = new CashuWallet(mint, { unit: 'usd', keys: usdKeyset });
-   return wallet;
+
+   if (!matchingKeyset) {
+      console.error(opts);
+      throw new Error(`No matching keyset found for mint ${mintUrl} with specified options`);
+   }
+
+   return new CashuWallet(mint, { keys: matchingKeyset });
 };
 
 export const getProofsFromToken = (token: Token | string) => {
@@ -363,4 +382,8 @@ export const getTokenFromUrl = async (url: string) => {
 export const getMintFromToken = (token: string | Token) => {
    const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
    return decodedToken.token[0].mint;
+};
+
+export const isTestMint = (url: string) => {
+   return url.includes('test');
 };

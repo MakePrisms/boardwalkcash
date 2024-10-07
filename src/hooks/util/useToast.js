@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Toast } from 'flowbite-react';
+import { formatUnit } from '@/utils/formatting';
 import { HiCheckCircle, HiExclamationCircle, HiXCircle, HiInformationCircle } from 'react-icons/hi';
 import { isCashuApiError } from '@/types';
 const ToastContext = createContext();
@@ -15,12 +16,12 @@ export const ToastProvider = ({ children }) => {
 
    const toastSwapSuccess = (to, activeWallet, amountSwapped) => {
       let successMsg = '';
-      if (to.mint.mintUrl === activeWallet?.mint.mintUrl) {
-         successMsg = `Received $${(amountSwapped / 100).toFixed(2)} to your main mint`;
+      if (to.keys.id === activeWallet?.keys.id) {
+         successMsg = `Received ${formatUnit(amountSwapped, activeWallet.keys.unit)} to your main ${activeWallet.keys.unit === 'usd' ? 'USD' : 'BTC'} account`;
       } else {
          let formattedUrl = to.mint.mintUrl.replace('https://', '').replace('http://', '');
          formattedUrl = `${formattedUrl.slice(0, 15)}...${formattedUrl.slice(-5)}`;
-         successMsg = `Received $${(amountSwapped / 100).toFixed(2)} to ${formattedUrl}`;
+         successMsg = `Received ${formatUnit(amountSwapped, to.keys.unit)} to ${formattedUrl}`;
       }
       addToast(successMsg, 'success');
    };

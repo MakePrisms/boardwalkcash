@@ -459,7 +459,7 @@ function generateCSV(data) {
 // startDate.setDate(endDate.getDate() - 3);
 // getMetrics(startDate, endDate);
 // generateTerminalGraph(30);
-batchGetMetrics(7).then(datasets => {
+batchGetMetrics(8).then(datasets => {
    // generateHTMLGraph(datasets);
    // generateTerminalGraph(datasets);
    generateCSV(datasets);

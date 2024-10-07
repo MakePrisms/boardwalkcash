@@ -13,17 +13,21 @@ model User {
   pubkey               String               @unique
   username             String?              @unique
   nostrPubkey          String?
+  lud16                String?
   contacts             Contact[]            @relation("UserContacts")
   contactOf            Contact[]            @relation("ContactUser")
   proofs               Proof[]
   mintQuotes           MintQuote[]
   defaultMint          Mint                 @relation(fields: [defaultMintUrl], references: [url])
   defaultMintUrl       String
+  defaultUnit          String               @default("usd")
   allowedUnits         String[]
   receiving            Boolean              @default(false)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   hideFromLeaderboard  Boolean              @default(false)
+  // whether or not this user is in mintless mode to receive
+  mintlessReceive      Boolean              @default(false)
   Notification         Notification[]
   // custom gifts created by this user
   customGifts          Gift[]               @relation("CustomGifts")
@@ -55,6 +59,7 @@ model Proof {
   amount       Int
   secret       String
   C            String
+  unit         String
   userId       Int // Foreign key to associate proof with a user
   user         User       @relation(fields: [userId], references: [id]) // Links back to the User model
   mintKeysetId String
@@ -95,15 +100,18 @@ model MintKeyset {
 }
 
 model Notification {
-  id         Int      @id @default(autoincrement())
-  userPubkey String
-  type       String // "token" | "new-contact"
-  data       String
-  tokenId    String?
-  token      Token?   @relation(fields: [tokenId], references: [id])
-  isRead     Boolean  @default(false)
-  user       User     @relation(fields: [userPubkey], references: [pubkey])
-  createdAt  DateTime @default(now())
+  id                    Int                  @id @default(autoincrement())
+  userPubkey            String
+  // made type and data with the plan to deprecate, only deprecated for mintless transactions
+  type                  String // "token" | "new-contact"
+  data                  String?
+  tokenId               String?
+  mintlessTransactionId String?
+  token                 Token?               @relation(fields: [tokenId], references: [id])
+  isRead                Boolean              @default(false)
+  user                  User                 @relation(fields: [userPubkey], references: [pubkey])
+  mintlessTransaction   MintlessTransaction? @relation(fields: [mintlessTransactionId], references: [id])
+  createdAt             DateTime             @default(now())
 }
 
 model Token {
@@ -121,11 +129,23 @@ model Token {
   createdBy       User?          @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
 }
 
+model MintlessTransaction {
+  id              String         @id @default(uuid())
+  gift            String?
+  notificationId  String
+  amount          Int
+  recipientPubkey String
+  createdByPubkey String
+  createdAt       DateTime       @default(now())
+  isFee           Boolean        @default(false)
+  Notification    Notification[]
+}
+
 model Gift {
-  id                 Int     @id @default(autoincrement())
-  name               String  @unique
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique
   amount             Int
-  unit               String  @default("usd")
+  unit               String              @default("usd")
   description        String?
   // path to image (relative path or full url)
   imageUrlSelected   String
@@ -133,11 +153,11 @@ model Gift {
   // null -> anyone can send/receive;
   creatorPubkey      String?
   // the creator of the gift
-  creator            User?   @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
+  creator            User?               @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
   // fee in cents user has to pay to send
   fee                Int?
   // don't show if inactive
-  active Boolean @default(true)
+  active             Boolean             @default(true)
   // // true -> anyone can send/receive; false -> only the creator can send/receive
   // isGlobal    Boolean @default(true)
   // // whether or not there are `conditions`

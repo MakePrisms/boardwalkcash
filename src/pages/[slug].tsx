@@ -155,7 +155,7 @@ const UserProfilePage = () => {
                   )}
                </div>
                <div className='flex flex-row items-center space-x-6 w-full'>
-                  {/* <EGiftButton className='w-20' contact={user} /> */}
+                  <EGiftButton className='w-20' contact={user} />
                   <LightningTipButton
                      contact={user}
                      className='w-full h-9 flex items-center justify-center'

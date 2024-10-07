@@ -227,6 +227,204 @@ const giftsV3 = [
    },
 ];
 
+const satGiftsRound1 = [
+   {
+      name: 'Orange Heart',
+      amount: 100,
+      unit: 'sat',
+      description: 'An orange heart',
+      imageUrlSelected: '/eGifts/selected/orangeheart_100.png',
+      imageUrlUnselected: '/eGifts/unselected/orangeheart_100.png',
+   },
+   {
+      name: 'Salute',
+      amount: 1000,
+      unit: 'sat',
+      description: 'A salute gesture',
+      imageUrlSelected: '/eGifts/selected/salute_1,000.png',
+      imageUrlUnselected: '/eGifts/unselected/salute_1,000.png',
+   },
+   {
+      name: 'Thumbs Up',
+      amount: 500,
+      unit: 'sat',
+      description: 'A thumbs up gesture',
+      imageUrlSelected: '/eGifts/selected/thumbsup_500.png',
+      imageUrlUnselected: '/eGifts/unselected/thumbsup_500.png',
+   },
+];
+
+const satGiftsRound2 = [
+   {
+      name: '100 Percent',
+      amount: 100,
+      unit: 'sat',
+      description: '100% symbol',
+      imageUrlSelected: '/eGifts/selected/100percent_100.png',
+      imageUrlUnselected: '/eGifts/unselected/100percent_100.png',
+   },
+   {
+      name: 'Burger',
+      amount: 5000,
+      unit: 'sat',
+      description: 'A delicious burger',
+      imageUrlSelected: '/eGifts/selected/burger_5000.png',
+      imageUrlUnselected: '/eGifts/unselected/burger_5000.png',
+   },
+   {
+      name: 'Candy',
+      amount: 100,
+      unit: 'sat',
+      description: 'A sweet candy',
+      imageUrlSelected: '/eGifts/selected/candy_100.png',
+      imageUrlUnselected: '/eGifts/unselected/candy_100.png',
+   },
+   {
+      name: 'Champagne',
+      amount: 10000,
+      unit: 'sat',
+      description: 'A bottle of champagne',
+      imageUrlSelected: '/eGifts/selected/champagne_10000.png',
+      imageUrlUnselected: '/eGifts/unselected/champagne_10000.png',
+   },
+   {
+      name: 'Cheese',
+      amount: 500,
+      unit: 'sat',
+      description: 'A piece of cheese',
+      imageUrlSelected: '/eGifts/selected/cheese_500.png',
+      imageUrlUnselected: '/eGifts/unselected/cheese_500.png',
+   },
+   {
+      name: 'Chocolate',
+      amount: 100,
+      unit: 'sat',
+      description: 'A chocolate bar',
+      imageUrlSelected: '/eGifts/selected/chocolate_100.png',
+      imageUrlUnselected: '/eGifts/unselected/chocolate_100.png',
+   },
+   {
+      name: 'Dolphin',
+      amount: 5000,
+      unit: 'sat',
+      description: 'A playful dolphin',
+      imageUrlSelected: '/eGifts/selected/dolphin_5000.png',
+      imageUrlUnselected: '/eGifts/unselected/dolphin_5000.png',
+   },
+   {
+      name: 'Ferris Wheel',
+      amount: 10000,
+      unit: 'sat',
+      description: 'A colorful ferris wheel',
+      imageUrlSelected: '/eGifts/selected/ferriswheel_10000.png',
+      imageUrlUnselected: '/eGifts/unselected/ferriswheel_10000.png',
+   },
+   {
+      name: 'Full Moon',
+      amount: 500,
+      unit: 'sat',
+      description: 'A bright full moon',
+      imageUrlSelected: '/eGifts/selected/fullmoon_500.png',
+      imageUrlUnselected: '/eGifts/unselected/fullmoon_500.png',
+   },
+   {
+      name: 'Headless Bitcoin',
+      amount: 21000,
+      unit: 'sat',
+      description: 'A headless Bitcoin symbol',
+      imageUrlSelected: '/eGifts/selected/headlessbitcoin_21000.png',
+      imageUrlUnselected: '/eGifts/unselected/headlessbitcoin_21000.png',
+   },
+   {
+      name: 'Kitty',
+      amount: 5000,
+      unit: 'sat',
+      description: 'A cute kitty',
+      imageUrlSelected: '/eGifts/selected/kitty_5000.png',
+      imageUrlUnselected: '/eGifts/unselected/kitty_5000.png',
+   },
+   {
+      name: 'Monopoly Bitcoin',
+      amount: 21000,
+      unit: 'sat',
+      description: 'A Bitcoin-themed Monopoly symbol',
+      imageUrlSelected: '/eGifts/selected/monopolybitcoin_21000.png',
+      imageUrlUnselected: '/eGifts/unselected/monopolybitcoin_21000.png',
+   },
+   {
+      name: 'Party Popper',
+      amount: 1000,
+      unit: 'sat',
+      description: 'A festive party popper',
+      imageUrlSelected: '/eGifts/selected/partypopper_1000.png',
+      imageUrlUnselected: '/eGifts/unselected/partypopper2_1000.png',
+   },
+   {
+      name: 'Pill',
+      amount: 1000,
+      unit: 'sat',
+      description: 'A medicinal pill',
+      imageUrlSelected: '/eGifts/selected/pill_1000.png',
+      imageUrlUnselected: '/eGifts/unselected/pill_1000.png',
+   },
+   {
+      name: 'Rocket Ship',
+      amount: 10000,
+      unit: 'sat',
+      description: 'A soaring rocket ship',
+      imageUrlSelected: '/eGifts/selected/rocketship_10000.png',
+      imageUrlUnselected: '/eGifts/unselected/rocketship_10000.png',
+   },
+   {
+      name: 'Satoshi Bitcoin',
+      amount: 21000,
+      unit: 'sat',
+      description: 'A Satoshi-themed Bitcoin symbol',
+      imageUrlSelected: '/eGifts/selected/satoshibitcoin_21000.png',
+      imageUrlUnselected: '/eGifts/unselected/satoshibitcoin_21000.png',
+   },
+   {
+      name: 'Sun',
+      amount: 500,
+      unit: 'sat',
+      description: 'A bright shining sun',
+      imageUrlSelected: '/eGifts/selected/sun_500.png',
+      imageUrlUnselected: '/eGifts/unselected/sun_500.png',
+   },
+   {
+      name: 'Tombstone',
+      amount: 1000,
+      unit: 'sat',
+      description: 'A spooky tombstone',
+      imageUrlSelected: '/eGifts/selected/tombstone_1000.png',
+      imageUrlUnselected: '/eGifts/unselected/tombstone_1000.png',
+   },
+   {
+      name: 'Unicorn Bitcoin',
+      amount: 21000,
+      unit: 'sat',
+      description: 'A magical unicorn-themed Bitcoin',
+      imageUrlSelected: '/eGifts/selected/unicornbitcoin_21000.png',
+      imageUrlUnselected: '/eGifts/unselected/unicornbitcoin_21000.png',
+   },
+   {
+      name: 'Vampire',
+      amount: 5000,
+      unit: 'sat',
+      description: 'A spooky vampire',
+      imageUrlSelected: '/eGifts/selected/vampire_5000.png',
+      imageUrlUnselected: '/eGifts/unselected/vampire_5000.png',
+   },
+   {
+      name: 'Witch',
+      amount: 10000,
+      unit: 'sat',
+      description: 'A magical witch',
+      imageUrlSelected: '/eGifts/selected/witch_10000.png',
+      imageUrlUnselected: '/eGifts/unselected/witch_10000.png',
+   },
+];
+
 const freeStar = [
    {
       name: 'Star',
@@ -247,7 +445,7 @@ async function addGifts(gifts) {
                description: gift.description,
                imageUrlSelected: gift.imageUrlSelected,
                imageUrlUnselected: gift.imageUrlUnselected,
-               unit: 'usd', // Using the default value
+               unit: gift.unit || 'usd', // Using the default values
                fee: gift.fee,
             },
          });
@@ -355,4 +553,4 @@ async function addHalloweenGifts() {
    }
 }
 
-addGifts(freeStar);
+addGifts(satGiftsRound2);

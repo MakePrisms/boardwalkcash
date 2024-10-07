@@ -1,6 +1,6 @@
 import { MintKeys, Proof } from '@cashu/cashu-ts';
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Wallet } from '@/types';
+import { Currency, Wallet } from '@/types';
 import { RootState } from '../store';
 import { updateUser } from '@/utils/appApiRequests';
 
@@ -36,6 +36,17 @@ export const initializeKeysets = createAsyncThunk<{ keysets: Wallet[]; balance: 
    },
 );
 
+export const setDefaultUnit = createAsyncThunk(
+   'wallet/setDefaultUnit',
+   async (unit: Currency, { getState, dispatch }) => {
+      const state = getState() as RootState;
+
+      const updatedUser = await updateUser(state.user.pubkey!, { defaultUnit: unit });
+
+      return updatedUser.defaultUnit;
+   },
+);
+
 export const setMainKeyset = createAsyncThunk(
    'wallet/setMainKeyset',
    async (keysetId: string, { getState, dispatch }) => {
@@ -47,14 +58,18 @@ export const setMainKeyset = createAsyncThunk(
          throw new Error('Keyset not found');
       }
 
-      if (toSetMain.active) {
-         console.log('This keyset is already active.');
-         return;
-      }
+      // if (toSetMain.active) {
+      //    console.log('This keyset is already active.');
+      //    return;
+      // }
 
       try {
          const pubkey = localStorage.getItem('pubkey');
-         await updateUser(pubkey!, { defaultMintUrl: toSetMain.url });
+         await updateUser(pubkey!, {
+            defaultMintUrl: toSetMain.url,
+            defaultKeysetId: toSetMain.id,
+            defaultUnit: toSetMain.keys.unit,
+         });
       } catch (e) {
          throw new Error(`Failed to update user: ${e}`);
       }
@@ -143,11 +158,11 @@ export const walletSlice = createSlice({
             const keyset = state.keysets[keysetId];
             if (keyset) {
                keyset.active = active;
-               Object.values(state.keysets).forEach(k => {
-                  if (k.id !== keysetId) {
-                     k.active = false;
-                  }
-               });
+               // Object.values(state.keysets).forEach(k => {
+               //    if (k.id !== keysetId) {
+               //       k.active = false;
+               //    }
+               // });
                updateKeysetLocalStorage(state.keysets);
             }
          });

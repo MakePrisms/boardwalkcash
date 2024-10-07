@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
 import prisma from './prisma';
-import { setGiftStatus } from './gifts';
 
 export const createSingleGiftCampaign = async (data: Prisma.SingleGiftCampaignCreateInput) => {
    return prisma.singleGiftCampaign.create({
@@ -60,13 +59,9 @@ export const setCampaignInactive = async (id: number) => {
 };
 
 export const deleteCampaign = async (id: number) => {
-   const campaign = await prisma.singleGiftCampaign.delete({
+   await prisma.singleGiftCampaign.delete({
       where: {
          id,
       },
    });
-
-   if (campaign) {
-      setGiftStatus(campaign.giftId, false);
-   }
 };

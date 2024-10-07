@@ -1,3 +1,25 @@
+import { Currency } from '@/types';
+import { getDecodedToken, Token } from '@cashu/cashu-ts';
+
+export const formatTokenAmount = (token: Token | string) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const amount = decodedToken.token[0].proofs.reduce((acc, p) => acc + p.amount, 0);
+   return formatUnit(amount, decodedToken.unit);
+};
+
+export const formatUnit = (amount: number, unit?: string) => {
+   if (unit === 'sat') {
+      return formatSats(amount);
+   } else if (unit === 'usd') {
+      return formatCents(amount);
+   } else if (unit === undefined) {
+      /* the token probably didn't have the unit or unsupported unit */
+      return amount.toString();
+   } else {
+      return `${amount.toString()} ${unit}`;
+   }
+};
+
 export const formatCents = (cents: number, decimals = true) => {
    if (cents < 0) {
       throw new Error('Cents must be a non-negative number');
@@ -19,11 +41,22 @@ export const formatCents = (cents: number, decimals = true) => {
    return `$${(cents / 100).toFixed(decimals ? 2 : 0)}`;
 };
 
-export const formatSats = (sats: number) => `${sats.toLocaleString()} sats`;
+export const formatSats = (sats: number) => `${sats.toLocaleString()}₿`;
 
 export const shortenString = (str: string, maxLength: number) => {
    if (str.length <= maxLength) {
       return str;
    }
    return `${str.slice(0, maxLength - 3)}...${str.slice(-4)}`;
+};
+
+export const getSymbolForUnit = (unit: Currency) => {
+   switch (unit) {
+      case 'sat':
+         return '₿';
+      case 'usd':
+         return '$';
+      default:
+         throw new Error('Invalid unit');
+   }
 };

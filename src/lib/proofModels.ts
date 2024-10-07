@@ -26,6 +26,13 @@ async function findProofById(id: number) {
       where: {
          id,
       },
+      include: {
+         MintKeyset: {
+            select: {
+               unit: true,
+            },
+         },
+      },
    });
    return proof;
 }
@@ -34,6 +41,13 @@ async function findProofsByUserId(userId: number) {
    const proofs = await prisma.proof.findMany({
       where: {
          userId,
+      },
+      include: {
+         MintKeyset: {
+            select: {
+               unit: true,
+            },
+         },
       },
    });
    return proofs;

@@ -7,6 +7,7 @@ import useContacts from '@/hooks/boardwalk/useContacts';
 import { PublicContact } from '@/types';
 import ContactTableRowItem from './ContactTableRowItem';
 import AddContactModalBody from './AddContactModalBody';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface ViewContactsModalBodyProps {
    mode: 'view' | 'select';
@@ -19,6 +20,7 @@ const ViewContactsModalBody: React.FC<ViewContactsModalBodyProps> = ({ mode, onS
    const [isAddingContact, setIsAddingContact] = useState(false);
    const user = useSelector((state: RootState) => state.user);
    const { sortedContacts } = useContacts();
+   const { activeWallet } = useCashuContext();
 
    const handleAddContactClick = () => {
       setIsAddingContact(true);
@@ -38,6 +40,10 @@ const ViewContactsModalBody: React.FC<ViewContactsModalBodyProps> = ({ mode, onS
          {
             username: user.username ? `${user.username} (me)` : '(me)',
             pubkey: user.pubkey!,
+            lud16: user.lud16,
+            mintlessReceive: user.receiveMode === 'mintless',
+            defaultMintUrl: activeWallet?.mint.mintUrl,
+            defaultUnit: activeWallet?.keys.unit,
          } as PublicContact,
       ].filter(contact => contact.username?.toLowerCase().includes(searchTerm.toLowerCase()));
 

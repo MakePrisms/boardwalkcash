@@ -1,6 +1,6 @@
 import {
    EcashTransaction,
-   LightningTransaction,
+   Transaction,
    TxStatus,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
@@ -20,9 +20,7 @@ const NoIcon: NewType = () => null;
 
 const TransactionHistoryDrawer = () => {
    const [hidden, setHidden] = useState(true);
-   const [allTransactions, setAllTransactions] = useState<
-      (EcashTransaction | LightningTransaction)[]
-   >([]);
+   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
    const [currentPage, setCurrentPage] = useState(1);
 
    const dispatch = useDispatch();
@@ -34,8 +32,9 @@ const TransactionHistoryDrawer = () => {
    const history = useSelector((state: RootState) => state.history);
 
    const mergeAndSortHistory = useCallback(() => {
-      const { ecash, lightning } = history;
-      const merged = [...ecash, ...lightning];
+      const { ecash, lightning, mintless } = history;
+      /* mintless was added later */
+      const merged = [...ecash, ...lightning, ...(mintless || [])];
       merged.sort((a, b) => {
          return new Date(b.date).getTime() - new Date(a.date).getTime();
       });

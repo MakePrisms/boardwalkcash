@@ -10,6 +10,8 @@ import { Prisma, User } from '@prisma/client';
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
 import { createNotification } from '@/lib/notificationModels';
 import { NotificationType } from '@/types';
+import { findOrCreateMint } from '@/lib/mintModels';
+import { CashuMint } from '@cashu/cashu-ts';
 
 export type UserWithContacts = User & { contacts: ContactData[] };
 
@@ -51,15 +53,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const {
                username,
                defaultMintUrl: mintUrl,
+               defaultKeysetId,
+               defaultUnit,
                hideFromLeaderboard,
                nostrPubkey,
+               lud16,
+               mintlessReceive,
             } = req.body;
             let updates = {};
             if (username) {
                updates = { ...updates, username };
             }
             if (mintUrl) {
-               updates = { ...updates, mintUrl };
+               if (!defaultKeysetId) {
+                  return res
+                     .status(400)
+                     .json({ message: 'Must specify default unit when updating mint' });
+               }
+               updates = { ...updates, mintUrl, defaultKeysetId, defaultUnit };
+            } else if (defaultUnit) {
+               updates = { ...updates, defaultUnit };
             }
             if (hideFromLeaderboard !== undefined) {
                updates = { ...updates, hideFromLeaderboard };
@@ -67,6 +80,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             /* only allow removing nostr pubkey, otherwise otp is required to authenticate */
             if (nostrPubkey === null) {
                updates = { ...updates, nostrPubkey };
+            }
+            if (lud16 || lud16 === null) {
+               updates = { ...updates, lud16 };
+            }
+            if (mintlessReceive !== undefined) {
+               updates = { ...updates, mintlessReceive };
             }
             if (Object.keys(updates).length > 0) {
                const updatedUser = await updateUser(pubkey, updates);

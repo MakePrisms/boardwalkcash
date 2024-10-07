@@ -8,9 +8,14 @@ const findContactByUsername = async (username: string): Promise<PublicContact | 
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
+         mintlessReceive: true,
+         defaultUnit: true,
       },
    });
-   return contact;
+   if (!contact) return null;
+   return { ...contact, defaultUnit: contact.defaultUnit as 'usd' | 'sat' };
 };
 
 const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null> => {
@@ -20,9 +25,13 @@ const findContactByPubkey = async (pubkey: string): Promise<PublicContact | null
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
+         mintlessReceive: true,
+         defaultUnit: true,
       },
    });
-   return contact;
+   return contact ? { ...contact, defaultUnit: contact.defaultUnit as 'usd' | 'sat' } : null;
 };
 
 const isContactsTrustedMint = async (contact: PublicContact, mintUrl: string) => {
@@ -45,9 +54,16 @@ const findManyContacts = async (pubkeys: string[]) => {
          username: true,
          pubkey: true,
          createdAt: true,
+         lud16: true,
+         defaultMintUrl: true,
+         mintlessReceive: true,
+         defaultUnit: true,
       },
    });
-   return contacts;
+   return contacts.map(c => ({
+      ...c,
+      defaultUnit: c.defaultUnit as 'usd' | 'sat',
+   }));
 };
 
 export { findContactByUsername, findContactByPubkey, isContactsTrustedMint, findManyContacts };
