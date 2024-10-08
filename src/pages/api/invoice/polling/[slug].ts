@@ -142,6 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                const feeToken = getEncodedTokenV4({
                   token: [{ proofs: lockedFeeProofs, mint: wallet.mint.mintUrl }],
+                  unit: wallet.keys.unit,
                });
 
                /* send fee as a notification to Boardwalk */
@@ -172,6 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                /* if its a tip, send as a notification */
                token = getEncodedTokenV4({
                   token: [{ proofs: proofsToSendToUser, mint: wallet.mint.mintUrl }],
+                  unit: wallet.keys.unit,
                });
                /* not sure why gift is ending up as 'undefined' */
                if (gift && gift !== 'undefined') {
