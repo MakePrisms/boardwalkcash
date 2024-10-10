@@ -3,9 +3,9 @@ export const normalizeUrl = (url: string): string => {
    url = url.replace(/\/+$/, '');
 
    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url.toLocaleLowerCase();
+      return url;
    } else {
-      return ('https://' + url).toLocaleLowerCase();
+      return 'https://' + url;
    }
 };
 
