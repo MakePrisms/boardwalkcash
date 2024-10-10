@@ -4,56 +4,40 @@ import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { formatCents, formatSats } from '@/utils/formatting';
 import { useEffect, useState } from 'react';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
 
 interface WaitForInvoiceModalProps {
    isOpen: boolean;
    onClose: () => void;
    invoice: string;
-   amount: number;
-   unit: 'usd' | 'sat';
    invoiceTimeout: boolean;
    onCheckAgain: () => void;
 }
 
 export const WaitForInvoiceModalBody: React.FC<
    Omit<WaitForInvoiceModalProps, 'isOpen' | 'onClose'>
-> = ({ invoice, amount, unit, invoiceTimeout, onCheckAgain }) => {
+> = ({ invoice, invoiceTimeout, onCheckAgain }) => {
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
    const [loading, setLoading] = useState(true);
-   const { unitToSats, satsToUnit } = useExchangeRate();
+   const { satsToUnit } = useExchangeRate();
 
    useEffect(() => {
       setLoading(true);
-      if (!amount || !unit) return;
-      console.log('amount', amount);
-      console.log('unit', unit);
-      if (unit === 'usd') {
-         unitToSats(amount / 100, 'usd')
-            .then(amountSats => {
-               setAmountData({ amountUsdCents: amount, amountSats });
-            })
-            .finally(() =>
-               setTimeout(() => {
-                  setLoading(false);
-               }, 300),
-            );
-      } else {
-         console.log('converting sats to usd', amount, unit);
-         satsToUnit(amount, 'usd')
-            .then(amountUsdCents => {
-               console.log('amountUsdCents', amountUsdCents);
-               setAmountData({ amountUsdCents, amountSats: amount });
-            })
-            .finally(() =>
-               setTimeout(() => {
-                  setLoading(false);
-               }, 300),
-            );
-      }
-   }, [, unitToSats]);
+      // TODO: also show expiry
+      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
+      satsToUnit(amountSats, 'usd')
+         .then(amountUsdCents => {
+            setAmountData({ amountUsdCents, amountSats });
+         })
+         .finally(() =>
+            setTimeout(() => {
+               setLoading(false);
+            }, 300),
+         );
+   }, [invoice, satsToUnit]);
 
    if (loading) {
       return (
@@ -70,7 +54,7 @@ export const WaitForInvoiceModalBody: React.FC<
          {amountData && (
             <div className='bg-white bg-opacity-90 p-2 rounded shadow-md'>
                <div className='flex items-center justify-center space-x-5 text-black'>
-                  <div>{`${unit === 'sat' ? '~' : ''}${formatCents(amountData.amountUsdCents)}`}</div>
+                  <div>{`~${formatCents(amountData.amountUsdCents)}`}</div>
                   <div>|</div>
                   <div>{formatSats(amountData.amountSats)}</div>
                </div>

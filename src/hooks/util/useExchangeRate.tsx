@@ -80,7 +80,7 @@ export const ExchangeRateProvider: React.FC<React.PropsWithChildren> = ({ childr
                return amount;
             case 'usd':
                const exchangeRate = await getUsdToSatRate();
-               return Math.floor(amount * exchangeRate * 100);
+               return Math.round(amount * exchangeRate * 100);
             default:
                throw new Error('Invalid unit');
          }

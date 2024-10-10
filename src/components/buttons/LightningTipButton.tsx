@@ -175,8 +175,6 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
             return (
                <WaitForInvoiceModalBody
                   invoice={invoice}
-                  amount={activeUnit === Currency.USD ? amount * 100 : amount}
-                  unit={activeUnit}
                   invoiceTimeout={invoiceTimeout}
                   onCheckAgain={handleCheckAgain}
                />

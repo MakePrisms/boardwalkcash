@@ -13,16 +13,9 @@ const getUsdToSatRate = async (): Promise<number> => {
    } catch (error) {
       console.error('Error fetching USD to BTC rate: ', error);
 
-      const storedRate = localStorage.getItem('usdToSatRate');
-      if (storedRate) {
-         const parsedRate = parseFloat(storedRate);
-         console.log('Using stored usd to sat rate', parsedRate);
-         return parsedRate;
-      } else {
-         const defaultRate = 1 / DEFAULT_USD_BTC_RATE / 100_000_000;
-         console.log('Using default USD to BTC rate', DEFAULT_USD_BTC_RATE);
-         return defaultRate;
-      }
+      const defaultRate = 1 / DEFAULT_USD_BTC_RATE / 100_000_000;
+      console.log('Using default USD to BTC rate', DEFAULT_USD_BTC_RATE);
+      return defaultRate;
    }
 };
 
@@ -44,7 +37,7 @@ const satsToUnit = async (amount: number, unit: string): Promise<number> => {
          return amount;
       case 'usd':
          const exchangeRate = await getUsdToSatRate();
-         return Math.floor(amount * exchangeRate * 100);
+         return Math.round(amount * exchangeRate * 100);
       default:
          throw new Error('Invalid unit');
    }
