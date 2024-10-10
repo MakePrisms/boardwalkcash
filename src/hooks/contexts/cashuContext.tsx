@@ -267,7 +267,8 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const { keysets } = activeKeys;
       for (const currency of opts?.currencies || ['usd']) {
-         const k = keysets.find(k => k.unit === currency);
+         /* find keyset that is hex and matches the currency */
+         const k = keysets.find(k => k.unit === currency && /^[0-9A-Fa-f]+$/.test(k.id));
          if (k) {
             const wallet = new CashuWallet(mintWithWallets.mint, { keys: k });
             setWallets(new Map(wallets.set(k.id, wallet)));

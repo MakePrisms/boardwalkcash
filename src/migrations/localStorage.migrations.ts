@@ -54,7 +54,9 @@ const migrations: Array<Migration> = [
                try {
                   const mint = new CashuMint(url);
                   const { keysets } = await mint.getKeys();
-                  const satKeyset = keysets.find(k => k.unit === 'sat');
+                  const satKeyset = keysets.find(
+                     k => k.unit === 'sat' && /^[0-9A-Fa-f]+$/.test(k.id),
+                  );
                   if (!satKeyset) return null;
                   return {
                      id: satKeyset.id,

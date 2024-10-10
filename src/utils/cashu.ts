@@ -260,7 +260,9 @@ export const initializeWallet = async (
    } else if (opts.keysetId) {
       matchingKeyset = keys.keysets.find(key => key.id === opts.keysetId);
    } else if (opts.unit) {
-      matchingKeyset = keys.keysets.find(key => key.unit === opts.unit);
+      matchingKeyset = keys.keysets.find(
+         key => key.unit === opts.unit && /^[0-9A-Fa-f]+$/.test(key.id),
+      );
    }
 
    if (!matchingKeyset) {
