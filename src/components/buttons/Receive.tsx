@@ -275,8 +275,6 @@ const Receive = () => {
                   activeWallet && (
                      <WaitForInvoiceModalBody
                         invoice={invoiceToPay}
-                        amount={amountUnit}
-                        unit={activeUnit}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />

@@ -3,11 +3,11 @@ import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/util/useToast';
 import { getInvoiceForTip, getTipStatus, postTokenToDb } from '@/utils/appApiRequests';
 import { useForm } from 'react-hook-form';
-import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import SendEcashModalBody from '../modals/SendEcashModalBody';
-import { PublicContact } from '@/types';
+import { Currency, PublicContact } from '@/types';
 import { computeTxId } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface LightningTipButtonProps {
    contact: PublicContact;
@@ -28,7 +28,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
    const [invoice, setInvoice] = useState('');
    const [token, setToken] = useState('');
    const [quoteId, setQuoteId] = useState('');
-   const [unit, setUnit] = useState<'usd' | 'sat'>('usd');
+   const { activeUnit } = useCashuContext();
    const {
       register,
       handleSubmit,
@@ -37,7 +37,6 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
       watch,
    } = useForm<TipFormData>();
    const { addToast } = useToast();
-   const { unitToSats } = useExchangeRate();
 
    const amount = watch('amount') as number;
 
@@ -54,16 +53,19 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
 
       const { amount } = data;
 
-      const amountUsdCents = parseFloat(Number(amount).toFixed(2)) * 100;
+      const amountUnit =
+         activeUnit === Currency.USD ? parseFloat(Number(amount).toFixed(2)) * 100 : amount;
 
-      console.log('amountUsdCents', amountUsdCents);
+      console.log('amount unit', amountUnit);
 
-      await handleLightningTip(amountUsdCents);
+      await handleLightningTip(amountUnit);
    };
 
-   const handleLightningTip = async (amountCents: number) => {
+   const handleLightningTip = async (amountUnit: number) => {
       try {
-         const { checkingId, invoice } = await getInvoiceForTip(contact.pubkey, amountCents);
+         const { checkingId, invoice } = await getInvoiceForTip(contact.pubkey, amountUnit, {
+            unit: activeUnit,
+         });
 
          setInvoice(invoice);
          setCurrentPage('invoice');
@@ -134,7 +136,6 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
       // const amount = parseFloat(value);
       if (isNaN(value)) return 'Please enter a valid number';
       if (value <= 0) return 'Amount must be positive';
-      if (value > 1000000) return 'Amount must not exceed 1,000,000';
       if (value.toString().split('.')[1]?.length > 2) {
          return 'Amount must not have more than 2 decimal places';
       }
@@ -149,7 +150,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
                   <TextInput
                      type='text'
                      inputMode='decimal'
-                     placeholder='Amount in USD (eg. 0.21)'
+                     placeholder={`Amount in ${activeUnit === 'usd' ? 'USD (eg. 0.21)' : 'BTC (eg. 21)'}`}
                      {...register('amount', {
                         required: 'Amount is required',
                         min: { value: 0, message: 'Amount must be positive' },
@@ -174,8 +175,6 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
             return (
                <WaitForInvoiceModalBody
                   invoice={invoice}
-                  amount={amount}
-                  unit={unit}
                   invoiceTimeout={invoiceTimeout}
                   onCheckAgain={handleCheckAgain}
                />

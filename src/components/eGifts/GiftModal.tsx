@@ -97,8 +97,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
             amountUnit + (feeCents || 0),
-            gift?.name,
-            feeCents,
+            { gift: gift?.name, fee: feeCents, unit: activeUnit },
          );
 
          setInvoice(invoice);
@@ -339,8 +338,6 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                   <Modal.Body>
                      <WaitForInvoiceModalBody
                         invoice={invoice}
-                        amount={amountUnit! + (gift?.fee || 0)}
-                        unit={'usd'}
                         invoiceTimeout={invoiceTimeout}
                         onCheckAgain={handleCheckAgain}
                      />

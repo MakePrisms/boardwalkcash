@@ -4,12 +4,13 @@ import { initializeWallet } from '@/utils/cashu';
 import { LightningTipResponse } from '@/types';
 import { createMintQuote } from '@/lib/mintQuoteModels';
 import axios from 'axios';
+import { convertToUnit } from '@/utils/convertToUnit';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    if (req.method === 'GET') {
       // pubkey - receiving user's pubkey
       // amount - amount to tip in specified unit (includes fee)
-      // unit - usd only
+      // unit - currency to create invoice in
       // gift - gift name
       // fee - amount to send to boardwalk as fee
       const { pubkey, amount, unit, gift, fee = 0 } = req.query;
@@ -18,8 +19,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
          return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      if (unit !== 'usd') {
-         return res.status(400).json({ error: 'Invalid unit. Only usd is supported' });
+      if (isNaN(Number(amount))) {
+         return res.status(400).json({ error: 'amount must be a number' });
       }
 
       try {
@@ -29,20 +30,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ error: 'User not found' });
          }
 
+         /* convert requested amount to amount in receiving user's unit */
+         const amountToMint =
+            unit === user.defaultUnit
+               ? Number(amount)
+               : await convertToUnit(Number(amount), unit as string, user.defaultUnit);
+
          // TOOD: initialize with keys stored in db
          const wallet = await initializeWallet(user.defaultMintUrl, { unit: user.defaultUnit });
 
-         const { request: invoice, quote } = await wallet.createMintQuote(
-            parseFloat(amount as string),
-         );
+         const { request: invoice, quote } = await wallet.createMintQuote(amountToMint);
 
-         await createMintQuote(
-            quote,
-            invoice,
-            user.pubkey,
-            wallet.keys.id,
-            parseFloat(amount as string),
-         );
+         await createMintQuote(quote, invoice, user.pubkey, wallet.keys.id, amountToMint);
 
          const host = req.headers.host;
          const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
@@ -50,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
          axios.post(`${baseUrl}/api/invoice/polling/${quote}?isTip=true`, {
             pubkey: user.pubkey,
-            amount: amount,
+            amount: amountToMint,
             keysetId: wallet.keys.id,
             mintUrl: wallet.mint.mintUrl,
             gift,
