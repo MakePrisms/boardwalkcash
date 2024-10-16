@@ -248,12 +248,17 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleQRScan = (decodedText: string) => {
       const cleanedText = decodedText.toLowerCase().replace('lightning:', '');
-      if (cleanedText.startsWith('lnbc') || cleanedText.startsWith('creq')) {
+      if (cleanedText.startsWith('lnbc')) {
          setInputValue(cleanedText);
          /* wait for next tick */
          Promise.resolve().then(() => handleInputSubmit());
+      } else if (decodedText.startsWith('creqA')) {
+         const request = decodePaymentRequest(decodedText);
+         setPaymentRequestAmt(request.amount);
+         setPaymentRequest(decodedText);
+         setCurrentFlow(SendFlow.PaymentRequest);
       } else {
-         setScanError('Invalid QR code. Please scan a valid Lightning invoice. Got' + decodedText);
+         setScanError('Invalid QR code. Please scan a valid Lightning invoice. Got ' + decodedText);
          setTimeout(() => setScanError(null), 6000);
       }
    };
