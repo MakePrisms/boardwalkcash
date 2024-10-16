@@ -18,16 +18,22 @@ const migrations: Array<Migration> = [
          const history = JSON.parse(persistRoot.history || '{}') as HistoryState | undefined;
 
          if (!history) return;
-         const lightningTransactions = history.lightning;
-         if (!Array.isArray(lightningTransactions)) return;
-         const newLightningTransactions = lightningTransactions.map(tx => {
+
+         // Ensure history has the correct initial state
+         const updatedHistory: HistoryState = {
+            ecash: Array.isArray(history.ecash) ? history.ecash : [],
+            lightning: Array.isArray(history.lightning) ? history.lightning : [],
+            mintless: Array.isArray(history.mintless) ? history.mintless : [],
+         };
+
+         // Add unit to all old lightning transactions
+         updatedHistory.lightning = updatedHistory.lightning.map(tx => {
             if (tx['unit'] === undefined) {
                return { ...tx, unit: 'usd' };
             }
             return tx;
          });
 
-         const updatedHistory = { ...history, lightning: newLightningTransactions };
          persistRoot.history = JSON.stringify(updatedHistory);
          localStorage.setItem('persist:root', JSON.stringify(persistRoot));
       },

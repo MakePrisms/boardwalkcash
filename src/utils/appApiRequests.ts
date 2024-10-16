@@ -84,9 +84,13 @@ export const authenticatedRequest = async <T>(
       body: JSON.stringify(body),
    });
    if (!response.ok) {
-      const errorMessage = await response.text();
-      const msg = JSON.parse(errorMessage).message || errorMessage;
-      throw new HttpResponseError(msg || response.statusText, response.status);
+      try {
+         const errorMessage = await response.text();
+         const msg = JSON.parse(errorMessage).message || errorMessage;
+         throw new HttpResponseError(msg || response.statusText, response.status);
+      } catch (e) {
+         throw new HttpResponseError('failed to parse error message', response.status);
+      }
    } else if (response.status === 204) {
       // no content breaks the json parsing
       return undefined as unknown as T;
