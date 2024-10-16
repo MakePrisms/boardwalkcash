@@ -248,7 +248,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleQRScan = (decodedText: string) => {
       const cleanedText = decodedText.toLowerCase().replace('lightning:', '');
-      if (cleanedText.startsWith('lnbc')) {
+      if (cleanedText.startsWith('lnbc') || cleanedText.startsWith('creqA')) {
          setInputValue(cleanedText);
          /* wait for next tick */
          Promise.resolve().then(() => handleInputSubmit());
