@@ -24,8 +24,9 @@ const defaultRelays = [
    'wss://relay.nos.social',
 ];
 
-const initializeNDK = async () => {
-   let privkey = process.env.BOARDWALK_NOSTR_PRIVKEY;
+const initializeNDK = async (relays = defaultRelays) => {
+   console.log('initializing NDK with relays', relays);
+   let privkey = process.env.NEXT_PUBLIC_BOARDWALK_NOSTR_PRIVKEY;
    if (privkey?.startsWith('nsec1')) {
       privkey = nip19.decode(privkey).data as string;
    }
@@ -111,6 +112,32 @@ export const getNostrContacts = async (pubkey: string) => {
 
    const contactsPubkeys = mostRecentEvent.getMatchingTags('p').map((tag: NDKTag) => tag[1]);
    return contactsPubkeys;
+};
+
+export const sendNip04DM = async (nprofile: string, content: string) => {
+   try {
+      const decoded = nip19.decode(nprofile);
+      if (decoded.type !== 'nprofile') {
+         throw new Error('give me an nprofile');
+      }
+      const { pubkey, relays } = decoded.data;
+      console.log('pubkey', pubkey);
+      console.log('relays', relays);
+      const { ndk, privkey } = await initializeNDK(relays);
+      const encryptedContent = await nip04.encrypt(privkey, pubkey, content);
+
+      const dmEvent = {
+         kind: NDKKind.EncryptedDirectMessage,
+         content: encryptedContent,
+         tags: [['p', pubkey]],
+      } as NostrEvent;
+
+      console.log('publishing event', dmEvent);
+      await publishNostrEvent(ndk, dmEvent, relays);
+   } catch (error) {
+      console.error('Error sending nostr dm', error);
+      throw new NostrError('');
+   }
 };
 
 export const publishNostrEvent = async (ndk: NDK, event: NostrEvent, relays?: string[]) => {

@@ -20,6 +20,8 @@ import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { Wallet } from '@/types';
+import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
+import WaitForEcashPaymentModal from '../modals/WaitForEcashPaymentModal';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -32,10 +34,15 @@ const Receive = () => {
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const [checkingId, setCheckingId] = useState<string | undefined>();
+   const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
+   const [paymentRequest, setPaymentRequest] = useState<string | undefined>();
+   const [paymentRequestId, setPaymentRequestId] = useState<string | undefined>();
+   const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
 
    const { decodeToken } = useCashu();
    const { activeWallet, activeUnit } = useCashuContext();
    const { mintlessReceive } = useMintlessMode();
+   const { fetchPaymentRequest } = usePaymentRequests();
    const { addToast } = useToast();
    const dispatch = useDispatch();
    const user = useSelector((state: RootState) => state.user);
@@ -238,6 +245,25 @@ const Receive = () => {
       }
    };
 
+   const handleReceivePaymentRequest = async () => {
+      if (!amountUnit) {
+         addToast('Please enter a valid amount.', 'warning');
+         return;
+      }
+
+      setFetchingPaymentRequest(true);
+
+      const { pr, id } = await fetchPaymentRequest(amountUnit);
+
+      console.log('pr', pr);
+
+      setFetchingPaymentRequest(false);
+
+      setPaymentRequest(pr);
+      setPaymentRequestId(id);
+      setShowPaymentRequestModal(true);
+   };
+
    return (
       <>
          <Button onClick={() => setIsReceiveModalOpen(true)} className='btn-primary'>
@@ -261,13 +287,22 @@ const Receive = () => {
                      </div>
                      <div className='flex items-center justify-between space-x-4'>
                         <QRScannerButton onScan={setInputValue} />
-                        <Button
-                           isProcessing={fetchingInvoice}
-                           className='btn-primary'
-                           onClick={handleReceive}
-                        >
-                           Continue
-                        </Button>
+                        <div className='flex space-x-4'>
+                           <Button
+                              isProcessing={fetchingInvoice}
+                              className='btn-primary'
+                              onClick={handleReceive}
+                           >
+                              Lightning
+                           </Button>
+                           <Button
+                              isProcessing={fetchingPaymentRequest}
+                              className='btn-primary'
+                              onClick={handleReceivePaymentRequest}
+                           >
+                              Ecash
+                           </Button>
+                        </div>
                      </div>
                   </div>
                ) : (
@@ -288,6 +323,14 @@ const Receive = () => {
                onClose={handleModalClose}
                token={token}
                isUserInitialized={true}
+            />
+         )}
+         {paymentRequest && paymentRequestId && (
+            <WaitForEcashPaymentModal
+               isOpen={showPaymentRequestModal}
+               setIsOpen={() => setShowPaymentRequestModal(false)}
+               pr={paymentRequest}
+               id={paymentRequestId}
             />
          )}
       </>

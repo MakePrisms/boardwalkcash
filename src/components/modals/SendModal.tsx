@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
 import { useToast } from '@/hooks/util/useToast';
-import { MeltQuoteResponse } from '@cashu/cashu-ts';
+import { decodePaymentRequest, MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +20,7 @@ import { postTokenToDb } from '@/utils/appApiRequests';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { formatUnit } from '@/utils/formatting';
+import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 
 interface SendModalProps {
    isOpen: boolean;
@@ -31,6 +32,7 @@ enum SendFlow {
    Amount = 'amount',
    Invoice = 'invoice',
    Ecash = 'ecash',
+   PaymentRequest = 'paymentRequest',
 }
 
 export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
@@ -45,6 +47,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [isContactsModalOpen, setIsContactsModalOpen] = useState(false);
    const [lockTo, setLockTo] = useState<PublicContact | undefined>();
    const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
+   const [paymentRequest, setPaymentRequest] = useState<string | undefined>();
+   const [paymentRequestAmt, setPaymentRequestAmt] = useState<number | undefined>();
    const { sendTokenAsNotification } = useNotifications();
    const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
    const { activeWallet, activeUnit } = useCashuContext();
@@ -53,6 +57,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const { createSendableToken, getMeltQuote, payInvoice } = useCashu();
    const { unitToSats } = useExchangeRate();
    const { nwcPayInvoice, createMintlessToken, sendToMintlessUser } = useMintlessMode();
+   const { payPaymentRequest } = usePaymentRequests();
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const dispatch = useDispatch();
@@ -80,6 +85,12 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       if (inputValue.startsWith('lnbc')) {
          setInvoice(inputValue);
          await handleInvoiceFlow(inputValue);
+      } else if (inputValue.startsWith('creqA')) {
+         const request = decodePaymentRequest(inputValue);
+         console.log('request', request);
+         setPaymentRequestAmt(request.amount);
+         setPaymentRequest(inputValue);
+         setCurrentFlow(SendFlow.PaymentRequest);
       } else if (inputValue.includes('@')) {
          setCurrentFlow(SendFlow.Amount);
       } else if (!isNaN(parseFloat(inputValue))) {
@@ -255,6 +266,20 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       // handleInputSubmit();
    };
 
+   const handlePayPaymentRequest = async () => {
+      if (!paymentRequestAmt || !paymentRequest) {
+         addToast('Missing payment request', 'error');
+         return;
+      }
+      const res = await payPaymentRequest(paymentRequest).catch(e => {
+         addToast('Failed to pay payment request', 'error');
+      });
+      if (res) {
+         addToast('Payment request paid', 'success');
+         resetModalState();
+      }
+   };
+
    const renderFlowContent = () => {
       switch (currentFlow) {
          case SendFlow.Input:
@@ -341,6 +366,14 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
          case SendFlow.Ecash:
             return <SendEcashModalBody token={ecashToken} txid={txid} onClose={resetModalState} />;
+
+         case SendFlow.PaymentRequest:
+            return (
+               <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
+                  <div>Amount: {paymentRequestAmt || 'any'}</div>
+                  <Button onClick={handlePayPaymentRequest}>Confirm</Button>
+               </Modal.Body>
+            );
 
          default:
             return null;
