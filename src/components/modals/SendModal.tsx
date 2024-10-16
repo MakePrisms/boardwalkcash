@@ -49,6 +49,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [txid, setTxid] = useState<string | undefined>(); // txid of the token used for mapping to the real token in the db
    const [paymentRequest, setPaymentRequest] = useState<string | undefined>();
    const [paymentRequestAmt, setPaymentRequestAmt] = useState<number | undefined>();
+   const [isPayingRequest, setIsPayingRequest] = useState(false);
    const { sendTokenAsNotification } = useNotifications();
    const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
    const { activeWallet, activeUnit } = useCashuContext();
@@ -276,10 +277,14 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          addToast('Missing payment request', 'error');
          return;
       }
+      setIsPayingRequest(true);
       const res = await payPaymentRequest(paymentRequest).catch(e => {
-         addToast('Failed to pay payment request', 'error');
+         const message = e.message || 'Failed to pay payment request';
+         addToast(message, 'error');
+         setIsPayingRequest(false);
       });
       if (res) {
+         setIsPayingRequest(false);
          addToast('Payment request paid', 'success');
          resetModalState();
       }
@@ -376,7 +381,9 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             return (
                <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
                   <div>Amount: {paymentRequestAmt || 'any'}</div>
-                  <Button onClick={handlePayPaymentRequest}>Confirm</Button>
+                  <Button isProcessing={isPayingRequest} onClick={handlePayPaymentRequest}>
+                     Confirm
+                  </Button>
                </Modal.Body>
             );
 

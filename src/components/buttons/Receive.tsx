@@ -218,6 +218,10 @@ const Receive = () => {
       setAmountUnit(null);
       setShowEcashReceiveModal(false);
       setCurrentPage('input');
+      setFetchingInvoice(false);
+      setFetchingPaymentRequest(false);
+      setShowEcashReceiveModal(false);
+      setShowPaymentRequestModal(false);
    };
 
    const handleCheckAgain = async () => {
@@ -262,6 +266,11 @@ const Receive = () => {
       setPaymentRequest(pr);
       setPaymentRequestId(id);
       setShowPaymentRequestModal(true);
+   };
+
+   const onPaymentRequestSuccess = (token: string) => {
+      addToast('Payment received! Check your notifications for the token', 'success');
+      handleModalClose();
    };
 
    return (
@@ -328,8 +337,9 @@ const Receive = () => {
          {paymentRequest && paymentRequestId && (
             <WaitForEcashPaymentModal
                isOpen={showPaymentRequestModal}
-               setIsOpen={() => setShowPaymentRequestModal(false)}
                pr={paymentRequest}
+               onSuccess={onPaymentRequestSuccess}
+               onClose={() => setShowPaymentRequestModal(false)}
                id={paymentRequestId}
             />
          )}

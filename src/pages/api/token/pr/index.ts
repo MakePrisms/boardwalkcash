@@ -117,7 +117,7 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             updatedPayment.txid,
          );
       }
-      return res.status(200);
+      return res.status(200).end();
    } else {
       res.setHeader('Allow', ['GET', 'POST']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);
