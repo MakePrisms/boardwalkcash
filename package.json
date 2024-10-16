@@ -16,7 +16,7 @@
       "createpassword": "ts-node -r tsconfig-paths/register src/scripts/createPassword.js"
    },
    "dependencies": {
-      "@cashu/cashu-ts": "^1.1.0",
+      "@cashu/cashu-ts": "github:gudnuf/cashu-ts#payment-requests-compiled",
       "@cashu/crypto": "^0.2.6",
       "@gandlaf21/bc-ur": "^1.1.12",
       "@getalby/sdk": "^3.7.1",
