@@ -137,7 +137,7 @@ export const useNostrMintConnect = () => {
       amount: number,
       keys: MintKeys,
    ): Promise<Proof[]> => {
-      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, keys.id);
+      const { blindedMessages, secrets, rs } = createBlindedMessages(amount, keys);
 
       const blindedSignatures = await requestSignatures(uri, blindedMessages);
 
