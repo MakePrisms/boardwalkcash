@@ -253,7 +253,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          /* wait for next tick */
          Promise.resolve().then(() => handleInputSubmit());
       } else {
-         setScanError('Invalid QR code. Please scan a valid Lightning invoice.');
+         setScanError('Invalid QR code. Please scan a valid Lightning invoice. Got' + decodedText);
          setTimeout(() => setScanError(null), 6000);
       }
    };
