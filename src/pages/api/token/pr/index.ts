@@ -4,6 +4,7 @@ import {
    getPayentRequestById,
    markPaymentRequestAsPaid,
 } from '@/lib/paymentRequestModels';
+import { createTokenInDb } from '@/lib/tokenModels';
 import { findUserByPubkeyWithMint } from '@/lib/userModels';
 import {
    AuthenticatedRequest,
@@ -119,11 +120,13 @@ export default async function handler(
          unit: payment.unit,
       });
       if (request.reusable) {
+         const txid = computeTxId(token);
+         await createTokenInDb({ token }, txid);
          await createNotification(
             request.userPubkey,
             NotificationType.Token,
             JSON.stringify({ token }),
-            computeTxId(token),
+            txid,
          );
       } else {
          const updatedPayment = await markPaymentRequestAsPaid(payment.id, token);

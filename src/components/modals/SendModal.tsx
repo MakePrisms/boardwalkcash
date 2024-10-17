@@ -268,10 +268,13 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleQRScan = (decodedText: string) => {
       const cleanedText = decodedText.toLowerCase().replace('lightning:', '');
-      if (cleanedText.startsWith('lnbc') || cleanedText.startsWith('creqA')) {
+      if (cleanedText.startsWith('lnbc')) {
          setInputValue(cleanedText);
          /* wait for next tick */
          Promise.resolve().then(() => handleInputSubmit());
+      } else if (decodedText.startsWith('creqA')) {
+         setInputValue(decodedText);
+         handleInputSubmit();
       } else {
          setScanError(
             'Invalid QR code. Please scan a valid Lightning invoice or payment request. Got ' +
