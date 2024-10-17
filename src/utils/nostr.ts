@@ -26,7 +26,9 @@ const defaultRelays = [
 
 const initializeNDK = async (relays = defaultRelays) => {
    console.log('initializing NDK with relays', relays);
-   let privkey = process.env.NEXT_PUBLIC_BOARDWALK_NOSTR_PRIVKEY;
+   let privkey =
+      process.env.NEXT_PUBLIC_BOARDWALK_NOSTR_PRIVKEY ||
+      '9baeb030d6734ccd2e1da217b2e0e8e4033389b93548549cccf63c12baefbd70';
    if (privkey?.startsWith('nsec1')) {
       privkey = nip19.decode(privkey).data as string;
    }
