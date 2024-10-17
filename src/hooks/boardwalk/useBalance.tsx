@@ -92,7 +92,7 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
    };
 
    const unitSymbol = useMemo(() => {
-      return showFxValue ? (activeUnit === 'usd' ? '₿' : '$') : activeUnit === 'usd' ? '$' : '₿';
+      return showFxValue ? (activeUnit === 'usd' ? 'sats' : '$') : activeUnit === 'usd' ? '$' : 'sats';
    }, [showFxValue, activeUnit]);
 
    const value = {
