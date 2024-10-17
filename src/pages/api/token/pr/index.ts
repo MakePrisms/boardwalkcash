@@ -11,6 +11,7 @@ import {
    GetPaymentRequestResponse,
    NotificationType,
 } from '@/types';
+import { computeTxId } from '@/utils/cashu';
 import { runAuthMiddleware } from '@/utils/middleware';
 import { getBaseURLFromRequest } from '@/utils/url';
 import {
@@ -23,18 +24,28 @@ import {
 import { NextApiResponse, NextApiRequest } from 'next';
 
 type GetPaymentRequestQuery = {
-   amount: number;
+   amount?: number;
+   reusable?: boolean;
 };
 
-export default async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
+export default async function handler(
+   req: AuthenticatedRequest | NextApiRequest,
+   res: NextApiResponse,
+) {
+   // Handle OPTIONS request
+   if (req.method === 'OPTIONS') {
+      res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
+      return res.status(200).end();
+   }
+
    if (req.method === 'GET') {
-      await runAuthMiddleware(req, res);
-      const pubkey = req.authenticatedPubkey;
-      const { amount } = req.query as unknown as GetPaymentRequestQuery;
-      if (!pubkey || !amount) {
+      await runAuthMiddleware(req as AuthenticatedRequest, res);
+      const pubkey = (req as AuthenticatedRequest).authenticatedPubkey;
+      const { amount, reusable } = req.query as unknown as GetPaymentRequestQuery;
+      if (!pubkey) {
          return res.status(400).json({ error: 'Missing required parameters' });
       }
-      if (isNaN(Number(amount))) {
+      if (amount && isNaN(Number(amount))) {
          return res.status(400).json({ error: 'amount must be a number' });
       }
       if (typeof pubkey !== 'string') {
@@ -61,13 +72,14 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
                pubkey,
             },
          },
-         reusable: false,
+         amount: amount ? Number(amount) : undefined,
+         reusable: reusable ? true : false,
       });
 
       const paymentRequest = new PaymentRequest(
          [httpTransport],
          id,
-         amount,
+         amount ? Number(amount) : undefined,
          unit,
          [mint],
          undefined,
@@ -99,30 +111,36 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
       if (!request) {
          return res.status(404).json({ error: 'Payment request not found' });
       }
-      if (request.paid) {
+      if (request.paid && !request.reusable) {
          return res.status(400).json({ error: 'Payment request already paid' });
       }
       const token = getEncodedTokenV4({
          token: [{ proofs: payment.proofs, mint: payment.mint }],
          unit: payment.unit,
       });
-      const updatedPayment = await markPaymentRequestAsPaid(payment.id, token);
-      if (!updatedPayment.txid) {
-         console.error('Failed to mark payment request as paid');
-      } else {
+      if (request.reusable) {
          await createNotification(
             request.userPubkey,
             NotificationType.Token,
             JSON.stringify({ token }),
-            updatedPayment.txid,
+            computeTxId(token),
          );
+      } else {
+         const updatedPayment = await markPaymentRequestAsPaid(payment.id, token);
+         if (!updatedPayment.txid) {
+            console.error('Failed to mark payment request as paid');
+         } else {
+            await createNotification(
+               request.userPubkey,
+               NotificationType.Token,
+               JSON.stringify({ token }),
+               updatedPayment.txid,
+            );
+         }
       }
       return res.status(200).end();
    } else {
-      res.setHeader('Allow', ['GET', 'POST']);
+      res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);
    }
 }
-
-// payment request has the Y
-// create blinded messages

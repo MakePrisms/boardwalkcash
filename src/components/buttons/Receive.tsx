@@ -250,16 +250,9 @@ const Receive = () => {
    };
 
    const handleReceivePaymentRequest = async () => {
-      if (!amountUnit) {
-         addToast('Please enter a valid amount.', 'warning');
-         return;
-      }
-
       setFetchingPaymentRequest(true);
 
-      const { pr, id } = await fetchPaymentRequest(amountUnit);
-
-      console.log('pr', pr);
+      const { pr, id } = await fetchPaymentRequest(amountUnit || undefined, false);
 
       setFetchingPaymentRequest(false);
 

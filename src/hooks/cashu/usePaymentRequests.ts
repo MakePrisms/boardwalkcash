@@ -7,7 +7,6 @@ import { authenticatedRequest } from '@/utils/appApiRequests';
 import {
    CashuWallet,
    decodePaymentRequest,
-   getDecodedToken,
    PaymentRequest,
    PaymentRequestPayload,
    PaymentRequestTransport,
@@ -16,15 +15,17 @@ import {
 import { useCashu } from './useCashu';
 import { useCashuContext } from '../contexts/cashuContext';
 import { initializeWallet } from '@/utils/cashu';
-import { sendNip04DM } from '@/utils/nostr';
+import { sendNip04DM, sendNip17DM } from '@/utils/nostr';
+import { useProofStorage } from './useProofStorage';
 
 export const usePaymentRequests = () => {
    const { activeWallet, wallets } = useCashuContext();
-   const { payInvoice: cashuPayInvoice, createSendableToken } = useCashu();
+   const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
+   const { addProofs } = useProofStorage();
 
-   const fetchPaymentRequest = async (amount: number) => {
+   const fetchPaymentRequest = async (amount?: number, reusable?: boolean) => {
       return await authenticatedRequest<GetPaymentRequestResponse>(
-         `/api/token/pr?amount=${amount}`,
+         `/api/token/pr?${amount ? `amount=${amount}&` : ''}${reusable ? 'reusable=true' : ''}`,
          'GET',
          undefined,
       );
@@ -43,14 +44,28 @@ export const usePaymentRequests = () => {
       }
       const { mints, amount, unit } = request;
 
+      const hasMints = mints && mints.length > 0;
+      const hasOurActiveWallet =
+         hasMints &&
+         (unit === activeWallet?.keys.unit || unit === undefined) &&
+         mints.find(url => url === activeWallet?.mint.mintUrl);
+
       let wallet: CashuWallet | undefined;
-      if (!activeWallet && mints && mints.length > 0) {
+      if (!activeWallet && hasMints) {
+         /* send from lightning wallet */
          // wallet = await initializeWallet(mints[0], { unit });
          throw new Error('lightning wallet not supported yet');
-      } else if ((!mints || mints.length === 0) && activeWallet) {
+      } else if (hasOurActiveWallet && activeWallet) {
+         /* send from same wallet (swap) */
          wallet = activeWallet;
-      } else if (mints && mints.length > 0) {
+      } else if (!hasMints && activeWallet) {
+         /* no mint specified */
+         wallet = activeWallet;
+      } else if (hasMints) {
+         /* make lightning payment */
          wallet = await initializeWallet(mints[0], { unit });
+      } else {
+         throw new Error('Failed to find a wallet that matches our conditions');
       }
 
       if (!wallet) {
@@ -65,11 +80,7 @@ export const usePaymentRequests = () => {
          wallet.mint.mintUrl === activeWallet?.mint.mintUrl
       ) {
          console.log('using active wallet and swapping');
-         const token = await createSendableToken(amount);
-         if (!token) {
-            throw new Error('Failed to create token');
-         }
-         const proofs = getDecodedToken(token).token[0].proofs;
+         const proofs = await getProofsToSend(request.amount, wallet);
          return {
             proofs,
             mint: wallet.mint.mintUrl,
@@ -126,18 +137,23 @@ export const usePaymentRequests = () => {
 
       console.log('posting to', url);
 
-      const response = await fetch(url, {
-         method: 'POST',
-         body: JSON.stringify(payment),
-         headers: {
-            'Content-Type': 'application/json',
-         },
-      });
+      try {
+         const response = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(payment),
+            headers: {
+               'Content-Type': 'application/json',
+            },
+         });
 
-      if (!response.ok) {
-         throw new Error('Failed to send payment');
-      } else {
-         return true;
+         if (!response.ok) {
+            throw new Error('Failed to send payment');
+         } else {
+            return true;
+         }
+      } catch (e) {
+         addProofs(payment.proofs);
+         throw e;
       }
    };
    const handleNostrTransport = async (
@@ -146,17 +162,26 @@ export const usePaymentRequests = () => {
    ) => {
       const nprofile = transport.target;
       const supportsNip04 = request.getTag('1');
-      if (!supportsNip04) {
+      const supportsNip17 = request.getTag('2');
+      if (!supportsNip04 && !supportsNip17) {
          throw new Error('Nostr payments not supported');
       }
 
       const payment = await createPayload(request);
 
-      await sendNip04DM(nprofile, JSON.stringify(payment));
+      try {
+         if (supportsNip17) {
+            await sendNip17DM(nprofile, JSON.stringify(payment));
+         } else if (supportsNip04) {
+            console.log('sending payment request to nostr');
+            await sendNip04DM(nprofile, JSON.stringify(payment));
+         }
 
-      console.log('sending payment request to nostr');
-
-      return true;
+         return true;
+      } catch (e) {
+         addProofs(payment.proofs);
+         throw e;
+      }
    };
    return { fetchPaymentRequest, checkPaymentRequest, payPaymentRequest };
 };

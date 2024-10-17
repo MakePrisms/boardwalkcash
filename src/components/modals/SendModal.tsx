@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Spinner, Button } from 'flowbite-react';
 import { useToast } from '@/hooks/util/useToast';
 import { decodePaymentRequest, MeltQuoteResponse } from '@cashu/cashu-ts';
@@ -33,6 +33,7 @@ enum SendFlow {
    Invoice = 'invoice',
    Ecash = 'ecash',
    PaymentRequest = 'paymentRequest',
+   PaymentRequestAmount = 'paymentRequestAmtount',
 }
 
 export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
@@ -50,6 +51,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
    const [paymentRequest, setPaymentRequest] = useState<string | undefined>();
    const [paymentRequestAmt, setPaymentRequestAmt] = useState<number | undefined>();
    const [isPayingRequest, setIsPayingRequest] = useState(false);
+   const [paymentRequestUnit, setPaymentRequestUnit] = useState<string | undefined>(undefined);
    const { sendTokenAsNotification } = useNotifications();
    const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
    const { activeWallet, activeUnit } = useCashuContext();
@@ -74,8 +76,16 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       setIsContactsModalOpen(false);
       setIsGiftModalOpen(false);
       setIsProcessing(false);
+      setPaymentRequestAmt(undefined);
+      setPaymentRequestUnit(undefined);
       onClose();
    };
+
+   useEffect(() => {
+      if (inputValue.includes('creqA') || inputValue.startsWith('lnbc')) {
+         handleInputSubmit();
+      }
+   }, [inputValue]);
 
    const handleInputSubmit = async () => {
       if (!inputValue) {
@@ -88,10 +98,19 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          await handleInvoiceFlow(inputValue);
       } else if (inputValue.startsWith('creqA')) {
          const request = decodePaymentRequest(inputValue);
+         if (request.unit) {
+            setPaymentRequestUnit(request.unit);
+         }
          console.log('request', request);
-         setPaymentRequestAmt(request.amount);
-         setPaymentRequest(inputValue);
-         setCurrentFlow(SendFlow.PaymentRequest);
+         if (request.amount) {
+            setPaymentRequestAmt(request.amount);
+
+            setPaymentRequest(inputValue);
+            setCurrentFlow(SendFlow.PaymentRequest);
+         } else {
+            setPaymentRequest(inputValue);
+            setCurrentFlow(SendFlow.PaymentRequestAmount);
+         }
       } else if (inputValue.includes('@')) {
          setCurrentFlow(SendFlow.Amount);
       } else if (!isNaN(parseFloat(inputValue))) {
@@ -249,17 +268,15 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleQRScan = (decodedText: string) => {
       const cleanedText = decodedText.toLowerCase().replace('lightning:', '');
-      if (cleanedText.startsWith('lnbc')) {
+      if (cleanedText.startsWith('lnbc') || cleanedText.startsWith('creqA')) {
          setInputValue(cleanedText);
          /* wait for next tick */
          Promise.resolve().then(() => handleInputSubmit());
-      } else if (decodedText.startsWith('creqA')) {
-         const request = decodePaymentRequest(decodedText);
-         setPaymentRequestAmt(request.amount);
-         setPaymentRequest(decodedText);
-         setCurrentFlow(SendFlow.PaymentRequest);
       } else {
-         setScanError('Invalid QR code. Please scan a valid Lightning invoice. Got ' + decodedText);
+         setScanError(
+            'Invalid QR code. Please scan a valid Lightning invoice or payment request. Got ' +
+               decodedText,
+         );
          setTimeout(() => setScanError(null), 6000);
       }
    };
@@ -274,7 +291,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handlePayPaymentRequest = async () => {
       if (!paymentRequestAmt || !paymentRequest) {
-         addToast('Missing payment request', 'error');
+         addToast('Missing payment request or amount', 'error');
          return;
       }
       setIsPayingRequest(true);
@@ -290,6 +307,14 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       }
    };
 
+   const handleSetPaymentRequestAmount = () => {
+      if (!paymentRequestAmt) {
+         addToast('Please enter an amount', 'error');
+         return;
+      }
+      setCurrentFlow(SendFlow.PaymentRequest);
+   };
+
    const renderFlowContent = () => {
       switch (currentFlow) {
          case SendFlow.Input:
@@ -303,7 +328,10 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
                            : `Amount in ${activeWallet?.keys.unit === 'usd' ? 'USD' : 'sats'}, Lightning address, or invoice`
                      }
                      value={inputValue}
-                     onChange={e => setInputValue(e.target.value)}
+                     onChange={e => {
+                        const value = e.target.value;
+                        setInputValue(value);
+                     }}
                   />
                   {scanError && <p className='text-red-500 text-sm mb-3'>{scanError}</p>}
                   <div className='flex justify-between mx-3'>
@@ -380,10 +408,39 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          case SendFlow.PaymentRequest:
             return (
                <Modal.Body className='text-black flex flex-col justify-center items-center gap-6'>
-                  <div>Amount: {paymentRequestAmt || 'any'}</div>
-                  <Button isProcessing={isPayingRequest} onClick={handlePayPaymentRequest}>
+                  <div>
+                     Amount:{' '}
+                     {paymentRequestAmt
+                        ? formatUnit(paymentRequestAmt, paymentRequestUnit)
+                        : 'any amount'}{' '}
+                  </div>
+                  <Button
+                     isProcessing={isPayingRequest}
+                     onClick={handlePayPaymentRequest}
+                     className='btn-primary'
+                  >
                      Confirm
                   </Button>
+               </Modal.Body>
+            );
+
+         case SendFlow.PaymentRequestAmount:
+            return (
+               <Modal.Body>
+                  <div className='mb-4'>
+                     <input
+                        className='form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none'
+                        type='number'
+                        placeholder={`Amount in ${activeUnit === 'usd' ? 'USD' : 'sats'}`}
+                        value={paymentRequestAmt}
+                        onChange={e => setPaymentRequestAmt(Number(e.target.value))}
+                     />
+                  </div>
+                  <div className='flex justify-end'>
+                     <Button className='btn-primary' onClick={handleSetPaymentRequestAmount}>
+                        Continue
+                     </Button>
+                  </div>
                </Modal.Body>
             );
 
