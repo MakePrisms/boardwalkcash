@@ -295,7 +295,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
          return;
       }
       setIsPayingRequest(true);
-      const res = await payPaymentRequest(paymentRequest).catch(e => {
+      const res = await payPaymentRequest(paymentRequest, paymentRequestAmt).catch(e => {
          const message = e.message || 'Failed to pay payment request';
          addToast(message, 'error');
          setIsPayingRequest(false);

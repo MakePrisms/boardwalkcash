@@ -35,6 +35,7 @@ import { runMigrations } from '@/migrations/localStorage.migrations';
 import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { useBalance } from '@/hooks/boardwalk/useBalance';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+import QRButton from '@/components/buttons/QRButton';
 
 export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
    const newUser = useRef(false);
@@ -268,6 +269,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          </main>
          {/* TOOD: add loading state for when user is not initialized */}
          <NotificationDrawer />
+         <QRButton />
          <SettingsSidebar />
          <TransactionHistoryDrawer />
          <EcashTapButton isMobile={isMobile} />
