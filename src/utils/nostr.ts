@@ -196,7 +196,9 @@ export const sendNip17DM = async (nprofile: string, content: string) => {
       });
       await giftWrapEvent.sign(new NDKPrivateKeySigner(randPrivkey));
 
-      await giftWrapEvent.publish();
+      await giftWrapEvent
+         .publish()
+         .then(() => console.log('sent gift wrap event', giftWrapEvent.rawEvent()));
    } catch (error) {
       console.error('Error sending nostr dm', error);
       throw new NostrError('');
