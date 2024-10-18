@@ -13,7 +13,7 @@ import {
    NotificationType,
 } from '@/types';
 import { computeTxId } from '@/utils/cashu';
-import { runAuthMiddleware } from '@/utils/middleware';
+import { corsMiddleware, runAuthMiddleware, runMiddleware } from '@/utils/middleware';
 import { getBaseURLFromRequest } from '@/utils/url';
 import {
    PaymentRequestTransportType,
@@ -33,6 +33,8 @@ export default async function handler(
    req: AuthenticatedRequest | NextApiRequest,
    res: NextApiResponse,
 ) {
+   await runMiddleware(req, res, corsMiddleware);
+
    // Handle OPTIONS request
    if (req.method === 'OPTIONS') {
       res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
