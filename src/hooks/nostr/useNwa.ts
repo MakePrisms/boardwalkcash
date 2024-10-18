@@ -39,41 +39,35 @@ const supportedWallets: SupportedWallet[] = [
 ];
 
 const useNwa = () => {
-   const { subscribe } = useNDK();
+   // const { subscribe } = useNDK();
 
    const getNwcUrl = async (wallet: SupportedWallet) => {
       const { privkey, pubkey } = generateKeyPair();
 
       const { url: nwaUrl, nwaSecret } = newConnectUrl(wallet, pubkey);
 
-      const sub = await subscribeToNwa(wallet.listenRelay, pubkey);
+      // const sub = await subscribeToNwa(wallet.listenRelay, pubkey);
 
       window.open(nwaUrl, '_blank');
 
       return new Promise<{ nwcUrl: string }>((resolve, reject) => {
-         sub.on('event', async (event: NDKEvent) => {
-            console.log('Received NWA response:', event.rawEvent());
-            try {
-               const decrypted = await decryptResponse(event, privkey);
-
-               if (decrypted.secret !== nwaSecret) return;
-
-               const walletPubkey = decrypted.walletPubkey || event.pubkey;
-               const relay = decrypted.relay || wallet.relay;
-
-               const nwcUrl = `nostr+walletconnect://${walletPubkey}?relay=${relay}&pubkey=${pubkey}&secret=${privkey}`;
-
-               console.log('nwcUrl:', nwcUrl);
-
-               const lnAddress = decrypted.lud16 || null;
-
-               console.log('emitting nwaResponse');
-               resolve({ nwcUrl });
-            } catch (err) {
-               console.error('Error handling NWA response:', err);
-               reject(err);
-            }
-         });
+         // sub.on('event', async (event: NDKEvent) => {
+         //    console.log('Received NWA response:', event.rawEvent());
+         //    try {
+         //       const decrypted = await decryptResponse(event, privkey);
+         //       if (decrypted.secret !== nwaSecret) return;
+         //       const walletPubkey = decrypted.walletPubkey || event.pubkey;
+         //       const relay = decrypted.relay || wallet.relay;
+         //       const nwcUrl = `nostr+walletconnect://${walletPubkey}?relay=${relay}&pubkey=${pubkey}&secret=${privkey}`;
+         //       console.log('nwcUrl:', nwcUrl);
+         //       const lnAddress = decrypted.lud16 || null;
+         //       console.log('emitting nwaResponse');
+         //       resolve({ nwcUrl });
+         //    } catch (err) {
+         //       console.error('Error handling NWA response:', err);
+         //       reject(err);
+         //    }
+         // });
       });
    };
 
@@ -123,7 +117,8 @@ const useNwa = () => {
          since: Math.round(Date.now() / 1000),
       };
 
-      return subscribe(NWAFilter, undefined, [relay]);
+      // return subscribe(NWAFilter, undefined, [relay]);
+      return;
    };
 
    const decryptResponse = async (event: NDKEvent, privkey: string): Promise<NWAResponse> => {

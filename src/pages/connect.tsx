@@ -16,7 +16,7 @@ export default function Home() {
    const router = useRouter();
    const { query } = router;
 
-   const { publishNostrEvent } = useNDK();
+   // const { publishNostrEvent } = useNDK();
 
    const dispatch = useAppDispatch();
 
@@ -84,7 +84,7 @@ export default function Home() {
             pubkey,
          };
 
-         await publishNostrEvent(eventTemplate, [appRelay]);
+         // await publishsNostrEvent(eventTemplate, [appRelay]);
 
          const connection = {
             pubkey: appPublicKey,
@@ -110,7 +110,7 @@ export default function Home() {
          // redirect to home page
          router.push('/wallet?just_connected=true');
       }
-   }, [dispatch, publishNostrEvent, router]);
+   }, [dispatch, router]);
 
    useEffect(() => {
       const keysets = window.localStorage.getItem('keysets');

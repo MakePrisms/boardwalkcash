@@ -31,7 +31,7 @@ const ConnectWalletSetting = () => {
    const dispatch = useAppDispatch();
    const { requestSignatures, reserveMetrics } = useNostrMintConnect();
    const { addToast } = useToast();
-   const { generateNip98Header } = useNDK();
+   // const { generateNip98Header } = useNDK();
    const { setKeysetNotReserve, reserveWallet, connectReserve } = useCashuContext();
    const { addProofs } = useProofStorage();
 
@@ -86,11 +86,12 @@ const ConnectWalletSetting = () => {
 
       const mintProviderUrl = process.env.NEXT_PUBLIC_MINT_PROVIDER_URL;
 
-      const authHeader = await generateNip98Header(
-         `${mintProviderUrl}/user/mints`,
-         'POST',
-         undefined,
-      );
+      // const authHeader = await generateNip98Header(
+      //    `${mintProviderUrl}/user/mints`,
+      //    'POST',
+      //    undefined,
+      // );
+      const authHeader = '';
 
       try {
          const response = await fetch(`${mintProviderUrl}/user/mints`, {
