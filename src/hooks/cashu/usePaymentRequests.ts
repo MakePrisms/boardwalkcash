@@ -30,12 +30,16 @@ export const usePaymentRequests = () => {
    const dispatch = useAppDispatch();
 
    const fetchPaymentRequest = async (amount?: number, reusable?: boolean) => {
-      return await authenticatedRequest<GetPaymentRequestResponse>(
-         `/api/token/pr?${amount ? `amount=${amount}&` : ''}${reusable ? 'reusable=true' : ''}`,
-         'GET',
-         undefined,
-      );
+      const params = new URLSearchParams();
+      if (amount !== undefined) params.append('amount', amount.toString());
+      if (reusable) params.append('reusable', 'true');
+
+      const queryString = params.toString();
+      const url = `/api/token/pr${queryString ? `?${queryString}` : ''}`;
+
+      return await authenticatedRequest<GetPaymentRequestResponse>(url, 'GET', undefined);
    };
+
    const checkPaymentRequest = async (id: string) => {
       return await authenticatedRequest<CheckPaymentRequestResponse>(
          `/api/token/pr/${id}`,
