@@ -114,7 +114,7 @@ const useNwc = ({ privkey, pubkey }: NwcProps) => {
    const nwcStateRef = useRef(nwcState);
    nwcStateRef.current = nwcState;
 
-   const { subscribeAndHandle, publishNostrEvent } = useNDK();
+   // const { subscribeAndHandle, publishNostrEvent } = useNDK();
    const { payInvoice: cashuPayInvoice } = useCashu();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const dispatch = useAppDispatch();
@@ -262,7 +262,7 @@ const useNwc = ({ privkey, pubkey }: NwcProps) => {
          };
 
          try {
-            await publishNostrEvent(responseEvent).then(() => console.log('## RESPONSE PUBLISHED'));
+            // await publishNostrEvent(responseEvent).then(() => console.log('## RESPONSE PUBLISHED'));
          } catch (e) {
             console.error(
                'Error publishing response event. Make sure your are signed in and connected to relays...',
@@ -270,7 +270,7 @@ const useNwc = ({ privkey, pubkey }: NwcProps) => {
             );
          }
       },
-      [privkey, pubkey, publishNostrEvent],
+      [privkey, pubkey],
    );
 
    /**
@@ -414,9 +414,9 @@ const useNwc = ({ privkey, pubkey }: NwcProps) => {
    useEffect(() => {
       if (nip47RequestFilter) {
          console.log('Subscribing to NIP47 requests');
-         subscribeAndHandle(nip47RequestFilter, handleNwcRequest, { closeOnEose: false });
+         // subscribeAndHandle(nip47RequestFilter, handleNwcRequest, { closeOnEose: false });
       }
-   }, [nip47RequestFilter, subscribeAndHandle, handleNwcRequest]);
+   }, [nip47RequestFilter]);
 };
 
 export default useNwc;
