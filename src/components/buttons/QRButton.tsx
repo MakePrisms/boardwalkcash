@@ -4,23 +4,40 @@ import { Modal } from 'flowbite-react';
 import QRCode from 'qrcode.react';
 import { useEffect, useState } from 'react';
 import ClipboardButton from './utility/ClipboardButton';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
+import { decodePaymentRequest } from '@cashu/cashu-ts';
 
 const QRButton = () => {
    const [paymentRequest, setPaymentRequest] = useState('');
    const [showModal, setShowModal] = useState(false);
    const { fetchPaymentRequest } = usePaymentRequests();
+   const { activeWallet, activeUnit } = useCashuContext();
    useEffect(() => {
+      if (!activeWallet) return;
+      if (!activeUnit) return;
       const storedPaymentRequest = localStorage.getItem('paymentRequest');
       if (storedPaymentRequest) {
          console.log('payment request found', storedPaymentRequest);
-         setPaymentRequest(storedPaymentRequest);
+         const { mints, unit } = decodePaymentRequest(storedPaymentRequest);
+         if (
+            mints &&
+            mints.length > 0 &&
+            (!mints?.some(url => url === activeWallet?.mint.mintUrl) || unit !== activeUnit)
+         ) {
+            fetchPaymentRequest(undefined, true).then(({ pr }) => {
+               setPaymentRequest(pr);
+               localStorage.setItem('paymentRequest', pr);
+            });
+         } else {
+            setPaymentRequest(storedPaymentRequest);
+         }
       } else {
          fetchPaymentRequest(undefined, true).then(({ pr }) => {
             setPaymentRequest(pr);
             localStorage.setItem('paymentRequest', pr);
          });
       }
-   }, []);
+   }, [activeWallet, activeUnit]);
 
    return (
       <div className='fixed left-12 top-0 m-4 p-2 z-10'>
