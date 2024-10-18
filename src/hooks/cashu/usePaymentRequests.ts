@@ -1,5 +1,6 @@
 import {
    CheckPaymentRequestResponse,
+   Currency,
    GetPaymentRequestResponse,
    PayInvoiceResponse,
 } from '@/types';
@@ -7,6 +8,7 @@ import { authenticatedRequest } from '@/utils/appApiRequests';
 import {
    CashuWallet,
    decodePaymentRequest,
+   getEncodedTokenV4,
    PaymentRequest,
    PaymentRequestPayload,
    PaymentRequestTransport,
@@ -17,11 +19,15 @@ import { useCashuContext } from '../contexts/cashuContext';
 import { initializeWallet } from '@/utils/cashu';
 import { sendNip04DM, sendNip17DM } from '@/utils/nostr';
 import { useProofStorage } from './useProofStorage';
+import { useAppDispatch } from '@/redux/store';
+import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
 
 export const usePaymentRequests = () => {
    const { activeWallet, wallets } = useCashuContext();
    const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
    const { addProofs } = useProofStorage();
+
+   const dispatch = useAppDispatch();
 
    const fetchPaymentRequest = async (amount?: number, reusable?: boolean) => {
       return await authenticatedRequest<GetPaymentRequestResponse>(
@@ -149,6 +155,25 @@ export const usePaymentRequests = () => {
          if (!response.ok) {
             throw new Error('Failed to send payment');
          } else {
+            dispatch(
+               addTransaction({
+                  type: 'ecash',
+                  transaction: {
+                     token: getEncodedTokenV4({
+                        token: [{ proofs: payment.proofs, mint: payment.mint }],
+                        unit: request.unit,
+                     }),
+                     amount: -request.amount!,
+                     unit: request.unit as Currency,
+                     mint: payment.mint,
+                     status: TxStatus.PENDING,
+                     date: new Date().toLocaleString(),
+                     pubkey: undefined,
+                     gift: undefined,
+                     fee: undefined,
+                  },
+               }),
+            );
             return true;
          }
       } catch (e) {
@@ -176,6 +201,26 @@ export const usePaymentRequests = () => {
             console.log('sending payment request to nostr');
             await sendNip04DM(nprofile, JSON.stringify(payment));
          }
+
+         dispatch(
+            addTransaction({
+               type: 'ecash',
+               transaction: {
+                  token: getEncodedTokenV4({
+                     token: [{ proofs: payment.proofs, mint: payment.mint }],
+                     unit: request.unit,
+                  }),
+                  amount: -request.amount!,
+                  unit: request.unit as Currency,
+                  mint: payment.mint,
+                  status: TxStatus.PENDING,
+                  date: new Date().toLocaleString(),
+                  pubkey: undefined,
+                  gift: undefined,
+                  fee: undefined,
+               },
+            }),
+         );
 
          return true;
       } catch (e) {
