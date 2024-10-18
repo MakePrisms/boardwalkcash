@@ -59,10 +59,10 @@ export const NDKProvider = ({ children }: { children: React.ReactNode }) => {
    const ndk = React.useRef(ndkLocal);
 
    // Normally ndk.connect should be called asynchrounously, but in this case the instance will connect to the relays soon after the app loads
-   ndk.current
-      .connect() // connect to the NDK
-      // .then(() => console.log('Connected to NDK')) // log success
-      .catch(() => console.log('Failed to connect to NDK')); // log failure
+   // ndk.current
+   //    .connect() // connect to the NDK
+   //    // .then(() => console.log('Connected to NDK')) // log success
+   //    .catch(() => console.log('Failed to connect to NDK')); // log failure
 
    useEffect(() => {
       if (!privkey) return;
