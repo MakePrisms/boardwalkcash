@@ -196,9 +196,10 @@ export const usePaymentRequests = () => {
 
       try {
          if (supportsNip17) {
+            console.log('Sending NIP 17 DM');
             await sendNip17DM(nprofile, JSON.stringify(payment));
          } else if (supportsNip04) {
-            console.log('sending payment request to nostr');
+            console.log('Sending NIP 04 DM');
             await sendNip04DM(nprofile, JSON.stringify(payment));
          }
 
