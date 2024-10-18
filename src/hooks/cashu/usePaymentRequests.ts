@@ -191,7 +191,7 @@ export const usePaymentRequests = () => {
    ) => {
       const nprofile = transport.target;
       const supportsNip04 = request.getTag('1');
-      const supportsNip17 = request.getTag('2') || request.getTag('m');
+      const supportsNip17 = request.getTag('2') || request.getTag('m') || request.getTag('n');
       if (!supportsNip04 && !supportsNip17) {
          throw new Error('Nostr payments not supported');
       }
