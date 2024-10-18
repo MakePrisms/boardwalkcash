@@ -5,7 +5,7 @@ import { formatCents, formatSats } from '@/utils/formatting';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
 import { Modal } from 'flowbite-react';
 import QRCode from 'qrcode.react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { useToast } from '@/hooks/util/useToast';
 
@@ -35,6 +35,9 @@ const WaitForEcashPaymentModal = ({
    const [timeout, setPrTimeout] = useState(false);
    const { addToast } = useToast();
 
+   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
    useEffect(() => {
       const { amount, unit } = decodePaymentRequest(pr);
 
@@ -55,35 +58,38 @@ const WaitForEcashPaymentModal = ({
       }
    }, [pr, satsToUnit, unitToSats]);
 
-   useEffect(() => {
-      let timeoutId: NodeJS.Timeout;
+   const pollPayment = useCallback(async () => {
+      console.log('checking for payment', id);
+      const { paid, token } = await checkPaymentRequest(id);
+      if (paid) {
+         onSuccess(token);
+         console.log('Payment completed', token);
+         setIsPaid(true);
+         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      }
+   }, [checkPaymentRequest, id, onSuccess]);
 
-      const pollPayment = async () => {
-         const { paid, token } = await checkPaymentRequest(id);
-         if (paid) {
-            onSuccess(token);
-            console.log('Payment completed', token);
-         } else if (!timeout) {
-            setTimeout(pollPayment, 5000); // Poll every 5 seconds if not timed out
-         }
+   useEffect(() => {
+      const startPolling = () => {
+         setPrTimeout(false);
+         pollPayment();
+         pollIntervalRef.current = setInterval(pollPayment, 5000); // Poll every 5 seconds
+         timeoutRef.current = setTimeout(() => {
+            setPrTimeout(true);
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+         }, 60000); // Timeout after 60 seconds
       };
 
-      // const startPolling = () => {
-      //    setPrTimeout(false);
-      //    pollPayment();
-      //    timeoutId = setTimeout(() => {
-      //       setPrTimeout(true);
-      //    }, 6000); // Timeout after 60 seconds
-      // };
-
-      // startPolling();
-
-      pollPayment();
+      if (isOpen) {
+         startPolling();
+      }
 
       return () => {
-         clearTimeout(timeoutId);
+         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
-   }, []);
+   }, [checkPaymentRequest, id, onSuccess]);
 
    // const onCheckAgain = () => {
    //    setPrTimeout(false);
