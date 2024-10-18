@@ -252,7 +252,11 @@ const Receive = () => {
    const handleReceivePaymentRequest = async () => {
       setFetchingPaymentRequest(true);
 
-      const { pr, id } = await fetchPaymentRequest(amountUnit || undefined, false);
+      const { pr, id } = await fetchPaymentRequest(amountUnit || undefined, false).catch(e => {
+         handleModalClose();
+         addToast('Failed to fetch payment request', 'error');
+         throw e;
+      });
 
       setFetchingPaymentRequest(false);
 
