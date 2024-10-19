@@ -10,6 +10,8 @@ interface BalanceContextType {
    showFxValue: boolean;
    activeUnit: string;
    loading: boolean;
+   satBalance: number | null;
+   usdBalance: number | null;
 }
 
 const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
@@ -102,6 +104,8 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
       showFxValue,
       activeUnit,
       loading,
+      usdBalance,
+      satBalance,
    };
 
    return <BalanceContext.Provider value={value}>{children}</BalanceContext.Provider>;

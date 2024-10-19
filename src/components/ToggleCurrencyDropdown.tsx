@@ -1,40 +1,61 @@
-import React, { useMemo } from 'react';
-import { Dropdown } from 'flowbite-react';
+import React, { useState } from 'react';
+import { Drawer } from 'flowbite-react';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { Currency } from '@/types';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
+import { useBalance } from '@/hooks/boardwalk/useBalance';
+import { customDrawerTheme } from '@/themes/drawerTheme';
+import { format } from 'path';
+import { formatCents, formatSats } from '@/utils/formatting';
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
 
-const ToggleCurrencyDropdown = () => {
-   const { activeUnit, setActiveUnit, defaultWallets, nwcIsMain } = useCashuContext();
+const ToggleCurrencyDrawer = () => {
+   const { activeUnit, setActiveUnit } = useCashuContext();
+   const { satBalance, usdBalance } = useBalance();
+   const [isOpen, setIsOpen] = useState(false);
 
-   const availableUnits = useMemo(() => {
-      console.log('nwcIsMain', nwcIsMain);
-      const availableUnits = Array.from(defaultWallets.keys());
-      if (nwcIsMain) {
-         availableUnits.push(Currency.SAT);
-      }
-      return availableUnits;
-   }, [defaultWallets, nwcIsMain]);
-
-   const handleClick = () => {
-      const otherUnit = availableUnits.find(unit => unit !== activeUnit);
-      console.log('otherUnit', otherUnit);
-      if (otherUnit) {
-         setActiveUnit(otherUnit as Currency);
-      }
+   const handleToggle = (unit: Currency) => {
+      setActiveUnit(unit);
+      setIsOpen(false);
    };
 
    return (
-      <Dropdown onClick={handleClick} label={activeUnit === Currency.USD ? 'USD' : 'BTC'} inline>
-         {availableUnits
-            .filter(unit => unit !== activeUnit)
-            .map(unit => (
-               <Dropdown.Item key={unit} onClick={() => setActiveUnit(unit as Currency)}>
-                  {unit === Currency.USD ? 'USD' : 'BTC'}
-               </Dropdown.Item>
-            ))}
-      </Dropdown>
+      <>
+         <button onClick={() => setIsOpen(true)} className='flex items-center'>
+            {activeUnit === Currency.USD ? 'USD' : 'BTC'}
+            <ChevronDownIcon className='h-5 w-5 ml-1' />
+         </button>
+         <Drawer
+            theme={customDrawerTheme}
+            position='bottom'
+            onClose={() => setIsOpen(false)}
+            open={isOpen}
+         >
+            <Drawer.Items>
+               <div className='p-4 space-y-4'>
+                  <div className='text-2xl'>Select Currency</div>
+                  <button
+                     className='w-full p-2 text-left flex justify-between items-center'
+                     onClick={() => handleToggle(Currency.SAT)}
+                  >
+                     <span>{formatSats(satBalance || 0)}</span>
+                     {activeUnit === Currency.SAT && (
+                        <CheckIcon className='h-5 w-5 text-cyan-teal' />
+                     )}
+                  </button>
+                  <button
+                     className='w-full p-2 text-left flex justify-between items-center'
+                     onClick={() => handleToggle(Currency.USD)}
+                  >
+                     <span>{formatCents(usdBalance || 0)}</span>
+                     {activeUnit === Currency.USD && (
+                        <CheckIcon className='h-5 w-5 text-cyan-teal' />
+                     )}
+                  </button>
+               </div>
+            </Drawer.Items>
+         </Drawer>
+      </>
    );
 };
 
-export default ToggleCurrencyDropdown;
+export default ToggleCurrencyDrawer;
