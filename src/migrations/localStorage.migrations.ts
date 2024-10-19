@@ -117,6 +117,27 @@ const migrations: Array<Migration> = [
       },
       reload: true,
    },
+   /* version 1 migration was sometimes breaking tx history (fixed now), so this will recover any apps that have a broken history */
+   {
+      version: 4,
+      migrate: () => {
+         const persistRoot = localStorage.getItem('persist:root');
+         if (persistRoot) {
+            const parsedRoot = JSON.parse(persistRoot);
+            const history = JSON.parse(parsedRoot.history || '{}');
+
+            const updatedHistory: HistoryState = {
+               ecash: Array.isArray(history.ecash) ? history.ecash : [],
+               lightning: Array.isArray(history.lightning) ? history.lightning : [],
+               mintless: Array.isArray(history.mintless) ? history.mintless : [],
+            };
+
+            parsedRoot.history = JSON.stringify(updatedHistory);
+            localStorage.setItem('persist:root', JSON.stringify(parsedRoot));
+         }
+      },
+      reload: false,
+   },
 ];
 
 export const runMigrations = async () => {
