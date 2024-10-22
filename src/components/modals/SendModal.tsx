@@ -89,7 +89,6 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
 
    const handleInputSubmit = async () => {
       if (!inputValue) {
-         addToast('Please enter a value.', 'warning');
          return;
       }
 
