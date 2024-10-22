@@ -7,7 +7,6 @@ import { Modal } from 'flowbite-react';
 import QRCode from 'qrcode.react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
-import { useToast } from '@/hooks/util/useToast';
 
 type WaitForEcashPaymentModalProps = {
    pr: string;
@@ -33,7 +32,6 @@ const WaitForEcashPaymentModal = ({
    const [unit, setUnit] = useState<Currency | undefined>(undefined);
    const [isPaid, setIsPaid] = useState(false);
    const [timeout, setPrTimeout] = useState(false);
-   const { addToast } = useToast();
 
    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,6 +61,7 @@ const WaitForEcashPaymentModal = ({
       const { paid, token } = await checkPaymentRequest(id);
       if (paid) {
          onSuccess(token);
+         handleClose();
          console.log('Payment completed', token);
          setIsPaid(true);
          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -96,8 +95,17 @@ const WaitForEcashPaymentModal = ({
    //    // pollPayment();
    // };
 
+   const handleClose = () => {
+      setPrTimeout(false);
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setIsPaid(false);
+      setUnit(undefined);
+      onClose();
+   };
+
    return (
-      <Modal className='text-black' show={isOpen} onClose={onClose}>
+      <Modal className='text-black' show={isOpen} onClose={handleClose}>
          <Modal.Header>Receive Ecash</Modal.Header>
          <Modal.Body className='flex flex-col items-center justify-center space-y-4'>
             <p className='text-black w-2/3 text-center'>
@@ -118,24 +126,20 @@ const WaitForEcashPaymentModal = ({
                   </div>
                </div>
             )}
-            {isPaid ? (
-               <div>Payment completed!</div>
-            ) : (
-               <>
-                  <QRCode value={pr} size={256} />
-                  <ClipboardButton
-                     toCopy={pr}
-                     toShow='Copy Request'
-                     className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
-                  />
-                  {timeout && (
-                     <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
-                        <p>Timed out waiting for payment...</p>
-                        <button className='underline'>Check again</button>
-                     </div>
-                  )}
-               </>
-            )}
+            <>
+               <QRCode value={pr} size={256} />
+               <ClipboardButton
+                  toCopy={pr}
+                  toShow='Copy Request'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+               />
+               {timeout && (
+                  <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
+                     <p>Timed out waiting for payment...</p>
+                     <button className='underline'>Check again</button>
+                  </div>
+               )}
+            </>
          </Modal.Body>
       </Modal>
    );
