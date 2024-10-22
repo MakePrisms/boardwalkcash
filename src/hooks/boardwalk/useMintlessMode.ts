@@ -32,6 +32,7 @@ const useMintlessMode = () => {
    const { addProofs } = useProofStorage();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
+   const user = useSelector((state: RootState) => state.user);
 
    const connect = async (nwcUri: string, lud16: string) => {
       try {
@@ -342,6 +343,7 @@ const useMintlessMode = () => {
       toggleReceiveMode,
       connect,
       disconnect,
+      isMintless: user.receiveMode === 'mintless' || user.sendMode === 'mintless',
    };
 };
 

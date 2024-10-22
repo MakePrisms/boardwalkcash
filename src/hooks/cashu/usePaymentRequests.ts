@@ -21,11 +21,13 @@ import { sendNip04DM, sendNip17DM } from '@/utils/nostr';
 import { useProofStorage } from './useProofStorage';
 import { useAppDispatch } from '@/redux/store';
 import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 export const usePaymentRequests = () => {
    const { activeWallet, wallets } = useCashuContext();
    const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
    const { addProofs } = useProofStorage();
+   const { nwcPayInvoice, isMintless } = useMintlessMode();
 
    const dispatch = useAppDispatch();
 
@@ -61,10 +63,9 @@ export const usePaymentRequests = () => {
          mints.find(url => url === activeWallet?.mint.mintUrl);
 
       let wallet: CashuWallet | undefined;
-      if (!activeWallet && hasMints) {
+      if (isMintless && hasMints) {
          /* send from lightning wallet */
-         // wallet = await initializeWallet(mints[0], { unit });
-         throw new Error('lightning wallet not supported yet');
+         wallet = await initializeWallet(mints[0], { unit });
       } else if (hasOurActiveWallet && activeWallet) {
          /* send from same wallet (swap) */
          wallet = activeWallet;
@@ -101,10 +102,12 @@ export const usePaymentRequests = () => {
          const quote = await wallet.createMintQuote(amount);
 
          let res: PayInvoiceResponse;
-         if (activeWallet) {
+         if (isMintless) {
+            res = await nwcPayInvoice(quote.request);
+         } else if (activeWallet) {
             res = await cashuPayInvoice(quote.request);
          } else {
-            throw new Error('lightning wallet not supported yet');
+            throw new Error('No active wallet found');
          }
 
          const { proofs } = await wallet.mintTokens(amount, quote.quote);
