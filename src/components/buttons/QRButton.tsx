@@ -6,10 +6,12 @@ import { useEffect, useState } from 'react';
 import ClipboardButton from './utility/ClipboardButton';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
+import QRScannerButton from './QRScannerButton';
 
-const QRButton = () => {
+const QRButton = ({ onScan }: { onScan: (result: string) => void }) => {
    const [paymentRequest, setPaymentRequest] = useState('');
    const [showModal, setShowModal] = useState(false);
+   const [showModalContent, setShowModalContent] = useState(true);
    const { fetchPaymentRequest } = usePaymentRequests();
    const { activeWallet, activeUnit } = useCashuContext();
    useEffect(() => {
@@ -39,24 +41,44 @@ const QRButton = () => {
       }
    }, [activeWallet, activeUnit]);
 
+   const handleScan = (result: string) => {
+      setShowModal(false);
+      onScan(result);
+   };
+
+   const handleClose = () => {
+      setShowModal(false);
+      setShowModalContent(true);
+   };
+
    return (
-      <div className='fixed left-12 top-0 m-4 p-2 z-10'>
+      <div>
          <button onClick={() => setShowModal(true)}>
-            <QrCodeIcon className='h-6 w-6' />
+            <QrCodeIcon className='size-8 text-gray-500' />
          </button>
-         <Modal show={showModal} onClose={() => setShowModal(false)}>
+         <Modal show={showModal} onClose={handleClose}>
             <Modal.Header>Payment Request</Modal.Header>
-            <Modal.Body className={`text-black flex flex-col justify-center items-center gap-6`}>
-               <p className='w-2/3 text-center'>
-                  Scan with any cashu wallet that supports payment requests
-               </p>
-               <QRCode value={paymentRequest} size={256} />
-               <ClipboardButton
-                  toCopy={paymentRequest}
-                  toShow={'Copy Request'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+            {showModalContent && (
+               <Modal.Body className={`text-black flex flex-col justify-center items-center gap-6`}>
+                  <p className='w-2/3 text-center'>
+                     Scan with any cashu wallet that supports payment requests
+                  </p>
+                  <QRCode value={paymentRequest} size={256} />
+                  <ClipboardButton
+                     toCopy={paymentRequest}
+                     toShow={'Copy Request'}
+                     className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+                  />
+               </Modal.Body>
+            )}
+            <Modal.Footer className='flex justify-end'>
+               <QRScannerButton
+                  onScan={handleScan}
+                  btnText='Scan'
+                  onClick={() => setShowModalContent(false)}
+                  onClose={handleClose}
                />
-            </Modal.Body>
+            </Modal.Footer>
          </Modal>
       </div>
    );

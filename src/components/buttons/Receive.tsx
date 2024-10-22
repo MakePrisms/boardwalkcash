@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Modal } from 'flowbite-react';
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
+import { BoltIcon } from '@heroicons/react/24/outline';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '@/hooks/util/useToast';
 import { RootState } from '@/redux/store';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
 import { Token } from '@cashu/cashu-ts';
-import QRScannerButton from './QRScannerButton';
+import QRButton from './QRButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import {
@@ -22,6 +23,7 @@ import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { Wallet } from '@/types';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import WaitForEcashPaymentModal from '../modals/WaitForEcashPaymentModal';
+import EcashIcon from '../icons/EcashIcon';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -292,18 +294,18 @@ const Receive = () => {
                         />
                      </div>
                      <div className='flex items-center justify-between space-x-4'>
-                        <QRScannerButton onScan={setInputValue} />
+                        <QRButton onScan={setInputValue} />
                         <div className='flex space-x-4'>
                            <Button
                               isProcessing={fetchingInvoice}
-                              className='btn-primary'
+                              className='btn-primary w-28'
                               onClick={handleReceive}
                            >
                               Lightning
                            </Button>
                            <Button
                               isProcessing={fetchingPaymentRequest}
-                              className='btn-primary'
+                              className='btn-primary w-28'
                               onClick={handleReceivePaymentRequest}
                            >
                               Ecash
