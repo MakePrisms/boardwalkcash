@@ -41,7 +41,7 @@ export const formatCents = (cents: number, decimals = true) => {
    return `$${(cents / 100).toFixed(decimals ? 2 : 0)}`;
 };
 
-export const formatSats = (sats: number) => `${sats.toLocaleString()}₿`;
+export const formatSats = (sats: number) => `${sats.toLocaleString()}sats`;
 
 export const shortenString = (str: string, maxLength: number) => {
    if (str.length <= maxLength) {
@@ -53,7 +53,7 @@ export const shortenString = (str: string, maxLength: number) => {
 export const getSymbolForUnit = (unit: Currency) => {
    switch (unit) {
       case 'sat':
-         return '₿';
+         return 'sats';
       case 'usd':
          return '$';
       default:
