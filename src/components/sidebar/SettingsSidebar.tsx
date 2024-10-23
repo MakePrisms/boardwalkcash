@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Drawer, Modal } from 'flowbite-react';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
-import { customDrawerTheme, getCustomDrawerTheme } from '@/themes/drawerTheme';
+import { customDrawerTheme } from '@/themes/drawerTheme';
 import DrawerCollapse from '../utility/DrawerCollapse';
 import { BuildingLibraryIcon, UserIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import EcashTapsSettings from './Taps/EcashTapsSettings';
