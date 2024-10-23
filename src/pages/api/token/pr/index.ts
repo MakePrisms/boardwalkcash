@@ -12,7 +12,7 @@ import {
    GetPaymentRequestResponse,
    NotificationType,
 } from '@/types';
-import { computeTxId } from '@/utils/cashu';
+import { computeTxId, initializeWallet } from '@/utils/cashu';
 import { corsMiddleware, runAuthMiddleware, runMiddleware } from '@/utils/middleware';
 import { getBaseURLFromRequest } from '@/utils/url';
 import {
@@ -117,10 +117,32 @@ export default async function handler(
       if (request.paid && !request.reusable) {
          return res.status(400).json({ error: 'Payment request already paid' });
       }
-      const token = getEncodedTokenV4({
-         token: [{ proofs: payment.proofs, mint: payment.mint }],
-         unit: payment.unit,
-      });
+
+      let token: string;
+      try {
+         const wallet = await initializeWallet(payment.mint, { keysetId: payment.proofs[0].id });
+
+         /* swap proofs for locked proofs */
+         const lockedProofs = await wallet.receive(
+            { token: [{ proofs: payment.proofs, mint: payment.mint }], unit: payment.unit },
+            {
+               pubkey: request.userPubkey,
+            },
+         );
+
+         token = getEncodedTokenV4({
+            token: [{ proofs: lockedProofs, mint: payment.mint }],
+            unit: payment.unit,
+         });
+      } catch (e) {
+         console.error('Failed to initialize wallet and swap for locked proofs', e);
+         /* just use proofs in request */
+         token = getEncodedTokenV4({
+            token: [{ proofs: payment.proofs, mint: payment.mint }],
+            unit: payment.unit,
+         });
+      }
+
       if (request.reusable) {
          const txid = computeTxId(token);
          await createTokenInDb({ token }, txid);
