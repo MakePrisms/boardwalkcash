@@ -60,7 +60,7 @@ const QRButton = ({ onScan }: { onScan: (result: string) => void }) => {
             <QrCodeIcon className='size-8 text-gray-500' />
          </button>
          <Modal show={showModal} onClose={handleClose}>
-            <Modal.Header>Payment Request</Modal.Header>
+            <Modal.Header>eCash Request</Modal.Header>
             {showModalContent && (
                <Modal.Body className={`text-black flex flex-col justify-center items-center gap-6`}>
                   {isMintless ? (
