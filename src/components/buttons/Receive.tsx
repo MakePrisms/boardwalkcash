@@ -10,12 +10,7 @@ import { Token } from '@cashu/cashu-ts';
 import QRButton from './QRButton';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
-import {
-   postUserMintQuote,
-   pollForInvoicePayment,
-   getInvoiceForLNReceive,
-   getInvoiceStatus,
-} from '@/utils/appApiRequests';
+import { getInvoiceForLNReceive, getInvoiceStatus } from '@/utils/appApiRequests';
 import { getTokenFromUrl } from '@/utils/cashu';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
@@ -23,7 +18,7 @@ import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { Wallet } from '@/types';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import WaitForEcashPaymentModal from '../modals/WaitForEcashPaymentModal';
-import EcashIcon from '../icons/EcashIcon';
+import Tooltip from '../utility/Toolttip';
 
 const Receive = () => {
    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -43,7 +38,7 @@ const Receive = () => {
 
    const { decodeToken } = useCashu();
    const { activeWallet, activeUnit } = useCashuContext();
-   const { mintlessReceive } = useMintlessMode();
+   const { mintlessReceive, isMintless } = useMintlessMode();
    const { fetchPaymentRequest } = usePaymentRequests();
    const { addToast } = useToast();
    const dispatch = useDispatch();
@@ -298,18 +293,30 @@ const Receive = () => {
                         <div className='flex space-x-4'>
                            <Button
                               isProcessing={fetchingInvoice}
-                              className='btn-primary w-28'
+                              className='btn-primary'
                               onClick={handleReceive}
                            >
                               Lightning
                            </Button>
-                           <Button
-                              isProcessing={fetchingPaymentRequest}
-                              className='btn-primary w-28'
-                              onClick={handleReceivePaymentRequest}
-                           >
-                              Ecash
-                           </Button>
+                           {isMintless ? (
+                              <Tooltip
+                                 position='left'
+                                 content='You currently have a Lightning Wallet set as your main account. Select an eCash mint as your main account to generate an eCash request.'
+                                 className='w-56'
+                              >
+                                 <Button disabled={true} className='btn-primary'>
+                                    Ecash
+                                 </Button>
+                              </Tooltip>
+                           ) : (
+                              <Button
+                                 isProcessing={fetchingPaymentRequest}
+                                 className='btn-primary'
+                                 onClick={handleReceivePaymentRequest}
+                              >
+                                 Ecash
+                              </Button>
+                           )}
                         </div>
                      </div>
                   </div>

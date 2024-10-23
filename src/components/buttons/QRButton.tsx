@@ -7,6 +7,7 @@ import ClipboardButton from './utility/ClipboardButton';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
 import QRScannerButton from './QRScannerButton';
+import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 
 const QRButton = ({ onScan }: { onScan: (result: string) => void }) => {
    const [paymentRequest, setPaymentRequest] = useState('');
@@ -14,6 +15,8 @@ const QRButton = ({ onScan }: { onScan: (result: string) => void }) => {
    const [showModalContent, setShowModalContent] = useState(true);
    const { fetchPaymentRequest } = usePaymentRequests();
    const { activeWallet, activeUnit } = useCashuContext();
+   const { isMintless } = useMintlessMode();
+
    useEffect(() => {
       if (!activeWallet) return;
       if (!activeUnit) return;
@@ -60,15 +63,24 @@ const QRButton = ({ onScan }: { onScan: (result: string) => void }) => {
             <Modal.Header>Payment Request</Modal.Header>
             {showModalContent && (
                <Modal.Body className={`text-black flex flex-col justify-center items-center gap-6`}>
-                  <p className='w-2/3 text-center'>
-                     Scan with any cashu wallet that supports payment requests
-                  </p>
-                  <QRCode value={paymentRequest} size={256} />
-                  <ClipboardButton
-                     toCopy={paymentRequest}
-                     toShow={'Copy Request'}
-                     className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
-                  />
+                  {isMintless ? (
+                     <p className='w-2/3 text-center'>
+                        You currently have a Lightning Wallet set as your main account. Select an
+                        eCash mint as your main account to generate an eCash request.
+                     </p>
+                  ) : (
+                     <>
+                        <p className='w-2/3 text-center'>
+                           Scan with any cashu wallet that supports payment requests
+                        </p>
+                        <QRCode value={paymentRequest} size={256} />
+                        <ClipboardButton
+                           toCopy={paymentRequest}
+                           toShow={'Copy Request'}
+                           className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+                        />
+                     </>
+                  )}
                </Modal.Body>
             )}
             <Modal.Footer className='flex justify-end'>
