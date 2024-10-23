@@ -8,7 +8,7 @@ type DeepPartial<T> = T extends object
 
 export const customDrawerTheme: DeepPartial<FlowbiteDrawerTheme> = {
    root: {
-      base: 'fixed z-40 overflow-y-auto p-4 transition-transform dark:bg-gray-800 bg-[#0f1f41ff] text-white flex flex-col',
+      base: 'fixed z-40 overflow-y-auto p-4 transition-transform dark:bg-gray-800 text-white flex flex-col',
    },
    header: {
       inner: {

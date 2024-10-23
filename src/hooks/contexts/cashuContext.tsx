@@ -168,11 +168,78 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
          }, 300);
       };
 
-      if (activeUnit === Currency.USD) {
-         changeStatusBarColor('#0f3470');
-      } else {
-         changeStatusBarColor('#1D4D98');
-      }
+      const changeDrawerColor = (color: string) => {
+         const drawers = document.querySelectorAll('.drawer');
+         console.log('drawers', drawers);
+         drawers.forEach(drawer => {
+            drawer.setAttribute('style', `background-color: ${color}`);
+         });
+      };
+
+      const changePrimaryButtonColor = (color: string) => {
+         const buttons = document.querySelectorAll('.btn-primary');
+         buttons.forEach(button => {
+            button.setAttribute('style', `background-color: ${color}`);
+         });
+         // const unitSymbol = document.querySelector('.unit-symbol');
+         // if (unitSymbol) {
+         //    unitSymbol.setAttribute('style', `color: ${color}`);
+         // }
+      };
+
+      const changeDrawerItemBgColor = (color: string) => {
+         const drawerItems = document.querySelectorAll('table, .notification-item-container');
+         console.log('drawerItems', drawerItems);
+         drawerItems.forEach(drawerItem => {
+            drawerItem.setAttribute('style', `background-color: ${color}`);
+         });
+      };
+
+      const applyColors = () => {
+         if (activeUnit === Currency.USD) {
+            changeStatusBarColor('#0f3470');
+            changeDrawerItemBgColor('#0f3470');
+            changeDrawerColor('#0f1f41ff');
+            // changePrimaryButtonColor('#26a69a');
+         } else {
+            changeStatusBarColor('#342070');
+            changeDrawerItemBgColor('#342070');
+            changeDrawerColor(' #1f0f41');
+            // changePrimaryButtonColor('#6a26a6 ');
+         }
+      };
+
+      // Apply colors immediately
+      applyColors();
+
+      // Set up a MutationObserver to watch for changes in the DOM
+      const observer = new MutationObserver(mutations => {
+         mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+               // Check if any of the added nodes are drawers or contain drawers
+               mutation.addedNodes.forEach(node => {
+                  if (node.nodeType === Node.ELEMENT_NODE) {
+                     const element = node as Element;
+                     if (
+                        element.classList.contains('drawer') ||
+                        element.querySelector('.drawer') ||
+                        element.querySelector('#tx-history-table') ||
+                        element.classList.contains('notification-item-container')
+                     ) {
+                        // Drawer, table, or notification item found, apply colors again
+                        applyColors();
+                     }
+                  }
+               });
+            }
+         });
+      });
+
+      // Start observing the document with the configured parameters
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // Clean up the observer when the component unmounts
+      return () => observer.disconnect();
    }, [activeUnit]);
 
    const setKeysetNotReserve = () => {

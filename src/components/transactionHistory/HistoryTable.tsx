@@ -68,7 +68,7 @@ const HistoryTable: React.FC<{
 
    return (
       <>
-         <Table theme={txHistoryTableTheme} className='text-white'>
+         <Table theme={txHistoryTableTheme} className='text-white' id='tx-history-table'>
             <Table.Body>
                {history.map((tx: Transaction, i) => (
                   <HistoryTableRow

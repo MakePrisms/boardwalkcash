@@ -83,7 +83,7 @@ const NotificationDrawer = () => {
             onClose={() => setHidden(true)}
             edge={false}
             position='left'
-            className='md:min-w-fit min-w-full bg-[#0f1f41ff] text-white flex flex-col'
+            className='md:min-w-fit min-w-full text-white flex flex-col drawer'
             theme={customDrawerTheme}
          >
             <Drawer.Header
