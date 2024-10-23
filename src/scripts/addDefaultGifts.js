@@ -435,6 +435,22 @@ const freeStar = [
    },
 ];
 
+const testGiftWithSplits = {
+   name: 'Test Gift',
+   amount: 100,
+   description: 'A test gift',
+   imageUrlSelected: '/eGifts/selected/star_100.png',
+   imageUrlUnselected: '/eGifts/unselected/star_100.png',
+   unit: 'sat',
+   fee: 10,
+   splits: [
+      {
+         weight: 1, // will be 100% of the 10 sat fee
+         recipient: '60096f59f847a5f99b1b4396cd869b429c5550bb54a083cf2dd51ee0806e31dd',
+      },
+   ],
+};
+
 async function addGifts(gifts) {
    try {
       for (const gift of gifts) {
@@ -447,6 +463,7 @@ async function addGifts(gifts) {
                imageUrlUnselected: gift.imageUrlUnselected,
                unit: gift.unit || 'usd', // Using the default values
                fee: gift.fee,
+               splits: gift.splits,
             },
          });
          console.log(`Added gift: ${gift.name}`);

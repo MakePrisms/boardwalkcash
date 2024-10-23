@@ -13,6 +13,8 @@ import {
    initializeWallet,
 } from '@/utils/cashu';
 import { createTokenInDb } from '@/lib/tokenModels';
+import { getGiftByName } from '@/lib/gifts';
+import { getRecipientPubkeyFromGift } from '@/utils';
 
 export type PollingApiResponse = {
    success: boolean;
@@ -32,6 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(400).send({ success: false, message: 'No mint URL provided.' });
       return;
    }
+
+   const giftFromDB = gift ? await getGiftByName(gift) : null;
 
    // const mint = new CashuMint(mintUrl);
    // const keys = await mint.getKeys(keysetId);
@@ -134,10 +138,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   proofsToSendToUser = amountProofs;
                }
 
+               const recipient = getRecipientPubkeyFromGift(giftFromDB!);
+
+               if (giftFromDB?.fee && !recipient) {
+                  throw new Error('fee set on gift, but no recipient');
+               }
+
                /* lock the fee to Boardwalk */
                const { send: lockedFeeProofs } = await wallet.send(fee, feeProofs, {
                   keysetId: keysetId,
-                  pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+                  pubkey: '02' + recipient,
                });
 
                const feeToken = getEncodedTokenV4({
@@ -148,11 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
                await createTokenInDb({ token: feeToken, gift }, txid, true);
-               await notifyTokenReceived(
-                  process.env.NEXT_PUBLIC_FEE_PUBKEY!,
-                  JSON.stringify({ token: feeToken }),
-                  txid,
-               );
+               await notifyTokenReceived(recipient!, JSON.stringify({ token: feeToken }), txid);
             }
 
             let proofsPayload: ProofData[] = proofsToSendToUser.map(proof => {

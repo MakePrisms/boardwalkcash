@@ -18,6 +18,7 @@ import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/Ac
 import {
    CrossMintQuoteResult,
    Currency,
+   GiftFee,
    InsufficientBalanceError,
    PayInvoiceResponse,
    ReserveError,
@@ -430,6 +431,7 @@ export const useCashu = () => {
          pubkey?: string;
          gift?: string;
          feeCents?: number;
+         feeSplits?: GiftFee[];
       },
    ) => {
       let wallet: CashuWallet | undefined;
@@ -451,8 +453,10 @@ export const useCashu = () => {
 
          /* create and send fee token to us if feeCents is set */
          if (opts?.feeCents) {
+            if (!opts?.feeSplits) throw new Error('feeSplits must be set when feeCents is set');
+            const recipientPubkey = opts?.feeSplits[0].recipient;
             const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
-               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+               pubkey: '02' + recipientPubkey,
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],

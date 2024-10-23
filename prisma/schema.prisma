@@ -156,6 +156,8 @@ model Gift {
   creator            User?               @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
   // fee in cents user has to pay to send
   fee                Int?
+  // split of the total fee
+  splits             Json?
   // don't show if inactive
   active             Boolean             @default(true)
   // // true -> anyone can send/receive; false -> only the creator can send/receive

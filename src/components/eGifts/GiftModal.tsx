@@ -207,6 +207,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
                pubkey: `02${selectedContact?.pubkey}`,
                gift: gift?.name,
                feeCents: gift?.fee,
+               feeSplits: gift?.splits,
             });
          }
 

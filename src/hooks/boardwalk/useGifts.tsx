@@ -6,6 +6,7 @@ import {
    GetAllGiftsResponse,
    GetGiftResponse,
    GiftAsset,
+   GiftFee,
    PostSendGiftResponse,
 } from '@/types';
 import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
@@ -107,6 +108,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                creatorPubkey: gift.creatorPubkey,
                campaingId: gift.campaignId,
                fee: gift.fee ? gift.fee : undefined,
+               splits: gift.splits ? (gift.splits as Array<GiftFee>) : undefined,
             };
             acc[gift.name] = giftAsset;
             return acc;

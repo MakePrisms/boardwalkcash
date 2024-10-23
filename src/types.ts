@@ -277,6 +277,7 @@ export interface GiftAsset {
    creatorPubkey: string | null;
    campaingId?: number;
    fee?: number;
+   splits?: GiftFee[];
 }
 
 export interface InvoicePollingRequest {
@@ -377,3 +378,11 @@ export enum Currency {
    USD = 'usd',
    SAT = 'sat',
 }
+
+export type GiftFee = {
+   /* fee amount relative to rest of the splits */
+   weight: number;
+
+   /* boardwalk pubkey to send fee to */
+   recipient: string;
+};
