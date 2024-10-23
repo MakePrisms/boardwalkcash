@@ -126,7 +126,7 @@ export default async function handler(
          const lockedProofs = await wallet.receive(
             { token: [{ proofs: payment.proofs, mint: payment.mint }], unit: payment.unit },
             {
-               pubkey: request.userPubkey,
+               pubkey: '02' + request.userPubkey,
             },
          );
 
