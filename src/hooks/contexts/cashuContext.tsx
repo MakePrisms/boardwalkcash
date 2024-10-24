@@ -169,9 +169,9 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
 
       if (activeUnit === Currency.USD) {
-         changeStatusBarColor('#0f3470');
+         changeStatusBarColor('#004C54');
       } else {
-         changeStatusBarColor('#1D4D98');
+         changeStatusBarColor('#0f3470');
       }
    }, [activeUnit]);
 
