@@ -451,6 +451,39 @@ const testGiftWithSplits = {
    ],
 };
 
+const testCrabSplits = [
+   {
+      name: 'Ice Cream Crab',
+      amount: 100,
+      unit: 'sat',
+      description: 'A cool crab enjoying ice cream',
+      imageUrlSelected: '/eGifts/selected/icecreamcrab_100.png',
+      imageUrlUnselected: '/eGifts/unselected/icecreamcrab_100.png',
+      fee: 10,
+      splits: [
+         {
+            weight: 1,
+            recipient: '60096f59f847a5f99b1b4396cd869b429c5550bb54a083cf2dd51ee0806e31dd',
+         },
+      ],
+   },
+   {
+      name: 'Surfing Crab',
+      amount: 500,
+      unit: 'sat',
+      description: 'A crab riding the waves',
+      imageUrlSelected: '/eGifts/selected/surfingcrab_500.png',
+      imageUrlUnselected: '/eGifts/unselected/surfingcrab_500.png',
+      fee: 50,
+      splits: [
+         {
+            weight: 1,
+            recipient: '1bda24cd35c554b00c259daaddf249ce38556b1b60b1042d00928736917044c2',
+         },
+      ],
+   },
+];
+
 async function addGifts(gifts) {
    try {
       for (const gift of gifts) {
@@ -570,4 +603,4 @@ async function addHalloweenGifts() {
    }
 }
 
-addGifts(satGiftsRound2);
+addGifts(testCrabSplits);
