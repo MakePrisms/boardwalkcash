@@ -12,6 +12,7 @@ interface BalanceContextType {
    loading: boolean;
    satBalance: number | null;
    usdBalance: number | null;
+   satBalanceInUsd: number | null;
 }
 
 const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [usdBalance, setUsdBalance] = useState<number | null>(null);
    const [satBalance, setSatBalance] = useState<number | null>(null);
+   const [satBalanceInUsd, setSatBalanceInUsd] = useState<number | null>(null);
    const [showFxValue, setShowFxValue] = useState(false);
    const [displayBalance, setDisplayBalance] = useState('');
    const [loading, setLoading] = useState(true);
@@ -51,10 +53,18 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
          setUsdBalance(newUsdBalance);
          setSatBalance(newSatBalance);
          setLoading(false);
+
+         // Convert satBalance to USD
+         if (newSatBalance > 0) {
+            const satBalanceUsd = await satsToUnit(newSatBalance, 'usd');
+            setSatBalanceInUsd(satBalanceUsd);
+         } else {
+            setSatBalanceInUsd(0);
+         }
       };
 
       loadBalances();
-   }, [balanceByWallet, wallets]);
+   }, [balanceByWallet, wallets, satsToUnit]);
 
    const formatUsdBalance = (balance: number) => {
       return (balance / 100).toFixed(2);
@@ -106,6 +116,7 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
       loading,
       usdBalance,
       satBalance,
+      satBalanceInUsd,
    };
 
    return <BalanceContext.Provider value={value}>{children}</BalanceContext.Provider>;
