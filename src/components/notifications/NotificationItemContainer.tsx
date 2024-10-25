@@ -56,7 +56,7 @@ const NotificationItemContainer = ({
 
    return (
       <div
-         className={`flex flex-row items-center justify-start space-x-4 rounded-sm w-full px-4 py-4 mb-2 notification-item-container ${activeUnit === Currency.USD ? 'bg-[#0f3470]' : 'bg-[#342070]'}`}
+         className={`flex flex-row items-center justify-start space-x-4 rounded-sm w-full px-4 py-4 mb-2  ${activeUnit === Currency.SAT ? 'bg-[#0f3470]' : 'bg-[#004B49]'}`}
       >
          <div className='w-6 h-6 text-gray-500'>{icon}</div>
          <div className='flex flex-col justify-between w-full space-y-1'>{children}</div>

@@ -197,14 +197,14 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const applyColors = () => {
          if (activeUnit === Currency.USD) {
+            changeStatusBarColor('#004B49');
+            changeDrawerItemBgColor('#004B49');
+            changeDrawerColor('#00373D');
+            // changePrimaryButtonColor('#26a69a');
+         } else {
             changeStatusBarColor('#0f3470');
             changeDrawerItemBgColor('#0f3470');
             changeDrawerColor('#0f1f41ff');
-            // changePrimaryButtonColor('#26a69a');
-         } else {
-            changeStatusBarColor('#342070');
-            changeDrawerItemBgColor('#342070');
-            changeDrawerColor(' #1f0f41');
             // changePrimaryButtonColor('#6a26a6 ');
          }
       };
