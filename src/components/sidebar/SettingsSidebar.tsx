@@ -13,6 +13,7 @@ import EcashIcon from '../icons/EcashIcon';
 import LeaderboardSettings from './Leaderboard/LeaderboardSettings';
 import FlameIcon from '../icons/FlameIcon';
 import MintSettings from './Mints/MintSettings';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 const SettingsCog = () => (
    <svg
@@ -34,7 +35,6 @@ const SettingsCog = () => (
 
 export const SettingsSidebar = () => {
    const [hidden, setHidden] = useState(true);
-   const nwcState = useSelector((state: RootState) => state.nwc);
    const [nwcUri, setNwcUri] = useState('');
    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
 
@@ -55,33 +55,33 @@ export const SettingsSidebar = () => {
             </button>
          </div>
          {/* makes it so all drawers close when hidden */}
-         {!hidden && (
-            <Drawer
-               open={!hidden}
-               onClose={handleClose}
-               edge={false}
-               position='right'
-               className='md:min-w-fit  min-w-full bg-[#0f1f41ff] text-white flex flex-col'
-               theme={customDrawerTheme}
-            >
-               <Drawer.Header
-                  title='Settings'
-                  titleIcon={() => null}
-                  className='drawer-header'
-                  closeIcon={() => <XMarkIcon className='h-8 w-8' />}
-               />
-               <Drawer.Items className='md:w-96 max-w-screen-sm'>
-                  <div className='flex align-middle items-center justify-around '></div>
+         <Drawer
+            open={!hidden}
+            onClose={handleClose}
+            edge={false}
+            position='right'
+            id='settings-drawer'
+            className={`md:min-w-fit  min-w-full text-white flex flex-col drawer`}
+            theme={customDrawerTheme}
+         >
+            <Drawer.Header
+               title='Settings'
+               titleIcon={() => null}
+               className='drawer-header'
+               closeIcon={() => <XMarkIcon className='h-8 w-8' />}
+            />
+            <Drawer.Items className='md:w-96 max-w-screen-sm'>
+               <div className='flex align-middle items-center justify-around '></div>
 
-                  <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
-                     <DrawerCollapse
-                        label='Accounts'
-                        icon={<BuildingLibraryIcon className='size-4' />}
-                     >
-                        <MintSettings />
-                     </DrawerCollapse>
-                  </div>
-                  {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+               <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+                  <DrawerCollapse
+                     label='Accounts'
+                     icon={<BuildingLibraryIcon className='size-4' />}
+                  >
+                     <MintSettings />
+                  </DrawerCollapse>
+               </div>
+               {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                   <DrawerCollapse label='Connections' icon={<LinkIcon className='size-4' />}>
                      {nwcState.allPubkeys.map((pubkey, idx) => (
                         <NwcSidebarItem connection={nwcState.connections[pubkey]} key={idx} />
@@ -95,12 +95,12 @@ export const SettingsSidebar = () => {
                      </div>
                   </DrawerCollapse>
                </div> */}
-                  <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
-                     <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
-                        <ProfileSettings />
-                     </DrawerCollapse>
-                  </div>
-                  {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
+               <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
+                  <DrawerCollapse label={'Profile'} icon={<UserIcon className='size-4' />}>
+                     <ProfileSettings />
+                  </DrawerCollapse>
+               </div>
+               {/* <div className='mt-1 space-y-3 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>
                      <DrawerCollapse
                         label='Cash Taps'
                         icon={<EcashIcon type='solid' className='size-4' />}
@@ -108,14 +108,13 @@ export const SettingsSidebar = () => {
                         <EcashTapsSettings />
                      </DrawerCollapse>
                   </div> */}
-                  {/* <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
+               {/* <div className='mb-12 mt-1 space-y-3  pt-4 first:mt-0 first:pt-0 '>
                      <DrawerCollapse label='Leaderboard' icon={<FlameIcon className='size-4' />}>
                         <LeaderboardSettings onOpenModal={handleOpenLeaderboard} />
                      </DrawerCollapse>
                   </div> */}
-               </Drawer.Items>
-            </Drawer>
-         )}
+            </Drawer.Items>
+         </Drawer>
          <Modal show={nwcUri ? true : false} onClose={() => setNwcUri('')} className='text-black'>
             <Modal.Header>New Wallet Connection</Modal.Header>
             <Modal.Body className='flex flex-col space-y-3'>

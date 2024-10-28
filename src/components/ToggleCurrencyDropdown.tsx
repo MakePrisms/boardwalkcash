@@ -29,7 +29,7 @@ const ToggleCurrencyDrawer = () => {
             position='bottom'
             onClose={() => setIsOpen(false)}
             open={isOpen}
-            className='h-2/5'
+            className='h-2/5 drawer'
          >
             <Drawer.Items>
                <div className='p-4 space-y-4 flex flex-col items-center'>
