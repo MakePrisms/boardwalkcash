@@ -202,8 +202,8 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             changeDrawerColor('#00373D');
             // changePrimaryButtonColor('#26a69a');
          } else {
-            changeStatusBarColor('#0f3470');
-            changeDrawerItemBgColor('#0f3470');
+            changeStatusBarColor('#1D4D98');
+            changeDrawerItemBgColor('#1D4D98');
             changeDrawerColor('#0f1f41ff');
             // changePrimaryButtonColor('#6a26a6 ');
          }
