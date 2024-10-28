@@ -275,7 +275,6 @@ export default function Home() {
                onChange={e => setMintUrl(e.target.value)}
                helperText={
                   <>
-                     {/* <p className='text-white mb-4'> */}
                      Search{' '}
                      <a
                         href='https://bitcoinmints.com?show=cashu&units=usd'
@@ -286,12 +285,13 @@ export default function Home() {
                      </a>{' '}
                      for a Cashu mint that supports USD, or add the{' '}
                      <button
+                        type='button'
                         className='ml-1 font-medium hover:underline text-cyan-teal'
                         onClick={() => setMintUrl('https://stablenut.umint.cash')}
                      >
                         top-rated mint
                      </button>
-                     .{/* </p> */}
+                     .
                   </>
                }
             />
