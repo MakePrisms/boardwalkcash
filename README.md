@@ -40,10 +40,10 @@ Before you begin, ensure you have the following tools installed:
 
 ### Installation
 
-1. Fork and clone the repository:
+1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/boardwalkcash.git
+   git clone https://github.com/MakePrisms/boardwalkcash.git
    ```
 
 2. Navigate to the project directory:
