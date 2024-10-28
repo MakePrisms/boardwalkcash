@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
 import { useToast } from '@/hooks/util/useToast';
-import { Wallet } from '@/types';
+import { Currency, Wallet } from '@/types';
 import Link from 'next/link';
 import { normalizeUrl } from '@/utils/url';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
@@ -11,6 +11,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
    const [fetchingMint, setFetchingMint] = useState(false);
    const [mintUrl, setMintUrl] = useState('');
    const [currentMints, setCurrentMints] = useState<string[]>([]);
+   const { activeUnit } = useCashuContext();
 
    const { addToast } = useToast();
 
@@ -63,7 +64,11 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
                      Search at{' '}
                      <a
                         className='underline text-cyan-teal'
-                        href='https://bitcoinmints.com?show=cashu&units=usd'
+                        href={
+                           activeUnit === Currency.USD
+                              ? 'https://bitcoinmints.com?show=cashu&units=usd'
+                              : 'https://bitcoinmints.com?show=cashu&units=sat'
+                        }
                         target='_blank'
                      >
                         bitcoinmints.com
