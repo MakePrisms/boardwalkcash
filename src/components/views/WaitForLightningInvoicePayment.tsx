@@ -9,7 +9,7 @@ import { Spinner } from 'flowbite-react';
 import QRCode from 'qrcode.react';
 
 interface WaitForLightningInvoicePaymentProps {
-   onSuccess: (amount: number) => void;
+   onSuccess: () => void;
    checkingId: string;
    invoice: string;
 }
@@ -50,7 +50,7 @@ export const WaitForLightningInvoicePayment = ({
       const paid = await checkPaymentStatus();
 
       if (paid && amountData) {
-         onSuccess(amountData.amountUsdCents);
+         onSuccess();
          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       } else {
          pollCountRef.current++;
@@ -71,7 +71,7 @@ export const WaitForLightningInvoicePayment = ({
    }, [pollPayment]);
 
    useEffect(() => {
-      // startPolling();
+      startPolling();
       return () => {
          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       };

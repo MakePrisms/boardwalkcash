@@ -153,7 +153,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
       resetState();
    };
 
-   const handleLightningPaymentSuccess = (amount: number) => {
+   const handleLightningPaymentSuccess = () => {
       addToast('Payment received!', 'success');
       resetState();
    };
