@@ -17,7 +17,6 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { Wallet } from '@/types';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
-import WaitForEcashPaymentModal from '../../modals/WaitForEcashPaymentModal';
 import Tooltip from '../../utility/Toolttip';
 import Numpad from '../../utility/Numpad';
 import { customDrawerTheme } from '@/themes/drawerTheme';
@@ -400,15 +399,6 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
                onClose={handleModalClose}
                token={token}
                isUserInitialized={true}
-            />
-         )}
-         {paymentRequest && paymentRequestId && !isMobile && (
-            <WaitForEcashPaymentModal
-               isOpen={showPaymentRequestModal}
-               pr={paymentRequest}
-               onSuccess={onPaymentRequestSuccess}
-               onClose={() => setShowPaymentRequestModal(false)}
-               id={paymentRequestId}
             />
          )}
       </>
