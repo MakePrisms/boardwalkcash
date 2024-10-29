@@ -11,7 +11,7 @@ import useViewportHeight from '@/hooks/util/useViewportHeigh';
 import { ProofProvider } from '@/hooks/cashu/useProofStorage';
 import { CashuProvider } from '@/hooks/contexts/cashuContext';
 import { GiftProvider } from '@/hooks/boardwalk/useGifts';
-import AddToHomeScreen from '@/components/AddToHomeScreen.tsx/AddToHomeScreen';
+import AddToHomeScreen from '@/components/utility/AddToHomeScreen.tsx/AddToHomeScreen';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { ExchangeRateProvider } from '@/hooks/util/useExchangeRate';

@@ -707,6 +707,7 @@ export const useCashu = () => {
       balanceByWallet,
       getMint,
       createSendableToken,
+      getProofsToSend,
       getMeltQuote,
       payInvoice,
       requestMintInvoice,

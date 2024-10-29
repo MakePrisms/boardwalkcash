@@ -37,6 +37,7 @@ interface CashuContextType {
    addWalletFromMintUrl: (url: string, activeUnit?: 'usd' | 'sat') => Promise<void>;
    isMintTrusted: (mintUrl: string) => boolean;
    activeUnit: Currency;
+   activeKeysetId?: string;
    setActiveUnit: (unit: Currency) => void;
    setNWCAsMain: () => void;
    toggleMintlessMode: (enable: boolean) => void;
@@ -170,7 +171,6 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const changeDrawerColor = (color: string) => {
          const drawers = document.querySelectorAll('.drawer');
-         console.log('drawers', drawers);
          drawers.forEach(drawer => {
             drawer.setAttribute('style', `background-color: ${color}`);
          });
@@ -189,7 +189,6 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const changeDrawerItemBgColor = (color: string) => {
          const drawerItems = document.querySelectorAll('table, .notification-item-container');
-         console.log('drawerItems', drawerItems);
          drawerItems.forEach(drawerItem => {
             drawerItem.setAttribute('style', `background-color: ${color}`);
          });
@@ -460,6 +459,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setNWCAsMain,
             nwcIsMain,
             toggleMintlessMode,
+            activeKeysetId: activeWallet?.keys.id,
          }}
       >
          {children}

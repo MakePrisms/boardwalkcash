@@ -1,3 +1,4 @@
+import { NextApiRequest } from 'next';
 export const normalizeUrl = (url: string): string => {
    url = url.trim();
    url = url.replace(/\/+$/, '');
@@ -14,4 +15,10 @@ export const formatUrl = (url: string, maxLength: number = 20): string => {
    if (formatted.length <= maxLength) return formatted;
    const last = formatted.slice(-4);
    return formatted.slice(0, maxLength - 4) + '...' + last;
+};
+
+export const getBaseURLFromRequest = (req: NextApiRequest) => {
+   const host = req.headers.host;
+   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+   return `${protocol}://${host}`;
 };

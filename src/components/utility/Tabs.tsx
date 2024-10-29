@@ -5,6 +5,7 @@ interface TabsProps {
    onActiveTabChange?: (index: number) => void;
    className?: string;
    borderColor?: '#0f3470' | 'white';
+   titleColor?: string;
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -12,6 +13,7 @@ export const Tabs: React.FC<TabsProps> = ({
    onActiveTabChange,
    className = '',
    borderColor = '#0f3470',
+   titleColor = 'white',
 }) => {
    const [activeTab, setActiveTab] = useState(0);
 
@@ -28,7 +30,7 @@ export const Tabs: React.FC<TabsProps> = ({
          <div className='flex w-full text-center'>
             {titles.map((title, index) =>
                index === activeTab ? (
-                  <ActiveTab key={index} borderColor={borderColor}>
+                  <ActiveTab key={index} borderColor={borderColor} className={titleColor}>
                      {title}
                   </ActiveTab>
                ) : (
@@ -36,6 +38,7 @@ export const Tabs: React.FC<TabsProps> = ({
                      key={index}
                      onClick={() => handleTabClick(index)}
                      borderColor={borderColor}
+                     className={titleColor}
                   >
                      {title}
                   </InactiveTab>
@@ -49,13 +52,15 @@ export const Tabs: React.FC<TabsProps> = ({
 const ActiveTab = ({
    children,
    borderColor,
+   className,
 }: {
    children: React.ReactNode;
    borderColor: string;
+   className: string;
 }) => {
    return (
       <div
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} text-white hover:cursor-pointer`}
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} hover:cursor-pointer ${className}`}
       >
          {children}
       </div>
@@ -66,14 +71,16 @@ export const InactiveTab = ({
    children,
    onClick,
    borderColor,
+   className,
 }: {
    children: React.ReactNode;
    onClick: () => void;
    borderColor: string;
+   className: string;
 }) => {
    return (
       <div
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent text-white hover:border-${borderColor} hover:cursor-pointer`}
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent hover:border-${borderColor} hover:cursor-pointer ${className}`}
          onClick={onClick}
       >
          {children}

@@ -7,9 +7,9 @@ import { customDrawerTheme } from '@/themes/drawerTheme';
 import { formatCents, formatSats } from '@/utils/formatting';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Tooltip from './utility/Tooltip';
-import RadioButton from './buttons/RadioButton';
+import RadioButton from './buttons/utility/RadioButton';
 
-const ToggleCurrencyDrawer = () => {
+const ToggleCurrencyDrawer = ({ className }: { className?: string }) => {
    const { activeUnit, setActiveUnit, defaultWallets } = useCashuContext();
    const { satBalance, usdBalance, satBalanceInUsd } = useBalance();
    const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +24,7 @@ const ToggleCurrencyDrawer = () => {
 
    return (
       <>
-         <button onClick={() => setIsOpen(true)} className='flex items-center'>
+         <button onClick={() => setIsOpen(true)} className={`flex items-center ${className}`}>
             {activeUnit === Currency.USD ? 'USD' : 'BTC'}
             <ChevronDownIcon className='h-5 w-5 ml-1' />
          </button>
