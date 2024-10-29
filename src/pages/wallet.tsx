@@ -153,9 +153,14 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
       // };
 
       // checkProofsSequentially();
+      let isUpdating = false;
 
-      const intervalId = setInterval(() => {
-         updateProofsAndBalance();
+      const intervalId = setInterval(async () => {
+         if (!isUpdating) {
+            isUpdating = true;
+            await updateProofsAndBalance();
+            isUpdating = false;
+         }
 
          // Increment the counter
          intervalCount += 1;
