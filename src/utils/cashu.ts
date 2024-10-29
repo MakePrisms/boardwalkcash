@@ -11,6 +11,7 @@ import { hashToCurve } from '@cashu/crypto/modules/common';
 import { bytesToHex } from '@noble/curves/abstract/utils';
 import { sha256 } from '@noble/hashes/sha256';
 import { getTokenFromDb } from './appApiRequests';
+import { Currency } from '@/types';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -388,4 +389,24 @@ export const getMintFromToken = (token: string | Token) => {
 
 export const isTestMint = (url: string) => {
    return url.includes('test');
+};
+
+export const getUnitFromToken = (token: string | Token): Currency => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const unitFromToken = decodedToken.unit;
+
+   let unit: Currency;
+   switch (unitFromToken) {
+      case 'sat':
+         unit = Currency.SAT;
+         break;
+      case 'usd':
+         unit = Currency.USD;
+         break;
+      default:
+         unit = Currency.SAT;
+         break;
+   }
+
+   return unit;
 };

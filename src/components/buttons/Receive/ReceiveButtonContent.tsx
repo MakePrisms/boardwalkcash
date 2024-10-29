@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
+import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
 
 interface ReceiveButtonContentProps {
    closeParentComponent: () => void;
@@ -29,11 +30,14 @@ interface ReceiveButtonContentProps {
 
 const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonContentProps) => {
    const [pastedValue, setPastedValue] = useState('');
+   const [token, setToken] = useState<Token | null>(null);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
    const [activeTab, setActiveTab] = useState<'ecash' | 'bitcoin'>('ecash');
    const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
    const [invoiceData, setInvoiceData] = useState<LightningTipResponse | null>(null);
-   const [currentView, setCurrentView] = useState<'input' | 'invoice' | 'paymentRequest'>('input');
+   const [currentView, setCurrentView] = useState<
+      'input' | 'invoice' | 'paymentRequest' | 'receiveEcash'
+   >('input');
    const [paymentRequestData, setPaymentRequestData] = useState<GetPaymentRequestResponse | null>(
       null,
    );
@@ -67,7 +71,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
 
    useEffect(() => {
       const handleTokenInput = async () => {
-         let decoded: Token | undefined = undefined;
+         let decoded: Token | null = null;
          const encoded = pastedValue.includes('http')
             ? await getTokenFromUrl(pastedValue)
             : pastedValue;
@@ -79,7 +83,8 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
             }
          }
          if (decoded) {
-            console.log('decoded', decoded);
+            setToken(decoded);
+            setCurrentView('receiveEcash');
          }
       };
 
@@ -225,6 +230,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                onSuccess={handlePaymentRequestSuccess}
             />
          )}
+         {currentView === 'receiveEcash' && token && <ConfirmEcashReceive token={token} />}
       </>
    );
 };
