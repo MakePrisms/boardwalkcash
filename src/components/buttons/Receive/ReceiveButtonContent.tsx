@@ -1,28 +1,29 @@
 import { WaitForLightningInvoicePayment } from '@/components/views/WaitForLightningInvoicePayment';
+import ViewReusablePaymentRequest from '@/components/views/ViewReusablePaymentRequest';
 import { Currency, GetPaymentRequestResponse, LightningTipResponse } from '@/types';
+import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
 import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
+import WaitForEcashPayment from '../../views/WaitForEcashPayment';
 import { getInvoiceForLNReceive } from '@/utils/appApiRequests';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
-import PaymentRequestQRButton from '../PaymentRequestQRButton';
+import Amount from '@/components/utility/amounts/Amount';
 import { getDecodedToken, Token } from '@cashu/cashu-ts';
-import WaitForEcashPayment from '../../views/WaitForEcashPayment';
+import { QrCodeIcon } from '@heroicons/react/20/solid';
+import ScanIcon from '@/components/icons/ScanIcon';
+import QRScanner from '@/components/views/QRScanner';
 import Tooltip from '@/components/utility/Toolttip';
 import { useNumpad } from '@/hooks/util/useNumpad';
 import PasteButton from '../utility/PasteButton';
-import Amount from '@/components/utility/amounts/Amount';
 import Numpad from '@/components/utility/Numpad';
 import { Tabs } from '@/components/utility/Tabs';
 import { useToast } from '@/hooks/util/useToast';
 import { getTokenFromUrl } from '@/utils/cashu';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
-import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
-import QRScanner from '@/components/views/QRScanner';
-import ScanIcon from '@/components/icons/ScanIcon';
 
 interface ReceiveButtonContentProps {
    closeParentComponent: () => void;
@@ -37,7 +38,12 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
    const [invoiceData, setInvoiceData] = useState<LightningTipResponse | null>(null);
    const [currentView, setCurrentView] = useState<
-      'input' | 'invoice' | 'paymentRequest' | 'receiveEcash' | 'QRScanner'
+      | 'input'
+      | 'invoice'
+      | 'paymentRequest'
+      | 'receiveEcash'
+      | 'QRScanner'
+      | 'reusablePaymentRequest'
    >('input');
    const [paymentRequestData, setPaymentRequestData] = useState<GetPaymentRequestResponse | null>(
       null,
@@ -186,7 +192,9 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                         <button onClick={() => setCurrentView('QRScanner')}>
                            <ScanIcon className='size-8 text-gray-500' />
                         </button>
-                        <PaymentRequestQRButton />
+                        <button onClick={() => setCurrentView('reusablePaymentRequest')}>
+                           <QrCodeIcon className='size-8 text-gray-500' />
+                        </button>
                      </div>
                      {isMintless && activeTab === 'ecash' ? (
                         <Tooltip
@@ -237,6 +245,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
          {currentView === 'QRScanner' && (
             <QRScanner onClose={() => setCurrentView('input')} onScan={setPastedValue} />
          )}
+         {currentView === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
       </>
    );
 };
