@@ -13,15 +13,16 @@ import { useNumpad } from '@/hooks/util/useNumpad';
 import PasteButton from '../utility/PasteButton';
 import Amount from '@/components/utility/amounts/Amount';
 import Numpad from '@/components/utility/Numpad';
-import QRScannerButton from '../QRScannerButton';
 import { Tabs } from '@/components/utility/Tabs';
 import { useToast } from '@/hooks/util/useToast';
 import { getTokenFromUrl } from '@/utils/cashu';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
 import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
+import QRScanner from '@/components/views/QRScanner';
+import ScanIcon from '@/components/icons/ScanIcon';
 
 interface ReceiveButtonContentProps {
    closeParentComponent: () => void;
@@ -36,7 +37,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
    const [invoiceData, setInvoiceData] = useState<LightningTipResponse | null>(null);
    const [currentView, setCurrentView] = useState<
-      'input' | 'invoice' | 'paymentRequest' | 'receiveEcash'
+      'input' | 'invoice' | 'paymentRequest' | 'receiveEcash' | 'QRScanner'
    >('input');
    const [paymentRequestData, setPaymentRequestData] = useState<GetPaymentRequestResponse | null>(
       null,
@@ -182,7 +183,9 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                   <div className='flex justify-between mb-4'>
                      <div className='flex space-x-4'>
                         <PasteButton onPaste={setPastedValue} />
-                        <QRScannerButton onScan={setPastedValue} />
+                        <button onClick={() => setCurrentView('QRScanner')}>
+                           <ScanIcon className='size-8 text-gray-500' />
+                        </button>
                         <PaymentRequestQRButton />
                      </div>
                      {isMintless && activeTab === 'ecash' ? (
@@ -231,6 +234,9 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
             />
          )}
          {currentView === 'receiveEcash' && token && <ConfirmEcashReceive token={token} />}
+         {currentView === 'QRScanner' && (
+            <QRScanner onClose={() => setCurrentView('input')} onScan={setPastedValue} />
+         )}
       </>
    );
 };
