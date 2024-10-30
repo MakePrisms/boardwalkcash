@@ -4,6 +4,7 @@ interface TooltipProps {
    children: React.ReactNode;
    content: string | React.ReactNode;
    className?: string;
+   containerClassName?: string;
    position?: 'top' | 'bottom' | 'left' | 'right';
    trigger?: 'hover' | 'click';
    onClick?: () => void;
@@ -13,6 +14,7 @@ const Tooltip = ({
    children,
    content,
    className = '',
+   containerClassName = '',
    position = 'bottom',
    trigger = 'hover',
    onClick,
@@ -48,9 +50,9 @@ const Tooltip = ({
    };
 
    return (
-      <div className='relative inline-block' onClick={onClick}>
+      <div className='relative' onClick={onClick}>
          <div
-            className='inline-block'
+            className={`inline-block ${containerClassName}`}
             onMouseEnter={trigger === 'hover' ? () => setIsVisible(true) : undefined}
             onMouseLeave={trigger === 'hover' ? () => setIsVisible(false) : undefined}
             onClick={trigger === 'click' ? handleToggle : undefined}
