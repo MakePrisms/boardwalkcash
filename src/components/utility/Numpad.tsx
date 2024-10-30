@@ -22,7 +22,7 @@ const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
                <Kbd
                   key={num}
                   onClick={() => onNumberClick?.(num)}
-                  className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full'
+                  className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
                >
                   {num}
                </Kbd>
@@ -30,7 +30,7 @@ const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
             {showDecimal ? (
                <Kbd
                   onClick={() => onNumberClick?.('.')}
-                  className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full'
+                  className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
                >
                   .
                </Kbd>
@@ -39,13 +39,13 @@ const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
             )}
             <Kbd
                onClick={() => onNumberClick?.('0')}
-               className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full'
+               className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
             >
                0
             </Kbd>
             <button
                onClick={onBackspaceClick}
-               className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full text-black'
+               className='cursor-pointer  text-lg py-2 px-6 flex items-center justify-center w-full text-black transition-all active:scale-95 active:bg-gray-200 rounded-md'
             >
                <BackspaceIcon className='h-6 w-6' />
             </button>
