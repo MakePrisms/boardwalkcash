@@ -32,7 +32,7 @@ const Amount: React.FC<AmountProps> = ({
    };
 
    /* Format the display value based on unit and add commas */
-   const formattedValue = useMemo(() => {
+   const { formattedValue, greyZeros } = useMemo(() => {
       const stringValue = value.toString();
       if (unit === Currency.USD) {
          /* Handle case where input starts with decimal */
@@ -41,21 +41,39 @@ const Amount: React.FC<AmountProps> = ({
          /* If not a dollar amount, multiply by 100 since input is in cents */
          const numericValue = isDollarAmount ? Number(val) : Number(val) / 100;
 
-         return val === ''
-            ? '0.00'
-            : numericValue.toLocaleString('en-US', {
-                 minimumFractionDigits: 2,
-                 maximumFractionDigits: 2,
-              });
+         if (val === '') return { formattedValue: '0', greyZeros: '' };
+
+         /* Check if value contains decimal */
+         const hasDecimal = val.includes('.');
+         const decimalParts = val.split('.');
+
+         if (!hasDecimal) {
+            return { formattedValue: numericValue.toLocaleString('en-US'), greyZeros: '' };
+         }
+
+         /* Format with 2 decimal places if decimal exists */
+         const decimals = decimalParts[1] || '';
+         const formatted = `${decimalParts[0]}.${decimals}`;
+         const greyZerosCount = 2 - decimals.length;
+         const greyZeros = greyZerosCount > 0 ? '0'.repeat(greyZerosCount) : '';
+
+         return { formattedValue: formatted, greyZeros };
       }
+
       const val = stringValue.startsWith('.') ? `0${stringValue}` : stringValue;
-      return val === '' ? '0' : Number(val).toLocaleString('en-US');
+      return {
+         formattedValue: val === '' ? '0' : Number(val).toLocaleString('en-US'),
+         greyZeros: '',
+      };
    }, [value, unit, isDollarAmount]);
 
    return (
       <div className='inline-flex items-center'>
          {unit && showUnitPrefix && <span className={unitClassName}>{getUnitSymbol()}</span>}
-         <span className={className}>{formattedValue}</span>
+         <span className={className}>
+            {formattedValue}
+            {greyZeros && <span className='text-gray-400'>{greyZeros}</span>}
+         </span>
          {unit && showUnitSuffix && <span className={unitClassName}>{getUnitSymbol()}</span>}
       </div>
    );
