@@ -554,10 +554,14 @@ export const useCashu = () => {
       dispatch(setSending('Sending...'));
 
       try {
-         const proofsToSend = await getProofsToSend(
+         const proofsToSend = getProofsByAmount(
             meltQuote.amount + meltQuote.fee_reserve,
-            wallet,
+            wallet.keys.id,
          );
+
+         if (!proofsToSend || proofsToSend.length === 0) {
+            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+         }
 
          const { preimage, isPaid, change } = await wallet.meltTokens(meltQuote, proofsToSend, {
             keysetId: wallet.keys.id,
@@ -570,7 +574,7 @@ export const useCashu = () => {
          if (!isPaid) {
             const spent = await wallet.checkProofsSpent(proofsToSend);
             if (spent.length > 0) {
-               /* not paid, but mint marked as spent, so remove proofs */
+               /* not paid, but mint marked as spent, so remove the spent proofs */
                removeProofs(spent);
             }
             throw new TransactionError('Failed to pay invoice');
