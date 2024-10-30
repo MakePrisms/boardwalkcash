@@ -345,7 +345,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (active) {
                setDefaultWallets(new Map(defaultWallets.set(k.unit as Currency, wallet)));
                if (k.unit === activeUnit) {
-                  setActiveWallet(wallet);
+                  setToMain(k.id);
                }
             }
             if (!defaultWallets.has(k.unit as Currency)) {
