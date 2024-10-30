@@ -5,6 +5,7 @@ interface RadioButtonProps {
    onChange?: () => void;
    color?: string;
    size?: number;
+   disabled?: boolean;
 }
 
 const RadioButton: React.FC<RadioButtonProps> = ({
@@ -12,11 +13,12 @@ const RadioButton: React.FC<RadioButtonProps> = ({
    onChange,
    color = '#000000',
    size = 18,
+   disabled = false,
 }) => {
    return (
       <div
-         onClick={onChange}
-         className={`border-cyan-teal`}
+         onClick={disabled ? undefined : onChange}
+         className={`border-cyan-teal ${disabled ? 'opacity-50' : ''}`}
          style={{
             width: size,
             height: size,
@@ -25,7 +27,7 @@ const RadioButton: React.FC<RadioButtonProps> = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            cursor: 'pointer',
+            cursor: disabled ? 'not-allowed' : 'pointer',
          }}
       >
          {selected && (

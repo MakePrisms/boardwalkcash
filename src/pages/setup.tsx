@@ -4,7 +4,7 @@ import { Button, Label, TextInput } from 'flowbite-react';
 import { CashuMint } from '@cashu/cashu-ts';
 import { useToast } from '@/hooks/util/useToast';
 import Image from 'next/image';
-import { NWAEventContent } from '@/types';
+import { Currency, NWAEventContent } from '@/types';
 import { Relay, finalizeEvent, generateSecretKey, getPublicKey, nip04 } from 'nostr-tools';
 import { initializeUser } from '@/redux/slices/UserSlice';
 import { useAppDispatch } from '@/redux/store';
@@ -116,7 +116,17 @@ export default function Home() {
 
          const activeKeysets = await mint.getKeys();
 
-         addWallet(activeKeysets, url, { activeUnit: 'usd', currencies: ['usd', 'sat'] });
+         const supportsUsd = activeKeysets.keysets.some(k => k.unit === Currency.USD);
+         const supportsSat = activeKeysets.keysets.some(k => k.unit === Currency.SAT);
+
+         if (!supportsSat && !supportsUsd) {
+            throw new Error('Mint does not support USD or BTC');
+         }
+
+         addWallet(activeKeysets, url, {
+            activeUnit: supportsUsd ? Currency.USD : Currency.SAT,
+            currencies: ['usd', 'sat'],
+         });
 
          addToast('Mint added successfully', 'success');
 
