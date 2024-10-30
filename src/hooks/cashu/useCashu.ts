@@ -394,7 +394,15 @@ export const useCashu = () => {
       return await swapToActiveWallet(fromWallet, { proofs: token.token[0].proofs, privkey });
    };
 
-   // TODO: how to make sure the `send` tokens don't get lost
+   /**
+    * Gets exact denominations of proofs to send for a given amount and wallet.
+    *
+    * NOTE: `proofsToSend` are not removed from storage, so the calling function is expected to remove them after sending.
+    * @param amount - Amount to send
+    * @param wallet - Wallet to send from
+    * @param {string} [opts.pubkey] - Optional pubkey to lock proofs to.
+    * @returns proofs to send matching the amount. NOTE: proofsToSend are not removed from storage
+    */
    const getProofsToSend = async (
       amount: number,
       wallet: CashuWallet,
@@ -411,8 +419,10 @@ export const useCashu = () => {
          pubkey: opts?.pubkey,
       });
 
-      await addProofs(returnChange);
+      /* must remove first, because wallet.send might return the same proofs */
       await removeProofs(proofs);
+      /* save all proofs, then calling function is expected to remove proofs */
+      await addProofs([...send, ...returnChange]);
 
       return send;
    };
@@ -462,6 +472,7 @@ export const useCashu = () => {
                const txid = await postTokenToDb(feeToken, opts?.gift, true);
                await sendTokenAsNotification(feeToken, txid);
             }
+            await removeProofs(feeProofs);
          }
 
          const token = getEncodedTokenV4({
@@ -485,6 +496,9 @@ export const useCashu = () => {
                },
             }),
          );
+
+         /* token can now be claimed in tx history, safe to remove proofs */
+         await removeProofs(proofs);
 
          return token;
       } catch (error) {
@@ -545,22 +559,25 @@ export const useCashu = () => {
             wallet,
          );
 
-         const { preimage, isPaid, change } = await wallet
-            .meltTokens(meltQuote, proofsToSend, {
-               keysetId: wallet.keys.id,
-            })
-            .catch(err => {
-               addProofs(proofsToSend);
-               throw err;
-            });
+         const { preimage, isPaid, change } = await wallet.meltTokens(meltQuote, proofsToSend, {
+            keysetId: wallet.keys.id,
+         });
+
+         await addProofs(change);
 
          // TODO: should validate preimage, but sometimes invoice is truly paid but preimage is null
-         if (!isPaid) {
-            addProofs([...change, ...proofsToSend]);
-            throw new TransactionError('Melt failed');
-         }
 
-         addProofs(change);
+         if (!isPaid) {
+            const spent = await wallet.checkProofsSpent(proofsToSend);
+            if (spent.length > 0) {
+               /* not paid, but mint marked as spent, so remove proofs */
+               removeProofs(spent);
+            }
+            throw new TransactionError('Failed to pay invoice');
+         } else {
+            /* proofs are now spent, so remove them */
+            await removeProofs(proofsToSend);
+         }
 
          const feePaid = meltQuote.fee_reserve - change.reduce((acc, p) => acc + p.amount, 0);
          const feeMessage =
