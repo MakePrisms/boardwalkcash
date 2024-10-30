@@ -106,7 +106,6 @@ const CurrencyOption: React.FC<CurrencyOptionProps> = ({
          <Tooltip
             position='top'
             content={`Add a ${label} account to change your active currency`}
-            containerClassName='w-full'
             className='w-full text-lg'
          >
             {button}
