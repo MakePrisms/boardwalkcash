@@ -1,7 +1,7 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Proof, Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import { Button, Modal, Spinner } from 'flowbite-react';
-import Tooltip from '@/components/utility/Toolttip';
+import Tooltip from '@/components/utility/Tooltip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';

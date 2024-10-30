@@ -6,7 +6,7 @@ import { useBalance } from '@/hooks/boardwalk/useBalance';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import { formatCents, formatSats } from '@/utils/formatting';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
-import Tooltip from './utility/Toolttip';
+import Tooltip from './utility/Tooltip';
 import RadioButton from './buttons/RadioButton';
 
 const ToggleCurrencyDrawer = () => {
