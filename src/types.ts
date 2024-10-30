@@ -9,6 +9,7 @@ import {
 } from '@cashu/cashu-ts';
 import { Gift, MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
 import { NextApiRequest } from 'next';
+import { formatUnit } from './utils/formatting';
 
 export interface ProofData {
    proofId: string;
@@ -44,9 +45,12 @@ export class CashuError extends Error {
 }
 
 export class InsufficientBalanceError extends CashuError {
-   constructor(mintUrl: string, balance?: number) {
+   constructor(unit: Currency, balance: number, tryingToSend: number) {
       super(
-         `${formatUrl(mintUrl, 15)} has insufficient balance. ${balance ? `$${(balance / 100).toFixed(2)}` : ''}`,
+         `Your main ${unit === 'usd' ? 'USD' : 'BTC'} wallet has insufficient balance. ${formatUnit(
+            balance,
+            unit,
+         )} available. ${formatUnit(tryingToSend, unit)} needed.`,
       );
       this.name = 'InsufficientBalanceError';
    }
