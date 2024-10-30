@@ -34,7 +34,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    const [pastedValue, setPastedValue] = useState('');
    const [token, setToken] = useState<Token | null>(null);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
-   const [activeTab, setActiveTab] = useState<'ecash' | 'bitcoin'>('ecash');
+   const [activeTab, setActiveTab] = useState<'ecash' | 'lightning'>('ecash');
    const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
    const [invoiceData, setInvoiceData] = useState<LightningTipResponse | null>(null);
    const [currentView, setCurrentView] = useState<
@@ -114,7 +114,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
       const amountUnit = activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
       if (activeTab === 'ecash') {
          return handlePaymentRequest(amountUnit);
-      } else if (activeTab === 'bitcoin') {
+      } else if (activeTab === 'lightning') {
          return handleReceiveLightningPayment(amountUnit);
       }
    };
@@ -171,8 +171,8 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
             <>
                <Tabs
                   titleColor='text-black'
-                  titles={['ecash', 'bitcoin']}
-                  onActiveTabChange={tab => setActiveTab(tab === 0 ? 'ecash' : 'bitcoin')}
+                  titles={['ecash', 'lightning']}
+                  onActiveTabChange={tab => setActiveTab(tab === 0 ? 'ecash' : 'lightning')}
                />
 
                <div className='flex-grow flex flex-col items-center justify-center'>
@@ -182,7 +182,6 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                      className='font-teko text-6xl font-bold text-black'
                      isDollarAmount={true}
                   />
-                  <ToggleCurrencyDropdown className='text-black mt-2' />
                </div>
 
                <div className='mb-8'>
