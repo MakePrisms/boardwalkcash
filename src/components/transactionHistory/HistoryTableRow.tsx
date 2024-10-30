@@ -63,7 +63,8 @@ const HistoryTableRow: React.FC<{
       }
    };
 
-   const formatDate = (date: string) => {
+   const formatDate = (date?: string) => {
+      if (!date) return '';
       const [datePart, timePart] = date.split(', ');
       const [month, day] = datePart.split('/').slice(0, 2);
       const [time, period] = timePart.split(' ');
