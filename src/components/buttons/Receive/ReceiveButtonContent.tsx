@@ -2,7 +2,6 @@ import { WaitForLightningInvoicePayment } from '@/components/views/WaitForLightn
 import ViewReusablePaymentRequest from '@/components/views/ViewReusablePaymentRequest';
 import { Currency, GetPaymentRequestResponse, LightningTipResponse } from '@/types';
 import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
-import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import WaitForEcashPayment from '../../views/WaitForEcashPayment';
 import { getInvoiceForLNReceive } from '@/utils/appApiRequests';
@@ -162,6 +161,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
 
    const handleLightningPaymentSuccess = () => {
       addToast('Payment received!', 'success');
+
       resetState();
    };
 
@@ -240,7 +240,9 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                onSuccess={handlePaymentRequestSuccess}
             />
          )}
-         {currentView === 'receiveEcash' && token && <ConfirmEcashReceive token={token} />}
+         {currentView === 'receiveEcash' && token && (
+            <ConfirmEcashReceive token={token} onSuccess={resetState} onFail={resetState} />
+         )}
          {currentView === 'QRScanner' && (
             <QRScanner onClose={() => setCurrentView('input')} onScan={setPastedValue} />
          )}

@@ -246,7 +246,7 @@ export const areTokensSpent = async (tokenEntries: [string, string | Token][]) =
 export const initializeWallet = async (
    mintUrl: string,
    opts: { unit?: string; keysetId?: string },
-) => {
+): Promise<CashuWallet> => {
    if (!opts.unit && !opts.keysetId) {
       throw new Error('Either unit or keysetId must be specified');
    }
@@ -391,6 +391,11 @@ export const isTestMint = (url: string) => {
    return url.includes('test');
 };
 
+/**
+ * Returns unit in the token, falls back to 'sat' if not found
+ * @param token
+ * @returns
+ */
 export const getUnitFromToken = (token: string | Token): Currency => {
    const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
    const unitFromToken = decodedToken.unit;
@@ -409,4 +414,24 @@ export const getUnitFromToken = (token: string | Token): Currency => {
    }
 
    return unit;
+};
+
+export const dissectToken = (token: string | Token) => {
+   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+
+   const unit = getUnitFromToken(decodedToken);
+   const proofs = decodedToken.token[0].proofs;
+   const mintUrl = getMintFromToken(decodedToken);
+   const keysetId = proofs[0].id;
+   const pubkeyLock = proofsLockedTo(proofs);
+   const amountUnit = proofs.reduce((acc, curr) => acc + curr.amount, 0);
+
+   return {
+      unit,
+      mintUrl,
+      keysetId,
+      pubkeyLock,
+      proofs,
+      amountUnit,
+   };
 };

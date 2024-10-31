@@ -38,6 +38,7 @@ interface CashuContextType {
    isMintTrusted: (mintUrl: string) => boolean;
    activeUnit: Currency;
    activeKeysetId?: string;
+   activeMintUrl?: string;
    setActiveUnit: (unit: Currency) => void;
    setNWCAsMain: () => void;
    toggleMintlessMode: (enable: boolean) => void;
@@ -309,6 +310,12 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('defaultWallets', JSON.stringify(Object.fromEntries(defaultWallets)));
    };
 
+   /**
+    * Add a wallet by mint URL
+    * @param url Mint URL
+    * @param activeUnit if set, will try to set the active wallet to this unit
+    * @returns
+    */
    const addWalletFromMintUrl = async (url: string, activeUnit?: 'usd' | 'sat') => {
       const mint = new CashuMint(url);
 
@@ -320,6 +327,14 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
    };
 
+   /**
+    *
+    * @param activeKeys Mints active keys to add
+    * @param mintUrl mint url
+    *
+    * @param opts.currencies Array of currencies to try to add wallets for (defaults to ['usd'])
+    * @param opts.activeUnit If set, will try to set the active wallet to this unit ('usd' or 'sat')
+    */
    const addWallet = (
       activeKeys: MintActiveKeys,
       mintUrl: string,
@@ -460,6 +475,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             nwcIsMain,
             toggleMintlessMode,
             activeKeysetId: activeWallet?.keys.id,
+            activeMintUrl: activeWallet?.mint.mintUrl,
          }}
       >
          {children}
