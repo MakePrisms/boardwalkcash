@@ -14,7 +14,7 @@ import Stickers from './stickers/Stickers';
 import { WaitForInvoiceModalBody } from '../modals/WaitForInvoiceModal';
 import { formatUnit } from '@/utils/formatting';
 import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/20/solid';
-import Tooltip from '../utility/Toolttip';
+import Tooltip from '../utility/Tooltip';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';

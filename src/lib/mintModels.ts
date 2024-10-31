@@ -45,8 +45,11 @@ export async function findOrCreateMint(
          const newMint = await prisma.mint.create({
             data: {
                url: mintUrl,
-               // keysets: {
-               // },
+               keysets: {
+                  createMany: {
+                     data: mintKeysetData,
+                  },
+               },
             },
             include: {
                keysets: true,

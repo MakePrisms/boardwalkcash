@@ -32,7 +32,7 @@ export default function App({ Component, pageProps }: CustomAppProps) {
    useViewportHeight();
    const router = useRouter();
 
-   const previewImg = `${typeof window !== 'undefined' ? window.location.origin : ''}${giftPath || '/logo-url-preview.png'}`;
+   const previewImg = `${typeof window !== 'undefined' ? window.location.origin : 'https://boardwalkcash.com'}${giftPath || '/logo-url-preview.png'}`;
 
    useEffect(() => {
       const checkAdminAccess = () => {
