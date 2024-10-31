@@ -36,6 +36,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    const [tokenContact, setTokenContact] = useState<PublicContact | null>(null);
    const [alreadyClaimed, setAlreadyClaimed] = useState(false);
    const [gift, setGift] = useState<GiftAsset | null>(null);
+   const [isClaiming, setIsClaiming] = useState(false);
    const [loading, setIsLoading] = useState(true);
 
    const isUserInitialized = localStorage.getItem('pubkey') !== null;
@@ -92,6 +93,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
 
    const handleClaim = async (choice: 'active' | 'source' | 'mintless') => {
       let success = false;
+      setIsClaiming(true);
       if (choice === 'active') {
          success = (await handleClaimToActiveWallet(token)) || false;
       } else if (choice === 'source') {
@@ -105,6 +107,8 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
       } else if (!success && onFail) {
          onFail();
       }
+
+      setIsClaiming(false);
    };
 
    const handleCopy = () => {
@@ -137,6 +141,15 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
 
    if (loading) {
       return <Spinner size='lg' />;
+   }
+
+   if (isClaiming) {
+      return (
+         <div className='flex flex-col items-center justify-center'>
+            <Spinner size='lg' />
+            <p className='text-center text-sm'>Claiming...</p>
+         </div>
+      );
    }
 
    return (
