@@ -17,6 +17,7 @@ const ViewDrawerOrModal = ({
    isMobile,
    children,
 }: ViewDrawerOrModalProps) => {
+   if (!isOpen) return null;
    return isMobile ? (
       <div>
          <Drawer
@@ -41,7 +42,7 @@ const ViewDrawerOrModal = ({
          <Modal.Header>{title}</Modal.Header>
          <Modal.Body>
             <div
-               className='flex flex-col space-y-20 items-stretch justify-center'
+               className='fflex flex-col h-[450px] max-h-screen  space-y-20 items-stretch'
                key={isOpen.toString()}
             >
                {children}

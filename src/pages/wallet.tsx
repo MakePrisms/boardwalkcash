@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/utility/Balance';
 import Receive from '@/components/buttons/Receive/ReceiveButton';
-import Send from '@/components/buttons/Send';
+import Send from '@/components/buttons/Send/SendButton';
 import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -264,7 +264,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             <div className=' flex flex-col justify-center py-8 w-full'>
                <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
                   <Receive isMobile={isMobile} />
-                  <Send />
+                  <Send isMobile={isMobile} />
                </div>
             </div>
             <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex flex-col items-center justify-center'>
