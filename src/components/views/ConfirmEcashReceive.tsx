@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { Button, Spinner } from 'flowbite-react';
 import { formatUnit } from '@/utils/formatting';
 import Amount from '../utility/amounts/Amount';
-import Tooltip from '../utility/Toolttip';
+import Tooltip from '../utility/Tooltip';
 import { formatUrl } from '@/utils/url';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -224,10 +224,9 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
                (!pubkeyLock || pubkeyLock === '02' + user.pubkey) && (
                   <div className='flex items-center justify-center'>
                      <Button
-                        className={`btn-primary xss-button !p-0 w-full`}
+                        className={`btn-primary !p-0 w-full`}
                         onClick={() => handleClaim('source')}
                         size={'xs'}
-                        theme={{ size: { xs: 'px-2 text-xxs' } }}
                      >
                         {mintTrusted ? 'Claim (Source Mint)' : 'Trust and Claim'}
                      </Button>

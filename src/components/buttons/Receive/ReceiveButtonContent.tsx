@@ -12,7 +12,7 @@ import { getDecodedToken, Token } from '@cashu/cashu-ts';
 import { QrCodeIcon } from '@heroicons/react/20/solid';
 import ScanIcon from '@/components/icons/ScanIcon';
 import QRScanner from '@/components/views/QRScanner';
-import Tooltip from '@/components/utility/Toolttip';
+import Tooltip from '@/components/utility/Tooltip';
 import { useNumpad } from '@/hooks/util/useNumpad';
 import PasteButton from '../utility/PasteButton';
 import Numpad from '@/components/utility/Numpad';
