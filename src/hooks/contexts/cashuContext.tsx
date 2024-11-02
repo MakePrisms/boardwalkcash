@@ -389,22 +389,21 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    };
 
    const setUnit = (unit: Currency) => {
+      if (!defaultWallets.has(unit) && !nwcIsMain) {
+         return;
+      }
       const defaultWallet = defaultWallets.get(unit);
-      console.log('setting unit to ', unit);
       const inMintlessMode = user.sendMode === 'mintless' && user.receiveMode === 'mintless';
       if (inMintlessMode || nwcIsMain) {
          if (unit === Currency.USD) {
-            console.log('disabling mintless mode');
             toggleMintlessMode(false);
             if (!defaultWallet) throw new Error('No default wallet found for USD');
             setToMain(defaultWallet.keys.id);
          } else if (unit === Currency.SAT && nwcIsMain) {
-            console.log('enabling mintless mode');
             toggleMintlessMode(true);
          }
       }
       if (defaultWallet) {
-         console.log('default wallet found for unit', defaultWallet);
          setToMain(defaultWallet.keys.id);
       }
       setActiveUnit(unit);
