@@ -4,6 +4,7 @@ import ReceiveButtonContent from './ReceiveButtonContent';
 import { Button, Drawer, Modal } from 'flowbite-react';
 import XMarkIcon from '@/components/icons/XMarkIcon';
 import React, { useState } from 'react';
+import { bottomSheetDrawerTheme } from '@/themes/drawerTheme';
 
 const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
    const [showButtonContent, setShowButtonContent] = useState(false);
@@ -43,14 +44,15 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
                   open={showButtonContent}
                   onClose={handleModalClose}
                   position='bottom'
-                  className='h-[90vh] md:h-5/6'
+                  theme={bottomSheetDrawerTheme}
+                  style={{ height: 'calc(100% - 75px)' }}
                >
                   <Drawer.Header
                      title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
                      titleIcon={() => null}
                      closeIcon={() => <XMarkIcon className='h-8 w-8' />}
                   />
-                  <Drawer.Items className='flex flex-col h-[78vh]'>
+                  <Drawer.Items className='flex flex-col h-full   '>
                      {showButtonContent && (
                         <ReceiveButtonContent
                            isMobile={isMobile}

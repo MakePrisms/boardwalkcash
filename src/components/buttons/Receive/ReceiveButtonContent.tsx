@@ -155,7 +155,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    };
 
    return (
-      <>
+      <div className='flex flex-col justify-between h-full'>
          {currentView === 'input' && (
             <>
                <Tabs
@@ -233,7 +233,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
             <QRScanner onClose={() => setCurrentView('input')} onScan={setPastedValue} />
          )}
          {currentView === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
-      </>
+      </div>
    );
 };
 
