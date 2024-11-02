@@ -1,10 +1,9 @@
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import ReceiveButtonContent from './ReceiveButtonContent';
-import { Button, Drawer, Modal } from 'flowbite-react';
-import XMarkIcon from '@/components/icons/XMarkIcon';
+import { Button } from 'flowbite-react';
 import React, { useState } from 'react';
-import { bottomSheetDrawerTheme } from '@/themes/drawerTheme';
+import ViewDrawerOrModal from '@/components/utility/ViewDrawerOrModal';
 
 const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
    const [showButtonContent, setShowButtonContent] = useState(false);
@@ -38,45 +37,14 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
             <span className='text-lg'>Receive</span>{' '}
             <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
-         {isMobile ? (
-            <div>
-               <Drawer
-                  open={showButtonContent}
-                  onClose={handleModalClose}
-                  position='bottom'
-                  theme={bottomSheetDrawerTheme}
-                  style={{ height: 'calc(100% - 75px)' }}
-               >
-                  <Drawer.Header
-                     title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
-                     titleIcon={() => null}
-                     closeIcon={() => <XMarkIcon className='h-8 w-8' />}
-                  />
-                  <Drawer.Items className='flex flex-col h-full   '>
-                     {showButtonContent && (
-                        <ReceiveButtonContent
-                           isMobile={isMobile}
-                           closeParentComponent={handleModalClose}
-                        />
-                     )}
-                  </Drawer.Items>
-               </Drawer>
-            </div>
-         ) : (
-            <Modal show={showButtonContent} onClose={handleModalClose} size={'sm'}>
-               <Modal.Header>{activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}</Modal.Header>
-               <Modal.Body>
-                  <div className='flex flex-col space-y-20 items-stretch justify-center'>
-                     {showButtonContent && (
-                        <ReceiveButtonContent
-                           isMobile={isMobile}
-                           closeParentComponent={handleModalClose}
-                        />
-                     )}
-                  </div>
-               </Modal.Body>
-            </Modal>
-         )}
+         <ViewDrawerOrModal
+            isMobile={isMobile}
+            isOpen={showButtonContent}
+            onClose={handleModalClose}
+            title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
+         >
+            <ReceiveButtonContent closeParentComponent={handleModalClose} isMobile={isMobile} />
+         </ViewDrawerOrModal>
       </>
    );
 };
