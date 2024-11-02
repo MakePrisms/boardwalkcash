@@ -6,10 +6,11 @@ import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { Currency, GetPaymentRequestResponse } from '@/types';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
 import QRCode from 'qrcode.react';
+import { useCashu } from '@/hooks/cashu/useCashu';
 
 type WaitForEcashPaymentProps = {
    request: GetPaymentRequestResponse;
-   onSuccess: (token: string) => void;
+   onSuccess: () => void;
 };
 
 const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) => {
@@ -17,6 +18,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
    const { checkPaymentRequest } = usePaymentRequests();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [timeout, setPrTimeout] = useState(false);
+   const { handleClaimToSourceMint } = useCashu();
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
@@ -50,7 +52,8 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       console.log('checking for payment', request.id);
       const { paid, token } = await checkPaymentRequest(request.id);
       if (paid) {
-         onSuccess(token);
+         await handleClaimToSourceMint(token);
+         onSuccess();
          handleClose();
          console.log('Payment completed', token);
          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);

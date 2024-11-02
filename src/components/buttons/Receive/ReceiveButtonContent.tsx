@@ -154,17 +154,6 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
       }
    };
 
-   const handlePaymentRequestSuccess = (token: string) => {
-      addToast('Payment received! Check your notifications for the token', 'success');
-      resetState();
-   };
-
-   const handleLightningPaymentSuccess = () => {
-      addToast('Payment received!', 'success');
-
-      resetState();
-   };
-
    return (
       <>
          {currentView === 'input' && (
@@ -231,14 +220,11 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
             <WaitForLightningInvoicePayment
                invoice={invoiceData?.invoice}
                checkingId={invoiceData?.checkingId}
-               onSuccess={handleLightningPaymentSuccess}
+               onSuccess={resetState}
             />
          )}
          {currentView === 'paymentRequest' && paymentRequestData && (
-            <WaitForEcashPayment
-               request={paymentRequestData}
-               onSuccess={handlePaymentRequestSuccess}
-            />
+            <WaitForEcashPayment request={paymentRequestData} onSuccess={resetState} />
          )}
          {currentView === 'receiveEcash' && token && (
             <ConfirmEcashReceive token={token} onSuccess={resetState} onFail={resetState} />
