@@ -1,7 +1,7 @@
 import { convertToUnit } from '@/utils/convertToUnit';
 import Amount from '../utility/amounts/Amount';
 import { formatUnit } from '@/utils/formatting';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Currency } from '@/types';
 
 interface PaymentConfirmationDetailsProps {
@@ -32,6 +32,13 @@ const PaymentConfirmationDetails = ({
       getEquivalentAmount();
    }, [amount, unit]);
 
+   const formattedDestintation = useMemo(() => {
+      if (destination.length > 20) {
+         return destination.slice(0, 10) + '...' + destination.slice(-10);
+      }
+      return destination;
+   }, [destination]);
+
    return (
       <div className='flex flex-col gap-4'>
          <h2 className='text-xl'>Confirm Payment</h2>
@@ -50,7 +57,7 @@ const PaymentConfirmationDetails = ({
             {unit === Currency.SAT ? (
                <>
                   <span className='text-gray-500'>USD Equivalent</span>
-                  <span>{formatUnit(equivalentAmount, 'usd')}</span>
+                  <span>~{formatUnit(equivalentAmount, 'usd')}</span>
                </>
             ) : (
                <>
@@ -61,7 +68,7 @@ const PaymentConfirmationDetails = ({
          </div>
          <div className='flex justify-between items-center gap-3'>
             <span className='text-gray-500'>Paying</span>
-            <span>{destination}</span>
+            <span>{formattedDestintation}</span>
          </div>
          {fee && (
             <div className='flex justify-between items-center gap-3'>
