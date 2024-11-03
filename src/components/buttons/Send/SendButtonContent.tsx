@@ -12,6 +12,7 @@ import Amount from '@/components/utility/amounts/Amount';
 import ShareEcash from '@/components/views/ShareEcash';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import SelectGift from '@/components/views/SelectGift';
+import { getAmountFromInvoice } from '@/utils/bolt11';
 import { MeltQuoteResponse } from '@cashu/cashu-ts';
 import QRScanner from '@/components/views/QRScanner';
 import ScanIcon from '@/components/icons/ScanIcon';
@@ -60,8 +61,8 @@ const SendButtonContent = ({
    const { isMintless, createMintlessToken, sendToMintlessUser } = useMintlessMode();
    const { sendTokenAsNotification } = useNotifications();
    const { createSendableToken, getMeltQuote } = useCashu();
+   const { unitToSats, convertToUnit } = useExchangeRate();
    const { activeUnit } = useCashuContext();
-   const { unitToSats } = useExchangeRate();
    const { addToast } = useToast();
    const {
       handleNumpadBackspace,
@@ -181,7 +182,24 @@ const SendButtonContent = ({
    };
 
    const handlePaste = async (pastedValue: string) => {
-      if (pastedValue.startsWith('lnbc') || pastedValue.startsWith('creqA')) {
+      const cleanedValue = pastedValue.toLowerCase().replace('lightning:', '');
+      if (cleanedValue.startsWith('lnbc')) {
+         setInvoice(cleanedValue);
+         if (!isMintless) {
+            const quote = await getMeltQuote(cleanedValue);
+            if (!quote) {
+               return;
+            }
+            setMeltQuote(quote);
+            setAmtUnit(quote.amount);
+         } else {
+            const amtSat = getAmountFromInvoice(pastedValue);
+            const amt = await convertToUnit(amtSat, 'sat', activeUnit);
+            setAmtUnit(amt);
+         }
+         setCurrentView('sendLightning');
+         return;
+      } else if (pastedValue.startsWith('creqA')) {
       } else {
          addToast('Invalid input', 'error');
          return;
