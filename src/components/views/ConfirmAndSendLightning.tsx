@@ -9,7 +9,7 @@ import { useAppDispatch } from '@/redux/store';
 import { Button } from 'flowbite-react';
 import { Currency } from '@/types';
 
-interface ConfrimSendLightningProps {
+interface ConfrimAndSendLightningProps {
    meltQuote?: MeltQuoteResponse;
    onClose: () => void;
    invoice: string;
@@ -18,14 +18,14 @@ interface ConfrimSendLightningProps {
    lud16?: string /* just for display */;
 }
 
-const ConfrimSendLightning = ({
+const ConfrimAndSendLightning = ({
    invoice,
    lud16,
    unit,
    amount,
    meltQuote,
    onClose,
-}: ConfrimSendLightningProps) => {
+}: ConfrimAndSendLightningProps) => {
    const { nwcPayInvoice, isMintless } = useMintlessMode();
    const { payInvoice: cashuPayInvoice } = useCashu();
    const { activeWallet } = useCashuContext();
@@ -85,4 +85,4 @@ const ConfrimSendLightning = ({
    );
 };
 
-export default ConfrimSendLightning;
+export default ConfrimAndSendLightning;

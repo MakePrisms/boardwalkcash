@@ -128,8 +128,8 @@ export const usePaymentRequests = () => {
       }
    };
 
-   const payPaymentRequest = async (pr: string, amount?: number) => {
-      const request = decodePaymentRequest(pr);
+   const payPaymentRequest = async (pr: string | PaymentRequest, amount?: number) => {
+      const request = typeof pr === 'string' ? decodePaymentRequest(pr) : pr;
 
       if (!request.amount && !amount) {
          throw new Error('Missing amount');
