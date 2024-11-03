@@ -1,25 +1,29 @@
+import ConfrimSendLightning from '@/components/views/ConfirmSendLightning';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
 import ConfirmSendGift from '@/components/views/ConfirmSendGift';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { GiftIcon, UserIcon } from '@heroicons/react/20/solid';
+import { getInvoiceFromLightningAddress } from '@/utils/lud16';
+import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { Currency, GiftAsset, PublicContact } from '@/types';
 import SelectContact from '@/components/views/SelectContact';
 import Amount from '@/components/utility/amounts/Amount';
 import ShareEcash from '@/components/views/ShareEcash';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import SelectGift from '@/components/views/SelectGift';
+import { MeltQuoteResponse } from '@cashu/cashu-ts';
 import QRScanner from '@/components/views/QRScanner';
 import ScanIcon from '@/components/icons/ScanIcon';
 import Tooltip from '@/components/utility/Tooltip';
 import { useNumpad } from '@/hooks/util/useNumpad';
+import { Button, TextInput } from 'flowbite-react';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
 import { Tabs } from '@/components/utility/Tabs';
 import PasteButton from '../utility/PasteButton';
 import Numpad from '@/components/utility/Numpad';
 import { formatUnit } from '@/utils/formatting';
-import { Button } from 'flowbite-react';
 import { useState } from 'react';
 
 const SendButtonContent = ({
@@ -31,21 +35,33 @@ const SendButtonContent = ({
 }) => {
    const [activeInputTab, setActiveInputTab] = useState<'ecash' | 'lightning'>('ecash');
    const [currentView, setCurrentView] = useState<
-      'input' | 'QRScanner' | 'selectContact' | 'selectGift' | 'shareEcash' | 'confirmSendGift'
+      | 'confirmSendGift'
+      | 'sendLightning'
+      | 'selectContact'
+      | 'selectGift'
+      | 'shareEcash'
+      | 'lud16Input'
+      | 'QRScanner'
+      | 'input'
    >('input');
    const [shareTokenData, setShareTokenData] = useState<{
       token?: string;
       txid?: string;
       gift?: GiftAsset;
    } | null>(null);
+   const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | undefined>(undefined);
    const [contact, setContact] = useState<PublicContact | undefined>(undefined);
+   const [amtUnit, setAmtUnit] = useState<number | undefined>(undefined);
+   const [invoice, setInvoice] = useState<string | undefined>(undefined);
    const [gift, setGift] = useState<GiftAsset | undefined>(undefined);
+   const [lud16, setLud16] = useState<string | undefined>(undefined);
    const [isGiftMode, setIsGiftMode] = useState(false);
 
    const { isMintless, createMintlessToken, sendToMintlessUser } = useMintlessMode();
    const { sendTokenAsNotification } = useNotifications();
-   const { createSendableToken } = useCashu();
+   const { createSendableToken, getMeltQuote } = useCashu();
    const { activeUnit } = useCashuContext();
+   const { unitToSats } = useExchangeRate();
    const { addToast } = useToast();
    const {
       handleNumpadBackspace,
@@ -57,28 +73,59 @@ const SendButtonContent = ({
       activeUnit,
    });
 
-   const resetState = () => {
+   const resetState = (close = true) => {
+      if (close) closeParentComponent();
+      setMeltQuote(undefined);
       setCurrentView('input');
       setShareTokenData(null);
-      closeParentComponent();
-      setIsGiftMode(false);
-      clearNumpadInput();
-      setGift(undefined);
       setContact(undefined);
+      setAmtUnit(undefined);
+      setInvoice(undefined);
+      setIsGiftMode(false);
+      setLud16(undefined);
+      setGift(undefined);
+      clearNumpadInput();
    };
 
-   const handleInputAmount = (value: string) => {
+   const handleInputSubmit = (value: string) => {
       const parsedAmount = parseFloat(value);
       if (isNaN(parsedAmount)) {
-         addToast('Invalid input', 'error');
+         addToast('Invalid amount', 'error');
          return;
       }
       const amtUnit = activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
+      setAmtUnit(amtUnit);
       if (activeInputTab === 'ecash') {
          return handleSendEcash(amtUnit, activeUnit, gift);
       } else if (activeInputTab === 'lightning') {
-         // setCurrentView
+         setCurrentView('lud16Input');
       }
+   };
+
+   const handleLud16Submit = async () => {
+      if (!lud16) {
+         addToast('Please enter a lightning address', 'error');
+         return;
+      }
+      if (!amtUnit) {
+         addToast('Please enter an amount', 'error');
+         return;
+      }
+      // TODO: unitToSats should accept cents for usd, not dollars
+      const amtSat = await unitToSats(
+         activeUnit === Currency.USD ? amtUnit / 100 : amtUnit,
+         activeUnit,
+      );
+      const invoice = await getInvoiceFromLightningAddress(lud16, amtSat * 1000);
+      if (!isMintless) {
+         const quote = await getMeltQuote(invoice);
+         if (!quote) {
+            return;
+         }
+         setMeltQuote(quote);
+      }
+      setInvoice(invoice);
+      setCurrentView('sendLightning');
    };
 
    const handleSendEcash = async (amount: number, unit: Currency, gift?: GiftAsset) => {
@@ -229,29 +276,57 @@ const SendButtonContent = ({
       setCurrentView('selectContact');
    };
 
+   const handleActiveTabChange = (tab: number) => {
+      const close = false;
+      resetState(close);
+      setActiveInputTab(tab === 0 ? 'ecash' : 'lightning');
+   };
+
    return (
       <>
-         {currentView === 'input' && (
+         {(currentView === 'input' || currentView === 'lud16Input') && (
             <>
                <Tabs
                   titleColor='text-black'
                   titles={['ecash', 'lightning']}
-                  onActiveTabChange={tab => setActiveInputTab(tab === 0 ? 'ecash' : 'lightning')}
+                  onActiveTabChange={handleActiveTabChange}
                />
 
-               <div className='flex-grow flex flex-col items-center justify-center'>
-                  <Amount
-                     value={numpadValue}
-                     unit={activeUnit}
-                     className='font-teko text-6xl font-bold text-black'
-                     isDollarAmount={true}
-                  />
-                  {contact && (
-                     <div className='flex justify-center items-center text-gray-500'>
-                        to {contact.username}
-                     </div>
-                  )}
-               </div>
+               {currentView === 'input' && (
+                  <div className='flex-grow flex flex-col items-center justify-center'>
+                     <Amount
+                        value={numpadValue}
+                        unit={activeUnit}
+                        className='font-teko text-6xl font-bold text-black'
+                        isDollarAmount={true}
+                     />
+                     {contact && (
+                        <div className='flex justify-center items-center text-gray-500'>
+                           to {contact.username}
+                        </div>
+                     )}
+                  </div>
+               )}
+
+               {currentView === 'lud16Input' && amtUnit && (
+                  <div className='flex-grow flex flex-col items-center justify-start gap-3'>
+                     <span className='text-xl text-black flex flex-row items-center gap-3'>
+                        Sending:
+                        <Amount
+                           unitClassName='text-3xl text-cyan-teal font-bold'
+                           value={amtUnit}
+                           unit={activeUnit}
+                           className='font-teko text-black text-3xl font-bold'
+                        />
+                     </span>
+                     <TextInput
+                        placeholder={`Lightning address`}
+                        value={lud16}
+                        onChange={e => setLud16(e.target.value)}
+                        className='w-full'
+                     />
+                  </div>
+               )}
 
                <div className='mb-8'>
                   <div className='flex justify-between mb-4'>
@@ -285,17 +360,18 @@ const SendButtonContent = ({
                      ) : (
                         <Button
                            className='btn-primary'
-                           onClick={() => handleInputAmount(numpadValue)}
-                           disabled={numpadValueIsEmpty}
-                           //  isProcessing={
-                           //     activeInputTab === 'ecash' ? fetchingPaymentRequest : fetchingInvoice
-                           //  }
+                           onClick={
+                              currentView === 'input'
+                                 ? () => handleInputSubmit(numpadValue)
+                                 : handleLud16Submit
+                           }
+                           disabled={currentView === 'input' ? numpadValueIsEmpty : !lud16}
                         >
                            Continue
                         </Button>
                      )}
                   </div>
-                  {isMobile && (
+                  {isMobile && currentView === 'input' && (
                      <Numpad
                         onNumberClick={handleNumpadInput}
                         onBackspaceClick={handleNumpadBackspace}
@@ -329,6 +405,17 @@ const SendButtonContent = ({
          )}
          {currentView === 'QRScanner' && (
             <QRScanner onClose={() => setCurrentView('input')} onScan={handlePaste} />
+         )}
+
+         {currentView === 'sendLightning' && invoice && amtUnit && (
+            <ConfrimSendLightning
+               invoice={invoice}
+               unit={activeUnit}
+               lud16={lud16}
+               amount={amtUnit}
+               meltQuote={meltQuote}
+               onClose={resetState}
+            />
          )}
       </>
    );
