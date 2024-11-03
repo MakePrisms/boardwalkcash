@@ -146,6 +146,7 @@ const SendButtonContent = ({
       const res = await payPaymentRequest(paymentRequest, paymentRequest.amount!).catch(e => {
          const message = e.message || 'Failed to pay payment request';
          addToast(message, 'error');
+         resetState();
       });
       if (res) {
          addToast('Payment request paid!', 'success');
