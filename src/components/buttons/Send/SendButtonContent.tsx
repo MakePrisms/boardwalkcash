@@ -1,4 +1,7 @@
-import ConfrimSendLightning from '@/components/views/ConfirmSendLightning';
+import { decodePaymentRequest, MeltQuoteResponse, PaymentRequest } from '@cashu/cashu-ts';
+import PaymentConfirmationDetails from '@/components/views/PaymentConfirmationDetails';
+import ConfrimAndSendLightning from '@/components/views/ConfirmAndSendLightning';
+import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import useNotifications from '@/hooks/boardwalk/useNotifications';
 import ConfirmSendGift from '@/components/views/ConfirmSendGift';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
@@ -13,7 +16,6 @@ import ShareEcash from '@/components/views/ShareEcash';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import SelectGift from '@/components/views/SelectGift';
 import { getAmountFromInvoice } from '@/utils/bolt11';
-import { MeltQuoteResponse } from '@cashu/cashu-ts';
 import QRScanner from '@/components/views/QRScanner';
 import ScanIcon from '@/components/icons/ScanIcon';
 import Tooltip from '@/components/utility/Tooltip';
@@ -36,6 +38,7 @@ const SendButtonContent = ({
 }) => {
    const [activeInputTab, setActiveInputTab] = useState<'ecash' | 'lightning'>('ecash');
    const [currentView, setCurrentView] = useState<
+      | 'confirmPaymentRequest'
       | 'confirmSendGift'
       | 'sendLightning'
       | 'selectContact'
@@ -51,6 +54,7 @@ const SendButtonContent = ({
       gift?: GiftAsset;
    } | null>(null);
    const [meltQuote, setMeltQuote] = useState<MeltQuoteResponse | undefined>(undefined);
+   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | undefined>(undefined);
    const [contact, setContact] = useState<PublicContact | undefined>(undefined);
    const [amtUnit, setAmtUnit] = useState<number | undefined>(undefined);
    const [invoice, setInvoice] = useState<string | undefined>(undefined);
@@ -59,9 +63,10 @@ const SendButtonContent = ({
    const [isGiftMode, setIsGiftMode] = useState(false);
 
    const { isMintless, createMintlessToken, sendToMintlessUser } = useMintlessMode();
-   const { sendTokenAsNotification } = useNotifications();
    const { createSendableToken, getMeltQuote } = useCashu();
    const { unitToSats, convertToUnit } = useExchangeRate();
+   const { sendTokenAsNotification } = useNotifications();
+   const { payPaymentRequest } = usePaymentRequests();
    const { activeUnit } = useCashuContext();
    const { addToast } = useToast();
    const {
@@ -127,6 +132,25 @@ const SendButtonContent = ({
       }
       setInvoice(invoice);
       setCurrentView('sendLightning');
+   };
+
+   const handleSendPaymentRequest = async () => {
+      if (!paymentRequest) {
+         addToast('Missing payment request', 'error');
+         return;
+      }
+      if (!paymentRequest.amount) {
+         addToast('Amountless payment requests are not supported', 'error');
+         return;
+      }
+      const res = await payPaymentRequest(paymentRequest, paymentRequest.amount!).catch(e => {
+         const message = e.message || 'Failed to pay payment request';
+         addToast(message, 'error');
+      });
+      if (res) {
+         addToast('Payment request paid!', 'success');
+         resetState();
+      }
    };
 
    const handleSendEcash = async (amount: number, unit: Currency, gift?: GiftAsset) => {
@@ -200,6 +224,14 @@ const SendButtonContent = ({
          setCurrentView('sendLightning');
          return;
       } else if (pastedValue.startsWith('creqA')) {
+         const decoded = decodePaymentRequest(pastedValue);
+         if (!decoded.amount) {
+            addToast('Does not support amountless payment requests', 'error');
+            return;
+         }
+         setPaymentRequest(decoded);
+         setCurrentView('confirmPaymentRequest');
+         return;
       } else {
          addToast('Invalid input', 'error');
          return;
@@ -418,6 +450,18 @@ const SendButtonContent = ({
                contact={contact}
             />
          )}
+         {currentView === 'confirmPaymentRequest' && paymentRequest && paymentRequest.amount && (
+            <div className='text-black flex flex-col justify-between h-full'>
+               <PaymentConfirmationDetails
+                  amount={paymentRequest?.amount}
+                  unit={(paymentRequest?.unit as Currency) || Currency.SAT}
+                  destination={paymentRequest?.toEncodedRequest()}
+               />
+               <Button className='btn-primary w-full' onClick={handleSendPaymentRequest}>
+                  Send Payment
+               </Button>
+            </div>
+         )}
          {currentView === 'shareEcash' && (
             <ShareEcash {...shareTokenData} onClose={resetState} contact={contact} />
          )}
@@ -426,7 +470,7 @@ const SendButtonContent = ({
          )}
 
          {currentView === 'sendLightning' && invoice && amtUnit && (
-            <ConfrimSendLightning
+            <ConfrimAndSendLightning
                invoice={invoice}
                unit={activeUnit}
                lud16={lud16}
