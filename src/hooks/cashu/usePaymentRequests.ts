@@ -168,7 +168,8 @@ export const usePaymentRequests = () => {
          });
 
          if (!response.ok) {
-            throw new Error('Failed to send payment');
+            const msg = await response.text();
+            throw new Error(`${JSON.parse(msg).error || 'Failed to send payment'}`);
          } else {
             dispatch(
                addTransaction({
@@ -192,7 +193,8 @@ export const usePaymentRequests = () => {
             return true;
          }
       } catch (e) {
-         addProofs(payment.proofs);
+         /* will error if proofs are already added */
+         await addProofs(payment.proofs).catch(console.warn);
          throw e;
       }
    };
@@ -240,7 +242,8 @@ export const usePaymentRequests = () => {
 
          return true;
       } catch (e) {
-         addProofs(payment.proofs);
+         /* will error if proofs are already added */
+         addProofs(payment.proofs).catch(console.warn);
          throw e;
       }
    };
