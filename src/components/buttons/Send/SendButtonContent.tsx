@@ -466,9 +466,7 @@ const SendButtonContent = ({
          {currentView === 'shareEcash' && (
             <ShareEcash {...shareTokenData} onClose={resetState} contact={contact} />
          )}
-         {currentView === 'QRScanner' && (
-            <QRScanner onClose={() => setCurrentView('input')} onScan={handlePaste} />
-         )}
+         {currentView === 'QRScanner' && <QRScanner onClose={undefined} onScan={handlePaste} />}
 
          {currentView === 'sendLightning' && invoice && amtUnit && (
             <ConfrimAndSendLightning
