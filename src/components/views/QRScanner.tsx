@@ -23,7 +23,7 @@ const QRScanner = ({ onClose, onScan }: QRScannerProps) => {
    };
 
    return (
-      <div className='flex flex-col justify-around space-y-12 h-full min-h-[340px]'>
+      <div className='flex flex-col justify-between h-full min-h-[340px]'>
          <QrReaderComponent ref={qrReaderRef} onDecode={handleQRResult} />
          <div className='flex justify-between'>
             <Button size={'xs'} color={'failure'} onClick={handleClose}>

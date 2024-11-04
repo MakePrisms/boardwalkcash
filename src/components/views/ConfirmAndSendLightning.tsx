@@ -71,14 +71,14 @@ const ConfrimAndSendLightning = ({
    };
 
    return (
-      <div className='text-black flex flex-col justify-around h-full'>
+      <div className='text-black flex flex-col justify-between h-full'>
          <PaymentConfirmationDetails
             amount={amount}
             unit={unit}
             destination={lud16 || invoice}
             fee={meltQuote?.fee_reserve}
          />
-         <Button className='btn-primary w-full' onClick={handleSendPayment}>
+         <Button className='btn-primary w-fit self-center' onClick={handleSendPayment}>
             Send Payment
          </Button>
       </div>
