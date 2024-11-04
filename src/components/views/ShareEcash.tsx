@@ -63,7 +63,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
 
    if (gift) {
       return (
-         <div className='flex flex-col justify-between items-center text-black  h-full'>
+         <div className='flex flex-col justify-around items-center text-black  h-full'>
             <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
                {contact && <p>eGift for {contact.username}</p>}
                <StickerItem
@@ -95,7 +95,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
    }
 
    return (
-      <div className='flex flex-col justify-between items-center text-black space-y-3 h-full'>
+      <div className='flex flex-col justify-around items-center text-black space-y-3 h-full'>
          <div className='max-w-full flex flex-col justify-center items-center text-black space-y-3'>
             {contact && <p className='text-2xl'>eTip for {contact.username}</p>}
             <CustomCarousel slides={carouselSlides} />
