@@ -32,7 +32,7 @@ const ViewDrawerOrModal = ({
                titleIcon={() => null}
                closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
-            <Drawer.Items className='flex flex-col h-full'>{isOpen && children}</Drawer.Items>
+            <Drawer.Items className='flex flex-col h-full mb-12'>{isOpen && children}</Drawer.Items>
          </Drawer>
       </div>
    ) : (

@@ -299,7 +299,7 @@ const SendButtonContent = ({
                   </div>
                )}
 
-               <div className='mb-8'>
+               <div className='mb-[-1rem]'>
                   <div className='flex justify-between mb-4'>
                      <div className='flex space-x-4'>
                         <PasteButton onPaste={handlePaste} />
@@ -368,7 +368,7 @@ const SendButtonContent = ({
             />
          )}
          {currentView === 'confirmPaymentRequest' && paymentRequest && paymentRequest.amount && (
-            <div className='text-black flex flex-col justify-around h-full'>
+            <div className='text-black flex flex-col justify-between h-full'>
                <PaymentConfirmationDetails
                   amount={paymentRequest?.amount}
                   unit={(paymentRequest?.unit as Currency) || Currency.SAT}

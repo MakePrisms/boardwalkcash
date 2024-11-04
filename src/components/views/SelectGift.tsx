@@ -18,7 +18,7 @@ const SelectGift = ({ onSelectGift, contact }: SelectGiftProps) => {
    };
 
    return (
-      <div className='flex flex-col gap-6 w-full h-full pb-12 relative text-black'>
+      <div className='flex flex-col h-full pb-12 relative text-black'>
          <div
             className='flex-grow overflow-y-auto'
             style={{
@@ -29,7 +29,11 @@ const SelectGift = ({ onSelectGift, contact }: SelectGiftProps) => {
          >
             <Stickers onSelectGift={setSelectedGift} contact={contact || null} />
          </div>
-         <Button onClick={handleContinue} disabled={!selectedGift} className='btn-primary'>
+         <Button
+            onClick={handleContinue}
+            disabled={!selectedGift}
+            className='btn-primary w-fit self-center'
+         >
             Continue
          </Button>
       </div>

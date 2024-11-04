@@ -4,6 +4,7 @@ import { GiftAsset, PublicContact } from '@/types';
 import SplitIcon from '../icons/SplitIcon';
 import Tooltip from '../utility/Tooltip';
 import { Button } from 'flowbite-react';
+import Link from 'next/link';
 
 interface ConfirmSendGiftProps {
    contact?: PublicContact;
@@ -15,9 +16,8 @@ interface ConfirmSendGiftProps {
 
 const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSendGiftProps) => {
    return (
-      <div className='flex flex-col justify-around w-full text-black h-full'>
+      <div className='flex flex-col justify-between w-full text-black h-full'>
          <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
-            {contact && <p>eGift for {contact.username}</p>}
             <StickerItem
                selectedSrc={gift.selectedSrc}
                unselectedSrc={gift.selectedSrc}
@@ -25,6 +25,14 @@ const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSend
                alt={'gift'}
                size='lg'
             />
+            {contact && (
+               <p className='text-center text-md'>
+                  eGift for{' '}
+                  <Link className='underline' target='_blank' href={`/${contact.username}`}>
+                     {contact.username}
+                  </Link>
+               </p>
+            )}
             {txid && (
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
@@ -47,17 +55,15 @@ const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSend
             </div>
          )}
          {!token && (
-            <div className='w-full flex justify-center mt-4'>
-               <div className='w-full h-10'>
-                  <Button
-                     key='gift-send'
-                     className='btn-primary w-full h-full'
-                     onClick={onSendGift}
-                     id='send-button'
-                  >
-                     Send
-                  </Button>
-               </div>
+            <div className='w-full flex justify-center items-center'>
+               <Button
+                  key='gift-send'
+                  className='btn-primary h-full'
+                  onClick={onSendGift}
+                  id='send-button'
+               >
+                  Send
+               </Button>
             </div>
          )}
       </div>

@@ -32,6 +32,12 @@ export const WaitForLightningInvoicePayment = ({
    const pollCountRef = useRef(0);
    const MAX_POLL_COUNT = 4;
 
+   const resetState = () => {
+      setInvoiceTimeout(false);
+      setLoading(true);
+      setAmountData(null);
+   };
+
    const checkPaymentStatus = useCallback(async () => {
       try {
          const pubkey = window.localStorage.getItem('pubkey');
@@ -51,6 +57,7 @@ export const WaitForLightningInvoicePayment = ({
 
       if (paid && amountData) {
          onSuccess();
+         resetState();
          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
       } else {
          pollCountRef.current++;
@@ -105,7 +112,7 @@ export const WaitForLightningInvoicePayment = ({
    }
 
    return (
-      <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>
+      <div className='flex flex-col items-center justify-between space-y-6 text-gray-500 h-full'>
          <div className='flex flex-col items-center justify-center space-y-4 text-gray-500'>
             {amountData && (
                <ActiveAndInactiveAmounts
@@ -117,19 +124,22 @@ export const WaitForLightningInvoicePayment = ({
             <QRCode value={invoice} size={256} />
             <p className='text-center text-sm'>Scan with any Lightning wallet</p>
          </div>
+
          <ClipboardButton
             toCopy={invoice}
             toShow='Copy Invoice'
             className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
          />
-         {invoiceTimeout && (
-            <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
-               <p className='text-xs'>Timed out waiting for payment...</p>
-               <button onClick={handleCheckAgain} className='underline'>
-                  Check again
-               </button>
-            </div>
-         )}
+         <div>
+            {invoiceTimeout && (
+               <div className='flex flex-col items-center justify-center text-center space-y-1 text-black'>
+                  <p className='text-xs'>Timed out waiting for payment...</p>
+                  <button onClick={handleCheckAgain} className='underline'>
+                     Check again
+                  </button>
+               </div>
+            )}
+         </div>
       </div>
    );
 };
