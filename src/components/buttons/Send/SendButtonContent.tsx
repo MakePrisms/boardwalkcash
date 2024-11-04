@@ -19,12 +19,13 @@ import ScanIcon from '@/components/icons/ScanIcon';
 import Tooltip from '@/components/utility/Tooltip';
 import { useNumpad } from '@/hooks/util/useNumpad';
 import { Button, TextInput } from 'flowbite-react';
+import useWallet from '@/hooks/boardwalk/useWallet';
+import { shortenString } from '@/utils/formatting';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
 import { Tabs } from '@/components/utility/Tabs';
 import PasteButton from '../utility/PasteButton';
 import Numpad from '@/components/utility/Numpad';
-import useWallet from '@/hooks/boardwalk/useWallet';
 import { useState } from 'react';
 
 const SendButtonContent = ({
@@ -72,6 +73,7 @@ const SendButtonContent = ({
       numpadValueIsEmpty,
       handleNumpadInput,
       clearNumpadInput,
+      numpadAmount,
       numpadValue,
    } = useNumpad({
       activeUnit,
@@ -91,16 +93,24 @@ const SendButtonContent = ({
       clearNumpadInput();
    };
 
-   const handleInputSubmit = (value: string) => {
-      const parsedAmount = parseFloat(value);
-      if (isNaN(parsedAmount)) {
-         addToast('Invalid amount', 'error');
+   const handleInputSubmit = () => {
+      if (!numpadAmount) {
+         addToast('Please enter an amount', 'error');
          return;
       }
-      const amtUnit = activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
-      setAmtUnit(amtUnit);
+      setAmtUnit(numpadAmount);
+
+      if (paymentRequest !== undefined) {
+         /* user entereed an amountless payment request */
+         const newPR = paymentRequest;
+         newPR.amount = numpadAmount;
+         setPaymentRequest(newPR);
+         setCurrentView('confirmPaymentRequest');
+         return;
+      }
+
       if (activeInputTab === 'ecash') {
-         return handleSendEcash(amtUnit);
+         return handleSendEcash(numpadAmount);
       } else if (activeInputTab === 'lightning') {
          setCurrentView('lud16Input');
       }
@@ -197,11 +207,17 @@ const SendButtonContent = ({
       } else if (pastedValue.startsWith('creqA')) {
          const decoded = decodePaymentRequest(pastedValue);
          if (!decoded.amount) {
-            addToast('Does not support amountless payment requests', 'error');
-            return;
+            if (numpadValueIsEmpty) {
+               setCurrentView('input');
+               addToast('Enter an amount to send', 'info');
+            } else {
+               decoded.amount = Number(numpadValue);
+               setCurrentView('confirmPaymentRequest');
+            }
+         } else {
+            setCurrentView('confirmPaymentRequest');
          }
          setPaymentRequest(decoded);
-         setCurrentView('confirmPaymentRequest');
          return;
       } else {
          addToast('Invalid input', 'error');
@@ -253,6 +269,11 @@ const SendButtonContent = ({
                      {contact && (
                         <div className='flex justify-center items-center text-gray-500'>
                            to {contact.username}
+                        </div>
+                     )}
+                     {paymentRequest && (
+                        <div className='flex justify-center items-center text-gray-500'>
+                           to {shortenString(paymentRequest.toEncodedRequest(), 17)}
                         </div>
                      )}
                   </div>
@@ -310,11 +331,7 @@ const SendButtonContent = ({
                      ) : (
                         <Button
                            className='btn-primary'
-                           onClick={
-                              currentView === 'input'
-                                 ? () => handleInputSubmit(numpadValue)
-                                 : handleLud16Submit
-                           }
+                           onClick={currentView === 'input' ? handleInputSubmit : handleLud16Submit}
                            disabled={currentView === 'input' ? numpadValueIsEmpty : !lud16}
                         >
                            Continue

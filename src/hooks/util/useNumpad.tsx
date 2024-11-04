@@ -54,8 +54,17 @@ export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
 
    const numpadValueIsEmpty = useMemo(() => inputValue === '' || inputValue === '.', [inputValue]);
 
+   const numpadAmount = useMemo(() => {
+      const parsedAmount = parseFloat(inputValue);
+      if (isNaN(parsedAmount)) {
+         return;
+      }
+      return activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
+   }, [inputValue]);
+
    return {
       numpadValue: inputValue,
+      numpadAmount,
       numpadValueIsEmpty,
       setInputValue,
       handleNumpadInput,
