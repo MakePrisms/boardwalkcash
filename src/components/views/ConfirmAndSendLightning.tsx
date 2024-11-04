@@ -71,7 +71,7 @@ const ConfrimAndSendLightning = ({
    };
 
    return (
-      <div className='text-black flex flex-col justify-between h-full'>
+      <div className='text-black flex flex-col justify-around h-full'>
          <PaymentConfirmationDetails
             amount={amount}
             unit={unit}

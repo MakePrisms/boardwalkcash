@@ -15,7 +15,7 @@ interface ConfirmSendGiftProps {
 
 const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSendGiftProps) => {
    return (
-      <div className='flex flex-col justify-between w-full text-black h-full'>
+      <div className='flex flex-col justify-around w-full text-black h-full'>
          <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
             {contact && <p>eGift for {contact.username}</p>}
             <StickerItem

@@ -452,7 +452,7 @@ const SendButtonContent = ({
             />
          )}
          {currentView === 'confirmPaymentRequest' && paymentRequest && paymentRequest.amount && (
-            <div className='text-black flex flex-col justify-between h-full'>
+            <div className='text-black flex flex-col justify-around h-full'>
                <PaymentConfirmationDetails
                   amount={paymentRequest?.amount}
                   unit={(paymentRequest?.unit as Currency) || Currency.SAT}
