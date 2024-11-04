@@ -190,9 +190,9 @@ export const usePaymentRequests = () => {
                   },
                }),
             );
+            await removeProofs(payment.proofs);
             return true;
          }
-         await removeProofs(payment.proofs);
       } catch (e) {
          /* will error if proofs are already added */
          await addProofs(payment.proofs).catch(console.warn);
