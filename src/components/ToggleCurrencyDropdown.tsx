@@ -10,14 +10,11 @@ import Tooltip from './utility/Tooltip';
 import RadioButton from './buttons/RadioButton';
 
 const ToggleCurrencyDrawer = () => {
-   const { activeUnit, setActiveUnit, defaultWallets } = useCashuContext();
+   const { activeUnit, setActiveUnit, defaultWallets, nwcIsMain } = useCashuContext();
    const { satBalance, usdBalance, satBalanceInUsd } = useBalance();
    const [isOpen, setIsOpen] = useState(false);
 
    const handleToggle = (unit: Currency) => {
-      if (!defaultWallets.has(unit)) {
-         return;
-      }
       setActiveUnit(unit);
       setIsOpen(false);
    };
@@ -45,7 +42,7 @@ const ToggleCurrencyDrawer = () => {
                         balance={formatSats(satBalance || 0)}
                         subBalance={formatCents(satBalanceInUsd || 0)}
                         isSelected={activeUnit === Currency.SAT}
-                        isAvailable={defaultWallets.has(Currency.SAT)}
+                        isAvailable={defaultWallets.has(Currency.SAT) || nwcIsMain}
                         onSelect={handleToggle}
                      />
                   </div>
