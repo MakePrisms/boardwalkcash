@@ -29,7 +29,7 @@ export const usePaymentRequests = () => {
 
    const { activeWallet } = useCashuContext();
    const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
-   const { addProofs } = useProofStorage();
+   const { addProofs, removeProofs } = useProofStorage();
    const { nwcPayInvoice, isMintless } = useMintlessMode();
 
    const dispatch = useAppDispatch();
@@ -192,6 +192,7 @@ export const usePaymentRequests = () => {
             );
             return true;
          }
+         await removeProofs(payment.proofs);
       } catch (e) {
          /* will error if proofs are already added */
          await addProofs(payment.proofs).catch(console.warn);
@@ -239,7 +240,7 @@ export const usePaymentRequests = () => {
                },
             }),
          );
-
+         await removeProofs(payment.proofs);
          return true;
       } catch (e) {
          /* will error if proofs are already added */
