@@ -54,11 +54,12 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    const { activeUnit, activeKeysetId } = useCashuContext();
    const userPubkey = useSelector((state: RootState) => state.user.pubkey);
    const {
-      numpadValue,
+      handleNumpadBackspace,
       numpadValueIsEmpty,
       handleNumpadInput,
-      handleNumpadBackspace,
       clearNumpadInput,
+      setNumpadValue,
+      numpadValue,
    } = useNumpad({
       activeUnit,
    });
@@ -167,6 +168,7 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
                <div className='flex-grow flex flex-col items-center justify-center'>
                   <Amount
                      value={numpadValue}
+                     setValue={setNumpadValue}
                      unit={activeUnit}
                      className='font-teko text-6xl font-bold text-black'
                      isDollarAmount={true}

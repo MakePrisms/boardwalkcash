@@ -73,6 +73,7 @@ const SendButtonContent = ({
       numpadValueIsEmpty,
       handleNumpadInput,
       clearNumpadInput,
+      setNumpadValue,
       numpadAmount,
       numpadValue,
    } = useNumpad({
@@ -263,6 +264,7 @@ const SendButtonContent = ({
                      <Amount
                         value={numpadValue}
                         unit={activeUnit}
+                        setValue={setNumpadValue}
                         className='font-teko text-6xl font-bold text-black'
                         isDollarAmount={true}
                      />

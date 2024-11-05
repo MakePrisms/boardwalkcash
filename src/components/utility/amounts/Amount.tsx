@@ -1,8 +1,10 @@
+import React, { Dispatch, SetStateAction, useEffect, useMemo } from 'react';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { Currency } from '@/types';
-import React, { useMemo } from 'react';
 
 interface AmountProps {
    value: string | number;
+   setValue?: Dispatch<SetStateAction<string>>;
    unit?: Currency;
    showUnitPrefix?: boolean;
    showUnitSuffix?: boolean;
@@ -13,6 +15,7 @@ interface AmountProps {
 
 const Amount: React.FC<AmountProps> = ({
    value,
+   setValue,
    unit,
    showUnitPrefix = true,
    showUnitSuffix = false,
@@ -20,6 +23,8 @@ const Amount: React.FC<AmountProps> = ({
    unitClassName = 'text-[3.45rem] text-cyan-teal font-bold',
    isDollarAmount = false /* if false it means when unit === 'usd' we have to multiply by 100 */,
 }) => {
+   const { activeUnit } = useCashuContext();
+
    const getUnitSymbol = () => {
       switch (unit) {
          case 'usd':
@@ -66,6 +71,45 @@ const Amount: React.FC<AmountProps> = ({
          greyZeros: '',
       };
    }, [value, unit, isDollarAmount]);
+
+   useEffect(() => {
+      const handleNumpadInput = (input: string) => {
+         if (!setValue) return;
+         const stringValue = value.toString();
+
+         if (input === '.') {
+            /* Only add decimal if one doesn't exist yet and we're in USD mode */
+            if (!stringValue.includes('.') && activeUnit === Currency.USD) {
+               setValue(prev => prev + input);
+            }
+            return;
+         }
+
+         /* If we already have 2 decimal places, don't add more digits */
+         const decimalIndex = stringValue.indexOf('.');
+         if (decimalIndex !== -1 && stringValue.length - decimalIndex > 2) {
+            return;
+         }
+
+         setValue(prev => prev + input);
+      };
+
+      const handleKeyPress = (e: KeyboardEvent) => {
+         const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+         const showDecimal = activeUnit === Currency.USD;
+
+         if (numbers.includes(e.key) || e.key === '0') {
+            handleNumpadInput(e.key);
+         } else if (e.key === '.' && showDecimal) {
+            handleNumpadInput('.');
+         } else if (e.key === 'Backspace') {
+            setValue && setValue(prev => prev.slice(0, -1));
+         }
+      };
+
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+   }, [activeUnit]);
 
    return (
       <div className='inline-flex items-center'>

@@ -8,24 +8,6 @@ interface UseNumpadProps {
 export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
    const [inputValue, setInputValue] = useState('');
 
-   useEffect(() => {
-      const handleKeyPress = (e: KeyboardEvent) => {
-         const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-         const showDecimal = activeUnit === Currency.USD;
-
-         if (numbers.includes(e.key) || e.key === '0') {
-            handleNumpadInput(e.key);
-         } else if (e.key === '.' && showDecimal) {
-            handleNumpadInput('.');
-         } else if (e.key === 'Backspace') {
-            handleNumpadBackspace();
-         }
-      };
-
-      window.addEventListener('keydown', handleKeyPress);
-      return () => window.removeEventListener('keydown', handleKeyPress);
-   }, [activeUnit]);
-
    const handleNumpadInput = (input: string) => {
       if (input === '.') {
          /* Only add decimal if one doesn't exist yet and we're in USD mode */
@@ -64,6 +46,7 @@ export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
 
    return {
       numpadValue: inputValue,
+      setNumpadValue: setInputValue,
       numpadAmount,
       numpadValueIsEmpty,
       setInputValue,
