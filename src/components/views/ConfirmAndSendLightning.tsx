@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { useAppDispatch } from '@/redux/store';
 import { Button } from 'flowbite-react';
 import { Currency } from '@/types';
+import { useState } from 'react';
 
 interface ConfrimAndSendLightningProps {
    meltQuote?: MeltQuoteResponse;
@@ -26,6 +27,8 @@ const ConfrimAndSendLightning = ({
    meltQuote,
    onClose,
 }: ConfrimAndSendLightningProps) => {
+   const [isProcessing, setIsProcessing] = useState(false);
+
    const { nwcPayInvoice, isMintless } = useMintlessMode();
    const { payInvoice: cashuPayInvoice } = useCashu();
    const { activeWallet } = useCashuContext();
@@ -33,19 +36,20 @@ const ConfrimAndSendLightning = ({
    const { addToast } = useToast();
 
    const handleSendPayment = async () => {
-      if (isMintless) {
-         await nwcPayInvoice(invoice);
-         return onClose();
-      }
-
-      if (!meltQuote) {
-         onClose();
-         throw new Error('Missing melt quote');
-      }
-
-      if (!activeWallet) throw new Error('No active wallet');
-
+      setIsProcessing(true);
       try {
+         if (isMintless) {
+            await nwcPayInvoice(invoice);
+            return onClose();
+         }
+
+         if (!meltQuote) {
+            onClose();
+            throw new Error('Missing melt quote');
+         }
+
+         if (!activeWallet) throw new Error('No active wallet');
+
          const result = await cashuPayInvoice(invoice, meltQuote);
          if (result) {
             dispatch(
@@ -65,9 +69,10 @@ const ConfrimAndSendLightning = ({
       } catch (error) {
          console.error(error);
          addToast('An error occurred while paying the invoice.', 'error');
+      } finally {
+         setIsProcessing(false);
+         onClose();
       }
-
-      onClose();
    };
 
    return (
@@ -78,7 +83,11 @@ const ConfrimAndSendLightning = ({
             destination={lud16 || invoice}
             fee={meltQuote?.fee_reserve}
          />
-         <Button className='btn-primary w-fit self-center' onClick={handleSendPayment}>
+         <Button
+            className='btn-primary w-fit self-center'
+            onClick={handleSendPayment}
+            isProcessing={isProcessing}
+         >
             Send Payment
          </Button>
       </div>

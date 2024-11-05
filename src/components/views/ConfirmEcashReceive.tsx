@@ -143,15 +143,13 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
       }
    }, [pubkeyLock, gift, tokenContact, contact]);
 
-   if (loading) {
-      return <Spinner size='lg' />;
-   }
-
-   if (isClaiming) {
+   if (isClaiming || loading) {
       return (
-         <div className='flex flex-col items-center justify-center'>
-            <Spinner size='lg' />
-            <p className='text-center text-sm'>Claiming...</p>
+         <div className='flex flex-col items-center justify-center space-y-6'>
+            <Spinner size={'xl'} />
+            <p className='text-center text-sm text-black'>
+               {isClaiming ? 'Claiming token...' : 'Loading token...'}
+            </p>
          </div>
       );
    }

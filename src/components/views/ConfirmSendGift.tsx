@@ -9,12 +9,20 @@ import UserLink from '../utility/UserLink';
 interface ConfirmSendGiftProps {
    contact?: PublicContact;
    onSendGift: () => void;
+   sendingGift?: boolean;
    gift: GiftAsset;
    token?: string;
    txid?: string;
 }
 
-const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSendGiftProps) => {
+const ConfirmSendGift = ({
+   gift,
+   txid,
+   token,
+   onSendGift,
+   sendingGift,
+   contact,
+}: ConfirmSendGiftProps) => {
    return (
       <div className='flex flex-col justify-between w-full text-black h-full'>
          <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
@@ -57,6 +65,7 @@ const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSend
                   key='gift-send'
                   className='btn-primary h-full'
                   onClick={onSendGift}
+                  isProcessing={sendingGift}
                   id='send-button'
                >
                   Send

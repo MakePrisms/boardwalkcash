@@ -59,6 +59,7 @@ const SendButtonContent = ({
    const [invoice, setInvoice] = useState<string | undefined>(undefined);
    const [gift, setGift] = useState<GiftAsset | undefined>(undefined);
    const [lud16, setLud16] = useState<string | undefined>(undefined);
+   const [isProcessing, setIsProcessing] = useState(false);
    const [isGiftMode, setIsGiftMode] = useState(false);
 
    const { unitToSats, convertToUnit } = useExchangeRate();
@@ -84,6 +85,7 @@ const SendButtonContent = ({
       setMeltQuote(undefined);
       setCurrentView('input');
       setShareTokenData(null);
+      setIsProcessing(false);
       setContact(undefined);
       setAmtUnit(undefined);
       setInvoice(undefined);
@@ -121,11 +123,13 @@ const SendButtonContent = ({
          addToast('Please enter an amount', 'error');
          return;
       }
+      setIsProcessing(true);
       const res = await sendEcash(amount, activeUnit, resetState, gift, contact);
       if (res) {
          setShareTokenData({ token: res.token, txid: res.txid, gift });
          setCurrentView('shareEcash');
       }
+      setIsProcessing(false);
    };
 
    const handleSendGift = async () => {
@@ -133,11 +137,13 @@ const SendButtonContent = ({
          addToast('Please select a gift', 'error');
          return;
       }
+      setIsProcessing(true);
       const res = await sendGift(gift, resetState, contact);
       if (res) {
          setShareTokenData({ token: res.token, txid: res.txid, gift });
          setCurrentView('shareEcash');
       }
+      setIsProcessing(false);
    };
 
    const handleLud16Submit = async () => {
@@ -149,6 +155,7 @@ const SendButtonContent = ({
          addToast('Please enter an amount', 'error');
          return;
       }
+      setIsProcessing(true);
       // TODO: unitToSats should accept cents for usd, not dollars
       const amtSat = await unitToSats(
          activeUnit === Currency.USD ? amtUnit / 100 : amtUnit,
@@ -164,6 +171,7 @@ const SendButtonContent = ({
       }
       setInvoice(invoice);
       setCurrentView('sendLightning');
+      setIsProcessing(false);
    };
 
    const handleSendPaymentRequest = async () => {
@@ -175,11 +183,13 @@ const SendButtonContent = ({
          addToast('Amountless payment requests are not supported', 'error');
          return;
       }
+      setIsProcessing(true);
       const res = await payPaymentRequest(paymentRequest, paymentRequest.amount!).catch(e => {
          const message = e.message || 'Failed to pay payment request';
          addToast(message, 'error');
          resetState();
       });
+      setIsProcessing(false);
       if (res) {
          addToast('Payment request paid!', 'success');
          resetState();
@@ -333,6 +343,7 @@ const SendButtonContent = ({
                            className='btn-primary'
                            onClick={currentView === 'input' ? handleInputSubmit : handleLud16Submit}
                            disabled={currentView === 'input' ? numpadValueIsEmpty : !lud16}
+                           isProcessing={isProcessing}
                         >
                            Continue
                         </Button>
@@ -365,16 +376,21 @@ const SendButtonContent = ({
                gift={gift}
                onSendGift={handleSendGift}
                contact={contact}
+               sendingGift={isProcessing}
             />
          )}
          {currentView === 'confirmPaymentRequest' && paymentRequest && paymentRequest.amount && (
-            <div className='text-black flex flex-col justify-between h-full'>
+            <div className='text-black flex flex-col items-center justify-between h-full'>
                <PaymentConfirmationDetails
                   amount={paymentRequest?.amount}
                   unit={(paymentRequest?.unit as Currency) || Currency.SAT}
                   destination={paymentRequest?.toEncodedRequest()}
                />
-               <Button className='btn-primary w-full' onClick={handleSendPaymentRequest}>
+               <Button
+                  className='btn-primary'
+                  onClick={handleSendPaymentRequest}
+                  isProcessing={isProcessing}
+               >
                   Send Payment
                </Button>
             </div>

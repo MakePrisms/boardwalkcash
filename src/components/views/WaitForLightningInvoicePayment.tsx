@@ -32,7 +32,6 @@ export const WaitForLightningInvoicePayment = ({
 
    const resetState = () => {
       setInvoiceTimeout(false);
-      setLoading(true);
       setAmountData(null);
    };
 
