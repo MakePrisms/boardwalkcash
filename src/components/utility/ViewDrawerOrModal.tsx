@@ -38,7 +38,7 @@ const ViewDrawerOrModal = ({
          </Drawer>
       </div>
    ) : (
-      <Modal show={isOpen} onClose={onClose} size={'sm'}>
+      <Modal show={isOpen} onClose={onClose} size={'sm'} style={{ outline: 'none' }}>
          <Modal.Header>{title}</Modal.Header>
          <Modal.Body>
             <div
