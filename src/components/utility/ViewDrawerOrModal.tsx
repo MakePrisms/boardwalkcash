@@ -25,7 +25,7 @@ const ViewDrawerOrModal = ({
             onClose={onClose}
             position='bottom'
             theme={bottomSheetDrawerTheme}
-            className='h-[calc(100%-75px)]'
+            className='h-[calc(100%-75px)] rounded-t-xl'
          >
             <Drawer.Header
                title={title}
