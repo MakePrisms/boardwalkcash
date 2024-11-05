@@ -190,7 +190,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
             )}
          </div>
 
-         <div className='flex flex-col gap-6 w-full'>
+         <div className='flex flex-col items-center gap-6 w-full'>
             {!alreadyClaimed && (!pubkeyLock || pubkeyLock === '02' + user.pubkey) && (
                <>
                   {isMintless ? (
@@ -201,14 +201,14 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
                      <>
                         {disableClaim ? (
                            <Tooltip content='testnut'>
-                              <Button disabled={true} className='btn-primary w-full'>
+                              <Button disabled={true} className='btn-primary w-[160px]'>
                                  Claim
                               </Button>
                            </Tooltip>
                         ) : (
                            <Button
                               onClick={() => handleClaim('active')}
-                              className='btn-primary w-full'
+                              className='btn-primary w-[160px]'
                            >
                               Claim
                            </Button>
@@ -224,7 +224,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
                (!pubkeyLock || pubkeyLock === '02' + user.pubkey) && (
                   <div className='flex items-center justify-center'>
                      <Button
-                        className={`btn-primary !p-0 w-full`}
+                        className={`btn-primary xss-button !p-0 w-[160px]`}
                         onClick={() => handleClaim('source')}
                         size={'xs'}
                      >
