@@ -18,7 +18,7 @@ const SelectGift = ({ onSelectGift, contact }: SelectGiftProps) => {
    };
 
    return (
-      <div className='flex flex-col h-full pb-24 relative text-black'>
+      <div className='flex flex-col h-full pb-12 sm:pb-0 relative text-black'>
          <div
             className='flex-grow overflow-y-auto'
             style={{

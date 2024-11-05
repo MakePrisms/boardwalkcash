@@ -4,7 +4,7 @@ import { GiftAsset, PublicContact } from '@/types';
 import SplitIcon from '../icons/SplitIcon';
 import Tooltip from '../utility/Tooltip';
 import { Button } from 'flowbite-react';
-import Link from 'next/link';
+import UserLink from '../utility/UserLink';
 
 interface ConfirmSendGiftProps {
    contact?: PublicContact;
@@ -25,12 +25,9 @@ const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSend
                alt={'gift'}
                size='lg'
             />
-            {contact && (
+            {contact?.username && (
                <p className='text-center text-md'>
-                  eGift for{' '}
-                  <Link className='underline' target='_blank' href={`/${contact.username}`}>
-                     {contact.username}
-                  </Link>
+                  eGift for <UserLink username={contact.username} />
                </p>
             )}
             {txid && (

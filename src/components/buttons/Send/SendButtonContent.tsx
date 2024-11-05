@@ -280,7 +280,7 @@ const SendButtonContent = ({
                )}
 
                {currentView === 'lud16Input' && amtUnit && (
-                  <div className='flex-grow flex flex-col items-center justify-start gap-3'>
+                  <div className='flex-grow flex flex-col items-center justify-start gap-3 mt-6'>
                      <span className='text-xl text-black flex flex-row items-center gap-3'>
                         Sending:
                         <Amount

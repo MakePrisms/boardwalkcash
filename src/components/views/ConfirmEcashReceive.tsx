@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { Button, Spinner } from 'flowbite-react';
 import { formatUnit } from '@/utils/formatting';
 import Amount from '../utility/amounts/Amount';
+import UserLink from '../utility/UserLink';
 import Tooltip from '../utility/Tooltip';
 import { formatUrl } from '@/utils/url';
 import { useSelector } from 'react-redux';
@@ -64,9 +65,15 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    useEffect(() => {
       const load = async () => {
          try {
-            setGift(await getGiftFromToken(token));
+            const gift = await getGiftFromToken(token);
+            const alreadyClaimed = await isTokenSpent(token);
 
-            setAlreadyClaimed(await isTokenSpent(token));
+            if (alreadyClaimed) {
+               addToast('Token already claimed', 'error');
+            }
+
+            setGift(gift);
+            setAlreadyClaimed(alreadyClaimed);
 
             if (contact) {
                setTokenContact(contact);
@@ -124,10 +131,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    const title = useMemo(() => {
       const contactText = tokenContact?.username ? (
          <>
-            {contact !== undefined ? 'from' : 'for'}{' '}
-            <a className='underline' target='_blank' href={`/${tokenContact.username}`}>
-               {tokenContact.username}
-            </a>
+            {contact !== undefined ? 'from' : 'for'} <UserLink username={tokenContact.username} />
          </>
       ) : (
          ''
@@ -154,7 +158,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
 
    return (
       <div className='flex flex-col items-center justify-between h-full'>
-         <div className='flex flex-col items-center justify-center gap-6'>
+         <div className='flex flex-col items-center justify-center gap-6 mt-4'>
             {title && <h2 className='text-xl text-black'>{title}</h2>}
             <Tooltip content='Copy token' onClick={handleCopy}>
                <div className='flex justify-center items-center'>

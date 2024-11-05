@@ -6,6 +6,7 @@ import ErrorBoundary from '../utility/ErrorBoundary';
 import AnimatedQRCode from '../utility/QR/AnimatedQR';
 import { GiftAsset, PublicContact } from '@/types';
 import QRCode from 'qrcode.react';
+import UserLink from '../utility/UserLink';
 
 interface ShareEcashProps {
    gift?: GiftAsset;
@@ -65,7 +66,6 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
       return (
          <div className='flex flex-col justify-between items-center text-black h-full'>
             <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
-               {contact && <p>eGift for {contact.username}</p>}
                <StickerItem
                   selectedSrc={gift.selectedSrc}
                   unselectedSrc={gift.unselectedSrc}
@@ -73,6 +73,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                   alt={'gift'}
                   size='lg'
                />
+               {contact?.username && <UserLink username={contact.username} />}
             </div>
             {txid && (
                <ClipboardButton
@@ -97,7 +98,11 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
    return (
       <div className='flex flex-col justify-around items-center text-black space-y-3 h-full'>
          <div className='max-w-full flex flex-col justify-center items-center text-black space-y-3'>
-            {contact && <p className='text-2xl'>eTip for {contact.username}</p>}
+            {contact?.username && (
+               <p className='text-2xl'>
+                  eTip for <UserLink username={contact.username} />
+               </p>
+            )}
             <CustomCarousel slides={carouselSlides} />
          </div>
          <div className='flex space-x-3 w-full'>

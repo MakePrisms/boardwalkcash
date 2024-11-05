@@ -53,6 +53,12 @@ const PaymentConfirmationDetails = ({
                />
             </span>
          </div>
+         {fee && (
+            <div className='flex justify-between items-center gap-4'>
+               <span className='text-gray-500'>Estimated Fee</span>
+               <span>{formatUnit(fee, unit)}</span>
+            </div>
+         )}
          <div className='flex justify-between items-center gap-4'>
             {unit === Currency.SAT ? (
                <>
@@ -70,12 +76,6 @@ const PaymentConfirmationDetails = ({
             <span className='text-gray-500'>Paying</span>
             <span>{formattedDestintation}</span>
          </div>
-         {fee && (
-            <div className='flex justify-between items-center gap-4'>
-               <span className='text-gray-500'>Estimated Fee</span>
-               <span>{formatUnit(fee, unit)}</span>
-            </div>
-         )}
       </div>
    );
 };
