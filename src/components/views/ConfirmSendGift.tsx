@@ -55,7 +55,7 @@ const ConfirmSendGift = ({ gift, txid, token, onSendGift, contact }: ConfirmSend
             </div>
          )}
          {!token && (
-            <div className='w-full flex justify-center items-center'>
+            <div className='w-full flex justify-center items-center  mb-12'>
                <Button
                   key='gift-send'
                   className='btn-primary h-full'

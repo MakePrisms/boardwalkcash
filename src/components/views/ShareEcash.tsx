@@ -78,7 +78,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mt-6 w-full'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
                   onClick={onClose}
                />
             )}
@@ -86,7 +86,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?token=${token}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mt-6 w-full'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
                   onClick={onClose}
                />
             )}
