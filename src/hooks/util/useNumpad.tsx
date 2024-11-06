@@ -12,18 +12,15 @@ export interface NumpadControls {
    handleNumpadBackspace: () => void;
 }
 
+const numpadChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'];
+
 export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
    const [inputValue, setInputValue] = useState('');
 
    useEffect(() => {
       const handleKeyPress = (e: KeyboardEvent) => {
-         const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-         const showDecimal = activeUnit === Currency.USD;
-
-         if (numbers.includes(e.key) || e.key === '0') {
+         if (numpadChars.includes(e.key)) {
             handleNumpadInput(e.key);
-         } else if (e.key === '.' && showDecimal) {
-            handleNumpadInput('.');
          } else if (e.key === 'Backspace') {
             handleNumpadBackspace();
          }
@@ -59,7 +56,7 @@ export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
       setInputValue('');
    };
 
-   const numpadValueIsEmpty = useMemo(() => inputValue === '' || inputValue === '.', [inputValue]);
+   const numpadValueIsEmpty = inputValue === '' || inputValue === '.';
 
    return {
       numpadValue: inputValue,
