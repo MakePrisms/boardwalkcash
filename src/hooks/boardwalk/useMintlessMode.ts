@@ -102,31 +102,41 @@ const useMintlessMode = () => {
    };
 
    const payInvoice = async (invoice: string): Promise<PayInvoiceResponse> => {
-      const nwc = await initNwc();
+      try {
+         const nwc = await initNwc();
 
-      const res = await nwc.payInvoice({ invoice });
+         const res = await nwc.payInvoice({ invoice });
 
-      const amountSats = getAmountFromInvoice(invoice);
+         const amountSats = getAmountFromInvoice(invoice);
 
-      dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));
-      dispatch(
-         addTransaction({
-            type: 'mintless',
-            transaction: {
-               amount: -amountSats,
-               unit: Currency.SAT,
+         dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));
+         dispatch(
+            addTransaction({
                type: 'mintless',
-               gift: null,
-               date: new Date().toLocaleString(),
-            } as MintlessTransaction,
-         }),
-      );
+               transaction: {
+                  amount: -amountSats,
+                  unit: Currency.SAT,
+                  type: 'mintless',
+                  gift: null,
+                  date: new Date().toLocaleString(),
+               } as MintlessTransaction,
+            }),
+         );
 
-      return {
-         preimage: res.preimage,
-         amountUsd: amountSats,
-         feePaid: 0,
-      };
+         return {
+            preimage: res.preimage,
+            amountUsd: amountSats,
+            feePaid: 0,
+         };
+      } catch (error: any) {
+         if (error.code === 'UNAUTHORIZED') {
+           addToast('Unauthorized NWC connection. Please check your credentials.', 'error');
+         } else if (error.code === 'BUDGET_EXCEEDED') {
+           addToast('NWC budget exceeded. Please increase your budget or try again later.', 'error');
+         } else {
+           addToast('Error paying invoice: ' + error.message, 'error');
+         }
+      }
    };
 
    // TODO: get payment status from lightning wallet
