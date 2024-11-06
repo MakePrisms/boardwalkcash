@@ -157,10 +157,10 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
    const { fetchPaymentRequest } = usePaymentRequests();
    const { activeUnit, activeKeysetId } = useCashuContext();
    const userPubkey = useSelector((state: RootState) => state.user.pubkey);
-   const numpad = useNumpad({ activeUnit });
-   const { clearNumpadInput } = useNumpad({
-      activeUnit,
-   });
+
+   const showDecimal = activeUnit === Currency.USD;
+   const numpad = useNumpad({ showDecimal });
+   const { clearNumpadInput } = useNumpad({ showDecimal });
 
    const resetState = () => {
       setState(defaultState);

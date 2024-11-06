@@ -1,8 +1,8 @@
 import { Currency } from '@/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface UseNumpadProps {
-   activeUnit?: Currency;
+   showDecimal?: boolean;
 }
 
 export interface NumpadControls {
@@ -14,7 +14,7 @@ export interface NumpadControls {
 
 const numpadChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'];
 
-export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
+export const useNumpad = ({ showDecimal }: UseNumpadProps = {}) => {
    const [inputValue, setInputValue] = useState('');
 
    useEffect(() => {
@@ -28,12 +28,12 @@ export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
 
       window.addEventListener('keydown', handleKeyPress);
       return () => window.removeEventListener('keydown', handleKeyPress);
-   }, [activeUnit]);
+   }, []);
 
    const handleNumpadInput = (input: string) => {
       if (input === '.') {
          /* Only add decimal if one doesn't exist yet and we're in USD mode */
-         if (!inputValue.includes('.') && activeUnit === Currency.USD) {
+         if (!inputValue.includes('.') && showDecimal) {
             setInputValue(prev => prev + input);
          }
          return;
