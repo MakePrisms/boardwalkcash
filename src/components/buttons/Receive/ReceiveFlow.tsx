@@ -138,7 +138,11 @@ const ReceiveInput = ({
                )}
             </div>
             {isMobile && (
-               <Numpad onNumberClick={handleNumpadInput} onBackspaceClick={handleNumpadBackspace} />
+               <Numpad
+                  onNumberClick={handleNumpadInput}
+                  onBackspaceClick={handleNumpadBackspace}
+                  showDecimal={activeUnit === Currency.USD}
+               />
             )}
          </div>
       </>

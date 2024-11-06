@@ -1,27 +1,23 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Kbd } from 'flowbite-react';
 import { BackspaceIcon } from '@heroicons/react/20/solid';
-import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface NumpadProps {
    onNumberClick: (num: string) => void;
    onBackspaceClick: () => void;
+   showDecimal: boolean;
 }
 
-const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
-   const { activeUnit } = useCashuContext();
-   const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-   const numpadRef = useRef<HTMLDivElement>(null);
+const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-   const showDecimal = activeUnit === 'usd';
-
+const Numpad = ({ onNumberClick, onBackspaceClick, showDecimal }: NumpadProps) => {
    return (
-      <div className='flex justify-center w-full' ref={numpadRef}>
+      <div className='flex justify-center w-full'>
          <div className='grid grid-cols-3 gap-2 w-full max-w-sm'>
             {numbers.map(num => (
                <Kbd
                   key={num}
-                  onClick={() => onNumberClick?.(num)}
+                  onClick={() => onNumberClick(num)}
                   className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
                >
                   {num}
@@ -29,7 +25,7 @@ const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
             ))}
             {showDecimal ? (
                <Kbd
-                  onClick={() => onNumberClick?.('.')}
+                  onClick={() => onNumberClick('.')}
                   className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
                >
                   .
@@ -38,7 +34,7 @@ const Numpad: React.FC<NumpadProps> = ({ onNumberClick, onBackspaceClick }) => {
                <div></div>
             )}
             <Kbd
-               onClick={() => onNumberClick?.('0')}
+               onClick={() => onNumberClick('0')}
                className='cursor-pointer hover:bg-gray-100 text-lg py-2 px-6 flex items-center justify-center w-full transition-all active:scale-95 active:bg-gray-200'
             >
                0
