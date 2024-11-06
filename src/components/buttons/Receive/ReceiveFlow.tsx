@@ -25,7 +25,7 @@ import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
 
 interface ReceiveFlowProps {
-   closeParentComponent: () => void;
+   onReset: () => void;
    isMobile: boolean;
 }
 
@@ -149,7 +149,7 @@ const ReceiveInput = ({
    );
 };
 
-const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
+const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
    const [state, setState] = useState<MyState>(defaultState);
 
    const { addToast } = useToast();
@@ -164,7 +164,7 @@ const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
 
    const resetState = () => {
       setState(defaultState);
-      closeParentComponent();
+      onReset();
       clearNumpadInput();
    };
 

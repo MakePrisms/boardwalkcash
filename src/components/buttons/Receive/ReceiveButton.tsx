@@ -43,7 +43,7 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
             onClose={handleModalClose}
             title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
          >
-            <ReceiveFlow closeParentComponent={handleModalClose} isMobile={isMobile} />
+            <ReceiveFlow onReset={handleModalClose} isMobile={isMobile} />
          </ViewDrawerOrModal>
       </>
    );
