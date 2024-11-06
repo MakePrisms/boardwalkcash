@@ -5,7 +5,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
 import { getInvoiceStatus } from '@/utils/appApiRequests';
-import { Spinner } from 'flowbite-react';
 import QRCode from 'qrcode.react';
 
 interface WaitForLightningInvoicePaymentProps {
@@ -20,7 +19,6 @@ export const WaitForLightningInvoicePayment = ({
    onSuccess,
 }: WaitForLightningInvoicePaymentProps) => {
    const [invoiceTimeout, setInvoiceTimeout] = useState(false);
-   const [loading, setLoading] = useState(true);
    const { satsToUnit } = useExchangeRate();
    const { activeUnit } = useCashuContext();
    const [amountData, setAmountData] = useState<{
@@ -77,32 +75,14 @@ export const WaitForLightningInvoicePayment = ({
       };
    }, [startPolling]);
 
-   useEffect(() => {
-      setLoading(true);
-      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
-      satsToUnit(amountSats, 'usd')
-         .then(amountUsdCents => {
-            setAmountData({ amountUsdCents, amountSats });
-         })
-         .finally(() =>
-            setTimeout(() => {
-               setLoading(false);
-            }, 300),
-         );
-   }, [invoice, satsToUnit]);
+   const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
+   satsToUnit(amountSats, 'usd').then(amountUsdCents => {
+      setAmountData({ amountUsdCents, amountSats });
+   });
 
    const handleCheckAgain = () => {
       startPolling();
    };
-
-   if (loading) {
-      return (
-         <div className='flex flex-col items-center justify-center space-y-4'>
-            <Spinner size='lg' />
-            <p className='text-black'>Loading...</p>
-         </div>
-      );
-   }
 
    return (
       <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>

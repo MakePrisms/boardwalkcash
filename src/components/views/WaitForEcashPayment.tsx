@@ -14,7 +14,6 @@ type WaitForEcashPaymentProps = {
 };
 
 const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) => {
-   const [unit, setUnit] = useState<Currency | undefined>(undefined);
    const { checkPaymentRequest } = usePaymentRequests();
    const { satsToUnit, unitToSats } = useExchangeRate();
    const [timeout, setPrTimeout] = useState(false);
@@ -28,15 +27,9 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
    const pollCountRef = useRef(0);
    const MAX_POLL_COUNT = 12; // Will poll for 1 minute (12 * 5 seconds)
 
-   useEffect(() => {
-      const { amount, unit } = decodePaymentRequest(request.pr);
+   const { amount, unit } = decodePaymentRequest(request.pr);
 
-      setUnit(unit as Currency | Currency.SAT);
-
-      if (!amount) {
-         return setAmountData(null);
-      }
-
+   if (amount) {
       if (unit === 'sat') {
          satsToUnit(amount, 'usd').then(amountUsdCents => {
             setAmountData({ amountUsdCents, amountSats: amount });
@@ -46,7 +39,9 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
             setAmountData({ amountUsdCents: amount, amountSats });
          });
       }
-   }, [request.pr, satsToUnit, unitToSats]);
+   } else {
+      setAmountData(null);
+   }
 
    const pollPayment = useCallback(async () => {
       console.log('checking for payment', request.id);
@@ -88,7 +83,6 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
    const handleClose = () => {
       setPrTimeout(false);
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      setUnit(undefined);
    };
 
    return (
@@ -98,7 +92,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
                <ActiveAndInactiveAmounts
                   satAmount={amountData.amountSats}
                   usdCentsAmount={amountData.amountUsdCents}
-                  activeUnit={unit}
+                  activeUnit={(unit as Currency) || Currency.SAT}
                />
             )}
             <QRCode value={request.pr} size={256} />
