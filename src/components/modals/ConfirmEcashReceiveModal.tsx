@@ -235,8 +235,8 @@ const ConfirmEcashReceiveModal = ({
          privkey,
       }).finally(() => setSwapping(false)); /* Closes swap modal */
 
-      if (onSuccess && success) {
-         onSuccess();
+      if (success) {
+         onSuccess?.();
       }
    };
 
@@ -263,8 +263,8 @@ const ConfirmEcashReceiveModal = ({
 
       handleModalClose();
 
-      if (onSuccess && success) {
-         onSuccess();
+      if (success) {
+         onSuccess?.();
       }
    };
 

@@ -19,14 +19,14 @@ const QRScannerButton: React.FC<{
    };
 
    const handleBtnClick = () => {
-      onClick && onClick();
+      onClick?.();
       setIsScannerOpen(true);
    };
 
    const handleClose = () => {
       setIsScannerOpen(false);
       qrReaderRef.current.stopScanner();
-      onClose && onClose();
+      onClose?.();
    };
 
    return (

@@ -19,7 +19,7 @@ const QRScanner = ({ onClose, onScan }: QRScannerProps) => {
 
    const handleClose = () => {
       qrReaderRef.current.stopScanner();
-      onClose && onClose();
+      onClose?.();
    };
 
    return (

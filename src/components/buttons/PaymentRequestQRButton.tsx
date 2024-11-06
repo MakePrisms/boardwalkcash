@@ -49,9 +49,7 @@ const PaymentRequestQRButton = ({ onClick }: { onClick?: () => void }) => {
    };
 
    const handleButtonClick = () => {
-      if (onClick) {
-         onClick();
-      }
+      onClick?.();
       setShowModal(true);
    };
 
