@@ -3,6 +3,7 @@ import ViewReusablePaymentRequest from '@/components/views/ViewReusablePaymentRe
 import { Currency, GetPaymentRequestResponse, LightningTipResponse } from '@/types';
 import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
+import { NumpadControls, useNumpad } from '@/hooks/util/useNumpad';
 import WaitForEcashPayment from '../../views/WaitForEcashPayment';
 import { getInvoiceForLNReceive } from '@/utils/appApiRequests';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
@@ -13,13 +14,12 @@ import { QrCodeIcon } from '@heroicons/react/20/solid';
 import ScanIcon from '@/components/icons/ScanIcon';
 import QRScanner from '@/components/views/QRScanner';
 import Tooltip from '@/components/utility/Tooltip';
-import { useNumpad } from '@/hooks/util/useNumpad';
 import PasteButton from '../utility/PasteButton';
 import Numpad from '@/components/utility/Numpad';
 import { Tabs } from '@/components/utility/Tabs';
 import { useToast } from '@/hooks/util/useToast';
 import { getTokenFromUrl } from '@/utils/cashu';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
@@ -29,53 +29,142 @@ interface ReceiveFlowProps {
    isMobile: boolean;
 }
 
-const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
-   const [pastedValue, setPastedValue] = useState('');
-   const [token, setToken] = useState<Token | null>(null);
-   const [fetchingInvoice, setFetchingInvoice] = useState(false);
-   const [activeTab, setActiveTab] = useState<'ecash' | 'lightning'>('ecash');
-   const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
-   const [invoiceData, setInvoiceData] = useState<LightningTipResponse | null>(null);
-   const [currentView, setCurrentView] = useState<
-      | 'input'
-      | 'invoice'
-      | 'paymentRequest'
-      | 'receiveEcash'
-      | 'QRScanner'
-      | 'reusablePaymentRequest'
-   >('input');
-   const [paymentRequestData, setPaymentRequestData] = useState<GetPaymentRequestResponse | null>(
-      null,
+type ActiveTab = 'ecash' | 'lightning';
+
+type MyState = {
+   activeTab: ActiveTab;
+   isProcessing: boolean;
+} & (
+   | {
+        step: 'input';
+     }
+   | {
+        step: 'invoice';
+        invoiceData: LightningTipResponse;
+     }
+   | {
+        step: 'paymentRequest';
+        paymentRequestData: GetPaymentRequestResponse;
+     }
+   | {
+        step: 'receiveEcash';
+        token: Token;
+     }
+   | {
+        step: 'QRScanner';
+     }
+   | {
+        step: 'reusablePaymentRequest';
+     }
+);
+
+const defaultState: MyState = { step: 'input', activeTab: 'ecash', isProcessing: false };
+
+interface ReceiveInputProps {
+   activeTab: ActiveTab;
+   isMintless: boolean;
+   isMobile: boolean;
+   isProcessing: boolean;
+   numpad: NumpadControls;
+   onActiveTabChange: (tab: ActiveTab) => void;
+   onPaste: (text: string) => void;
+   onScan: () => void;
+   onReusableEcashPaymentRequest: () => void;
+   onNext: (value: string) => void;
+}
+
+const ReceiveInput = ({
+   activeTab,
+   isMintless,
+   isMobile,
+   isProcessing,
+   numpad,
+   onActiveTabChange,
+   onPaste,
+   onScan,
+   onReusableEcashPaymentRequest,
+   onNext,
+}: ReceiveInputProps) => {
+   const { activeUnit } = useCashuContext();
+   const { numpadValue, numpadValueIsEmpty, handleNumpadInput, handleNumpadBackspace } = numpad;
+
+   return (
+      <>
+         <Tabs
+            titleColor='text-black'
+            titles={['ecash', 'lightning']}
+            onActiveTabChange={tab => onActiveTabChange(tab === 0 ? 'ecash' : 'lightning')}
+         />
+
+         <div className='flex-grow flex flex-col items-center justify-center'>
+            <Amount
+               value={numpadValue}
+               unit={activeUnit}
+               className='font-teko text-6xl font-bold text-black'
+               isDollarAmount={true}
+            />
+         </div>
+
+         <div className='mb-8'>
+            <div className='flex justify-between mb-4'>
+               <div className='flex space-x-4'>
+                  <PasteButton onPaste={onPaste} />
+                  <button onClick={onScan}>
+                     <ScanIcon className='size-8 text-gray-500' />
+                  </button>
+                  <button onClick={onReusableEcashPaymentRequest}>
+                     <QrCodeIcon className='size-8 text-gray-500' />
+                  </button>
+               </div>
+               {isMintless && activeTab === 'ecash' ? (
+                  <Tooltip
+                     position='left'
+                     content='You currently have a Lightning Wallet set as your main account. Select an eCash mint as your main account to generate an eCash request.'
+                     className='w-56'
+                  >
+                     <Button className='btn-primary' disabled={true}>
+                        Continue
+                     </Button>
+                  </Tooltip>
+               ) : (
+                  <Button
+                     className='btn-primary'
+                     onClick={() => onNext(numpadValue)}
+                     disabled={numpadValueIsEmpty}
+                     isProcessing={isProcessing}
+                  >
+                     Continue
+                  </Button>
+               )}
+            </div>
+            {isMobile && (
+               <Numpad onNumberClick={handleNumpadInput} onBackspaceClick={handleNumpadBackspace} />
+            )}
+         </div>
+      </>
    );
+};
+
+const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
+   const [state, setState] = useState<MyState>(defaultState);
 
    const { addToast } = useToast();
    const { isMintless } = useMintlessMode();
    const { fetchPaymentRequest } = usePaymentRequests();
    const { activeUnit, activeKeysetId } = useCashuContext();
    const userPubkey = useSelector((state: RootState) => state.user.pubkey);
-   const {
-      numpadValue,
-      numpadValueIsEmpty,
-      handleNumpadInput,
-      handleNumpadBackspace,
-      clearNumpadInput,
-   } = useNumpad({
+   const numpad = useNumpad({ activeUnit });
+   const { clearNumpadInput } = useNumpad({
       activeUnit,
    });
 
    const resetState = () => {
-      setFetchingPaymentRequest(false);
-      setPaymentRequestData(null);
-      setFetchingInvoice(false);
-      setCurrentView('input');
+      setState(defaultState);
       closeParentComponent();
-      setActiveTab('ecash');
-      setInvoiceData(null);
-      setPastedValue('');
       clearNumpadInput();
    };
 
-   useEffect(() => {
+   const handlePaste = async (pastedValue: string) => {
       const handleTokenInput = async () => {
          let decoded: Token | null = null;
          const encoded = pastedValue.includes('http')
@@ -89,8 +178,7 @@ const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
             }
          }
          if (decoded) {
-            setToken(decoded);
-            setCurrentView('receiveEcash');
+            setState({ ...state, step: 'receiveEcash', token: decoded });
          }
       };
 
@@ -103,7 +191,7 @@ const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
       } else {
          addToast('Invalid input', 'error');
       }
-   }, [pastedValue]);
+   };
 
    const handleInputAmount = async (input: string) => {
       const parsedAmount = parseFloat(input);
@@ -111,15 +199,16 @@ const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
          return;
       }
       const amountUnit = activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
-      if (activeTab === 'ecash') {
+      if (state.activeTab === 'ecash') {
          return handlePaymentRequest(amountUnit);
-      } else if (activeTab === 'lightning') {
+      } else if (state.activeTab === 'lightning') {
          return handleReceiveLightningPayment(amountUnit);
       }
    };
 
    const handleReceiveLightningPayment = async (amountUnit: number) => {
-      setFetchingInvoice(true);
+      setState(state => ({ ...state, isProcessing: true }));
+
       try {
          if (isMintless) {
          } else {
@@ -127,112 +216,66 @@ const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
                throw new Error('No active keyset or pubkey set');
             }
             const res = await getInvoiceForLNReceive(userPubkey, amountUnit, activeKeysetId);
-            setInvoiceData(res);
-            setCurrentView('invoice');
+            setState(state => ({ ...state, step: 'invoice', invoiceData: res }));
          }
       } catch (e) {
          addToast('Failed to fetch invoice', 'error');
          resetState();
          return;
       } finally {
-         setFetchingInvoice(false);
+         setState(state => ({ ...state, isProcessing: false }));
       }
    };
 
    const handlePaymentRequest = async (amountUnit: number) => {
-      setFetchingPaymentRequest(true);
+      setState(state => ({ ...state, isProcessing: true }));
       try {
          const req = await fetchPaymentRequest(amountUnit, false);
-         setPaymentRequestData(req);
-         setCurrentView('paymentRequest');
+         setState(state => ({ ...state, step: 'paymentRequest', paymentRequestData: req }));
       } catch (e) {
          addToast('Failed to fetch payment request', 'error');
          resetState();
          return;
       } finally {
-         setFetchingPaymentRequest(false);
+         setState(state => ({ ...state, isProcessing: false }));
       }
    };
 
    return (
       <div className='flex flex-col justify-between h-full'>
-         {currentView === 'input' && (
-            <>
-               <Tabs
-                  titleColor='text-black'
-                  titles={['ecash', 'lightning']}
-                  onActiveTabChange={tab => setActiveTab(tab === 0 ? 'ecash' : 'lightning')}
-               />
-
-               <div className='flex-grow flex flex-col items-center justify-center'>
-                  <Amount
-                     value={numpadValue}
-                     unit={activeUnit}
-                     className='font-teko text-6xl font-bold text-black'
-                     isDollarAmount={true}
-                  />
-               </div>
-
-               <div className='mb-8'>
-                  <div className='flex justify-between mb-4'>
-                     <div className='flex space-x-4'>
-                        <PasteButton onPaste={setPastedValue} />
-                        <button onClick={() => setCurrentView('QRScanner')}>
-                           <ScanIcon className='size-8 text-gray-500' />
-                        </button>
-                        <button onClick={() => setCurrentView('reusablePaymentRequest')}>
-                           <QrCodeIcon className='size-8 text-gray-500' />
-                        </button>
-                     </div>
-                     {isMintless && activeTab === 'ecash' ? (
-                        <Tooltip
-                           position='left'
-                           content='You currently have a Lightning Wallet set as your main account. Select an eCash mint as your main account to generate an eCash request.'
-                           className='w-56'
-                        >
-                           <Button className='btn-primary' disabled={true}>
-                              Continue
-                           </Button>
-                        </Tooltip>
-                     ) : (
-                        <Button
-                           className='btn-primary'
-                           onClick={() => handleInputAmount(numpadValue)}
-                           disabled={numpadValueIsEmpty}
-                           isProcessing={
-                              activeTab === 'ecash' ? fetchingPaymentRequest : fetchingInvoice
-                           }
-                        >
-                           Continue
-                        </Button>
-                     )}
-                  </div>
-                  {isMobile && (
-                     <Numpad
-                        onNumberClick={handleNumpadInput}
-                        onBackspaceClick={handleNumpadBackspace}
-                     />
-                  )}
-               </div>
-            </>
+         {state.step === 'input' && (
+            <ReceiveInput
+               activeTab={state.activeTab}
+               isMintless={isMintless}
+               isMobile={isMobile}
+               isProcessing={state.isProcessing}
+               onActiveTabChange={tab => setState(prevState => ({ ...prevState, activeTab: tab }))}
+               onPaste={handlePaste}
+               onScan={() => setState(prevState => ({ ...prevState, step: 'QRScanner' }))}
+               onReusableEcashPaymentRequest={() =>
+                  setState(prevState => ({ ...prevState, step: 'reusablePaymentRequest' }))
+               }
+               numpad={numpad}
+               onNext={handleInputAmount}
+            />
          )}
-         {currentView === 'invoice' && invoiceData && (
+         {state.step === 'invoice' && (
             <WaitForLightningInvoicePayment
-               invoice={invoiceData?.invoice}
-               checkingId={invoiceData?.checkingId}
+               invoice={state.invoiceData?.invoice}
+               checkingId={state.invoiceData?.checkingId}
                onSuccess={resetState}
             />
          )}
-         {currentView === 'paymentRequest' && paymentRequestData && (
-            <WaitForEcashPayment request={paymentRequestData} onSuccess={resetState} />
+         {state.step === 'paymentRequest' && (
+            <WaitForEcashPayment request={state.paymentRequestData} onSuccess={resetState} />
          )}
-         {currentView === 'receiveEcash' && token && (
-            <ConfirmEcashReceive token={token} onSuccess={resetState} onFail={resetState} />
+         {state.step === 'receiveEcash' && (
+            <ConfirmEcashReceive token={state.token} onSuccess={resetState} onFail={resetState} />
          )}
-         {currentView === 'QRScanner' && (
-            <QRScanner onClose={() => setCurrentView('input')} onScan={setPastedValue} />
+         {state.step === 'QRScanner' && (
+            <QRScanner onClose={() => setState(defaultState)} onScan={handlePaste} />
          )}
-         {currentView === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
+         {state.step === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
       </div>
    );
 };

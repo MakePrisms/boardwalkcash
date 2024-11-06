@@ -5,6 +5,13 @@ interface UseNumpadProps {
    activeUnit?: Currency;
 }
 
+export interface NumpadControls {
+   numpadValue: string;
+   numpadValueIsEmpty: boolean;
+   handleNumpadInput: (input: string) => void;
+   handleNumpadBackspace: () => void;
+}
+
 export const useNumpad = ({ activeUnit }: UseNumpadProps = {}) => {
    const [inputValue, setInputValue] = useState('');
 
