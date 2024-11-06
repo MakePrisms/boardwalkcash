@@ -1,5 +1,6 @@
 import { Currency } from '@/types';
 import React, { useMemo } from 'react';
+import { getUnitSymbol } from '@/utils/formatting';
 
 interface AmountProps {
    value: string | number;
@@ -16,17 +17,6 @@ const Amount: React.FC<AmountProps> = ({
    unitClassName = 'text-[3.45rem] text-cyan-teal font-bold',
    isDollarAmount = false /* if false it means when unit === 'usd' we have to multiply by 100 */,
 }) => {
-   const getUnitSymbol = () => {
-      switch (unit) {
-         case 'usd':
-            return '$';
-         case 'sat':
-            return '₿';
-         default:
-            return '';
-      }
-   };
-
    const showUnit = unit === Currency.USD ? 'prefix' : 'suffix';
 
    /* Format the display value based on unit and add commas */
@@ -67,12 +57,12 @@ const Amount: React.FC<AmountProps> = ({
 
    return (
       <div className='inline-flex items-center'>
-         {showUnit === 'prefix' && <span className={unitClassName}>{getUnitSymbol()}</span>}
+         {showUnit === 'prefix' && <span className={unitClassName}>{getUnitSymbol(unit)}</span>}
          <span className={className}>
             {formattedValue}
             {greyZeros && <span className='text-gray-400'>{greyZeros}</span>}
          </span>
-         {showUnit === 'suffix' && <span className={unitClassName}>{getUnitSymbol()}</span>}
+         {showUnit === 'suffix' && <span className={unitClassName}>{getUnitSymbol(unit)}</span>}
       </div>
    );
 };
