@@ -9,8 +9,7 @@ import { Spinner } from 'flowbite-react';
 
 const ViewReusablePaymentRequest = () => {
    const [paymentRequest, setPaymentRequest] = useState('');
-   const [fetchingRequest, setFetchingRequest] = useState(false);
-   const { fetchPaymentRequest } = usePaymentRequests();
+   const { fetchPaymentRequest, fetchingPaymentRequest } = usePaymentRequests();
    const { activeWallet, activeUnit } = useCashuContext();
    const { isMintless } = useMintlessMode();
 
@@ -26,21 +25,17 @@ const ViewReusablePaymentRequest = () => {
             mints.length > 0 &&
             (!mints?.some(url => url === activeWallet?.mint.mintUrl) || unit !== activeUnit)
          ) {
-            setFetchingRequest(true);
             fetchPaymentRequest(undefined, true).then(({ pr }) => {
                setPaymentRequest(pr);
                localStorage.setItem('paymentRequest', pr);
-               setFetchingRequest(false);
             });
          } else {
             setPaymentRequest(storedPaymentRequest);
          }
       } else {
-         setFetchingRequest(true);
          fetchPaymentRequest(undefined, true).then(({ pr }) => {
             setPaymentRequest(pr);
             localStorage.setItem('paymentRequest', pr);
-            setFetchingRequest(false);
          });
       }
    }, [activeWallet, activeUnit]);
@@ -52,7 +47,7 @@ const ViewReusablePaymentRequest = () => {
                You currently have a Lightning Wallet set as your main account. Select an eCash mint
                as your main account to generate an eCash request.
             </p>
-         ) : fetchingRequest ? (
+         ) : fetchingPaymentRequest ? (
             <Spinner size='xl' />
          ) : (
             <>

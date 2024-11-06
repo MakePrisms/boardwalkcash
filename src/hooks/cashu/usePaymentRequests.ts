@@ -22,9 +22,12 @@ import { useProofStorage } from './useProofStorage';
 import { useAppDispatch } from '@/redux/store';
 import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
+import { useState } from 'react';
 
 export const usePaymentRequests = () => {
-   const { activeWallet, wallets } = useCashuContext();
+   const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
+
+   const { activeWallet } = useCashuContext();
    const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
    const { addProofs } = useProofStorage();
    const { nwcPayInvoice, isMintless } = useMintlessMode();
@@ -32,6 +35,7 @@ export const usePaymentRequests = () => {
    const dispatch = useAppDispatch();
 
    const fetchPaymentRequest = async (amount?: number, reusable?: boolean) => {
+      setFetchingPaymentRequest(true);
       const params = new URLSearchParams();
       if (amount !== undefined) params.append('amount', amount.toString());
       if (reusable) params.append('reusable', 'true');
@@ -39,7 +43,11 @@ export const usePaymentRequests = () => {
       const queryString = params.toString();
       const url = `/api/token/pr${queryString ? `?${queryString}` : ''}`;
 
-      return await authenticatedRequest<GetPaymentRequestResponse>(url, 'GET', undefined);
+      const res = await authenticatedRequest<GetPaymentRequestResponse>(url, 'GET', undefined);
+
+      setFetchingPaymentRequest(false);
+
+      return res;
    };
 
    const checkPaymentRequest = async (id: string) => {
@@ -236,5 +244,5 @@ export const usePaymentRequests = () => {
          throw e;
       }
    };
-   return { fetchPaymentRequest, checkPaymentRequest, payPaymentRequest };
+   return { fetchPaymentRequest, checkPaymentRequest, payPaymentRequest, fetchingPaymentRequest };
 };
