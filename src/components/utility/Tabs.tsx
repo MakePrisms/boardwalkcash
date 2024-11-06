@@ -30,7 +30,7 @@ export const Tabs: React.FC<TabsProps> = ({
          <div className='flex w-full text-center'>
             {titles.map((title, index) =>
                index === activeTab ? (
-                  <ActiveTab key={index} borderColor={borderColor} className={titleColor}>
+                  <ActiveTab key={index} borderColor={borderColor} titleColor={titleColor}>
                      {title}
                   </ActiveTab>
                ) : (
@@ -38,7 +38,7 @@ export const Tabs: React.FC<TabsProps> = ({
                      key={index}
                      onClick={() => handleTabClick(index)}
                      borderColor={borderColor}
-                     className={titleColor}
+                     titleColor={titleColor}
                   >
                      {title}
                   </InactiveTab>
@@ -52,15 +52,15 @@ export const Tabs: React.FC<TabsProps> = ({
 const ActiveTab = ({
    children,
    borderColor,
-   className,
+   titleColor,
 }: {
    children: React.ReactNode;
    borderColor: string;
-   className: string;
+   titleColor: string;
 }) => {
    return (
       <div
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} hover:cursor-pointer ${className}`}
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-${borderColor} hover:cursor-pointer ${titleColor}`}
       >
          {children}
       </div>
@@ -71,16 +71,16 @@ export const InactiveTab = ({
    children,
    onClick,
    borderColor,
-   className,
+   titleColor,
 }: {
    children: React.ReactNode;
    onClick: () => void;
    borderColor: string;
-   className: string;
+   titleColor: string;
 }) => {
    return (
       <div
-         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent hover:border-${borderColor} hover:cursor-pointer ${className}`}
+         className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent hover:border-${borderColor} hover:cursor-pointer ${titleColor}`}
          onClick={onClick}
       >
          {children}
