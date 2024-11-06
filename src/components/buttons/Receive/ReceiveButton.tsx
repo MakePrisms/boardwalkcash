@@ -1,12 +1,12 @@
 import { ArrowDownRightIcon } from '@heroicons/react/20/solid';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import ReceiveButtonContent from './ReceiveButtonContent';
+import ReceiveFlow from './ReceiveFlow';
 import { Button } from 'flowbite-react';
 import React, { useState } from 'react';
 import ViewDrawerOrModal from '@/components/utility/ViewDrawerOrModal';
 
 const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
-   const [showButtonContent, setShowButtonContent] = useState(false);
+   const [showReceiveFlow, setShowReceiveFlow] = useState(false);
    const { activeUnit } = useCashuContext();
 
    // const handlePaymentSuccess = (amountUsdCents: number, wallet: Wallet, quote: string) => {
@@ -28,22 +28,22 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
    // };
 
    const handleModalClose = () => {
-      setShowButtonContent(false);
+      setShowReceiveFlow(false);
    };
 
    return (
       <>
-         <Button onClick={() => setShowButtonContent(true)} className='btn-primary'>
+         <Button onClick={() => setShowReceiveFlow(true)} className='btn-primary'>
             <span className='text-lg'>Receive</span>{' '}
             <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
          <ViewDrawerOrModal
             isMobile={isMobile}
-            isOpen={showButtonContent}
+            isOpen={showReceiveFlow}
             onClose={handleModalClose}
             title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
          >
-            <ReceiveButtonContent closeParentComponent={handleModalClose} isMobile={isMobile} />
+            <ReceiveFlow closeParentComponent={handleModalClose} isMobile={isMobile} />
          </ViewDrawerOrModal>
       </>
    );

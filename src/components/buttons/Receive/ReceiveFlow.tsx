@@ -24,12 +24,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
 
-interface ReceiveButtonContentProps {
+interface ReceiveFlowProps {
    closeParentComponent: () => void;
    isMobile: boolean;
 }
 
-const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonContentProps) => {
+const ReceiveFlow = ({ isMobile, closeParentComponent }: ReceiveFlowProps) => {
    const [pastedValue, setPastedValue] = useState('');
    const [token, setToken] = useState<Token | null>(null);
    const [fetchingInvoice, setFetchingInvoice] = useState(false);
@@ -237,4 +237,4 @@ const ReceiveButtonContent = ({ isMobile, closeParentComponent }: ReceiveButtonC
    );
 };
 
-export default ReceiveButtonContent;
+export default ReceiveFlow;
