@@ -399,21 +399,15 @@ export const isTestMint = (url: string) => {
 export const getUnitFromToken = (token: string | Token): Currency => {
    const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
    const unitFromToken = decodedToken.unit;
-
    let unit: Currency;
    switch (unitFromToken) {
       case 'sat':
-         unit = Currency.SAT;
-         break;
+         return Currency.SAT;
       case 'usd':
-         unit = Currency.USD;
-         break;
+         return Currency.USD;
       default:
-         unit = Currency.SAT;
-         break;
+         return Currency.SAT;
    }
-
-   return unit;
 };
 
 export const dissectToken = (token: string | Token) => {
