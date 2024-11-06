@@ -1,5 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getPayentRequestById, getPayentRequestByIdIncludeToken } from '@/lib/paymentRequestModels';
+import {
+   getPaymentRequestById,
+   getPaymentRequestByIdIncludeToken,
+} from '@/lib/paymentRequestModels';
 import { AuthenticatedRequest, CheckPaymentRequestResponse } from '@/types';
 import { runAuthMiddleware } from '@/utils/middleware';
 
@@ -13,7 +16,7 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
       }
 
       try {
-         const paymentRequest = await getPayentRequestByIdIncludeToken(id);
+         const paymentRequest = await getPaymentRequestByIdIncludeToken(id);
 
          if (paymentRequest?.userPubkey !== req.authenticatedPubkey) {
             return res.status(403).json({ error: 'Unauthorized' });

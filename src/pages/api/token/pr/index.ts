@@ -1,7 +1,7 @@
 import { createNotification } from '@/lib/notificationModels';
 import {
    createPaymentRequest,
-   getPayentRequestById,
+   getPaymentRequestById,
    markPaymentRequestAsPaid,
 } from '@/lib/paymentRequestModels';
 import { createTokenInDb } from '@/lib/tokenModels';
@@ -109,7 +109,7 @@ export default async function handler(
          return res.status(400).json({ error: 'Missing amount' });
       }
 
-      const request = await getPayentRequestById(payment.id);
+      const request = await getPaymentRequestById(payment.id);
 
       if (!request) {
          return res.status(404).json({ error: 'Payment request not found' });

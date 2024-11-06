@@ -6,11 +6,11 @@ export const createPaymentRequest = async (data: Prisma.PaymentRequestCreateInpu
    return await prisma.paymentRequest.create({ data });
 };
 
-export const getPayentRequestById = async (id: string) => {
+export const getPaymentRequestById = async (id: string) => {
    return await prisma.paymentRequest.findUnique({ where: { id } });
 };
 
-export const getPayentRequestByIdIncludeToken = async (id: string) => {
+export const getPaymentRequestByIdIncludeToken = async (id: string) => {
    return await prisma.paymentRequest.findUnique({
       where: { id },
       include: { token: true },
