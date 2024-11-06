@@ -24,7 +24,7 @@ const ViewDrawerOrModal = ({
             onClose={onClose}
             position='bottom'
             theme={bottomSheetDrawerTheme}
-            style={{ height: 'calc(100% - 75px)' }}
+            className='h-[calc(100%-75px)]'
          >
             <Drawer.Header
                title={title}
