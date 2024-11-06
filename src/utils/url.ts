@@ -19,6 +19,6 @@ export const formatUrl = (url: string, maxLength: number = 20): string => {
 
 export const getBaseURLFromRequest = (req: NextApiRequest) => {
    const host = req.headers.host;
-   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+   const protocol = req.headers.referer?.split('://')[0] || 'https';
    return `${protocol}://${host}`;
 };
