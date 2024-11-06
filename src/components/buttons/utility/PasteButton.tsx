@@ -6,7 +6,7 @@ interface Props {
    className?: string;
 }
 
-const PasteButton: React.FC<Props> = ({ onPaste, className = '' }) => {
+const PasteButton = ({ onPaste, className = '' }: Props) => {
    const { addToast } = useToast();
 
    const handlePaste = async () => {
