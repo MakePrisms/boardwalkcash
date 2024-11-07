@@ -28,7 +28,7 @@ import PasteButton from '../utility/PasteButton';
 import Numpad from '@/components/utility/Numpad';
 import { useState } from 'react';
 
-const SendButtonContent = ({
+const SendFlow = ({
    isMobile,
    closeParentComponent,
 }: {
@@ -414,4 +414,4 @@ const SendButtonContent = ({
    );
 };
 
-export default SendButtonContent;
+export default SendFlow;
