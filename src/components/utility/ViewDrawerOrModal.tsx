@@ -31,15 +31,20 @@ const ViewDrawerOrModal = ({
                titleIcon={() => null}
                closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
-            <Drawer.Items className='flex flex-col h-full'>{isOpen && children}</Drawer.Items>
+            <Drawer.Items key={isOpen.toString()} className='flex flex-col h-full'>
+               {children}
+            </Drawer.Items>
          </Drawer>
       </div>
    ) : (
       <Modal show={isOpen} onClose={onClose} size={'sm'}>
          <Modal.Header>{title}</Modal.Header>
          <Modal.Body>
-            <div className='flex flex-col space-y-20 items-stretch justify-center'>
-               {isOpen && children}
+            <div
+               className='flex flex-col space-y-20 items-stretch justify-center'
+               key={isOpen.toString()}
+            >
+               {children}
             </div>
          </Modal.Body>
       </Modal>
