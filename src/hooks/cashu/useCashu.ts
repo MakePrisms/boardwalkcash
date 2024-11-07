@@ -262,9 +262,11 @@ export const useCashu = () => {
          lockBalance();
 
          await addProofs([...newProofs, ...change]);
-         if (opts.amount || opts.max) {
+         if ((opts.amount || opts.max) && !swappedToUnlock) {
             // this means we were not give then proofs to melt, so we need to remove the proofs from the storage
-            await removeProofs(proofsToMelt);
+            await removeProofs(proofsToMelt).catch(e => {
+               console.error('error removing proofs', e);
+            });
          }
          const newProofAmt = newProofs.reduce((a, b) => a + b.amount, 0);
          // const amountSwapped = await convertToUnit(amountToMint, from.keys.unit, to.keys.unit);
@@ -323,6 +325,7 @@ export const useCashu = () => {
 
          return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
       }
+      console.log('cross mint swap opts', opts);
       return await crossMintSwap(from, activeWallet, opts);
    };
 
