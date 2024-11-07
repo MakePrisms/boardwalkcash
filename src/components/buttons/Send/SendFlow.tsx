@@ -69,6 +69,7 @@ const SendFlow = ({
    const { activeUnit } = useCashuContext();
    const { getMeltQuote } = useCashu();
    const { addToast } = useToast();
+   const showDecimal = activeUnit === Currency.USD;
    const {
       handleNumpadBackspace,
       numpadValueIsEmpty,
@@ -77,7 +78,7 @@ const SendFlow = ({
       numpadAmount,
       numpadValue,
    } = useNumpad({
-      activeUnit,
+      showDecimal,
    });
 
    const resetState = (close = true) => {
@@ -353,6 +354,7 @@ const SendFlow = ({
                      <Numpad
                         onNumberClick={handleNumpadInput}
                         onBackspaceClick={handleNumpadBackspace}
+                        showDecimal={showDecimal}
                      />
                   )}
                </div>

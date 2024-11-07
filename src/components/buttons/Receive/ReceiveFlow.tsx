@@ -105,7 +105,7 @@ const ReceiveInput = ({
             />
          </div>
 
-         <div className='mb-8'>
+         <div className='mb-[-1rem]'>
             <div className='flex justify-between mb-4'>
                <div className='flex space-x-4'>
                   <PasteButton onPaste={onPaste} />

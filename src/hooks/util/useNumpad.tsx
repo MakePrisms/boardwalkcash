@@ -1,20 +1,20 @@
-import { Currency } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface UseNumpadProps {
-   showDecimal?: boolean;
+   showDecimal: boolean;
 }
 
 export interface NumpadControls {
    numpadValue: string;
    numpadValueIsEmpty: boolean;
+   numpadAmount: number;
    handleNumpadInput: (input: string) => void;
    handleNumpadBackspace: () => void;
 }
 
 const numpadChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'];
 
-export const useNumpad = ({ showDecimal }: UseNumpadProps = {}) => {
+export const useNumpad = ({ showDecimal }: UseNumpadProps) => {
    const [inputValue, setInputValue] = useState('');
 
    useEffect(() => {
@@ -58,13 +58,8 @@ export const useNumpad = ({ showDecimal }: UseNumpadProps = {}) => {
 
    const numpadValueIsEmpty = inputValue === '' || inputValue === '.';
 
-   const numpadAmount = useMemo(() => {
-      const parsedAmount = parseFloat(inputValue);
-      if (isNaN(parsedAmount)) {
-         return;
-      }
-      return activeUnit === Currency.USD ? parsedAmount * 100 : parsedAmount;
-   }, [inputValue]);
+   const parseAmount = parseFloat(inputValue);
+   const numpadAmount = showDecimal ? parseAmount * 100 : parseAmount;
 
    return {
       numpadValue: inputValue,
