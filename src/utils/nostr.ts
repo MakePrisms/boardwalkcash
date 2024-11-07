@@ -113,27 +113,22 @@ export const getNostrContacts = async (pubkey: string) => {
 };
 
 export const sendNip04DM = async (nprofile: string, content: string) => {
-   try {
-      const decoded = nip19.decode(nprofile);
-      if (decoded.type !== 'nprofile') {
-         throw new Error('Failed to decode nprofile');
-      }
-      const { pubkey, relays } = decoded.data;
-      const { ndk, privkey } = await initializeNDK(relays);
-      const encryptedContent = await nip04.encrypt(privkey, pubkey, content);
-
-      const dmEvent = {
-         kind: NDKKind.EncryptedDirectMessage,
-         content: encryptedContent,
-         tags: [['p', pubkey]],
-      } as NostrEvent;
-
-      console.log('publishing event', dmEvent);
-      await publishNostrEvent(ndk, dmEvent, relays);
-   } catch (error) {
-      console.error('Error sending nostr dm', error);
-      throw new NostrError('');
+   const decoded = nip19.decode(nprofile);
+   if (decoded.type !== 'nprofile') {
+      throw new Error('Failed to decode nprofile');
    }
+   const { pubkey, relays } = decoded.data;
+   const { ndk, privkey } = await initializeNDK(relays);
+   const encryptedContent = await nip04.encrypt(privkey, pubkey, content);
+
+   const dmEvent = {
+      kind: NDKKind.EncryptedDirectMessage,
+      content: encryptedContent,
+      tags: [['p', pubkey]],
+   } as NostrEvent;
+
+   console.log('publishing event', dmEvent);
+   await publishNostrEvent(ndk, dmEvent, relays);
 };
 
 const randomTimeUpTo2DaysInThePast = () => {
@@ -141,57 +136,52 @@ const randomTimeUpTo2DaysInThePast = () => {
 };
 
 export const sendNip17DM = async (nprofile: string, content: string) => {
-   try {
-      const decoded = nip19.decode(nprofile);
-      if (decoded.type !== 'nprofile') {
-         throw new Error('Failed to decode nprofile');
-      }
-      const { pubkey: receiverPubkey, relays } = decoded.data;
-
-      console.log('sending DM to', receiverPubkey);
-      console.log('relays', relays);
-
-      const { ndk, privkey, pubkey: senderPubkey } = await initializeNDK(relays);
-
-      const msgEvent = new NDKEvent(undefined, {
-         kind: 14,
-         pubkey: senderPubkey,
-         created_at: Math.floor(Date.now() / 1000),
-         content,
-         tags: [['p', receiverPubkey]],
-      } as NostrEvent);
-      msgEvent.id = msgEvent.getEventHash();
-
-      const convoKey = nip44.getConversationKey(privkey, receiverPubkey);
-
-      const sealEvent = new NDKEvent(ndk, {
-         kind: 13,
-         tags: [],
-         pubkey: senderPubkey,
-         created_at: randomTimeUpTo2DaysInThePast(),
-         content: nip44.encrypt(JSON.stringify(msgEvent), convoKey),
-      } as NostrEvent);
-      await sealEvent.sign();
-
-      const { privkey: randPrivkey, pubkey: randPubkey } = generateKeyPair();
-      const giftConvoKey = nip44.getConversationKey(hexToBytes(randPrivkey), receiverPubkey);
-
-      const giftWrapEvent = new NDKEvent(ndk, {
-         kind: 1059,
-         pubkey: randPubkey,
-         created_at: randomTimeUpTo2DaysInThePast(),
-         content: nip44.encrypt(JSON.stringify(sealEvent), giftConvoKey),
-         tags: [['p', receiverPubkey]],
-      });
-      await giftWrapEvent.sign(new NDKPrivateKeySigner(randPrivkey));
-
-      await giftWrapEvent
-         .publish()
-         .then(() => console.log('sent gift wrap event', giftWrapEvent.rawEvent()));
-   } catch (error) {
-      console.error('Error sending nostr dm', error);
-      throw new NostrError('');
+   const decoded = nip19.decode(nprofile);
+   if (decoded.type !== 'nprofile') {
+      throw new Error('Failed to decode nprofile');
    }
+   const { pubkey: receiverPubkey, relays } = decoded.data;
+
+   console.log('sending DM to', receiverPubkey);
+   console.log('relays', relays);
+
+   const { ndk, privkey, pubkey: senderPubkey } = await initializeNDK(relays);
+
+   const msgEvent = new NDKEvent(undefined, {
+      kind: 14,
+      pubkey: senderPubkey,
+      created_at: Math.floor(Date.now() / 1000),
+      content,
+      tags: [['p', receiverPubkey]],
+   } as NostrEvent);
+   msgEvent.id = msgEvent.getEventHash();
+
+   const convoKey = nip44.getConversationKey(privkey, receiverPubkey);
+
+   const sealEvent = new NDKEvent(ndk, {
+      kind: 13,
+      tags: [],
+      pubkey: senderPubkey,
+      created_at: randomTimeUpTo2DaysInThePast(),
+      content: nip44.encrypt(JSON.stringify(msgEvent), convoKey),
+   } as NostrEvent);
+   await sealEvent.sign();
+
+   const { privkey: randPrivkey, pubkey: randPubkey } = generateKeyPair();
+   const giftConvoKey = nip44.getConversationKey(hexToBytes(randPrivkey), receiverPubkey);
+
+   const giftWrapEvent = new NDKEvent(ndk, {
+      kind: 1059,
+      pubkey: randPubkey,
+      created_at: randomTimeUpTo2DaysInThePast(),
+      content: nip44.encrypt(JSON.stringify(sealEvent), giftConvoKey),
+      tags: [['p', receiverPubkey]],
+   });
+   await giftWrapEvent.sign(new NDKPrivateKeySigner(randPrivkey));
+
+   await giftWrapEvent
+      .publish()
+      .then(() => console.log('sent gift wrap event', giftWrapEvent.rawEvent()));
 };
 
 export const publishNostrEvent = async (ndk: NDK, event: NostrEvent, relays?: string[]) => {
@@ -205,10 +195,12 @@ export const publishNostrEvent = async (ndk: NDK, event: NostrEvent, relays?: st
          await r.connect();
       }
       await e.publish(relaySet).catch(e => {
+         console.error('Failed to publish event', e);
          throw new NostrError(e.message);
       });
    } else {
       await e.publish().catch(e => {
+         console.error('Failed to publish event', e);
          throw new NostrError(e.message);
       });
    }
