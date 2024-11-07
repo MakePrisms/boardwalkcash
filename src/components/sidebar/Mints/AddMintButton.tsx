@@ -7,11 +7,15 @@ import Link from 'next/link';
 import { normalizeUrl } from '@/utils/url';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
-export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } }) => {
+type Props = {
+   keysets: { [key: string]: Wallet };
+   currency: Currency;
+}
+
+export const AddMintButton = ({ keysets, currency }: Props) => {
    const [fetchingMint, setFetchingMint] = useState(false);
    const [mintUrl, setMintUrl] = useState('');
    const [currentMints, setCurrentMints] = useState<string[]>([]);
-   const { activeUnit } = useCashuContext();
 
    const { addToast } = useToast();
 
@@ -64,11 +68,7 @@ export const AddMintButton = ({ keysets }: { keysets: { [key: string]: Wallet } 
                      Search at{' '}
                      <a
                         className='underline text-cyan-teal'
-                        href={
-                           activeUnit === Currency.USD
-                              ? 'https://bitcoinmints.com?show=cashu&units=usd'
-                              : 'https://bitcoinmints.com?show=cashu&units=sat'
-                        }
+                        href={`https://bitcoinmints.com?show=cashu&units=${currency}`}
                         target='_blank'
                      >
                         bitcoinmints.com

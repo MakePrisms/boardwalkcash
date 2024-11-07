@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react';
 import LeaderboardTable from './LeaderboardTable';
 import UserStatsCard from './UserStatsCard';
 
+const tabs = [
+   { title: 'Daily', value: '24hr', index: 0 },
+   { title: 'Weekly', value: '7d', index: 1 },
+] as const
+
+const getTabByTimeRange = (timeRange: '24hr' | '7d') => {
+   return tabs.find(x => x.value === timeRange) ?? tabs[0];
+}
+
 const ViewLeaderboardData = () => {
    const [currentPage, setCurrentPage] = useState(1);
    const {
@@ -11,8 +20,11 @@ const ViewLeaderboardData = () => {
       loading,
       load: loadLeaderboardData,
       userData,
+      timeRange,
       setTimeRange,
    } = useLeaderboard();
+
+   const activeTab = getTabByTimeRange(timeRange);
 
    useEffect(() => {
       loadLeaderboardData();
@@ -27,7 +39,8 @@ const ViewLeaderboardData = () => {
             <div className='flex flex-col h-full mb-16'>
                <div className='mb-4'>
                   <Tabs
-                     onActiveTabChange={tab => setTimeRange(tab === 0 ? '24hr' : '7d')}
+                     value={activeTab.index}
+                     onChange={index => setTimeRange(tabs[index].value)}
                      titles={['Daily', 'Weekly']}
                   />
                </div>
