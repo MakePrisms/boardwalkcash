@@ -1,12 +1,13 @@
 import ActiveAndInactiveAmounts from '@/components/utility/amounts/ActiveAndInactiveAmounts';
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { Currency, GetPaymentRequestResponse } from '@/types';
+import { useState, useCallback, useEffect } from 'react';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
-import QRCode from 'qrcode.react';
+import { usePolling } from '@/hooks/util/usePolling';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import QRCode from 'qrcode.react';
 
 type WaitForEcashPaymentProps = {
    request: GetPaymentRequestResponse;
@@ -14,18 +15,14 @@ type WaitForEcashPaymentProps = {
 };
 
 const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) => {
-   const { checkPaymentRequest } = usePaymentRequests();
-   const { satsToUnit, unitToSats } = useExchangeRate();
-   const [timeout, setPrTimeout] = useState(false);
-   const { handleClaimToSourceMint } = useCashu();
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
 
-   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-   const pollCountRef = useRef(0);
-   const MAX_POLL_COUNT = 12; // Will poll for 1 minute (12 * 5 seconds)
+   const { checkPaymentRequest } = usePaymentRequests();
+   const { satsToUnit, unitToSats } = useExchangeRate();
+   const { handleClaimToSourceMint } = useCashu();
 
    const { amount, unit } = decodePaymentRequest(request.pr);
 
@@ -43,47 +40,27 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       setAmountData(null);
    }
 
-   const pollPayment = useCallback(async () => {
-      console.log('checking for payment', request.id);
-      const { paid, token } = await checkPaymentRequest(request.id);
-      if (paid) {
+   const checkPayment = useCallback(async () => {
+      const { token } = await checkPaymentRequest(request.id);
+      if (token) {
          await handleClaimToSourceMint(token);
          onSuccess();
-         handleClose();
-         console.log('Payment completed', token);
-         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      } else {
-         pollCountRef.current++;
-         if (pollCountRef.current >= MAX_POLL_COUNT) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setPrTimeout(true);
-         }
+         return true;
       }
-   }, [checkPaymentRequest, request.id, onSuccess]);
+      return false;
+   }, [checkPaymentRequest, request.id, onSuccess, handleClaimToSourceMint]);
 
-   const startPolling = useCallback(() => {
-      setPrTimeout(false);
-      pollCountRef.current = 0;
-      pollPayment();
+   const { start, stop, isPolling } = usePolling(checkPayment, 5000, 6000);
 
-      // Clear any existing interval
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-
-      pollIntervalRef.current = setInterval(pollPayment, 5000); // Poll every 5 seconds
-   }, [pollPayment]);
-
-   useEffect(() => {
-      startPolling();
-
-      return () => {
-         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      };
-   }, [startPolling]);
-
-   const handleClose = () => {
-      setPrTimeout(false);
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+   const checkAgain = async () => {
+      await checkPayment();
    };
+
+   /* Start polling when component mounts */
+   useEffect(() => {
+      start();
+      return () => stop();
+   }, [start, stop]);
 
    return (
       <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>
@@ -105,10 +82,10 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
             toShow='Copy Request'
             className='btn-primary hover:!bg-[var(--btn-primary-bg)] justify-self-end'
          />
-         {timeout && (
+         {!isPolling && (
             <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
                <p className='text-xs'>Timed out waiting for payment...</p>
-               <button onClick={startPolling} className='underline'>
+               <button onClick={checkAgain} className='underline'>
                   Check again
                </button>
             </div>
