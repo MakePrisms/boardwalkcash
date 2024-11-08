@@ -9,22 +9,19 @@ import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Tooltip from './utility/Tooltip';
 import RadioButton from './buttons/utility/RadioButton';
 
-const ToggleCurrencyDrawer = ({ className }: { className?: string }) => {
-   const { activeUnit, setActiveUnit, defaultWallets } = useCashuContext();
+const ToggleCurrencyDrawer = () => {
+   const { activeUnit, setActiveUnit, defaultWallets, nwcIsMain } = useCashuContext();
    const { satBalance, usdBalance, satBalanceInUsd } = useBalance();
    const [isOpen, setIsOpen] = useState(false);
 
    const handleToggle = (unit: Currency) => {
-      if (!defaultWallets.has(unit)) {
-         return;
-      }
       setActiveUnit(unit);
       setIsOpen(false);
    };
 
    return (
       <>
-         <button onClick={() => setIsOpen(true)} className={`flex items-center ${className}`}>
+         <button onClick={() => setIsOpen(true)} className={`flex items-center`}>
             {activeUnit === Currency.USD ? 'USD' : 'BTC'}
             <ChevronDownIcon className='h-5 w-5 ml-1' />
          </button>
@@ -45,7 +42,7 @@ const ToggleCurrencyDrawer = ({ className }: { className?: string }) => {
                         balance={formatSats(satBalance || 0)}
                         subBalance={formatCents(satBalanceInUsd || 0)}
                         isSelected={activeUnit === Currency.SAT}
-                        isAvailable={defaultWallets.has(Currency.SAT)}
+                        isAvailable={defaultWallets.has(Currency.SAT) || nwcIsMain}
                         onSelect={handleToggle}
                      />
                   </div>

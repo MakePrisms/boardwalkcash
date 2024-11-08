@@ -1,27 +1,23 @@
-import React, { useState } from 'react';
-
 interface TabsProps {
    titles: string[];
-   onActiveTabChange?: (index: number) => void;
+   value: number;
+   onChange: (index: number) => void;
    className?: string;
    borderColor?: '#0f3470' | 'white';
    titleColor?: string;
 }
 
-export const Tabs: React.FC<TabsProps> = ({
+export const Tabs = ({
    titles,
-   onActiveTabChange,
+   value,
+   onChange,
    className = '',
    borderColor = '#0f3470',
    titleColor = 'white',
-}) => {
-   const [activeTab, setActiveTab] = useState(0);
-
+}: TabsProps) => {
    const handleTabClick = (index: number) => {
-      if (index === activeTab) return;
-      setActiveTab(index);
-      if (onActiveTabChange) {
-         onActiveTabChange(index);
+      if (index !== value) {
+         onChange(index);
       }
    };
 
@@ -29,7 +25,7 @@ export const Tabs: React.FC<TabsProps> = ({
       <div className={`flex flex-col ${className}`}>
          <div className='flex w-full text-center'>
             {titles.map((title, index) =>
-               index === activeTab ? (
+               index === value ? (
                   <ActiveTab key={index} borderColor={borderColor} titleColor={titleColor}>
                      {title}
                   </ActiveTab>
