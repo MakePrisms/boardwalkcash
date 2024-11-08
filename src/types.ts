@@ -388,7 +388,7 @@ export type GetPaymentRequestResponse = {
 
 export type CheckPaymentRequestResponse = {
    paid: boolean;
-   token: string;
+   token?: string;
    id: string;
    createdAt: Date;
    updatedAt: Date;

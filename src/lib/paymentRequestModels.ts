@@ -13,7 +13,7 @@ export const getPaymentRequestById = async (id: string) => {
 export const getPaymentRequestByIdIncludeToken = async (id: string) => {
    return await prisma.paymentRequest.findUnique({
       where: { id },
-      include: { token: true },
+      include: { tokens: true },
    });
 };
 
@@ -23,13 +23,13 @@ export const markPaymentRequestAsPaid = async (id: string, token: string) => {
       where: { id },
       data: {
          paid: true,
-         token: {
+         tokens: {
             create: {
                id: txid,
                token,
             },
          },
       },
-      include: { token: true },
+      include: { tokens: true },
    });
 };
