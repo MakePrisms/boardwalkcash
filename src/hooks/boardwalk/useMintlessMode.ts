@@ -86,19 +86,28 @@ const useMintlessMode = () => {
    };
 
    const initNwc = async () => {
-      if (!nwcUri) throw new Error('No NWC URI found');
+      try {
+         if (!nwcUri) throw new Error('No NWC URI found');
 
-      const client = new nwc.NWCClient({
-         nostrWalletConnectUrl: nwcUri,
-      });
+         const client = new nwc.NWCClient({
+            nostrWalletConnectUrl: nwcUri,
+         });
 
-      return client;
+         return client;
+      } catch (error: any) {
+         handleNwcError(error, addToast);
+         throw error;
+      }
    };
 
    const getNwcBalance = async () => {
-      const nwc = await initNwc();
-      const { balance: balanceMsat } = await nwc.getBalance();
-      return balanceMsat / 1000;
+      try {
+         const nwc = await initNwc();
+         const { balance: balanceMsat } = await nwc.getBalance();
+         return balanceMsat / 1000;
+      } catch (error: any) {
+         handleNwcError(error, addToast);
+      }
    };
 
    const payInvoice = async (invoice: string): Promise<PayInvoiceResponse> => {
@@ -129,24 +138,22 @@ const useMintlessMode = () => {
             feePaid: 0,
          };
       } catch (error: any) {
-         if (error.code === 'UNAUTHORIZED') {
-           addToast('Unauthorized NWC connection. Please check your credentials.', 'error');
-         } else if (error.code === 'BUDGET_EXCEEDED') {
-           addToast('NWC budget exceeded. Please increase your budget or try again later.', 'error');
-         } else {
-           addToast('Error paying invoice: ' + error.message, 'error');
-         }
+         handleNwcError(error, addToast);
       }
    };
 
    // TODO: get payment status from lightning wallet
    const receiveLightningPayment = async (amountSats: number) => {
-      if (!lud16) {
-         throw new Error('No lud16 found');
+      try {
+         if (!lud16) {
+            throw new Error('No lud16 found');
+         }
+         const amountMsats = amountSats * 1000;
+         const invoice = await getInvoiceFromLightningAddress(lud16, amountMsats);
+         return invoice;
+      } catch (error: any) {
+         handleNwcError(error, addToast);
       }
-      const amountMsats = amountSats * 1000;
-      const invoice = await getInvoiceFromLightningAddress(lud16, amountMsats);
-      return invoice;
    };
 
    const createToken = async (
@@ -353,6 +360,16 @@ const useMintlessMode = () => {
       connect,
       disconnect,
    };
+};
+
+const handleNwcError = (error: any, addToast: (message: string, type: string) => void) => {
+   if (error.code === 'UNAUTHORIZED') {
+     addToast('Unauthorized NWC connection. Please check your credentials.', 'error');
+   } else if (error.code === 'BUDGET_EXCEEDED') {
+     addToast('NWC budget exceeded. Please increase your budget or try again later.', 'error');
+   } else {
+     addToast('Error: ' + error.message, 'error');
+   }
 };
 
 export default useMintlessMode;
