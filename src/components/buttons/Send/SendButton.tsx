@@ -19,7 +19,7 @@ const SendButton = ({ isMobile }: { isMobile: boolean }) => {
             onClose={() => setShowSendFlow(false)}
             title='Send'
          >
-            <SendFlow isMobile={isMobile} closeParentComponent={() => setShowSendFlow(false)} />
+            <SendFlow isMobile={isMobile} onReset={() => setShowSendFlow(false)} />
          </ViewDrawerOrModal>
       </>
    );

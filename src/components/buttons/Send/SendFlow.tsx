@@ -1,37 +1,32 @@
 import { decodePaymentRequest, MeltQuoteResponse, PaymentRequest } from '@cashu/cashu-ts';
 import ConfirmAndPayPaymentRequest from '@/components/views/ConfirmAndPayPaymentRequest';
 import ConfrimAndSendLightning from '@/components/views/ConfirmAndSendLightning';
-import { NumpadControls, useNumpad } from '@/hooks/util/useNumpad';
 import ConfirmSendGift from '@/components/views/ConfirmSendGift';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { GiftIcon, UserIcon } from '@heroicons/react/20/solid';
 import { getInvoiceFromLightningAddress } from '@/utils/lud16';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { Currency, GiftAsset, PublicContact } from '@/types';
 import SelectContact from '@/components/views/SelectContact';
-import Amount from '@/components/utility/amounts/Amount';
 import ShareEcash from '@/components/views/ShareEcash';
 import SelectGift from '@/components/views/SelectGift';
 import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScanner from '@/components/views/QRScanner';
-import ScanIcon from '@/components/icons/ScanIcon';
-import Tooltip from '@/components/utility/Tooltip';
-import { Button, TextInput } from 'flowbite-react';
 import useWallet from '@/hooks/boardwalk/useWallet';
-import { shortenString } from '@/utils/formatting';
+import { useNumpad } from '@/hooks/util/useNumpad';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
-import { Tabs } from '@/components/utility/Tabs';
-import PasteButton from '../utility/PasteButton';
-import Numpad from '@/components/utility/Numpad';
+import InputOptions from './InputOptions';
+import AmountInput from './AmountInput';
+import InputLud16 from './Lud16Input';
 import { useState } from 'react';
 
 type ActiveTab = 'ecash' | 'lightning';
 
 type MyState = {
-   activeInputTab: ActiveTab;
+   activeTab: ActiveTab;
    isProcessing: boolean;
+   isGiftMode: boolean;
 } & (
    | {
         step: 'input';
@@ -41,6 +36,7 @@ type MyState = {
    | {
         step: 'lud16Input';
         amount: number;
+        lud16: string;
      }
    | {
         step: 'QRScanner';
@@ -80,181 +76,18 @@ type MyState = {
 
 const defaultState: MyState = {
    step: 'input',
-   activeInputTab: 'ecash',
+   activeTab: 'ecash',
    isProcessing: false,
+   isGiftMode: false,
 };
 
-interface InputOptionsProps {
-   isMintless: boolean;
-   activeTab: ActiveTab;
-   showNumpad: boolean;
-   disableNext: boolean;
-   isProcessing: boolean;
-   numpad: NumpadControls;
-   onNext: any;
-   onPaste: (text: string) => void;
-   onUserIconClick: () => void;
-   onScanIconClick: () => void;
-   onGiftIconClick: () => void;
-}
-
-const InputOptions = ({
-   onPaste,
-   onUserIconClick,
-   onScanIconClick,
-   onGiftIconClick,
-   isMintless,
-   activeTab,
-   onNext,
-   disableNext,
-   isProcessing,
-   showNumpad,
-   numpad,
-}: InputOptionsProps) => {
-   const { activeUnit } = useCashuContext();
-   const { handleNumpadInput, handleNumpadBackspace, numpadAmount } = numpad;
-
-   return (
-      <div className='mb-[-1rem]'>
-         <div className='flex justify-between mb-4'>
-            <div className='flex space-x-4'>
-               <PasteButton onPaste={onPaste} />
-               <button onClick={onScanIconClick}>
-                  <ScanIcon className='size-8 text-gray-500' />
-               </button>
-               <button onClick={onUserIconClick}>
-                  <UserIcon className='w-6 h-6 text-gray-500' />
-               </button>
-               <button onClick={onGiftIconClick}>
-                  <GiftIcon className='w-6 h-6 text-gray-500' />
-               </button>
-            </div>
-            {isMintless && activeTab === 'ecash' ? (
-               <Tooltip
-                  position='left'
-                  content='You currently have a Lightning Wallet set as your main account. Select an eCash mint as your main account to generate an eCash request.'
-                  className='w-56'
-               >
-                  <Button className='btn-primary' disabled={true}>
-                     Continue
-                  </Button>
-               </Tooltip>
-            ) : (
-               <Button
-                  className='btn-primary'
-                  onClick={() => onNext(numpadAmount)}
-                  disabled={disableNext}
-                  isProcessing={isProcessing}
-               >
-                  Continue
-               </Button>
-            )}
-         </div>
-         {showNumpad && (
-            <Numpad
-               onNumberClick={handleNumpadInput}
-               onBackspaceClick={handleNumpadBackspace}
-               showDecimal={activeUnit === Currency.USD}
-            />
-         )}
-      </div>
-   );
-};
-
-interface InputAmountProps {
-   numpad: NumpadControls;
-   contact?: PublicContact;
-   paymentRequest?: PaymentRequest;
-   onActiveTabChange: (tab: number) => void;
-   inputOptions: InputOptionsProps;
-}
-
-const InputAmount = ({
-   numpad,
-   contact,
-   inputOptions,
-   paymentRequest,
-   onActiveTabChange,
-}: InputAmountProps) => {
-   const { activeUnit } = useCashuContext();
-   const { numpadValue, numpadValueIsEmpty } = numpad;
-   return (
-      <>
-         <Tabs
-            titleColor='text-black'
-            titles={['ecash', 'lightning']}
-            onActiveTabChange={onActiveTabChange}
-         />
-         <div className='flex-grow flex flex-col items-center justify-center'>
-            <Amount
-               value={numpadValue}
-               unit={activeUnit}
-               className='font-teko text-6xl font-bold text-black'
-               isDollarAmount={true}
-            />
-            {contact && (
-               <div className='flex justify-center items-center text-gray-500'>
-                  to {contact.username}
-               </div>
-            )}
-            {paymentRequest && (
-               <div className='flex justify-center items-center text-gray-500'>
-                  to {shortenString(paymentRequest.toEncodedRequest(), 17)}
-               </div>
-            )}
-         </div>
-         <InputOptions {...inputOptions} disableNext={numpadValueIsEmpty} />
-      </>
-   );
-};
-
-interface InputLud16Props {
-   amount: number;
-   unit: Currency;
-   inputOptions: InputOptionsProps;
-}
-
-const InputLud16 = ({ amount, unit, inputOptions }: InputLud16Props) => {
-   const [lud16, setLud16] = useState('');
-
-   return (
-      <div className='w-full flex flex-col  justify-between h-full'>
-         <div className='w-full '>
-            <span className='text-xl text-black flex flex-row items-center gap-3'>
-               Sending:
-               <Amount
-                  unitClassName='text-3xl text-cyan-teal font-bold'
-                  value={amount}
-                  unit={unit}
-                  className='font-teko text-black text-3xl font-bold'
-               />
-            </span>
-            <TextInput
-               placeholder={`Lightning address`}
-               value={lud16}
-               onChange={e => setLud16(e.target.value)}
-               className='w-full'
-            />
-         </div>
-         <InputOptions
-            {...inputOptions}
-            disableNext={lud16.length === 0}
-            onNext={() => inputOptions.onNext(lud16, amount, unit)}
-         />
-      </div>
-   );
-};
-
-const SendFlow = ({
-   isMobile,
-   closeParentComponent,
-}: {
+interface SendFlowProps {
    isMobile: boolean;
-   closeParentComponent: () => void;
-}) => {
+   onReset: () => void;
+}
+
+const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
    const [state, setState] = useState<MyState>(defaultState);
-   /* sending ecash as a gift or not */
-   const [isGiftMode, setIsGiftMode] = useState(false);
 
    const { unitToSats, convertToUnit } = useExchangeRate();
    const { sendGift, sendEcash } = useWallet();
@@ -264,13 +97,12 @@ const SendFlow = ({
    const { addToast } = useToast();
    const showDecimal = activeUnit === Currency.USD;
    const numpad = useNumpad({ showDecimal });
-   const { numpadValueIsEmpty, clearNumpadInput, numpadAmount, numpadValue } = numpad;
+   const { numpadValueIsEmpty, clearNumpadInput, numpadValue, numpadAmount } = numpad;
 
-   const resetState = (close = true) => {
-      if (close) closeParentComponent();
+   const resetState = () => {
       setState(defaultState);
-      setIsGiftMode(false);
       clearNumpadInput();
+      onReset();
    };
 
    const handleAmountInputSubmit = (input: number) => {
@@ -285,13 +117,10 @@ const SendFlow = ({
             paymentRequest: newPR,
             amount: input,
          }));
-         return;
-      }
-
-      if (state.activeInputTab === 'ecash') {
+      } else if (state.activeTab === 'ecash') {
          return handleSendEcash(input);
-      } else if (state.activeInputTab === 'lightning') {
-         setState(state => ({ ...state, step: 'lud16Input', amount: input }));
+      } else if (state.activeTab === 'lightning') {
+         setState(state => ({ ...state, step: 'lud16Input', amount: input, lud16: '' }));
       }
    };
 
@@ -419,7 +248,7 @@ const SendFlow = ({
 
    const handleSelectContact = (contact: PublicContact) => {
       let nextStep: MyState['step'] = 'input';
-      if (isGiftMode) {
+      if (state.isGiftMode) {
          nextStep = 'selectGift';
       }
       setState({ ...state, step: nextStep, contact });
@@ -430,52 +259,58 @@ const SendFlow = ({
          /* remove contact from state */
          return setState({ ...state, contact: undefined });
       }
-      setIsGiftMode(false);
-      setState({ ...state, step: 'selectContact' });
+      setState({ ...state, isGiftMode: false, step: 'selectContact' });
    };
 
    const handleActiveTabChange = (tab: number) => {
-      const close = false;
-      resetState(close);
-      setState({ ...state, activeInputTab: tab === 0 ? 'ecash' : 'lightning' });
+      setState({ ...state, isGiftMode: false, activeTab: tab === 0 ? 'ecash' : 'lightning' });
+      clearNumpadInput();
    };
 
-   const getInputOptions = (step: 'input' | 'lud16Input') => {
-      return {
-         isMintless: isMintless,
-         numpad: numpad,
-         onScanIconClick: () => setState({ ...state, step: 'QRScanner' }),
-         onGiftIconClick: () => {
-            setIsGiftMode(true);
-            setState({ ...state, step: 'selectContact' });
-         },
-         onUserIconClick: handleUserIconClick,
-         onPaste: handlePaste,
-         activeTab: state.activeInputTab,
-         showNumpad: isMobile && step === 'input',
-         disableNext: numpadValueIsEmpty,
-         isProcessing: state.isProcessing,
-         onNext: step === 'input' ? handleAmountInputSubmit : handleLud16Submit,
-      };
+   const commonInputOptions = {
+      numpad,
+      onScanIconClick: () => setState({ ...state, step: 'QRScanner' }),
+      onGiftIconClick: () => {
+         setState({ ...state, step: 'selectContact', isGiftMode: true });
+      },
+      onUserIconClick: handleUserIconClick,
+      onPaste: handlePaste,
+      isProcessing: state.isProcessing,
    };
 
    return (
-      <>
+      <div className='flex flex-col justify-between h-full'>
          {state.step === 'input' && (
-            <InputAmount
+            <AmountInput
                numpad={numpad}
                contact={state.contact}
                paymentRequest={state.paymentRequest}
                onActiveTabChange={handleActiveTabChange}
-               inputOptions={getInputOptions('input')}
-            />
+            >
+               <InputOptions
+                  {...commonInputOptions}
+                  disableSendEcash={isMintless && state.activeTab === 'ecash'}
+                  showNumpad={isMobile && state.step === 'input'}
+                  disableNext={numpadValueIsEmpty}
+                  onNext={() => handleAmountInputSubmit(numpadAmount)}
+               />
+            </AmountInput>
          )}
          {state.step === 'lud16Input' && (
             <InputLud16
-               inputOptions={getInputOptions('lud16Input')}
                unit={activeUnit}
                amount={state.amount}
-            />
+               value={state.lud16}
+               onChange={e => setState(state => ({ ...state, lud16: e.target.value }))}
+            >
+               <InputOptions
+                  {...commonInputOptions}
+                  disableSendEcash={false} // sending lightning, this does not apply
+                  showNumpad={false}
+                  disableNext={numpadValueIsEmpty}
+                  onNext={() => handleLud16Submit(state.lud16, state.amount, activeUnit)}
+               />
+            </InputLud16>
          )}
          {state.step === 'selectContact' && <SelectContact onSelectContact={handleSelectContact} />}
          {state.step === 'selectGift' && (
@@ -524,7 +359,7 @@ const SendFlow = ({
                onClose={resetState}
             />
          )}
-      </>
+      </div>
    );
 };
 
