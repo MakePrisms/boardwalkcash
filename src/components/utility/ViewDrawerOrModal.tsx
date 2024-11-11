@@ -42,7 +42,7 @@ const ViewDrawerOrModal = ({
          <Modal.Header>{title}</Modal.Header>
          <Modal.Body>
             <div
-               className='fflex flex-col h-[450px] max-h-screen  space-y-20 items-stretch'
+               className='flex flex-col h-[450px] max-h-screen  space-y-20 items-stretch'
                key={isOpen.toString()}
             >
                {children}

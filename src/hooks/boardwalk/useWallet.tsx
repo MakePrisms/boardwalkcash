@@ -156,7 +156,6 @@ const useWallet = () => {
             'success',
          );
          return { txid, token: sendableToken };
-         //  setCurrentView('shareEcash');
       } catch (error: any) {
          console.error('Error sending token:', error);
          const msg = error.message || 'Failed to send token';

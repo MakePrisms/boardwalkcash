@@ -100,6 +100,8 @@ export const usePaymentRequests = () => {
       ) {
          console.log('using active wallet and swapping');
          const proofs = await getProofsToSend(request.amount, wallet);
+         /* getProofsToSend does not remove proofs, so we do that here to get the proofs in the same state as ones minted in the else case */
+         await removeProofs(proofs);
          return {
             proofs,
             mint: wallet.mint.mintUrl,
@@ -190,12 +192,10 @@ export const usePaymentRequests = () => {
                   },
                }),
             );
-            await removeProofs(payment.proofs);
             return true;
          }
       } catch (e) {
-         /* will error if proofs are already added */
-         await addProofs(payment.proofs).catch(console.warn);
+         await addProofs(payment.proofs);
          throw e;
       }
    };
@@ -240,11 +240,9 @@ export const usePaymentRequests = () => {
                },
             }),
          );
-         await removeProofs(payment.proofs);
          return true;
       } catch (e) {
-         /* will error if proofs are already added */
-         addProofs(payment.proofs).catch(console.warn);
+         addProofs(payment.proofs);
          throw e;
       }
    };

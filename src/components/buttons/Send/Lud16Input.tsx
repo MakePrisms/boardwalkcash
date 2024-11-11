@@ -17,7 +17,7 @@ const InputLud16 = ({ amount, unit, value, onChange, children }: InputLud16Props
             <span className='text-xl text-black flex flex-row items-center gap-3'>
                Sending:
                <Amount
-                  unitClassName='text-3xl text-cyan-teal font-bold'
+                  unitClassName='text-2xl text-cyan-teal font-bold pt-1'
                   value={amount}
                   unit={unit}
                   className='font-teko text-black text-3xl font-bold'

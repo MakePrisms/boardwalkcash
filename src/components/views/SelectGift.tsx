@@ -18,24 +18,15 @@ const SelectGift = ({ onSelectGift, contact }: SelectGiftProps) => {
    };
 
    return (
-      <div className='flex flex-col h-full pb-12 sm:pb-0 relative text-black'>
-         <div
-            className='flex-grow overflow-y-auto'
-            style={{
-               /* disable scrollbar */
-               msOverflowStyle: 'none',
-               scrollbarWidth: 'none',
-            }}
-         >
+      <div className='flex flex-col h-full relative text-black'>
+         <div className='flex-grow overflow-y-scroll no-scrollbar pb-24 sm:pb-0'>
             <Stickers onSelectGift={setSelectedGift} contact={contact || null} />
          </div>
-         <Button
-            onClick={handleContinue}
-            disabled={!selectedGift}
-            className='btn-primary w-fit self-center'
-         >
-            Continue
-         </Button>
+         <div className='fixed bottom-0 left-0 right-0 flex justify-center bg-white py-8 shadow-lg'>
+            <Button onClick={handleContinue} disabled={!selectedGift} className='btn-primary w-fit'>
+               Continue
+            </Button>
+         </div>
       </div>
    );
 };

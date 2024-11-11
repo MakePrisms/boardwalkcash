@@ -49,7 +49,7 @@ const PaymentConfirmationDetails = ({
                   value={amount}
                   unit={unit}
                   className='text-3xl text-black font-teko font-bold'
-                  unitClassName='text-3xl text-cyan-teal font-bold'
+                  unitClassName='text-2xl text-cyan-teal font-bold pt-1'
                />
             </span>
          </div>
