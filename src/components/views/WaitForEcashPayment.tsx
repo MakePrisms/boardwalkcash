@@ -50,7 +50,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       return false;
    }, [checkPaymentRequest, request.id, onSuccess, handleClaimToSourceMint]);
 
-   const { start, stop, isPolling } = usePolling(checkPayment, 5000, 6000);
+   const { start, stop, isPolling } = usePolling(checkPayment, 5_000, 60_000);
 
    const checkAgain = async () => {
       await checkPayment();
