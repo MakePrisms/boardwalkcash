@@ -277,7 +277,7 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
             <ConfirmEcashReceive token={state.token} onSuccess={resetState} onFail={resetState} />
          )}
          {state.step === 'QRScanner' && (
-            <QRScanner onClose={() => setState(defaultState)} onScan={handlePaste} />
+            <QRScanner onCancel={() => setState(defaultState)} onScan={handlePaste} />
          )}
          {state.step === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
       </div>

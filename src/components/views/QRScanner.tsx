@@ -4,29 +4,33 @@ import { Button } from 'flowbite-react';
 import PasteButton from '../buttons/utility/PasteButton';
 
 interface QRScannerProps {
-   onClose?: () => void;
+   onCancel?: () => void;
    onScan: (result: string) => void;
 }
 
-const QRScanner = ({ onClose, onScan }: QRScannerProps) => {
+const QRScanner = ({ onCancel, onScan }: QRScannerProps) => {
    const qrReaderRef = useRef<any>(null);
 
    const handleQRResult = (result: string) => {
       console.log('QR Result:', result);
+      stopScanner();
       onScan(result);
-      handleClose();
    };
 
-   const handleClose = () => {
+   const handleCancel = () => {
+      stopScanner();
+      onCancel?.();
+   };
+
+   const stopScanner = () => {
       qrReaderRef.current.stopScanner();
-      onClose?.();
    };
 
    return (
       <div className='flex flex-col justify-between h-full min-h-[340px]'>
          <QrReaderComponent ref={qrReaderRef} onDecode={handleQRResult} />
          <div className='flex justify-between'>
-            <Button size={'xs'} color={'failure'} onClick={handleClose}>
+            <Button size={'xs'} color={'failure'} onClick={handleCancel}>
                Cancel
             </Button>
             <PasteButton onPaste={handleQRResult} />

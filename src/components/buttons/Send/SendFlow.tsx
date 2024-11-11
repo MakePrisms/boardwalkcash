@@ -510,7 +510,9 @@ const SendFlow = ({
                gift={state.gift}
             />
          )}
-         {state.step === 'QRScanner' && <QRScanner onClose={undefined} onScan={handlePaste} />}
+         {state.step === 'QRScanner' && (
+            <QRScanner onCancel={() => setState(defaultState)} onScan={handlePaste} />
+         )}
 
          {state.step === 'sendLightning' && (
             <ConfrimAndSendLightning
