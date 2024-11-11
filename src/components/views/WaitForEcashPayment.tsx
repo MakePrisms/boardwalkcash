@@ -27,9 +27,8 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
    const pollCountRef = useRef(0);
    const MAX_POLL_COUNT = 12; // Will poll for 1 minute (12 * 5 seconds)
 
-   const { amount, unit } = decodePaymentRequest(request.pr);
-
    useEffect(() => {
+      const { amount, unit } = decodePaymentRequest(request.pr);
       if (amount) {
          if (unit === 'sat') {
             satsToUnit(amount, 'usd').then(amountUsdCents => {
@@ -46,7 +45,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       return () => {
          setAmountData(null);
       };
-   }, [amount, unit, satsToUnit, unitToSats]);
+   }, [satsToUnit, unitToSats, request.pr]);
 
    const pollPayment = useCallback(async () => {
       console.log('checking for payment', request.id);
