@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { DotButton } from '@/components/Carousel/CarouselButtons';
+import { DotButton } from '@/components/utility/Carousel/CarouselButtons';
 
 interface CustomCarouselProps {
    slides: React.ReactNode[];

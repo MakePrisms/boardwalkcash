@@ -169,10 +169,7 @@ const ConnectWalletSetting = () => {
 
          setMintingAmount(amount);
 
-         const { blindedMessages, secrets, rs } = createBlindedMessages(
-            amount,
-            reserveWallet.keys.id,
-         );
+         const { blindedMessages, secrets, rs } = createBlindedMessages(amount, reserveWallet.keys);
 
          try {
             const blindedSignatures = await requestSignatures(connectionString, blindedMessages);

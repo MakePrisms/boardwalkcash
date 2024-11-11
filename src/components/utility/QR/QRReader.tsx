@@ -90,10 +90,14 @@ const QrReaderComponent = forwardRef(
          navigator.clipboard.readText;
 
       return (
-         <div className='bg-white shadow rounded p-2'>
+         <div className='bg-white shadow rounded p-2 w-full'>
             <div className='text-center'>
-               <div>
-                  <video ref={videoRef} className='qr-video'></video>
+               <div className='relative w-full pb-[100%]'>
+                  <video
+                     ref={videoRef}
+                     className='absolute inset-0 w-full h-full object-cover qr-video'
+                     style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                  ></video>
                </div>
                <div>
                   <div className='flex justify-center mt-2'>

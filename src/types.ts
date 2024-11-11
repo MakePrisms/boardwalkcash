@@ -381,3 +381,19 @@ export enum Currency {
    USD = 'usd',
    SAT = 'sat',
 }
+
+export type GetPaymentRequestResponse = {
+   /* encoded payment request */
+   pr: string;
+
+   /* payment request id */
+   id: string;
+};
+
+export type CheckPaymentRequestResponse = {
+   paid: boolean;
+   token: string;
+   id: string;
+   createdAt: Date;
+   updatedAt: Date;
+};

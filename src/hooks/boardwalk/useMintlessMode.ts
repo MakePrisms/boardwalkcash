@@ -16,8 +16,14 @@ import {
 } from '@/redux/slices/UserSlice';
 import { authenticatedRequest, updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
-import { initializeWallet, isTestMint } from '@/utils/cashu';
-import { CashuWallet, getEncodedTokenV4, MeltQuoteResponse, Token } from '@cashu/cashu-ts';
+import { dissectToken, initializeWallet, isTestMint } from '@/utils/cashu';
+import {
+   CashuWallet,
+   getDecodedToken,
+   getEncodedTokenV4,
+   MeltQuoteResponse,
+   Token,
+} from '@cashu/cashu-ts';
 import { useCashu } from '../cashu/useCashu';
 import { useProofStorage } from '../cashu/useProofStorage';
 import { useCashuContext } from '../contexts/cashuContext';
@@ -32,6 +38,7 @@ const useMintlessMode = () => {
    const { addProofs } = useProofStorage();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
+   const user = useSelector((state: RootState) => state.user);
 
    const connect = async (nwcUri: string, lud16: string) => {
       try {
@@ -241,6 +248,28 @@ const useMintlessMode = () => {
       addToast(`Sent ${formatSats(amountSats)} to ${contact.username || contact.lud16}`, 'success');
    };
 
+   const handleMintlessClaim = async (token: Token | string) => {
+      const { mintUrl, unit, pubkeyLock } = dissectToken(token);
+      const wallet = await initializeWallet(mintUrl, { unit });
+      const privkey = pubkeyLock ? user.privkey : undefined;
+
+      token = typeof token === 'string' ? getDecodedToken(token) : token;
+
+      try {
+         const { amountMeltedSat } = await mintlessClaimToken(wallet, token, {
+            privkey,
+         });
+         if (!amountMeltedSat) throw new Error('Failed to claim token');
+         addToast(`Claimed ${formatSats(amountMeltedSat)} to Lightning Wallet`, 'success');
+         return true;
+      } catch (error: any) {
+         console.error('Error claiming token:', error);
+         const msg = error.message || 'Failed to claim token';
+         addToast(msg, 'error');
+         return false;
+      }
+   };
+
    const mintlessClaimToken = async (
       wallet: CashuWallet,
       token: Token,
@@ -338,10 +367,12 @@ const useMintlessMode = () => {
       mintlessClaimToken,
       getNwcBalance,
       sendToMintlessUser,
+      handleMintlessClaim,
       toggleSendMode,
       toggleReceiveMode,
       connect,
       disconnect,
+      isMintless: user.receiveMode === 'mintless' || user.sendMode === 'mintless',
    };
 };
 

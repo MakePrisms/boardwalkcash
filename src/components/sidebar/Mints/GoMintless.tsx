@@ -22,7 +22,7 @@ const GoMintless = ({ onSuccess }: { onSuccess?: () => void }) => {
       e.preventDefault();
       await connect(nwcUri, lud16);
       resetFormState();
-      onSuccess && onSuccess();
+      onSuccess?.();
    };
 
    const handleDisconnect = async () => {

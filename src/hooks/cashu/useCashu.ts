@@ -12,7 +12,7 @@ import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useToast } from '../util/useToast';
-import { useAppDispatch } from '@/redux/store';
+import { RootState, useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
 import {
@@ -23,16 +23,18 @@ import {
    ReserveError,
    TransactionError,
 } from '@/types';
-import { initializeWallet, proofsLockedTo } from '@/utils/cashu';
+import { dissectToken, initializeWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import { formatUnit, getSymbolForUnit } from '@/utils/formatting';
 import { useExchangeRate } from '../util/useExchangeRate';
+import { useSelector } from 'react-redux';
 
 type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
 
 export const useCashu = () => {
-   const { activeWallet, reserveWallet, getWallet, getMint } = useCashuContext();
+   const { activeWallet, reserveWallet, getWallet, getMint, addWalletFromMintUrl } =
+      useCashuContext();
    const {
       addProofs,
       removeProofs,
@@ -43,11 +45,11 @@ export const useCashu = () => {
       lockBalance,
       unlockBalance,
    } = useProofStorage();
-   const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
-      useNostrMintConnect();
+   const { requestDeposit, getReserveUri, createProofsFromReserve } = useNostrMintConnect();
    const { sendTokenAsNotification } = useNotifications();
    const { addToast, toastSwapSuccess, toastSwapError } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
+   const user = useSelector((state: RootState) => state.user);
 
    const dispatch = useAppDispatch();
 
@@ -717,6 +719,65 @@ export const useCashu = () => {
       return balanceByWallet[activeKeysetId] >= amountUsdCents;
    };
 
+   /**
+    * Claim a token to the mint that created it
+    * @param token token to claim
+    * @returns true if successful
+    */
+   const handleClaimToSourceMint = async (token: Token | string) => {
+      const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
+
+      let wallet = getWallet(keysetId);
+
+      if (!wallet) {
+         try {
+            wallet = await initializeWallet(mintUrl, { unit });
+
+            /* set active unit to undefined because we only want to add the wallet, not set it as active */
+            await addWalletFromMintUrl(mintUrl, undefined);
+         } catch (e) {
+            console.error('Failed to initialize wallet', e);
+            addToast(`Failed to initialize a wallet for ${mintUrl}.`, 'error');
+            return false;
+         }
+      }
+      const privkey = pubkeyLock ? user.privkey : undefined;
+      try {
+         return await swapToClaimProofs(wallet, proofs, { privkey });
+      } catch (e) {
+         console.error('Failed to initialize wallet', e);
+         return false;
+      }
+   };
+
+   /**
+    * Claim a token to `activeWallet`
+    * @param token token to claim
+    * @returns true if successful
+    */
+   const handleClaimToActiveWallet = async (token: Token | string) => {
+      const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
+
+      let wallet = getWallet(keysetId);
+
+      if (!wallet) {
+         try {
+            wallet = await initializeWallet(mintUrl, { unit });
+         } catch (e) {
+            console.error('Failed to initialize wallet', e);
+            addToast(`Failed to initialize a wallet for ${mintUrl}.`, 'error');
+            return false;
+         }
+      }
+
+      let privkey = pubkeyLock ? user.privkey : undefined;
+
+      return await swapToActiveWallet(wallet, {
+         proofs,
+         privkey,
+      });
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -726,6 +787,7 @@ export const useCashu = () => {
       balanceByWallet,
       getMint,
       createSendableToken,
+      getProofsToSend,
       getMeltQuote,
       payInvoice,
       requestMintInvoice,
@@ -734,5 +796,7 @@ export const useCashu = () => {
       isTokenSpent,
       claimToken,
       unlockProofs,
+      handleClaimToSourceMint,
+      handleClaimToActiveWallet,
    };
 };
