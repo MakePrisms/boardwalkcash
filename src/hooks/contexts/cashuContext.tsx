@@ -51,7 +51,7 @@ export const CashuProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    const [activeWallet, setActiveWallet] = useState<CashuWallet | null>(null);
    const [defaultWallets, setDefaultWallets] = useState<Map<Currency, CashuWallet>>(new Map());
    const [reserveWallet, setReserveWallet] = useState<CashuWallet | null>(null);
-   const [activeUnit, setActiveUnit] = useState<Currency>(Currency.USD);
+   const [activeUnit, setActiveUnit] = useState<Currency>(Currency.SAT);
    const [nwcIsMain, setNWCIsMain] = useState(false);
    const user = useSelector((state: RootState) => state.user);
    const dispatch = useAppDispatch();
