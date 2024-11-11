@@ -75,10 +75,15 @@ export const WaitForLightningInvoicePayment = ({
       };
    }, [startPolling]);
 
-   const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
-   satsToUnit(amountSats, 'usd').then(amountUsdCents => {
-      setAmountData({ amountUsdCents, amountSats });
-   });
+   useEffect(() => {
+      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
+      satsToUnit(amountSats, 'usd').then(amountUsdCents => {
+         setAmountData({ amountUsdCents, amountSats });
+      });
+      return () => {
+         setAmountData(null);
+      };
+   }, [invoice, satsToUnit]);
 
    const handleCheckAgain = () => {
       startPolling();

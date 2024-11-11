@@ -29,19 +29,24 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
 
    const { amount, unit } = decodePaymentRequest(request.pr);
 
-   if (amount) {
-      if (unit === 'sat') {
-         satsToUnit(amount, 'usd').then(amountUsdCents => {
-            setAmountData({ amountUsdCents, amountSats: amount });
-         });
-      } else if (unit === 'usd') {
-         unitToSats(amount / 100, 'usd').then(amountSats => {
-            setAmountData({ amountUsdCents: amount, amountSats });
-         });
+   useEffect(() => {
+      if (amount) {
+         if (unit === 'sat') {
+            satsToUnit(amount, 'usd').then(amountUsdCents => {
+               setAmountData({ amountUsdCents, amountSats: amount });
+            });
+         } else if (unit === 'usd') {
+            unitToSats(amount / 100, 'usd').then(amountSats => {
+               setAmountData({ amountUsdCents: amount, amountSats });
+            });
+         }
+      } else {
+         setAmountData(null);
       }
-   } else {
-      setAmountData(null);
-   }
+      return () => {
+         setAmountData(null);
+      };
+   }, [amount, unit, satsToUnit, unitToSats]);
 
    const pollPayment = useCallback(async () => {
       console.log('checking for payment', request.id);
