@@ -80,7 +80,12 @@ const useWallet = () => {
          }
 
          return { token, txid, gift };
-      } catch (e: any) {
+      } catch (e) {
+         if (e instanceof Error) {
+            addToast(e.message, 'error');
+         } else {
+            addToast('Failed to send token', 'error');
+         }
          console.error(e);
       }
    };
