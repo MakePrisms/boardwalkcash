@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { PublicContact } from '@/types';
 import { useToast } from '@/hooks/util/useToast';
 import useGifts from '@/hooks/boardwalk/useGifts';
+import { getMsgFromUnknownError } from '@/utils/error';
 
 const SelectContact = ({
    onSelectContact,
@@ -18,7 +19,7 @@ const SelectContact = ({
    const [addContactInput, setAddContactInput] = useState('');
    const { sortedContacts, user, addContact, fetchContactByUsername, isContactAdded } =
       useContacts();
-   const { addToast, toastUnknownError } = useToast();
+   const { addToast } = useToast();
    const { loadUserCustomGifts } = useGifts();
 
    const filteredContacts = useMemo(() => {
@@ -53,7 +54,8 @@ const SelectContact = ({
          setAddContactInput('');
          setCurrentView('select');
       } catch (e) {
-         toastUnknownError(e, 'Failed to add contact');
+         const msg = getMsgFromUnknownError(e, 'Failed to add contact');
+         addToast(msg, 'error');
       } finally {
          setAddingContact(false);
       }

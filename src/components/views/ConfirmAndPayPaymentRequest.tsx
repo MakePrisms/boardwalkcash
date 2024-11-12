@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { Button } from 'flowbite-react';
 import { Currency } from '@/types';
 import { useState } from 'react';
+import { getMsgFromUnknownError } from '@/utils/error';
 
 interface MyProps {
    paymentRequest: PaymentRequest;
@@ -16,7 +17,7 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }:
    const [isProcessing, setIsProcessing] = useState(false);
 
    const { payPaymentRequest } = usePaymentRequests();
-   const { addToast, toastUnknownError } = useToast();
+   const { addToast } = useToast();
 
    const handleClose = () => {
       setIsProcessing(false);
@@ -33,7 +34,8 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }:
             addToast('Failed to pay payment request', 'error');
          }
       } catch (e) {
-         toastUnknownError(e, 'Failed to pay payment request');
+         const msg = getMsgFromUnknownError(e, 'Failed to pay payment request');
+         addToast(msg, 'error');
       } finally {
          handleClose();
       }

@@ -39,22 +39,11 @@ export const ToastProvider = ({ children }) => {
       addToast(errMsg, 'error');
    };
 
-   const toastUnknownError = (error, fallbackMessage = 'An unknown error occurred.') => {
-      let errMsg = '';
-      if (error instanceof Error) {
-         errMsg = error.message;
-      }
-      if (errMsg === '') {
-         errMsg = fallbackMessage;
-      }
-      addToast(errMsg, 'error');
-   };
-
    const removeToast = useCallback(id => {
       setToastList(prev => prev.filter(toast => toast.id !== id));
    }, []);
 
-   const contextValue = { addToast, toastSwapSuccess, toastSwapError, toastUnknownError };
+   const contextValue = { addToast, toastSwapSuccess, toastSwapError };
 
    const getToastStyle = type => {
       switch (type) {
