@@ -23,12 +23,12 @@ import { useState } from 'react';
 
 type ActiveTab = 'ecash' | 'lightning';
 
-type MyState = {
-   activeTab: ActiveTab;
+type SendFlowState = {
    isProcessing: boolean;
    isGiftMode: boolean;
 } & (
    | {
+        activeTab: ActiveTab;
         step: 'input';
         contact?: PublicContact;
         paymentRequest?: PaymentRequest;
@@ -74,7 +74,7 @@ type MyState = {
      }
 );
 
-const defaultState: MyState = {
+const defaultState: SendFlowState = {
    step: 'input',
    activeTab: 'ecash',
    isProcessing: false,
@@ -87,7 +87,7 @@ interface SendFlowProps {
 }
 
 const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
-   const [state, setState] = useState<MyState>(defaultState);
+   const [state, setState] = useState<SendFlowState>(defaultState);
 
    const { unitToSats, convertToUnit } = useExchangeRate();
    const { sendGift, sendEcash } = useWallet();
@@ -206,7 +206,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
       if (!decoded.amount) {
          if (numpadValueIsEmpty) {
             /* user needs to enter an amount */
-            setState({ ...state, step: 'input', paymentRequest: decoded });
+            setState({ ...state, step: 'input', paymentRequest: decoded, activeTab: 'ecash' });
             addToast('Enter an amount to send', 'info');
          } else {
             /* user already entered an amount */
@@ -246,11 +246,11 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
    };
 
    const handleSelectContact = (contact: PublicContact) => {
-      let nextStep: MyState['step'] = 'input';
       if (state.isGiftMode) {
-         nextStep = 'selectGift';
+         setState({ ...state, step: 'selectGift', contact });
+      } else {
+         setState({ ...state, step: 'input', contact, activeTab: 'ecash' });
       }
-      setState({ ...state, step: nextStep, contact });
    };
 
    const handleUserIconClick = () => {
@@ -262,6 +262,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
    };
 
    const handleActiveTabChange = (tab: number) => {
+      if (state.step !== 'input') return;
       setState({ ...state, isGiftMode: false, activeTab: tab === 0 ? 'ecash' : 'lightning' });
       clearNumpadInput();
    };
