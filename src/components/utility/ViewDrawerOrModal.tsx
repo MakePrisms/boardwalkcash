@@ -17,7 +17,6 @@ const ViewDrawerOrModal = ({
    isMobile,
    children,
 }: ViewDrawerOrModalProps) => {
-   if (!isOpen) return null;
    return isMobile ? (
       <div>
          <Drawer

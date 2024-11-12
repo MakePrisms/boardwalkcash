@@ -45,7 +45,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       return () => {
          setAmountData(null);
       };
-   }, [satsToUnit, unitToSats, request.pr, amount, unit]);
+   }, [satsToUnit, unitToSats, amount, unit]);
 
    const pollPayment = useCallback(async () => {
       console.log('checking for payment', request.id);

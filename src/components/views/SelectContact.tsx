@@ -29,10 +29,6 @@ const SelectContact = ({
       return f;
    }, [searchTerm, sortedContacts, user]);
 
-   const handleContactClick = (contact: PublicContact) => {
-      onSelectContact(contact);
-   };
-
    const handleAddContact = async (e: React.FormEvent) => {
       e.preventDefault();
       if (isContactAdded({ username: addContactInput })) {
@@ -50,7 +46,9 @@ const SelectContact = ({
       try {
          setAddingContact(true);
          /* reload gifts after contact is added to load any custom gifts */
-         await addContact(contact).then(() => loadUserCustomGifts(contact.pubkey));
+         await addContact(contact);
+         await loadUserCustomGifts(contact.pubkey);
+
          addToast('Contact added', 'success');
          setAddContactInput('');
          setCurrentView('select');
@@ -86,7 +84,7 @@ const SelectContact = ({
                                     key={index}
                                     contact={contact}
                                     mode={'select'}
-                                    handleContactClick={handleContactClick}
+                                    handleContactClick={onSelectContact}
                                     userPubkey={user.pubkey}
                                  />
                               ))}

@@ -53,14 +53,8 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
       }
    }, [token]);
 
-   const toCopy = useMemo(() => {
-      const base = `${window.location.protocol}//${window.location.host}/wallet?`;
-      if (txid) {
-         return `${base}txid=${txid}`;
-      } else {
-         return `${base}token=${token}`;
-      }
-   }, [token, txid]);
+   const base = `${window.location.protocol}//${window.location.host}/wallet`;
+   const toCopy = txid ? `${base}?txid=${txid}` : `${base}?token=${token}`;
 
    if (gift) {
       return (

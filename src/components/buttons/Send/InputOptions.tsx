@@ -64,7 +64,7 @@ const InputOptions = ({
             ) : (
                <Button
                   className='btn-primary'
-                  onClick={() => onNext()}
+                  onClick={onNext}
                   disabled={disableNext}
                   isProcessing={isProcessing}
                >

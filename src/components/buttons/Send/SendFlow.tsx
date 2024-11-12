@@ -291,7 +291,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
                <InputOptions
                   {...commonInputOptions}
                   disableSendEcash={isMintless && state.activeTab === 'ecash'}
-                  showNumpad={isMobile && state.step === 'input'}
+                  showNumpad={isMobile}
                   disableNext={numpadValueIsEmpty}
                   onNext={() => handleAmountInputSubmit(numpadAmount)}
                />
