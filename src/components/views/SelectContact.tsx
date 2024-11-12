@@ -18,7 +18,7 @@ const SelectContact = ({
    const [addContactInput, setAddContactInput] = useState('');
    const { sortedContacts, user, addContact, fetchContactByUsername, isContactAdded } =
       useContacts();
-   const { addToast } = useToast();
+   const { addToast, toastUnknownError } = useToast();
    const { loadUserCustomGifts } = useGifts();
 
    const filteredContacts = useMemo(() => {
@@ -54,8 +54,8 @@ const SelectContact = ({
          addToast('Contact added', 'success');
          setAddContactInput('');
          setCurrentView('select');
-      } catch (e: any) {
-         addToast(e.message, 'error');
+      } catch (e) {
+         toastUnknownError(e, 'Failed to add contact');
       } finally {
          setAddingContact(false);
       }

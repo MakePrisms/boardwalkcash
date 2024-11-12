@@ -16,7 +16,7 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onReset }:
    const [isProcessing, setIsProcessing] = useState(false);
 
    const { payPaymentRequest } = usePaymentRequests();
-   const { addToast } = useToast();
+   const { addToast, toastUnknownError } = useToast();
 
    const resetState = () => {
       setIsProcessing(false);
@@ -24,16 +24,19 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onReset }:
    };
 
    const handleSendPaymentRequest = async () => {
-      setIsProcessing(true);
-      const res = await payPaymentRequest(paymentRequest, requestAmount).catch(e => {
-         const message = e.message || 'Failed to pay payment request';
-         addToast(message, 'error');
+      try {
+         setIsProcessing(true);
+         const res = await payPaymentRequest(paymentRequest, requestAmount);
+         if (res === true) {
+            addToast('Payment request paid!', 'success');
+         } else {
+            addToast('Failed to pay payment request', 'error');
+         }
+      } catch (e) {
+         toastUnknownError(e, 'Failed to pay payment request');
+      } finally {
          resetState();
-      });
-      if (res) {
-         addToast('Payment request paid!', 'success');
       }
-      resetState();
    };
 
    return (
