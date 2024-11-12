@@ -286,6 +286,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
                contact={state.contact}
                paymentRequest={state.paymentRequest}
                onActiveTabChange={handleActiveTabChange}
+               activeTab={state.activeTab}
             >
                <InputOptions
                   {...commonInputOptions}

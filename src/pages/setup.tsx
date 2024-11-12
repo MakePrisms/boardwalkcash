@@ -287,7 +287,7 @@ export default function Home() {
                   <>
                      Search{' '}
                      <a
-                        href='https://bitcoinmints.com?show=cashu&units=usd'
+                        href='https://bitcoinmints.com?show=cashu'
                         className='ml-1 font-medium hover:underline text-cyan-teal'
                         target='__blank'
                      >

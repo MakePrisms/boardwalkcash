@@ -205,7 +205,13 @@ export const useCashu = () => {
             throw new Error('Cannot swap to/from test mints');
          }
          if (!proofsToMelt) {
-            throw new InsufficientBalanceError(from.mint.mintUrl);
+            const tryingToSend =
+               opts.amount || opts.proofs?.reduce((acc, p) => acc + p.amount, 0) || 0;
+            throw new InsufficientBalanceError(
+               from.keys.unit as Currency,
+               balanceByWallet[from.keys.id],
+               tryingToSend,
+            );
          } else if (proofsToMelt.length === 0) {
             addToast('No proofs to melt', 'warning');
             return success;
@@ -416,7 +422,11 @@ export const useCashu = () => {
       const proofs = getProofsByAmount(amount, wallet.keys.id);
 
       if (!proofs || proofs.length === 0) {
-         throw new InsufficientBalanceError(wallet.mint.mintUrl);
+         throw new InsufficientBalanceError(
+            wallet.keys.unit as Currency,
+            balanceByWallet[wallet.keys.id],
+            amount,
+         );
       }
 
       const { send, returnChange } = await wallet.send(amount, proofs, {
@@ -457,7 +467,11 @@ export const useCashu = () => {
 
       try {
          if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
-            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+            throw new InsufficientBalanceError(
+               wallet.keys.unit as Currency,
+               balanceByWallet[wallet.keys.id],
+               amount + (opts?.feeCents || 0),
+            );
          }
 
          const proofs = await getProofsToSend(amount, wallet, {
@@ -525,8 +539,9 @@ export const useCashu = () => {
 
          if (amount + fee_reserve > balanceByWallet[wallet.keys.id]) {
             throw new InsufficientBalanceError(
-               wallet.mint.mintUrl,
+               wallet.keys.unit as Currency,
                balanceByWallet[wallet.keys.id],
+               amount + fee_reserve,
             );
          }
 
@@ -565,7 +580,11 @@ export const useCashu = () => {
          );
 
          if (!proofsToSend || proofsToSend.length === 0) {
-            throw new InsufficientBalanceError(wallet.mint.mintUrl);
+            throw new InsufficientBalanceError(
+               wallet.keys.unit as Currency,
+               balanceByWallet[wallet.keys.id],
+               meltQuote.amount + meltQuote.fee_reserve,
+            );
          }
 
          const { preimage, isPaid, change } = await wallet.meltTokens(meltQuote, proofsToSend, {

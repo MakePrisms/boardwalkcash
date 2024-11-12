@@ -151,7 +151,8 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
       try {
          const quote = await getMeltQuote(invoiceToProcess);
          if (!quote) {
-            throw new Error('Failed to get a melt quote');
+            /* getMeltQuote handles the error */
+            return;
          }
          setMeltQuote(quote);
          setAmountUnit((quote.amount + quote.fee_reserve).toString());

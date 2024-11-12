@@ -81,17 +81,22 @@ export const WaitForLightningInvoicePayment = ({
       };
    }, [startPolling]);
 
-   const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
-   satsToUnit(amountSats, 'usd').then(amountUsdCents => {
-      setAmountData({ amountUsdCents, amountSats });
-   });
+   useEffect(() => {
+      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
+      satsToUnit(amountSats, 'usd').then(amountUsdCents => {
+         setAmountData({ amountUsdCents, amountSats });
+      });
+      return () => {
+         setAmountData(null);
+      };
+   }, [invoice, satsToUnit]);
 
    const handleCheckAgain = () => {
       startPolling();
    };
 
    return (
-      <div className='flex flex-col items-center justify-between space-y-6 text-gray-500 h-full'>
+      <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>
          <div className='flex flex-col items-center justify-center space-y-4 text-gray-500'>
             {amountData && (
                <ActiveAndInactiveAmounts
@@ -103,7 +108,6 @@ export const WaitForLightningInvoicePayment = ({
             <QRCode value={invoice} size={256} />
             <p className='text-center text-sm'>Scan with any Lightning wallet</p>
          </div>
-
          <ClipboardButton
             toCopy={invoice}
             toShow='Copy Invoice'

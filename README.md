@@ -42,43 +42,47 @@ Before you begin, ensure you have the following tools installed:
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/MakePrisms/boardwalkcash.git
-   ```
+```bash
+git clone https://github.com/MakePrisms/boardwalkcash.git
+```
 
 2. Navigate to the project directory:
 
-   ```bash
-   cd boardwalkcash
-   ```
+```bash
+cd boardwalkcash
+```
 
-3. Use Docker Compose to build and run the containers:
+3. Start the database:
 
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+docker-compose up -d db
+```
 
-   Alternatively, if you prefer to run only the database with Docker and use your local Node.js environment for the Next.js app:
+4. Copy the .env.example file to .env:
 
-   a. Start the database container:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   docker-compose up db
-   ```
+5. Start the app:
 
-   b. Install dependencies:
+```bash
+npm install
+```
 
-   ```bash
-   npm install
-   ```
+6. Run the Next.js app:
 
-   c. Run the Next.js app:
+```bash
+npm run dev
+```
 
-   ```bash
-   npm run dev
-   ```
+7. Run database migrations
 
-4. Access the application at `http://localhost:3000` in your web browser.
+```bash
+npx prisma migrate deploy
+```
+
+8. Access the application at `http://localhost:3000` in your web browser.
 
 ## Contributing
 

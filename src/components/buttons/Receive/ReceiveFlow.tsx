@@ -60,6 +60,11 @@ type MyState = {
 
 const defaultState: MyState = { step: 'input', activeTab: 'ecash', isProcessing: false };
 
+const tabs: Array<{ title: string; value: ActiveTab; index: number }> = [
+   { title: 'ecash', value: 'ecash', index: 0 },
+   { title: 'lightning', value: 'lightning', index: 1 },
+];
+
 interface ReceiveInputProps {
    activeTab: ActiveTab;
    isMintless: boolean;
@@ -92,8 +97,9 @@ const ReceiveInput = ({
       <>
          <Tabs
             titleColor='text-black'
-            titles={['ecash', 'lightning']}
-            onActiveTabChange={tab => onActiveTabChange(tab === 0 ? 'ecash' : 'lightning')}
+            titles={tabs.map(x => x.title)}
+            onChange={index => onActiveTabChange(tabs[index].value)}
+            value={tabs.findIndex(x => x.value === activeTab)}
          />
 
          <div className='flex-grow flex flex-col items-center justify-center'>

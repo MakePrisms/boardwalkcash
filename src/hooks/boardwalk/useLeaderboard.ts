@@ -72,6 +72,7 @@ const useLeaderboard = () => {
       load,
       loading,
       userData,
+      timeRange,
       setTimeRange,
       hideFromLeaderboard,
       updateHideFromLeaderboard,
