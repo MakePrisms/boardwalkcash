@@ -17,16 +17,22 @@ const PaymentConfirmationDetails = ({
    unit,
    fee,
 }: PaymentConfirmationDetailsProps) => {
-   const [equivalentAmount, setEquivalentAmount] = useState<number>(0);
+   const [equivalentAmount, setEquivalentAmount] = useState<number | null>(null);
+   const [isLoading, setIsLoading] = useState(true);
 
    useEffect(() => {
       const getEquivalentAmount = async () => {
-         if (unit === Currency.SAT) {
-            const usdAmount = await convertToUnit(amount, 'sat', 'usd');
-            setEquivalentAmount(usdAmount);
-         } else {
-            const satAmount = await convertToUnit(amount, unit, 'sat');
-            setEquivalentAmount(satAmount);
+         setIsLoading(true);
+         try {
+            if (unit === Currency.SAT) {
+               const usdAmount = await convertToUnit(amount, 'sat', 'usd');
+               setEquivalentAmount(usdAmount);
+            } else {
+               const satAmount = await convertToUnit(amount, unit, 'sat');
+               setEquivalentAmount(satAmount);
+            }
+         } finally {
+            setIsLoading(false);
          }
       };
       getEquivalentAmount();
@@ -38,6 +44,14 @@ const PaymentConfirmationDetails = ({
       }
       return destination;
    }, [destination]);
+
+   if (isLoading) {
+      return <div className='flex flex-col gap-4 '>{null}</div>;
+   }
+
+   const isShowingUsdEquivalent = unit === Currency.SAT;
+   const equivalantUnit = unit === Currency.SAT ? 'usd' : 'sat';
+   const equivalantAmtLabel = isShowingUsdEquivalent ? 'USD Equivalent' : 'Sats Equivalent';
 
    return (
       <div className='flex flex-col gap-4'>
@@ -59,19 +73,17 @@ const PaymentConfirmationDetails = ({
                <span>{formatUnit(fee, unit)}</span>
             </div>
          )}
+
          <div className='flex justify-between items-center gap-4'>
-            {unit === Currency.SAT ? (
-               <>
-                  <span className='text-gray-500'>USD Equivalent</span>
-                  <span>~{formatUnit(equivalentAmount, 'usd')}</span>
-               </>
-            ) : (
-               <>
-                  <span className='text-gray-500'>Sats Equivalent</span>
-                  <span>{formatUnit(equivalentAmount, 'sat')}</span>
-               </>
-            )}
+            <span className='text-gray-500'>{equivalantAmtLabel}</span>
+            {amount !== null ? (
+               <span>
+                  {isShowingUsdEquivalent && '~'}
+                  {formatUnit(amount, equivalantUnit)}
+               </span>
+            ) : null}
          </div>
+
          <div className='flex justify-between items-center gap-4'>
             <span className='text-gray-500'>Paying</span>
             <span>{formattedDestintation}</span>
