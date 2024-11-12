@@ -83,10 +83,10 @@ const defaultState: SendFlowState = {
 
 interface SendFlowProps {
    isMobile: boolean;
-   onReset: () => void;
+   onClose: () => void;
 }
 
-const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
+const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
    const [state, setState] = useState<SendFlowState>(defaultState);
 
    const { unitToSats, convertToUnit } = useExchangeRate();
@@ -98,12 +98,6 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
    const showDecimal = activeUnit === Currency.USD;
    const numpad = useNumpad({ showDecimal });
    const { numpadValueIsEmpty, clearNumpadInput, numpadValue, numpadAmount } = numpad;
-
-   const resetState = () => {
-      setState(defaultState);
-      clearNumpadInput();
-      onReset();
-   };
 
    const handleAmountInputSubmit = (input: number) => {
       if (state.step !== 'input') return;
@@ -130,7 +124,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
          return;
       }
       setState(state => ({ ...state, isProcessing: true }));
-      const res = await sendEcash(amount, activeUnit, resetState, undefined, state.contact);
+      const res = await sendEcash(amount, activeUnit, onClose, undefined, state.contact);
       if (res) {
          setState(state => ({
             ...state,
@@ -145,7 +139,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
    const handleSendGift = async () => {
       if (state.step !== 'confirmSendGift') return;
       setState(state => ({ ...state, isProcessing: true }));
-      const res = await sendGift(state.gift, resetState, state.contact);
+      const res = await sendGift(state.gift, onClose, state.contact);
       const { gift, contact } = state;
       if (res) {
          setState(state => ({
@@ -169,7 +163,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
          return handleLightningInvoiceInput(invoice, lud16);
       } catch (error) {
          addToast('An error occurred while fetching the invoice.', 'error');
-         return resetState();
+         return onClose();
       } finally {
          setState(state => ({ ...state, isProcessing: false }));
       }
@@ -334,14 +328,14 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
             <ConfirmAndPayPaymentRequest
                paymentRequest={state.paymentRequest}
                requestAmount={state.amount}
-               onReset={resetState}
+               onClose={onClose}
             />
          )}
          {state.step === 'shareEcash' && (
             <ShareEcash
                token={state.token}
                txid={state.txid}
-               onClose={resetState}
+               onClose={onClose}
                contact={state.contact}
                gift={state.gift}
             />
@@ -357,7 +351,7 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
                lud16={state.lud16}
                amount={state.amount}
                meltQuote={state.meltQuote}
-               onClose={resetState}
+               onClose={onClose}
             />
          )}
       </div>

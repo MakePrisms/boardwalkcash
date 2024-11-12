@@ -24,11 +24,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
 
-interface ReceiveFlowProps {
-   onReset: () => void;
-   isMobile: boolean;
-}
-
 type ActiveTab = 'ecash' | 'lightning';
 
 type MyState = {
@@ -155,7 +150,12 @@ const ReceiveInput = ({
    );
 };
 
-const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
+interface ReceiveFlowProps {
+   onClose: () => void;
+   isMobile: boolean;
+}
+
+const ReceiveFlow = ({ isMobile, onClose }: ReceiveFlowProps) => {
    const [state, setState] = useState<MyState>(defaultState);
 
    const { addToast } = useToast();
@@ -166,13 +166,6 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
 
    const showDecimal = activeUnit === Currency.USD;
    const numpad = useNumpad({ showDecimal });
-   const { clearNumpadInput } = useNumpad({ showDecimal });
-
-   const resetState = () => {
-      setState(defaultState);
-      onReset();
-      clearNumpadInput();
-   };
 
    const handlePaste = async (pastedValue: string) => {
       const handleTokenInput = async () => {
@@ -230,7 +223,7 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
          }
       } catch (e) {
          addToast('Failed to fetch invoice', 'error');
-         resetState();
+         onClose();
          return;
       } finally {
          setState(state => ({ ...state, isProcessing: false }));
@@ -244,7 +237,7 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
          setState(state => ({ ...state, step: 'paymentRequest', paymentRequestData: req }));
       } catch (e) {
          addToast('Failed to fetch payment request', 'error');
-         resetState();
+         onClose();
          return;
       } finally {
          setState(state => ({ ...state, isProcessing: false }));
@@ -273,14 +266,14 @@ const ReceiveFlow = ({ isMobile, onReset }: ReceiveFlowProps) => {
             <WaitForLightningInvoicePayment
                invoice={state.invoiceData?.invoice}
                checkingId={state.invoiceData?.checkingId}
-               onSuccess={resetState}
+               onSuccess={onClose}
             />
          )}
          {state.step === 'paymentRequest' && (
-            <WaitForEcashPayment request={state.paymentRequestData} onSuccess={resetState} />
+            <WaitForEcashPayment request={state.paymentRequestData} onSuccess={onClose} />
          )}
          {state.step === 'receiveEcash' && (
-            <ConfirmEcashReceive token={state.token} onSuccess={resetState} onFail={resetState} />
+            <ConfirmEcashReceive token={state.token} onSuccess={onClose} onFail={onClose} />
          )}
          {state.step === 'QRScanner' && (
             <QRScanner onCancel={() => setState(defaultState)} onScan={handlePaste} />

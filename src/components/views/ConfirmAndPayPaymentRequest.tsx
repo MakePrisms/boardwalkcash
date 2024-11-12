@@ -9,18 +9,18 @@ import { useState } from 'react';
 interface MyProps {
    paymentRequest: PaymentRequest;
    requestAmount: number;
-   onReset: () => void;
+   onClose: () => void;
 }
 
-const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onReset }: MyProps) => {
+const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }: MyProps) => {
    const [isProcessing, setIsProcessing] = useState(false);
 
    const { payPaymentRequest } = usePaymentRequests();
    const { addToast, toastUnknownError } = useToast();
 
-   const resetState = () => {
+   const handleClose = () => {
       setIsProcessing(false);
-      onReset();
+      onClose();
    };
 
    const handleSendPaymentRequest = async () => {
@@ -35,7 +35,7 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onReset }:
       } catch (e) {
          toastUnknownError(e, 'Failed to pay payment request');
       } finally {
-         resetState();
+         handleClose();
       }
    };
 
