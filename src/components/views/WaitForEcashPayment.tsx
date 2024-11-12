@@ -40,27 +40,23 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
       setAmountData(null);
    }
 
-   const checkPayment = useCallback(async () => {
-      const { token } = await checkPaymentRequest(request.id);
-      if (token) {
-         await handleClaimToSourceMint(token);
-         onSuccess();
-         return true;
+   const checkPayment = async () => {
+      try {
+         const { token } = await checkPaymentRequest(request.id);
+         if (token) {
+            await handleClaimToSourceMint(token);
+            onSuccess();
+         }
+      } catch (e) {
+         console.error('Error checking payment', e);
       }
-      return false;
-   }, [checkPaymentRequest, request.id, onSuccess, handleClaimToSourceMint]);
+   };
 
-   const { start, stop, isPolling } = usePolling(checkPayment, 5_000, 60_000);
+   const { isPolling } = usePolling(checkPayment, 5_000, 60_000);
 
    const checkAgain = async () => {
       await checkPayment();
    };
-
-   /* Start polling when component mounts */
-   useEffect(() => {
-      start();
-      return () => stop();
-   }, [start, stop]);
 
    return (
       <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>

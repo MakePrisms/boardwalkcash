@@ -1,44 +1,21 @@
-import { useInterval, useTimeoutFn } from 'react-use';
-import { useCallback, useState } from 'react';
+import { useInterval, useTimeout } from 'react-use';
 
 /**
- *  A hook for polling a callback function at a specified interval with a timeout
- * @param callback - The function to be called at each interval
- * @param intervalMs - The interval between polls in milliseconds
- * @param timeoutMs - The total time to poll before stopping in milliseconds
+ * Repeatedly calls a function at a specified interval until a timeout is reached.
+ * @param callback - Function to call periodically. If it returns true, polling will stop
+ * @param delay - Time in milliseconds between each call. If null, polling is paused
+ * @param timeout - Total duration in milliseconds to poll before stopping. Optional
  */
+export const usePolling = (callback: Function, delay?: number | null, timeout?: number) => {
+   const [hasTimedOut, _, restart] = useTimeout(timeout);
 
-export const usePolling = (callback: Function, intervalMs: number, timeoutMs: number) => {
-   const [isPolling, setIsPolling] = useState(false);
+   /* hasTimedOut returns true if the timeout has been reached */
+   const pollingPeriod = !hasTimedOut() ? delay : null;
 
-   /* Stop polling after timeout */
-   const [, , resetTimeout] = useTimeoutFn(() => {
-      setIsPolling(false);
-   }, timeoutMs);
-
-   const poll = useCallback(async () => {
-      if (!isPolling) return;
-
-      try {
-         await callback();
-      } catch (e) {
-         console.error('Polling error:', e);
-      }
-   }, [callback, isPolling]);
-
-   /* Set up the polling interval */
-   useInterval(poll, isPolling ? intervalMs : null);
-
-   const start = useCallback(() => {
-      setIsPolling(true);
-      resetTimeout();
-   }, [resetTimeout]);
-
-   const stop = useCallback(() => setIsPolling(false), []);
+   useInterval(callback, pollingPeriod);
 
    return {
-      start,
-      stop,
-      isPolling,
+      isPolling: !!pollingPeriod,
+      restart,
    };
 };
