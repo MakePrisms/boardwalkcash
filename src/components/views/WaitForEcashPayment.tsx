@@ -54,10 +54,6 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
 
    const { isPolling } = usePolling(checkPayment, 5_000, 60_000);
 
-   const checkAgain = async () => {
-      await checkPayment();
-   };
-
    return (
       <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>
          <div className='flex flex-col items-center justify-center space-y-4 text-gray-500'>
@@ -81,7 +77,7 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
          {!isPolling && (
             <div className='flex flex-col items-center justify-center text-center space-y-4 text-black'>
                <p className='text-xs'>Timed out waiting for payment...</p>
-               <button onClick={checkAgain} className='underline'>
+               <button onClick={checkPayment} className='underline'>
                   Check again
                </button>
             </div>
