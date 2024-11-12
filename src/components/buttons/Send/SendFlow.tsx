@@ -110,13 +110,12 @@ const SendFlow = ({ isMobile, onReset }: SendFlowProps) => {
 
       if (state.paymentRequest !== undefined) {
          /* user entered an amountless payment request */
-         const newPR = state.paymentRequest;
-         setState(state => ({
+         setState({
             ...state,
             step: 'confirmPaymentRequest',
-            paymentRequest: newPR,
             amount: input,
-         }));
+            paymentRequest: state.paymentRequest,
+         });
       } else if (state.activeTab === 'ecash') {
          return handleSendEcash(input);
       } else if (state.activeTab === 'lightning') {
