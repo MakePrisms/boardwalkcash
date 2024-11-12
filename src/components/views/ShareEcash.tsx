@@ -17,40 +17,34 @@ interface ShareEcashProps {
 }
 
 const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) => {
-   const [carouselSlides, setCarouselSlides] = useState<React.ReactNode[]>([]);
+   const carouselSlides = useMemo(() => {
+      if (!token) return [];
 
-   useEffect(() => {
-      if (!token) return;
+      const qrCodeValue = `${window.location.protocol}//${window.location.host}/wallet?token=${token}`;
 
-      try {
-         const qrCodeValue = `${window.location.protocol}//${window.location.host}/wallet?token=${token}`;
-
-         setCarouselSlides([
-            <div className='text-black text-center space-y-2 ml-3' key='1'>
-               <ErrorBoundary
-                  fallback={
-                     <p className='text-red-500'>
-                        Failed to load QR. Link too long. Go to transaction history to reclaim your
-                        tokens and try again, or just copy the link by clicking the button below.{' '}
-                     </p>
-                  }
-               >
-                  <QRCode value={qrCodeValue} size={275} />
-                  <p> Link: {`boardwalkcash.com...`}</p>
-               </ErrorBoundary>
-            </div>,
-            <div className='text-black text-center space-y-2' key='2'>
-               <ErrorBoundary
-                  fallback={<p className='text-red-500'>Failed to load QR. Token too long</p>}
-               >
-                  <AnimatedQRCode encodedToken={`${token}`} />
-               </ErrorBoundary>
-               <p> Token: {`${token.slice(0, 12)}...${token.slice(-5)}`}</p>
-            </div>,
-         ]);
-      } catch (error) {
-         console.error(error);
-      }
+      return [
+         <div className='text-black text-center space-y-2 ml-3' key='1'>
+            <ErrorBoundary
+               fallback={
+                  <p className='text-red-500'>
+                     Failed to load QR. Link too long. Go to transaction history to reclaim your
+                     tokens and try again, or just copy the link by clicking the button below.{' '}
+                  </p>
+               }
+            >
+               <QRCode value={qrCodeValue} size={275} />
+               <p> Link: {`boardwalkcash.com...`}</p>
+            </ErrorBoundary>
+         </div>,
+         <div className='text-black text-center space-y-2' key='2'>
+            <ErrorBoundary
+               fallback={<p className='text-red-500'>Failed to load QR. Token too long</p>}
+            >
+               <AnimatedQRCode encodedToken={`${token}`} />
+            </ErrorBoundary>
+            <p> Token: {`${token.slice(0, 12)}...${token.slice(-5)}`}</p>
+         </div>,
+      ];
    }, [token]);
 
    const base = `${window.location.protocol}//${window.location.host}/wallet`;
