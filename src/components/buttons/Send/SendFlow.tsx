@@ -289,6 +289,7 @@ const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
                   showNumpad={isMobile}
                   disableNext={numpadValueIsEmpty}
                   onNext={() => handleAmountInputSubmit(numpadAmount)}
+                  disableEcashButtons={state.activeTab === 'lightning'}
                />
             </AmountInput>
          )}
@@ -305,6 +306,7 @@ const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
                   showNumpad={false}
                   disableNext={numpadValueIsEmpty}
                   onNext={() => handleLud16Submit(state.lud16, state.amount, activeUnit)}
+                  disableEcashButtons={true}
                />
             </InputLud16>
          )}

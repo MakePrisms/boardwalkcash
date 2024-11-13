@@ -14,13 +14,13 @@ interface InputOptionsProps {
    disableNext: boolean;
    isProcessing: boolean;
    numpad: NumpadControls;
+   disableEcashButtons: boolean;
    onNext: () => void;
    onPaste: (text: string) => void;
    onUserIconClick: () => void;
    onScanIconClick: () => void;
    onGiftIconClick: () => void;
 }
-
 const InputOptions = ({
    onPaste,
    onUserIconClick,
@@ -32,6 +32,7 @@ const InputOptions = ({
    showNumpad,
    numpad,
    disableSendEcash,
+   disableEcashButtons,
 }: InputOptionsProps) => {
    const { activeUnit } = useCashuContext();
    const { handleNumpadInput, handleNumpadBackspace } = numpad;
@@ -44,10 +45,16 @@ const InputOptions = ({
                <button onClick={onScanIconClick}>
                   <ScanIcon className='size-8 text-gray-500' />
                </button>
-               <button onClick={onUserIconClick}>
+               <button
+                  onClick={disableEcashButtons ? undefined : onUserIconClick}
+                  className={disableEcashButtons ? 'opacity-50 cursor-not-allowed' : ''}
+               >
                   <UserIcon className='w-6 h-6 text-gray-500' />
                </button>
-               <button onClick={onGiftIconClick}>
+               <button
+                  onClick={disableEcashButtons ? undefined : onGiftIconClick}
+                  className={disableEcashButtons ? 'opacity-50 cursor-not-allowed' : ''}
+               >
                   <GiftIcon className='w-6 h-6 text-gray-500' />
                </button>
             </div>
