@@ -9,4 +9,5 @@ export const getMsgFromUnknownError = (
    if (errMsg === '') {
       errMsg = fallbackMessage;
    }
+   return errMsg;
 };
