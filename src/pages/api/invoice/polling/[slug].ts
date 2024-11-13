@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getEncodedTokenV4, Proof } from '@cashu/cashu-ts';
 import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
-import { InvoicePollingRequest, NotificationType, ProofData } from '@/types';
+import { InvoicePollingRequest, NotificationType } from '@/types';
 import { createNotification, notifyTokenReceived } from '@/lib/notificationModels';
 import {
    computeTxId,

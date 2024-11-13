@@ -4,108 +4,107 @@ import { runMiddleware, corsMiddleware } from '@/utils/middleware';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { findUserByPubkeyWithMint } from '@/lib/userModels';
-import { createMintQuote } from '@/lib/mintQuoteModels';
 import { customMintQuoteRequest } from '@/utils/cashu';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
    await runMiddleware(req, res, corsMiddleware);
 
-   const { slug, ...queryParams } = req.query;
+   return res.status(404).json({ error: 'Not found' });
 
-   if (!slug || slug === 'undefined') {
-      res.status(404).json({ error: 'Not found' });
-      return;
-   }
+   // const { slug, ...queryParams } = req.query;
 
-   const user = await findUserByPubkeyWithMint(slug.toString());
+   // if (!slug || slug === 'undefined') {
+   //    res.status(404).json({ error: 'Not found' });
+   //    return;
+   // }
 
-   if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-   }
+   // const user = await findUserByPubkeyWithMint(slug.toString());
 
-   const DEFAULT_UNIT = 'usd';
+   // if (!user) {
+   //    res.status(404).json({ error: 'User not found' });
+   //    return;
+   // }
 
-   const keyset = user.defaultMint.keysets.find(keyset => keyset.unit === DEFAULT_UNIT);
+   // const DEFAULT_UNIT = 'usd';
 
-   console.log('Keyset:', keyset);
+   // const keyset = user.defaultMint.keysets.find(keyset => keyset.unit === DEFAULT_UNIT);
 
-   if (!keyset) {
-      res.status(404).json({ error: 'Users default mint does not support default unit' });
-      return;
-   }
+   // console.log('Keyset:', keyset);
 
-   const keys = keyset.keys.reduce(
-      (acc, key) => {
-         const [tokenAmt, pubkey] = key.split(':');
-         acc[tokenAmt] = pubkey;
-         return acc;
-      },
-      {} as Record<string, string>,
-   );
+   // if (!keyset) {
+   //    res.status(404).json({ error: 'Users default mint does not support default unit' });
+   //    return;
+   // }
 
-   const wallet = new CashuWallet(new CashuMint(user.defaultMint.url), {
-      keys: {
-         id: keyset.id,
-         keys,
-         unit: keyset.unit,
-      },
-   });
+   // const keys = keyset.keys.reduce(
+   //    (acc, key) => {
+   //       const [tokenAmt, pubkey] = key.split(':');
+   //       acc[tokenAmt] = pubkey;
+   //       return acc;
+   //    },
+   //    {} as Record<string, string>,
+   // );
 
-   if (slug === user.pubkey) {
-      // Ensure amount is treated as a string, even if it comes as an array
-      const amount = Array.isArray(queryParams.amount) ? queryParams.amount[0] : queryParams.amount;
+   // const wallet = new CashuWallet(new CashuMint(user.defaultMint.url), {
+   //    keys: {
+   //       id: keyset.id,
+   //       keys,
+   //       unit: keyset.unit,
+   //    },
+   // });
 
-      if (amount) {
-         const metadata = [['text/plain', 'Boardwalk Cash lightning address endpoint']];
+   // if (slug === user.pubkey) {
+   //    // Ensure amount is treated as a string, even if it comes as an array
+   //    const amount = Array.isArray(queryParams.amount) ? queryParams.amount[0] : queryParams.amount;
 
-         const metadataString = JSON.stringify(metadata);
+   //    if (amount) {
+   //       const metadata = [['text/plain', 'Boardwalk Cash lightning address endpoint']];
 
-         const hash = crypto.createHash('sha256').update(metadataString).digest('hex');
+   //       const metadataString = JSON.stringify(metadata);
 
-         // Can't do anything with the description hash with the current cashu-ts API
-         const descriptionHash = Buffer.from(hash, 'hex').toString('base64'); // Encoding as base64
+   //       const hash = crypto.createHash('sha256').update(metadataString).digest('hex');
 
-         // Convert amount from millisatoshis to satoshis
-         const amountSat = parseInt(amount) / 1000;
+   //       // Can't do anything with the description hash with the current cashu-ts API
+   //       const descriptionHash = Buffer.from(hash, 'hex').toString('base64'); // Encoding as base64
 
-         const amountUsd = await fetch('https://mempool.space/api/v1/prices').then(res =>
-            res.json().then(data => {
-               const usdBtc = data.USD;
-               console.log('USD to BTC rate:', usdBtc);
-               const usdSat = usdBtc / 100_000_000;
-               console.log('USD to SAT rate:', usdSat);
-               console.log('usd', amountSat * usdSat);
-               return parseFloat((amountSat * usdSat * 100).toFixed(2));
-            }),
-         );
+   //       // Convert amount from millisatoshis to satoshis
+   //       const amountSat = parseInt(amount) / 1000;
 
-         const { quote, request } = await customMintQuoteRequest(amountSat, amountUsd, wallet);
+   //       const amountUsd = await fetch('https://mempool.space/api/v1/prices').then(res =>
+   //          res.json().then(data => {
+   //             const usdBtc = data.USD;
+   //             console.log('USD to BTC rate:', usdBtc);
+   //             const usdSat = usdBtc / 100_000_000;
+   //             console.log('USD to SAT rate:', usdSat);
+   //             console.log('usd', amountSat * usdSat);
+   //             return parseFloat((amountSat * usdSat * 100).toFixed(2));
+   //          }),
+   //       );
 
-         console.log('Quote:', quote);
-         console.log('Request:', request);
+   //       const { quote, request } = await customMintQuoteRequest(amountSat, amountUsd, wallet);
 
-         if (request) {
-            await createMintQuote(quote, request, user.pubkey, keyset.id);
+   //       console.log('Quote:', quote);
+   //       console.log('Request:', request);
 
-            // start polling
-            axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
-               pubkey: user.pubkey,
-               amount: amountUsd,
-               keysetId: keyset.id,
-               mintUrl: user.defaultMint.url,
-            });
+   //       if (request) {
+   //          // start polling
+   //          axios.post(`${process.env.NEXT_PUBLIC_PROJECT_URL}/api/invoice/polling/${quote}`, {
+   //             pubkey: user.pubkey,
+   //             amount: amountUsd,
+   //             keysetId: keyset.id,
+   //             mintUrl: user.defaultMint.url,
+   //          });
 
-            return res.status(200).json({
-               pr: request,
-            });
-         } else {
-            res.status(500).json({ error: 'Error generating invoice' });
-            return;
-         }
-      } else {
-         res.status(400).json({ error: 'Amount not specified' });
-         return;
-      }
-   }
+   //          return res.status(200).json({
+   //             pr: request,
+   //          });
+   //       } else {
+   //          res.status(500).json({ error: 'Error generating invoice' });
+   //          return;
+   //       }
+   //    } else {
+   //       res.status(400).json({ error: 'Amount not specified' });
+   //       return;
+   //    }
+   // }
 }
