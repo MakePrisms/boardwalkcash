@@ -111,13 +111,17 @@ export const usePaymentRequests = () => {
       } else {
          const quote = await wallet.createMintQuote(amount);
 
-         let res: PayInvoiceResponse;
+         let res: PayInvoiceResponse | undefined;
          if (isMintless) {
             res = await nwcPayInvoice(quote.request);
          } else if (activeWallet) {
             res = await cashuPayInvoice(quote.request);
          } else {
             throw new Error('No active wallet found');
+         }
+
+         if (!res) {
+            throw new Error('Failed to pay invoice');
          }
 
          const { proofs } = await wallet.mintTokens(amount, quote.quote);

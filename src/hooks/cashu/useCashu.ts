@@ -555,7 +555,7 @@ export const useCashu = () => {
       invoice: string,
       meltQuote?: MeltQuoteResponse,
       wallet?: CashuWallet,
-   ): Promise<PayInvoiceResponse> => {
+   ): Promise<PayInvoiceResponse | undefined> => {
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');
