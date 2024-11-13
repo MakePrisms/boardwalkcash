@@ -43,7 +43,7 @@ export const usePaymentRequests = () => {
       const queryString = params.toString();
       const url = `/api/token/pr${queryString ? `?${queryString}` : ''}`;
 
-      const res = await authenticatedRequest<GetPaymentRequestResponse>(url, 'GET', undefined);
+      const res = await authenticatedRequest<GetPaymentRequestResponse>(url, 'POST', undefined);
 
       setFetchingPaymentRequest(false);
 
