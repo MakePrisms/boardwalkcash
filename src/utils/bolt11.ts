@@ -22,3 +22,17 @@ export const getAmountAndExpiryFromInvoice = (invoice: string) => {
 
    return { amount, expiry };
 };
+
+/**
+ *
+ * @param invoice invoice to decode
+ * @returns
+ */
+export const decodeInvoice = (invoice: string) => {
+   const decoded = bolt11Decoder.decode(invoice);
+
+   const amountSat = Number(decoded.sections[2].value / 1000);
+   const expiryUnixSeconds = decoded.expiry + decoded.sections[4].value;
+
+   return { amountSat, expiryUnixSeconds };
+};

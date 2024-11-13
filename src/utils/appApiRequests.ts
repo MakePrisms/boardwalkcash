@@ -211,19 +211,3 @@ export const postTokenToDb = async (token: string, gift?: string, isFee?: boolea
 export const getTokenFromDb = async (txid: string) => {
    return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
 };
-
-export const getInvoiceForLNReceive = async (pubkey: string, amount: number, keysetId: string) => {
-   return await authenticatedRequest<LightningTipResponse>(
-      `/api/users/${pubkey}/receive?amount=${amount}&keysetId=${keysetId}`,
-      'GET',
-      undefined,
-   );
-};
-
-export const getInvoiceStatus = async (pubkey: string, checkingId: string) => {
-   return await authenticatedRequest<LightningTipStatusResponse>(
-      `/api/users/${pubkey}/receive/${checkingId}`,
-      'GET',
-      undefined,
-   );
-};

@@ -397,3 +397,5 @@ export type CheckPaymentRequestResponse = {
    createdAt: Date;
    updatedAt: Date;
 };
+
+export type PendingMintQuote = MintQuoteResponse & { amount: number; keysetId: string };

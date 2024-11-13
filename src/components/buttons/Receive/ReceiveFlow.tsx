@@ -5,7 +5,6 @@ import ConfirmEcashReceive from '@/components/views/ConfirmEcashReceive';
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import { NumpadControls, useNumpad } from '@/hooks/util/useNumpad';
 import WaitForEcashPayment from '../../views/WaitForEcashPayment';
-import { getInvoiceForLNReceive } from '@/utils/appApiRequests';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import Amount from '@/components/utility/amounts/Amount';
@@ -23,6 +22,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
+import useWallet from '@/hooks/boardwalk/useWallet';
 
 type ActiveTab = 'ecash' | 'lightning';
 
@@ -163,6 +163,7 @@ const ReceiveFlow = ({ isMobile, onClose }: ReceiveFlowProps) => {
    const { fetchPaymentRequest } = usePaymentRequests();
    const { activeUnit, activeKeysetId } = useCashuContext();
    const userPubkey = useSelector((state: RootState) => state.user.pubkey);
+   const { generateInvoice } = useWallet();
 
    const showDecimal = activeUnit === Currency.USD;
    const numpad = useNumpad({ showDecimal });
@@ -218,7 +219,7 @@ const ReceiveFlow = ({ isMobile, onClose }: ReceiveFlowProps) => {
             if (!activeKeysetId || !userPubkey) {
                throw new Error('No active keyset or pubkey set');
             }
-            const res = await getInvoiceForLNReceive(userPubkey, amountUnit, activeKeysetId);
+            const res = await generateInvoice(amountUnit);
             setState(state => ({ ...state, step: 'invoice', invoiceData: res }));
          }
       } catch (e) {

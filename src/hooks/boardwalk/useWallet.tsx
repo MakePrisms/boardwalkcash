@@ -1,18 +1,37 @@
+import { usePendingTransaction } from '../cashu/usePendingTransaction';
 import { Currency, GiftAsset, PublicContact } from '@/types';
+import { useProofStorage } from '../cashu/useProofStorage';
 import { useCashuContext } from '../contexts/cashuContext';
+import { setSuccess } from '@/redux/slices/ActivitySlice';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import useNotifications from './useNotifications';
+import { MintQuoteState } from '@cashu/cashu-ts';
 import { formatUnit } from '@/utils/formatting';
 import useMintlessMode from './useMintlessMode';
+import { useAppDispatch } from '@/redux/store';
 import { useCashu } from '../cashu/useCashu';
 import { useToast } from '../util/useToast';
+import { useCallback } from 'react';
+import { isQuoteExpired } from '@/utils/cashu';
+import {
+   addPendingLightningTransaction,
+   deleteLightningTransaction,
+   TxStatus,
+   updateTransactionStatus,
+} from '@/redux/slices/HistorySlice';
 
 const useWallet = () => {
-   const { isMintless, createMintlessToken, sendToMintlessUser } = useMintlessMode();
+   const { isMintless, createMintlessToken, sendToMintlessUser, mintlessReceive } =
+      useMintlessMode();
    const { sendTokenAsNotification } = useNotifications();
    const { createSendableToken } = useCashu();
-   const { activeUnit } = useCashuContext();
+   const { activeUnit, activeWallet, getWallet } = useCashuContext();
+   const { addPendingMintQuote, pendingMintQuotes, removePendingMintQuote } =
+      usePendingTransaction();
+   const { addProofs } = useProofStorage();
    const { addToast } = useToast();
+
+   const dispatch = useAppDispatch();
 
    /**
     * Send ecash or make a mintless transaction
@@ -167,9 +186,107 @@ const useWallet = () => {
          addToast(msg, 'error');
       }
    };
+
+   /** Generate an invoice from mintless wallet or active cashu wallet */
+   const generateInvoice = useCallback(
+      async (amount: number): Promise<{ invoice: string; checkingId: string }> => {
+         let result: { invoice: string; checkingId: string };
+         if (isMintless) {
+            /* TODO: need some way to check status of invoice */
+            result = {
+               invoice: await mintlessReceive(amount),
+               checkingId: '',
+            };
+         } else {
+            if (!activeWallet) {
+               throw new Error('Active wallet not set and mintless receive is not enabled');
+            }
+            const quote = await activeWallet.createMintQuote(amount);
+            result = {
+               invoice: quote.request,
+               checkingId: quote.quote,
+            };
+
+            /* save mint quote until we claim proofs */
+            addPendingMintQuote({ ...quote, amount, keysetId: activeWallet.keys.id });
+            dispatch(
+               addPendingLightningTransaction({
+                  transaction: {
+                     amount,
+                     quote: quote.quote,
+                     unit: activeUnit,
+                     mint: activeWallet.mint.mintUrl,
+                  },
+               }),
+            );
+         }
+         return result;
+      },
+      [isMintless, activeWallet, mintlessReceive, addPendingMintQuote, dispatch, activeUnit],
+   );
+
+   /** Tries to mint proofs for a pending mint quote*/
+   const tryToMintProofs = useCallback(
+      async (quoteId: string): Promise<MintQuoteState> => {
+         const pendingQuote = pendingMintQuotes.find(q => q.quote === quoteId);
+         if (!pendingQuote) {
+            throw new Error('No pending mint quote found');
+         }
+
+         /* get wallet with matching keyset id */
+         const wallet = getWallet(pendingQuote.keysetId);
+         if (!wallet) {
+            // TODO: how can we make sure we always can get a wallet instance?
+            throw new Error('Wallet not found for pending quote');
+         }
+
+         const { state } = await wallet.checkMintQuote(pendingQuote.quote);
+
+         if (isQuoteExpired(pendingQuote)) {
+            dispatch(deleteLightningTransaction(quoteId));
+            addToast('Invoice expired', 'warning');
+            // TODO: there is no EXPIRED state, how should we handle this?
+            return MintQuoteState.ISSUED;
+         }
+
+         if (state === MintQuoteState.UNPAID) {
+            /* invoice not paid */
+            return state;
+         } else if (state === MintQuoteState.ISSUED) {
+            /* this shouldn't happen if we successfully remove the quote after minting */
+            console.warn('Mint quote already issued');
+            removePendingMintQuote(quoteId);
+            return state;
+         } else if (state === MintQuoteState.PAID) {
+            /* invoice was paid, mint proofs */
+            const { proofs } = await wallet.mintTokens(pendingQuote.amount, quoteId);
+            /* claim new proofs */
+            await addProofs(proofs);
+
+            removePendingMintQuote(quoteId);
+
+            dispatch(setSuccess(`Received ${formatUnit(pendingQuote.amount, activeUnit)}`));
+            dispatch(
+               updateTransactionStatus({
+                  type: 'lightning',
+                  quote: quoteId,
+                  status: TxStatus.PAID,
+               }),
+            );
+
+            /* quote is now ISSUED */
+            return MintQuoteState.ISSUED;
+         } else {
+            throw new Error('Invalid mint quote state');
+         }
+      },
+      [pendingMintQuotes, activeUnit, removePendingMintQuote, addProofs, getWallet, dispatch],
+   );
    return {
       sendGift,
       sendEcash,
+      generateInvoice,
+      tryToMintProofs,
    };
 };
 
