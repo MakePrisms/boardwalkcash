@@ -64,12 +64,17 @@ const HistoryTableRow: React.FC<{
    };
 
    const formatDate = (date?: string) => {
-      if (!date) return '';
-      const [datePart, timePart] = date.split(', ');
-      const [month, day] = datePart.split('/').slice(0, 2);
-      const [time, period] = timePart.split(' ');
-      const [hour, minute, _] = time.split(':');
-      return `${month}/${day}, ${hour}:${minute} ${period || ''}`;
+      try {
+         if (!date) return '';
+         const [datePart, timePart] = date.split(', ');
+         const [month, day] = datePart.split('/').slice(0, 2);
+         const [time, period] = timePart.split(' ');
+         const [hour, minute, _] = time.split(':');
+         return `${month}/${day}, ${hour}:${minute} ${period || ''}`;
+      } catch (e) {
+         console.error('Error formatting date', e);
+         return '';
+      }
    };
    const formatAmount = (amount: number, unit: string, fee?: number) => {
       let color = amount < 0 ? 'text-white' : 'text-green-500';
