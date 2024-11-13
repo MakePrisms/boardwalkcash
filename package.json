@@ -49,6 +49,7 @@
       "qr-scanner": "^1.4.2",
       "qrcode.react": "^3.1.0",
       "react": "^18",
+      "react-device-detect": "^2.2.3",
       "react-dom": "^18",
       "react-hook-form": "^7.52.1",
       "react-redux": "^9.1.0",

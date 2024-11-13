@@ -19,10 +19,11 @@ import Numpad from '@/components/utility/Numpad';
 import { Tabs } from '@/components/utility/Tabs';
 import { useToast } from '@/hooks/util/useToast';
 import { getTokenFromUrl } from '@/utils/cashu';
-import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from 'flowbite-react';
+import { isMobile } from 'react-device-detect';
+import { useState } from 'react';
 
 type ActiveTab = 'ecash' | 'lightning';
 
@@ -63,7 +64,6 @@ const tabs: Array<{ title: string; value: ActiveTab; index: number }> = [
 interface ReceiveInputProps {
    activeTab: ActiveTab;
    isMintless: boolean;
-   isMobile: boolean;
    isProcessing: boolean;
    numpad: NumpadControls;
    onActiveTabChange: (tab: ActiveTab) => void;
@@ -76,7 +76,6 @@ interface ReceiveInputProps {
 const ReceiveInput = ({
    activeTab,
    isMintless,
-   isMobile,
    isProcessing,
    numpad,
    onActiveTabChange,
@@ -152,10 +151,9 @@ const ReceiveInput = ({
 
 interface ReceiveFlowProps {
    onClose: () => void;
-   isMobile: boolean;
 }
 
-const ReceiveFlow = ({ isMobile, onClose }: ReceiveFlowProps) => {
+const ReceiveFlow = ({ onClose }: ReceiveFlowProps) => {
    const [state, setState] = useState<MyState>(defaultState);
 
    const { addToast } = useToast();
@@ -250,7 +248,6 @@ const ReceiveFlow = ({ isMobile, onClose }: ReceiveFlowProps) => {
             <ReceiveInput
                activeTab={state.activeTab}
                isMintless={isMintless}
-               isMobile={isMobile}
                isProcessing={state.isProcessing}
                onActiveTabChange={tab => setState(prevState => ({ ...prevState, activeTab: tab }))}
                onPaste={handlePaste}

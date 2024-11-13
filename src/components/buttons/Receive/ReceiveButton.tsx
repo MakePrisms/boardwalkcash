@@ -5,7 +5,7 @@ import { Button } from 'flowbite-react';
 import React, { useState } from 'react';
 import ViewDrawerOrModal from '@/components/utility/ViewDrawerOrModal';
 
-const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
+const ReceiveButton = () => {
    const [showReceiveFlow, setShowReceiveFlow] = useState(false);
    const { activeUnit } = useCashuContext();
 
@@ -38,12 +38,11 @@ const ReceiveButton = ({ isMobile }: { isMobile: boolean }) => {
             <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
          </Button>
          <ViewDrawerOrModal
-            isMobile={isMobile}
             isOpen={showReceiveFlow}
             onClose={handleModalClose}
             title={activeUnit === 'usd' ? 'Receive $' : 'Receive Bitcoin'}
          >
-            <ReceiveFlow onClose={handleModalClose} isMobile={isMobile} />
+            <ReceiveFlow onClose={handleModalClose} />
          </ViewDrawerOrModal>
       </>
    );

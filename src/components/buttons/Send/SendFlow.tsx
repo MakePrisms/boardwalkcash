@@ -16,6 +16,7 @@ import useWallet from '@/hooks/boardwalk/useWallet';
 import { useNumpad } from '@/hooks/util/useNumpad';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
+import { isMobile } from 'react-device-detect';
 import InputOptions from './InputOptions';
 import AmountInput from './AmountInput';
 import InputLud16 from './Lud16Input';
@@ -82,11 +83,10 @@ const defaultState: SendFlowState = {
 };
 
 interface SendFlowProps {
-   isMobile: boolean;
    onClose: () => void;
 }
 
-const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
+const SendFlow = ({ onClose }: SendFlowProps) => {
    const [state, setState] = useState<SendFlowState>(defaultState);
 
    const { unitToSats, convertToUnit } = useExchangeRate();
