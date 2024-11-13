@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/util/useToast';
 import { Button, Spinner } from 'flowbite-react';
 import { formatUnit } from '@/utils/formatting';
 import Amount from '../utility/amounts/Amount';
+import UserLink from '../utility/UserLink';
 import Tooltip from '../utility/Tooltip';
 import { formatUrl } from '@/utils/url';
 import { useSelector } from 'react-redux';
@@ -64,9 +65,15 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    useEffect(() => {
       const load = async () => {
          try {
-            setGift(await getGiftFromToken(token));
+            const gift = await getGiftFromToken(token);
+            const alreadyClaimed = await isTokenSpent(token);
 
-            setAlreadyClaimed(await isTokenSpent(token));
+            if (alreadyClaimed) {
+               addToast('Token already claimed', 'error');
+            }
+
+            setGift(gift);
+            setAlreadyClaimed(alreadyClaimed);
 
             if (contact) {
                setTokenContact(contact);
@@ -124,10 +131,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    const title = useMemo(() => {
       const contactText = tokenContact?.username ? (
          <>
-            {contact !== undefined ? 'from' : 'for'}{' '}
-            <a className='underline' target='_blank' href={`/${tokenContact.username}`}>
-               {tokenContact.username}
-            </a>
+            {contact !== undefined ? 'from' : 'for'} <UserLink username={tokenContact.username} />
          </>
       ) : (
          ''
@@ -139,22 +143,20 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
       }
    }, [pubkeyLock, gift, tokenContact, contact]);
 
-   if (loading) {
-      return <Spinner size='lg' />;
-   }
-
-   if (isClaiming) {
+   if (isClaiming || loading) {
       return (
-         <div className='flex flex-col items-center justify-center'>
-            <Spinner size='lg' />
-            <p className='text-center text-sm'>Claiming...</p>
+         <div className='flex flex-col items-center justify-center space-y-6'>
+            <Spinner size={'xl'} />
+            <p className='text-center text-sm text-black'>
+               {isClaiming ? 'Claiming token...' : 'Loading token...'}
+            </p>
          </div>
       );
    }
 
    return (
       <div className='flex flex-col items-center justify-between h-full'>
-         <div className='flex flex-col items-center justify-center gap-6'>
+         <div className='flex flex-col items-center justify-center gap-6 mt-4'>
             {title && <h2 className='text-xl text-black'>{title}</h2>}
             <Tooltip content='Copy token' onClick={handleCopy}>
                <div className='flex justify-center items-center'>
@@ -190,7 +192,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
             )}
          </div>
 
-         <div className='flex flex-col gap-6 w-full'>
+         <div className='flex flex-col items-center gap-6 w-full'>
             {!alreadyClaimed && (!pubkeyLock || pubkeyLock === '02' + user.pubkey) && (
                <>
                   {isMintless ? (
@@ -201,14 +203,14 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
                      <>
                         {disableClaim ? (
                            <Tooltip content='testnut'>
-                              <Button disabled={true} className='btn-primary w-full'>
+                              <Button disabled={true} className='btn-primary w-[160px]'>
                                  Claim
                               </Button>
                            </Tooltip>
                         ) : (
                            <Button
                               onClick={() => handleClaim('active')}
-                              className='btn-primary w-full'
+                              className='btn-primary w-[160px]'
                            >
                               Claim
                            </Button>
@@ -224,7 +226,7 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
                (!pubkeyLock || pubkeyLock === '02' + user.pubkey) && (
                   <div className='flex items-center justify-center'>
                      <Button
-                        className={`btn-primary !p-0 w-full`}
+                        className={`btn-primary xss-button !p-0 w-[160px]`}
                         onClick={() => handleClaim('source')}
                         size={'xs'}
                      >

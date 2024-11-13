@@ -29,7 +29,7 @@ export const usePaymentRequests = () => {
 
    const { activeWallet } = useCashuContext();
    const { payInvoice: cashuPayInvoice, getProofsToSend } = useCashu();
-   const { addProofs } = useProofStorage();
+   const { addProofs, removeProofs } = useProofStorage();
    const { nwcPayInvoice, isMintless } = useMintlessMode();
 
    const dispatch = useAppDispatch();
@@ -100,6 +100,8 @@ export const usePaymentRequests = () => {
       ) {
          console.log('using active wallet and swapping');
          const proofs = await getProofsToSend(request.amount, wallet);
+         /* getProofsToSend does not remove proofs, so we do that here to get the proofs in the same state as ones minted in the else case */
+         await removeProofs(proofs);
          return {
             proofs,
             mint: wallet.mint.mintUrl,
@@ -128,8 +130,8 @@ export const usePaymentRequests = () => {
       }
    };
 
-   const payPaymentRequest = async (pr: string, amount?: number) => {
-      const request = decodePaymentRequest(pr);
+   const payPaymentRequest = async (pr: string | PaymentRequest, amount?: number) => {
+      const request = typeof pr === 'string' ? decodePaymentRequest(pr) : pr;
 
       if (!request.amount && !amount) {
          throw new Error('Missing amount');
@@ -168,7 +170,8 @@ export const usePaymentRequests = () => {
          });
 
          if (!response.ok) {
-            throw new Error('Failed to send payment');
+            const msg = await response.text();
+            throw new Error(`${JSON.parse(msg).error || 'Failed to send payment'}`);
          } else {
             dispatch(
                addTransaction({
@@ -192,7 +195,7 @@ export const usePaymentRequests = () => {
             return true;
          }
       } catch (e) {
-         addProofs(payment.proofs);
+         await addProofs(payment.proofs);
          throw e;
       }
    };
@@ -237,7 +240,6 @@ export const usePaymentRequests = () => {
                },
             }),
          );
-
          return true;
       } catch (e) {
          addProofs(payment.proofs);

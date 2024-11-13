@@ -41,7 +41,7 @@ const ViewReusablePaymentRequest = () => {
    }, [activeWallet, activeUnit]);
 
    return (
-      <div className='text-black flex flex-col justify-between items-center gap-6 h-full'>
+      <div className='text-black flex flex-col justify-around items-center gap-6 h-full'>
          {isMintless ? (
             <p>
                You currently have a Lightning Wallet set as your main account. Select an eCash mint

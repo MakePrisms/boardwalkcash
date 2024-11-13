@@ -150,9 +150,9 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
    const getGiftFromToken = async (token: string | Token): Promise<GiftAsset | null> => {
       const txid =
          typeof token === 'string' ? computeTxId(token) : computeTxId(getEncodedTokenV4(token));
-      console.log('txid', txid);
-      const { gift } = await request<{ gift: string }>(`/api/token/${txid}`, 'GET');
-      console.log('gift', gift);
+      const { gift } = await request<{ gift: string }>(`/api/token/${txid}`, 'GET').catch(e => ({
+         gift: null,
+      }));
       if (!gift) return null;
       const localGift = getGiftByIdentifier(gift) || null;
       if (localGift) {

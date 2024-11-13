@@ -58,7 +58,7 @@ const Amount: React.FC<AmountProps> = ({
    return (
       <div className='inline-flex items-center'>
          {showUnit === 'prefix' && <span className={unitClassName}>{getUnitSymbol(unit)}</span>}
-         <span className={className}>
+         <span className={`${className} pt-2`}>
             {formattedValue}
             {greyZeros && <span className='text-gray-400'>{greyZeros}</span>}
          </span>

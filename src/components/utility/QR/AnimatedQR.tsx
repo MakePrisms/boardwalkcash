@@ -20,7 +20,10 @@ const fragmentLengths: Record<FragmentLength, number> = {
    long: 150,
 };
 
-const AnimatedQRCode: React.FC<{ encodedToken: string }> = ({ encodedToken }) => {
+const AnimatedQRCode: React.FC<{ encodedToken: string; size?: number }> = ({
+   encodedToken,
+   size = 275,
+}) => {
    const [qrCodeFragment, setQrCodeFragment] = useState('');
    const [encoder, setEncoder] = useState<UREncoder | null>(null);
    const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
@@ -75,7 +78,7 @@ const AnimatedQRCode: React.FC<{ encodedToken: string }> = ({ encodedToken }) =>
       <div className='text-center'>
          {qrCodeFragment && (
             <div>
-               <QRCode value={qrCodeFragment} size={window.innerWidth < 768 ? 275 : 400} />
+               <QRCode value={qrCodeFragment} size={size} />
                {/* <div>
                   <button onClick={changeSpeed}>Change Speed</button>
                   <button onClick={changeSize}>Change Size</button>

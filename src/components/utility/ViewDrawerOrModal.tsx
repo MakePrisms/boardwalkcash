@@ -24,24 +24,24 @@ const ViewDrawerOrModal = ({
             onClose={onClose}
             position='bottom'
             theme={bottomSheetDrawerTheme}
-            className='h-[calc(100%-75px)]'
+            className='h-[calc(100%-75px)] rounded-t-xl'
          >
             <Drawer.Header
                title={title}
                titleIcon={() => null}
                closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
-            <Drawer.Items key={isOpen.toString()} className='flex flex-col h-full'>
+            <Drawer.Items key={isOpen.toString()} className='flex flex-col h-full mb-12'>
                {children}
             </Drawer.Items>
          </Drawer>
       </div>
    ) : (
-      <Modal show={isOpen} onClose={onClose} size={'sm'}>
+      <Modal show={isOpen} onClose={onClose} size={'sm'} style={{ outline: 'none' }}>
          <Modal.Header>{title}</Modal.Header>
          <Modal.Body>
             <div
-               className='flex flex-col space-y-20 items-stretch justify-center'
+               className='flex flex-col h-[450px] max-h-screen  space-y-20 items-stretch'
                key={isOpen.toString()}
             >
                {children}
