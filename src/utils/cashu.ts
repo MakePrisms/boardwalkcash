@@ -431,10 +431,16 @@ export const dissectToken = (token: string | Token) => {
    };
 };
 
-export const isQuoteExpired = (quote: MintQuoteResponse) => {
+/**
+ * Check if a mint quote or it's invoice has expired
+ * @param quote quote to check
+ * @returns boolean
+ */
+export const isMintQuoteExpired = (quote: MintQuoteResponse) => {
    const { expiryUnixSeconds: invoiceExpiry } = decodeInvoice(quote.request);
 
-   const nowSeconds = Math.floor(Date.now() / 1000);
+   /* subtract 15 seconds just so that we underestimate the expiry time, just in case */
+   const nowSeconds = Math.floor(Date.now() / 1000) - 15;
 
    const quoteExpired = quote.expiry && quote.expiry < nowSeconds;
    const invoiceExpired = invoiceExpiry < nowSeconds;

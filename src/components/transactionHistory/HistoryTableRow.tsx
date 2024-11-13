@@ -160,7 +160,9 @@ const HistoryTableRow: React.FC<{
       setReclaiming(true);
       try {
          const status = await tryToMintProofs(tx.quote);
-         if (status !== MintQuoteState.ISSUED) {
+         if (status === 'EXPIRED') {
+            addToast('Invoice expired', 'warning');
+         } else if (status !== MintQuoteState.ISSUED) {
             addToast('Invoice not paid', 'warning');
          }
       } catch (e) {

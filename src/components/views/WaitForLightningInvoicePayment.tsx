@@ -3,7 +3,7 @@ import ActiveAndInactiveAmounts from '../utility/amounts/ActiveAndInactiveAmount
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { usePolling } from '@/hooks/util/usePolling';
 import useWallet from '@/hooks/boardwalk/useWallet';
 import { MintQuoteState } from '@cashu/cashu-ts';
@@ -44,9 +44,10 @@ export const WaitForLightningInvoicePayment = ({
          if (status === MintQuoteState.ISSUED) {
             onSuccess();
             setAmountData(null);
-         } else {
-            console.log('quote not paid', status);
+         } else if (status === 'EXPIRED') {
+            addToast('Invoice expired.', 'warning');
          }
+         console.log('quote not paid', status);
       } catch (error) {
          console.error('Error fetching payment status', error);
          addToast(getMsgFromUnknownError(error), 'error');

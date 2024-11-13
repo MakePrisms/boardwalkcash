@@ -1,5 +1,5 @@
 import { usePendingTransaction } from '../cashu/usePendingTransaction';
-import { Currency, GiftAsset, PublicContact } from '@/types';
+import { Currency, GiftAsset, MintQuoteStateExt, PublicContact } from '@/types';
 import { useProofStorage } from '../cashu/useProofStorage';
 import { useCashuContext } from '../contexts/cashuContext';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
@@ -8,11 +8,11 @@ import useNotifications from './useNotifications';
 import { MintQuoteState } from '@cashu/cashu-ts';
 import { formatUnit } from '@/utils/formatting';
 import useMintlessMode from './useMintlessMode';
+import { isMintQuoteExpired } from '@/utils/cashu';
 import { useAppDispatch } from '@/redux/store';
 import { useCashu } from '../cashu/useCashu';
 import { useToast } from '../util/useToast';
 import { useCallback } from 'react';
-import { isQuoteExpired } from '@/utils/cashu';
 import {
    addPendingLightningTransaction,
    deleteLightningTransaction,
@@ -227,7 +227,7 @@ const useWallet = () => {
 
    /** Tries to mint proofs for a pending mint quote*/
    const tryToMintProofs = useCallback(
-      async (quoteId: string): Promise<MintQuoteState> => {
+      async (quoteId: string): Promise<MintQuoteStateExt> => {
          const pendingQuote = pendingMintQuotes.find(q => q.quote === quoteId);
          if (!pendingQuote) {
             throw new Error('No pending mint quote found');
@@ -242,16 +242,16 @@ const useWallet = () => {
 
          const { state } = await wallet.checkMintQuote(pendingQuote.quote);
 
-         if (isQuoteExpired(pendingQuote)) {
-            dispatch(deleteLightningTransaction(quoteId));
-            addToast('Invoice expired', 'warning');
-            // TODO: there is no EXPIRED state, how should we handle this?
-            return MintQuoteState.ISSUED;
-         }
-
          if (state === MintQuoteState.UNPAID) {
             /* invoice not paid */
-            return state;
+            if (isMintQuoteExpired(pendingQuote)) {
+               /* only check expired if its UNPAID */
+               dispatch(deleteLightningTransaction(quoteId));
+
+               return 'EXPIRED';
+            } else {
+               return state;
+            }
          } else if (state === MintQuoteState.ISSUED) {
             /* this shouldn't happen if we successfully remove the quote after minting */
             console.warn('Mint quote already issued');
