@@ -1,9 +1,8 @@
 import { PendingMintQuote } from '@/types';
-import { MintQuoteResponse } from '@cashu/cashu-ts';
 import { useLocalStorage } from 'usehooks-ts';
 
 export const usePendingTransaction = () => {
-   const [pendingMintQuotes, setPendingMintQuotes] = useLocalStorage<Array<PendingMintQuote>>(
+   const [pendingMintQuotes, setPendingMintQuotes] = useLocalStorage<PendingMintQuote[]>(
       'pendingMintQuotes',
       [],
    );
