@@ -18,11 +18,13 @@ import { useSelector } from 'react-redux';
 import { Token, getDecodedToken } from '@cashu/cashu-ts';
 import { areTokensSpent } from '@/utils/cashu';
 import useContacts from './useContacts';
+import useGifts from './useGifts';
 
 const useNotifications = () => {
    const user = useSelector((state: RootState) => state.user);
    const [notifications, setNotifications] = useState<NotificationWithData[]>([]);
    const [unreadNotifications, setUnreadNotifications] = useState<number[]>([]);
+   const { getGiftById } = useGifts();
    const { isContactAdded } = useContacts();
 
    useEffect(() => {
@@ -133,7 +135,8 @@ const useNotifications = () => {
          throw new Error('Could not get raw token from notification');
       }
       const token = getDecodedToken(rawToken);
-      const gift = notification.token?.gift as string | undefined;
+      const giftId = notification.token?.giftId || null;
+      const gift = giftId ? getGiftById(giftId) : null;
       return {
          token,
          rawToken,
@@ -172,7 +175,8 @@ const useNotifications = () => {
          throw new Error('Mintless transaction is missing from notification');
       }
       const contact = notification.contact;
-      const { id, amount, isFee, gift, createdAt } = notification.mintlessTransaction;
+      const { id, amount, isFee, giftId, createdAt } = notification.mintlessTransaction;
+      const gift = giftId ? getGiftById(giftId) : null;
       return {
          id,
          amount,

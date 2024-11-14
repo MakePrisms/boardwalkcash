@@ -295,6 +295,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: to.keys.unit as Currency,
                   gift: undefined,
+                  giftId: null,
                },
             }),
          );
@@ -379,6 +380,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: wallet.keys.unit as Currency,
                   gift: undefined,
+                  giftId: null,
                },
             }),
          );
@@ -454,7 +456,7 @@ export const useCashu = () => {
       opts?: {
          wallet?: CashuWallet;
          pubkey?: string;
-         gift?: string;
+         giftId?: number;
          fee?: number;
          feeSplits?: GiftFee[];
       },
@@ -493,7 +495,7 @@ export const useCashu = () => {
                unit: wallet.keys.unit,
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.gift, true);
+               const txid = await postTokenToDb(feeToken, opts?.giftId || null, true);
                await sendTokenAsNotification(feeToken, txid);
             }
             await removeProofs(feeProofs);
@@ -515,7 +517,7 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
-                  gift: opts?.gift,
+                  giftId: opts?.giftId || null,
                   fee: opts?.fee,
                },
             }),

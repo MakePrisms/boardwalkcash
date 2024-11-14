@@ -1,20 +1,20 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { GetGiftResponse } from '@/types';
-import { getGiftByName } from '@/lib/gifts/giftHelpers';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
 
 export default async function handler(
    req: NextApiRequest,
    res: NextApiResponse<GetGiftResponse | { error: string }>,
 ) {
-   const { giftName } = req.query;
+   const { giftId } = req.query;
 
-   if (!giftName || typeof giftName !== 'string') {
+   if (!giftId || typeof giftId !== 'number') {
       return res.status(400).json({ error: 'Invalid gift name' });
    }
 
    if (req.method === 'GET') {
       try {
-         const gift = await getGiftByName(giftName);
+         const gift = await lookupGiftById(giftId);
          if (!gift) {
             return res.status(404).json({ error: 'Gift not found' });
          }

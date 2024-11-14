@@ -193,6 +193,7 @@ const ConnectWalletSetting = () => {
                      status: TxStatus.PAID,
                      unit: 'usd',
                      mint: reserveWallet.mint.mintUrl,
+                     giftId: null,
                   },
                }),
             );

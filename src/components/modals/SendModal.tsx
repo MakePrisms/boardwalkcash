@@ -202,7 +202,7 @@ export const SendModal = ({ isOpen, onClose }: SendModalProps) => {
             // TODO: right now we don't support generic p2pk lock, but if lockTo is not a contact,
             // we should not do this.
             await sendTokenAsNotification(token);
-            const txid = await postTokenToDb(token);
+            const txid = await postTokenToDb(token, null);
             setTxid(txid);
          }
       } catch (error: any) {

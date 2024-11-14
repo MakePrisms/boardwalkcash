@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
-import prisma from '@/lib/prisma';
 import { createMintlessTransactionAndNotification } from '@/lib/notificationModels';
 import { MintlessTransactionRequest, MintlessTransactionResponse } from '@/types';
 
@@ -14,7 +13,7 @@ export default async function handler(
       return res.status(405).json({ error: 'Method Not Allowed' });
    }
 
-   const { gift, amount, recipientPubkey, createdByPubkey, isFee }: MintlessTransactionRequest =
+   const { giftId, amount, recipientPubkey, createdByPubkey, isFee }: MintlessTransactionRequest =
       req.body;
 
    if (!amount || !recipientPubkey || !createdByPubkey) {
@@ -23,7 +22,7 @@ export default async function handler(
 
    try {
       const { mintlessTransaction, notification } = await createMintlessTransactionAndNotification(
-         gift,
+         giftId,
          amount,
          recipientPubkey,
          createdByPubkey,

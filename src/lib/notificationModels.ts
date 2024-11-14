@@ -26,7 +26,7 @@ export async function createNotification(
 }
 
 export async function createMintlessTransactionAndNotification(
-   gift: string | null,
+   giftId: number | null,
    amount: number,
    recipientPubkey: string,
    createdByPubkey: string,
@@ -43,7 +43,7 @@ export async function createMintlessTransactionAndNotification(
 
       const mintlessTransaction = await prisma.mintlessTransaction.create({
          data: {
-            gift,
+            giftId,
             notificationId: notification.id.toString(),
             amount,
             recipientPubkey,

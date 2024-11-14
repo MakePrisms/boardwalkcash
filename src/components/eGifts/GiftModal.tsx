@@ -205,7 +205,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          } else {
             sendableToken = await createSendableToken(amountUnit, {
                pubkey: `02${selectedContact?.pubkey}`,
-               gift: gift?.name,
+               giftId: gift?.id,
                fee: gift?.fee,
                feeSplits: gift?.splits,
             });
@@ -216,7 +216,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return;
          }
 
-         const txid = await postTokenToDb(sendableToken, gift?.name);
+         const txid = await postTokenToDb(sendableToken, gift?.id || null);
          // TODO: won't work if tokes are not locked
          await sendTokenAsNotification(sendableToken, txid);
          setToken(sendableToken);

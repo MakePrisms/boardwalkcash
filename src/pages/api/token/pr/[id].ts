@@ -109,7 +109,7 @@ export default async function handler(
 
       const txid = computeTxId(token);
       if (request.reusable) {
-         await createTokenInDb({ token }, txid);
+         await createTokenInDb({ token, giftId: null }, txid);
          await createNotification(
             request.userPubkey,
             NotificationType.Token,

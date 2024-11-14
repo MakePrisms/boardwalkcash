@@ -149,13 +149,13 @@ export const getTipStatus = async (quoteId: string) => {
    );
 };
 
-export const postTokenToDb = async (token: string, gift?: string, isFee?: boolean) => {
+export const postTokenToDb = async (token: string, giftId: number | null, isFee?: boolean) => {
    console.log('posting token to db', token);
    const pubkey = window.localStorage.getItem('pubkey');
    return (
       await request<PostTokenResponse>(`/api/token`, 'POST', {
          token,
-         gift,
+         giftId,
          isFee,
          createdByPubkey: pubkey,
       } as PostTokenRequest)

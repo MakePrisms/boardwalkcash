@@ -1,7 +1,7 @@
 import { giftMetadata } from './giftMetadata';
 
-export const getGiftByName = async (name: string) => {
-   return giftMetadata.find(g => g.name === name);
+export const lookupGiftById = async (id: number) => {
+   return giftMetadata.find(g => g.id === id);
 };
 
 export const getAllGifts = async () => {

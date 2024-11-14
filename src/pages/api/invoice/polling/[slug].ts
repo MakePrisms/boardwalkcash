@@ -11,7 +11,7 @@ import {
    initializeWallet,
 } from '@/utils/cashu';
 import { createTokenInDb } from '@/lib/tokenModels';
-import { getGiftByName } from '@/lib/gifts/giftHelpers';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
 import { getRecipientPubkeyFromGift } from '@/utils';
 
 export type PollingApiResponse = {
@@ -25,7 +25,7 @@ export type PollingApiResponse = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    /* amount is total amount to send, including fee */
-   const { mintUrl, keysetId, gift, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
+   const { mintUrl, keysetId, giftId, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
 
    if (req.query.isTip !== 'true') {
       throw new Error('This endpoint should only be used for tips');
@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
    }
 
-   const giftFromDB = gift ? await getGiftByName(gift) : null;
+   const giftFromDB = giftId ? await lookupGiftById(giftId) : null;
 
    // NOTE: this should currently throw an error if the keyset is no longer active
    const wallet = await initializeWallet(mintUrl, { keysetId: keysetId });
@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, gift }, txid, true);
+               await createTokenInDb({ token: feeToken, giftId }, txid, true);
                await notifyTokenReceived(recipient, JSON.stringify({ token: feeToken }), txid);
             }
 
@@ -139,10 +139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                unit: wallet.keys.unit,
             });
             /* not sure why gift is ending up as 'undefined' */
-            if (gift && gift !== 'undefined') {
+            if (giftId) {
                const txid = computeTxId(token);
 
-               await createTokenInDb({ token, gift }, txid);
+               await createTokenInDb({ token, giftId }, txid);
 
                created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
             } else {

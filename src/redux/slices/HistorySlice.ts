@@ -16,8 +16,9 @@ export interface EcashTransaction {
    unit: 'sat' | 'usd';
    appName?: string; // used for nwc connections
    isReserve?: boolean;
-   pubkey?: string; // pubkey the token is locked to
-   gift?: string;
+   pubkey?: string;
+   gift?: string; // should deprecate, but will break existing history
+   giftId: number | null;
    fee?: number;
 }
 

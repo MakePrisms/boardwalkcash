@@ -87,7 +87,7 @@ const LightningTipButton = ({ contact, className }: LightningTipButtonProps) => 
          const statusResponse = await getTipStatus(checkingId);
          if (statusResponse.token) {
             setToken(statusResponse.token);
-            await postTokenToDb(statusResponse.token);
+            await postTokenToDb(statusResponse.token, null);
          }
          return statusResponse.paid;
       } catch (error) {

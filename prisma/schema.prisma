@@ -101,7 +101,7 @@ model Token {
   token            String
   createdAt        DateTime        @default(now())
   redeemedAt       DateTime?
-  gift             String?
+  giftId           Int?
   Notification     Notification[]
   createdByPubkey  String?
   recipientPubkey  String?
@@ -115,7 +115,7 @@ model Token {
 
 model MintlessTransaction {
   id              String         @id @default(uuid())
-  gift            String?
+  giftId          Int?
   notificationId  String
   amount          Int
   recipientPubkey String
@@ -166,30 +166,3 @@ model PaymentRequest {
   // multiple tokens if the payment request is reusable
   tokens     Token[]
 }
-
-// model GiftCondition {
-//   id                      Int    @id @default(autoincrement())
-//   giftId                  Int
-//   // one time use, limited supply, expiry, unlimited supply
-//   conditionType           String
-//   // number of gifts, expiry date, etc
-//   conditionValue          Json
-//   // array of gifts that are conditionally sendable
-//   conditionalSendGifts    Gift[] @relation("SendConditions")
-//   // array of gifts that are conditionally receivable
-//   conditionalReceiveGifts Gift[] @relation("ReceiveConditions")
-
-//   @@index([giftId])
-// }
-
-// model UserConditionalGift {
-//   id               Int  @id @default(autoincrement())
-//   userId           Int
-//   giftId           Int
-//   conditionsStatus Json
-//   user             User @relation(fields: [userId], references: [id])
-//   gift             Gift @relation(fields: [giftId], references: [id])
-
-//   @@index([userId])
-//   @@index([giftId])
-// }

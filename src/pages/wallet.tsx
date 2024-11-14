@@ -27,7 +27,7 @@ import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
-import { getGiftByName } from '@/lib/gifts/giftHelpers';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { Button, Dropdown } from 'flowbite-react';
 import { runMigrations } from '@/migrations/localStorage.migrations';
@@ -267,17 +267,8 @@ export const getServerSideProps: GetServerSideProps = async (
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
          token = tokenEntry.token;
-         if (tokenEntry.gift) {
-            gift = await getGiftByName(tokenEntry.gift as string).then(g => {
-               if (!g) return;
-               return {
-                  amount: g.amount,
-                  name: g.name,
-                  selectedSrc: g.selectedSrc,
-                  unselectedSrc: g.unselectedSrc,
-                  description: g.description,
-               } as GiftAsset;
-            });
+         if (tokenEntry.giftId) {
+            gift = await lookupGiftById(tokenEntry.giftId);
             giftPath = gift?.selectedSrc || null;
          }
       }

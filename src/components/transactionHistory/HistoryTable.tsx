@@ -27,10 +27,10 @@ const HistoryTable: React.FC<{
       setIsViewGiftModalOpen(false);
    };
 
-   const openViewGiftModal = async (tx: EcashTransaction & { gift: string }) => {
+   const openViewGiftModal = async (tx: EcashTransaction & { giftId: number }) => {
       setIsViewGiftModalOpen(true);
       setIsSendModalOpen(false);
-      const gift = await fetchGift(tx.gift);
+      const gift = await fetchGift(tx.giftId);
       if (!gift) {
          console.error('Gift not found:', tx.gift);
          return;
