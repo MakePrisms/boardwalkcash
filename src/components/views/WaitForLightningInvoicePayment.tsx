@@ -2,7 +2,7 @@ import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import ActiveAndInactiveAmounts from '../utility/amounts/ActiveAndInactiveAmounts';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
-import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
+import { decodeBolt11 } from '@/utils/bolt11';
 import { useState, useEffect } from 'react';
 import { usePolling } from '@/hooks/util/usePolling';
 import useWallet from '@/hooks/boardwalk/useWallet';
@@ -28,13 +28,17 @@ export const WaitForLightningInvoicePayment = ({
    const { addToast } = useToast();
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
-      amountSats: number;
+      amountSat: number;
    } | null>(null);
 
    useEffect(() => {
-      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
-      satsToUnit(amountSats, 'usd').then(amountUsdCents => {
-         setAmountData({ amountUsdCents, amountSats });
+      const { amountSat } = decodeBolt11(invoice);
+      if (!amountSat) {
+         /* amountless invoice isn't possible bc cashu doesn't support it */
+         return;
+      }
+      satsToUnit(amountSat, 'usd').then(amountUsdCents => {
+         setAmountData({ amountUsdCents, amountSat });
       });
    }, [invoice, satsToUnit]);
 
@@ -61,7 +65,7 @@ export const WaitForLightningInvoicePayment = ({
          <div className='flex flex-col items-center justify-center space-y-4 text-gray-500'>
             {amountData && (
                <ActiveAndInactiveAmounts
-                  satAmount={amountData.amountSats}
+                  satAmount={amountData.amountSat}
                   usdCentsAmount={amountData.amountUsdCents}
                   activeUnit={activeUnit}
                />

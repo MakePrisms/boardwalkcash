@@ -1,9 +1,9 @@
 import { NIP47Method, NIP47Response, decryptEventContent } from '@/utils/nip47';
 import { NWA } from '@/hooks/nostr/useNwc';
 import NDK, { NDKEvent } from '@nostr-dev-kit/ndk';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import { CashuWallet, MeltQuoteState, MeltTokensResponse, Proof } from '@cashu/cashu-ts';
 import { addBalance } from '@/utils/cashu';
+import { decodeBolt11 } from '@/utils/bolt11';
 
 export class NIP47RequestProcessor {
    private method: string | undefined = undefined;
@@ -139,7 +139,12 @@ export class NIP47RequestProcessor {
 
       console.log('## invoice', this.params.invoice);
 
-      this.invoiceAmount = getAmountFromInvoice(this.params.invoice);
+      const { amountSat } = decodeBolt11(this.params.invoice);
+      if (!amountSat) {
+         this.sendError('INTERNAL');
+         throw new Error('amountless invoice');
+      }
+      this.invoiceAmount = amountSat;
 
       this.amountCents = await fetch('https://mempool.space/api/v1/prices').then(res =>
          res.json().then(data => {

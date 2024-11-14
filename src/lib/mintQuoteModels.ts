@@ -1,5 +1,5 @@
 import prisma from './prisma';
-import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
+import { decodeBolt11 } from '@/utils/bolt11';
 
 export const createMintQuote = async (
    quoteId: string,
@@ -8,7 +8,11 @@ export const createMintQuote = async (
    keysetId: string,
    amountUnit?: number,
 ) => {
-   const { amount, expiry } = getAmountAndExpiryFromInvoice(request);
+   const { amountSat: amount, expiryUnixMs: expiry } = decodeBolt11(request);
+
+   if (!amount) {
+      throw new Error('Amountless invoices are not supported');
+   }
 
    const quote = await prisma.mintQuote.create({
       data: {

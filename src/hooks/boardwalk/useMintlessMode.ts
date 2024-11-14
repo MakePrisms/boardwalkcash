@@ -1,6 +1,6 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Currency, PayInvoiceResponse, PublicContact } from '@/types';
-import { getAmountFromInvoice } from '@/utils/bolt11';
+import { decodeBolt11 } from '@/utils/bolt11';
 import { nwc } from '@getalby/sdk';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '../util/useExchangeRate';
@@ -113,14 +113,18 @@ const useMintlessMode = () => {
 
       const res = await nwc.payInvoice({ invoice });
 
-      const amountSats = getAmountFromInvoice(invoice);
+      const { amountSat } = decodeBolt11(invoice);
 
-      dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));
+      if (!amountSat) {
+         throw new Error('Amountless invoices are not supported');
+      }
+
+      dispatch(setSuccess(`Sent ${formatSats(amountSat)}!`));
       dispatch(
          addTransaction({
             type: 'mintless',
             transaction: {
-               amount: -amountSats,
+               amount: -amountSat,
                unit: Currency.SAT,
                type: 'mintless',
                gift: null,
@@ -131,7 +135,7 @@ const useMintlessMode = () => {
 
       return {
          preimage: res.preimage,
-         amountUsd: amountSats,
+         amountUsd: amountSat,
          feePaid: 0,
       };
    };
