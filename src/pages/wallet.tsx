@@ -27,7 +27,7 @@ import { formatUrl } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
-import { getGiftByName } from '@/lib/gifts';
+import { getGiftByName } from '@/lib/gifts/giftHelpers';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { Button, Dropdown } from 'flowbite-react';
 import { runMigrations } from '@/migrations/localStorage.migrations';
@@ -273,8 +273,8 @@ export const getServerSideProps: GetServerSideProps = async (
                return {
                   amount: g.amount,
                   name: g.name,
-                  selectedSrc: g.imageUrlSelected,
-                  unselectedSrc: g.imageUrlUnselected,
+                  selectedSrc: g.selectedSrc,
+                  unselectedSrc: g.unselectedSrc,
                   description: g.description,
                } as GiftAsset;
             });

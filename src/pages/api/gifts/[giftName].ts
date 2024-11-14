@@ -1,11 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Gift } from '@prisma/client';
 import { GetGiftResponse } from '@/types';
-import prisma from '@/lib/prisma';
-
-async function getGift(name: string): Promise<Gift | null> {
-   return prisma.gift.findUnique({ where: { name } });
-}
+import { getGiftByName } from '@/lib/gifts/giftHelpers';
 
 export default async function handler(
    req: NextApiRequest,
@@ -19,7 +14,7 @@ export default async function handler(
 
    if (req.method === 'GET') {
       try {
-         const gift = await getGift(giftName);
+         const gift = await getGiftByName(giftName);
          if (!gift) {
             return res.status(404).json({ error: 'Gift not found' });
          }

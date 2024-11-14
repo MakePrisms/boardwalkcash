@@ -18,6 +18,7 @@ import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/Ac
 import {
    CrossMintQuoteResult,
    Currency,
+   GiftFee,
    InsufficientBalanceError,
    PayInvoiceResponse,
    ReserveError,
@@ -454,7 +455,8 @@ export const useCashu = () => {
          wallet?: CashuWallet;
          pubkey?: string;
          gift?: string;
-         feeCents?: number;
+         fee?: number;
+         feeSplits?: GiftFee[];
       },
    ) => {
       let wallet: CashuWallet | undefined;
@@ -466,11 +468,11 @@ export const useCashu = () => {
       }
 
       try {
-         if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
+         if (!hasSufficientBalance(amount + (opts?.fee || 0))) {
             throw new InsufficientBalanceError(
                wallet.keys.unit as Currency,
                balanceByWallet[wallet.keys.id],
-               amount + (opts?.feeCents || 0),
+               amount + (opts?.fee || 0),
             );
          }
 
@@ -478,10 +480,13 @@ export const useCashu = () => {
             pubkey: opts?.pubkey,
          });
 
-         /* create and send fee token to us if feeCents is set */
-         if (opts?.feeCents) {
-            const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
-               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+         /* create and send fee token to us if fee is set */
+         if (opts?.fee) {
+            if (!opts?.feeSplits || opts?.feeSplits.length === 0)
+               throw new Error('feeSplits must be set when fee is set');
+            const recipientPubkey = opts?.feeSplits[0].recipient;
+            const feeProofs = await getProofsToSend(opts?.fee, wallet, {
+               pubkey: '02' + recipientPubkey,
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
@@ -511,7 +516,7 @@ export const useCashu = () => {
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
                   gift: opts?.gift,
-                  fee: opts?.feeCents,
+                  fee: opts?.fee,
                },
             }),
          );

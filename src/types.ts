@@ -8,7 +8,7 @@ import {
    Token,
    MintQuoteState,
 } from '@cashu/cashu-ts';
-import { Gift, MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
+import { MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
 import { NextApiRequest } from 'next';
 import { formatUnit } from './utils/formatting';
 
@@ -267,10 +267,18 @@ export type GetTokenResponse = {
 };
 
 export type GetAllGiftsResponse = {
-   gifts: (Gift & { campaignId?: number })[];
+   gifts: (GiftAsset & { campaignId?: number })[];
 };
 
-export type GetGiftResponse = Gift & { campaignId?: number };
+export type GetGiftResponse = GiftAsset & { campaignId?: number };
+
+export type GiftFee = {
+   /* fee amount relative to rest of the splits */
+   weight: number;
+
+   /* boardwalk pubkey to send fee to */
+   recipient: string;
+};
 
 export interface GiftAsset {
    amount: number;
@@ -282,6 +290,7 @@ export interface GiftAsset {
    creatorPubkey: string | null;
    campaingId?: number;
    fee?: number;
+   splits?: GiftFee[];
 }
 
 export interface InvoicePollingRequest {

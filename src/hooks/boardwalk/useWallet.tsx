@@ -84,7 +84,7 @@ const useWallet = () => {
             token = await createSendableToken(amount, {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
                gift: gift?.name,
-               feeCents: gift?.fee,
+               fee: gift?.fee,
             });
          }
 
@@ -160,7 +160,7 @@ const useWallet = () => {
             sendableToken = await createSendableToken(gift.amount, {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
                gift: gift?.name,
-               feeCents: gift?.fee,
+               fee: gift?.fee,
             });
          }
 

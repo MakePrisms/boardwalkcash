@@ -1,13 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authenticatedRequest, request } from '@/utils/appApiRequests';
 import { computeTxId, getMintFromToken } from '@/utils/cashu';
-import {
-   Currency,
-   GetAllGiftsResponse,
-   GetGiftResponse,
-   GiftAsset,
-   PostSendGiftResponse,
-} from '@/types';
+import { GetAllGiftsResponse, GetGiftResponse, GiftAsset, PostSendGiftResponse } from '@/types';
 import { Token, getEncodedTokenV4 } from '@cashu/cashu-ts';
 import useContacts from './useContacts';
 import { RootState, useAppDispatch } from '@/redux/store';
@@ -97,18 +91,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                return acc;
             }
 
-            const giftAsset: GiftAsset = {
-               amount: gift.amount,
-               unit: gift.unit as Currency,
-               name: gift.name,
-               selectedSrc: gift.imageUrlSelected,
-               unselectedSrc: gift.imageUrlUnselected,
-               description: gift.description,
-               creatorPubkey: gift.creatorPubkey,
-               campaingId: gift.campaignId,
-               fee: gift.fee ? gift.fee : undefined,
-            };
-            acc[gift.name] = giftAsset;
+            acc[gift.name] = gift;
             return acc;
          },
          {} as Record<string, GiftAsset>,
