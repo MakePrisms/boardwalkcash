@@ -35,7 +35,7 @@ import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { useBalance } from '@/hooks/boardwalk/useBalance';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 
-export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
+export default function Home({ token }: { token?: string }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
@@ -216,11 +216,9 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             <div className='mb-10'>
                <ToggleCurrencyDropdown />
             </div>
-            <div className=' flex flex-col justify-center py-8 w-full'>
-               <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
-                  <Receive isMobile={isMobile} />
-                  <Send isMobile={isMobile} />
-               </div>
+            <div className='flex flex-row justify-center mx-auto space-x-9 items-center py-8'>
+               <Receive />
+               <Send />
             </div>
             <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex flex-col items-center justify-center'>
                <Disclaimer />
@@ -230,7 +228,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          <NotificationDrawer />
          <SettingsSidebar />
          <TransactionHistoryDrawer />
-         <EcashTapButton isMobile={isMobile} />
+         <EcashTapButton />
          {tokenDecoded && !newUser.current && !loadingGifts && (
             <ConfirmEcashReceiveModal
                token={tokenDecoded}
@@ -260,9 +258,6 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
 export const getServerSideProps: GetServerSideProps = async (
    context: GetServerSidePropsContext,
 ) => {
-   const userAgent = context.req.headers['user-agent'];
-   const isMobile = /mobile/i.test(userAgent as string);
-
    let token = context.query.token as string;
    let giftPath = null;
    let gift: GiftAsset | undefined = undefined;
@@ -319,7 +314,6 @@ export const getServerSideProps: GetServerSideProps = async (
 
    return {
       props: {
-         isMobile,
          token: token || null,
          pageTitle: pageTitle(tokenData) || null,
          pageDescription: pageDescription(tokenData) || null,
