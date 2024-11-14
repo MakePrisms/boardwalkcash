@@ -199,7 +199,6 @@ const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
    };
 
    const handlePaymentRequestInput = async (request: string) => {
-      setState(state => ({ ...state, isProcessing: true }));
       const decoded = decodePaymentRequest(request);
       if (!decoded.amount) {
          if (numpadValueIsEmpty) {
@@ -214,7 +213,6 @@ const SendFlow = ({ isMobile, onClose }: SendFlowProps) => {
                step: 'confirmPaymentRequest',
                paymentRequest: decoded,
                amount: Number(numpadValue),
-               isProcessing: false,
             });
          }
       } else {
