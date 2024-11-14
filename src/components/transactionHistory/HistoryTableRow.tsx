@@ -1,6 +1,7 @@
 import { useToast } from '@/hooks/util/useToast';
 import {
    EcashTransaction,
+   LightningTransaction,
    Transaction,
    TxStatus,
    isEcashTransaction,
@@ -10,8 +11,8 @@ import {
 } from '@/redux/slices/HistorySlice';
 import { setBalance } from '@/redux/slices/Wallet.slice';
 import { RootState } from '@/redux/store';
-import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
-import { BanknotesIcon, BoltIcon, WalletIcon } from '@heroicons/react/20/solid';
+import { MintQuoteState } from '@cashu/cashu-ts';
+import { ArrowPathIcon, BanknotesIcon, BoltIcon, WalletIcon } from '@heroicons/react/20/solid';
 import { Spinner, Table } from 'flowbite-react';
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -22,6 +23,7 @@ import GiftIcon from '../icons/GiftIcon';
 import { formatUnit } from '@/utils/formatting';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { getProofsFromToken } from '@/utils/cashu';
+import useWallet from '@/hooks/boardwalk/useWallet';
 
 const HistoryTableRow: React.FC<{
    tx: Transaction;
@@ -32,6 +34,7 @@ const HistoryTableRow: React.FC<{
 
    const { addProofs } = useProofStorage();
    const { getWallet } = useCashuContext();
+   const { tryToMintProofs } = useWallet();
 
    const dispatch = useDispatch();
    const { addToast } = useToast();
@@ -149,6 +152,27 @@ const HistoryTableRow: React.FC<{
       }
    };
 
+   /** Try to mint proofs for pending lightning transactions */
+   const handleTryToMint = async (tx: LightningTransaction) => {
+      if (!tx.quote) {
+         throw new Error('Pending tranaction is missing a quote');
+      }
+      setReclaiming(true);
+      try {
+         const status = await tryToMintProofs(tx.quote);
+         if (status === 'EXPIRED') {
+            addToast('Invoice expired', 'warning');
+         } else if (status !== MintQuoteState.ISSUED) {
+            addToast('Invoice not paid', 'warning');
+         }
+      } catch (e) {
+         console.error('Error trying to mint proofs', e);
+         addToast('Failed to check invoice status', 'error');
+      } finally {
+         setReclaiming(false);
+      }
+   };
+
    const getStatusCell = useCallback(
       (tx: Transaction) => {
          if (isEcashTransaction(tx) && tx.status === TxStatus.PENDING) {
@@ -176,10 +200,22 @@ const HistoryTableRow: React.FC<{
                   {reclaiming ? (
                      <Spinner size={'sm'} />
                   ) : (
-                     <button className='underline' onClick={() => handleReclaim(tx)}>
+                     <button
+                        className='underline'
+                        onClick={() => handleReclaim(tx)}
+                        disabled={reclaiming}
+                     >
                         Reclaim
                      </button>
                   )}
+               </div>
+            );
+         } else if (isLightningTransaction(tx) && tx.status === TxStatus.PENDING) {
+            return (
+               <div className='flex justify-center'>
+                  <button onClick={() => handleTryToMint(tx)} disabled={reclaiming}>
+                     <ArrowPathIcon className={`h-5 w-5 ${reclaiming ? 'animate-spin' : ''}`} />
+                  </button>
                </div>
             );
          }

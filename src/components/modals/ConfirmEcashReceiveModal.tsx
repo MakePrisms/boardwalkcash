@@ -4,13 +4,12 @@ import { Button, Modal, Spinner } from 'flowbite-react';
 import Tooltip from '@/components/utility/Tooltip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useToast } from '@/hooks/util/useToast';
 import ProcessingClaimModal from './ProcessingCashuSwap/ProcessingClaim';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { AlreadyClaimedError, GiftAsset, PublicContact } from '@/types';
+import { AlreadyClaimedError, Currency, GiftAsset, PublicContact } from '@/types';
 import useContacts from '@/hooks/boardwalk/useContacts';
 import StickerItem from '../eGifts/stickers/StickerItem';
 import { formatSats, formatUnit } from '@/utils/formatting';
@@ -51,9 +50,6 @@ const ConfirmEcashReceiveModal = ({
    const [disableClaim, setDisableClaim] = useState(false);
    const [alreadyClaimed, setAlreadyClaimed] = useState(false);
 
-   const dispatch = useAppDispatch();
-
-   const { fetchUnitFromProofs } = useProofManager();
    const { swapToClaimProofs, swapToActiveWallet, proofsLockedTo } = useCashu();
    const { addWalletFromMintUrl, activeWallet, isMintTrusted, getWallet } = useCashuContext();
    const { addToast } = useToast();
@@ -116,8 +112,7 @@ const ConfirmEcashReceiveModal = ({
             // disable if trying to swap to or from test mints
             setDisableClaim(true);
          }
-         const proofsUnit = await fetchUnitFromProofs(mintUrl, proofs);
-         setTokenUnit(proofsUnit);
+         setTokenUnit((token.unit as Currency) || Currency.SAT);
          // if (proofsUnit !== 'usd') {
          //    throw new Error('Can only receive eCash in USD');
          // }

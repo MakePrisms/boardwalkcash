@@ -14,9 +14,9 @@ export interface EcashTransaction {
    date: string;
    status: TxStatus;
    unit: 'sat' | 'usd';
-   appName?: string;
+   appName?: string; // used for nwc connections
    isReserve?: boolean;
-   pubkey?: string;
+   pubkey?: string; // pubkey the token is locked to
    gift?: string;
    fee?: number;
 }
@@ -30,7 +30,6 @@ export interface LightningTransaction {
    unit: 'usd' | 'sat';
    memo?: string;
    appName?: string;
-   pubkey?: string;
 }
 
 export interface MintlessTransaction {
@@ -102,6 +101,18 @@ const historySlice = createSlice({
             state.mintless.push(transaction);
          }
       },
+      addPendingLightningTransaction: (
+         state,
+         action: PayloadAction<{
+            transaction: Omit<LightningTransaction, 'status' | 'date'>;
+         }>,
+      ) => {
+         state.lightning.push({
+            ...action.payload.transaction,
+            status: TxStatus.PENDING,
+            date: new Date().toLocaleString(),
+         });
+      },
       updateTransactionStatus: (
          state,
          action: PayloadAction<{
@@ -131,9 +142,17 @@ const historySlice = createSlice({
             console.error('Invalid transaction type or missing quote or token');
          }
       },
+      deleteLightningTransaction: (state, action: PayloadAction<string>) => {
+         state.lightning = state.lightning.filter(t => t.quote !== action.payload);
+      },
    },
 });
 
-export const { addTransaction, updateTransactionStatus } = historySlice.actions;
+export const {
+   addTransaction,
+   updateTransactionStatus,
+   addPendingLightningTransaction,
+   deleteLightningTransaction,
+} = historySlice.actions;
 
 export default historySlice.reducer;
