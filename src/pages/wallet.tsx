@@ -262,12 +262,8 @@ export default function Home({ token }: { token?: string }) {
                <ToggleCurrencyDropdown />
             </div>
             <div className='flex flex-row justify-center mx-auto space-x-9 items-center py-8'>
-               <div>
-                  <Receive />
-               </div>
-               <div>
-                  <Send />
-               </div>
+               <Receive />
+               <Send />
             </div>
             <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex flex-col items-center justify-center'>
                <Disclaimer />

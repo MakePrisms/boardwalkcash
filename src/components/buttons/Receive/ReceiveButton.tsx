@@ -32,7 +32,7 @@ const ReceiveButton = () => {
    };
 
    return (
-      <>
+      <div>
          <Button onClick={() => setShowReceiveFlow(true)} className='btn-primary'>
             <span className='text-lg'>Receive</span>{' '}
             <ArrowDownRightIcon className='ms-2 h-5 w-5 mt-1' />
@@ -44,7 +44,7 @@ const ReceiveButton = () => {
          >
             <ReceiveFlow onClose={handleModalClose} />
          </ViewDrawerOrModal>
-      </>
+      </div>
    );
 };
 

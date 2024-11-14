@@ -8,7 +8,7 @@ const SendButton = () => {
    const [showSendFlow, setShowSendFlow] = useState(false);
 
    return (
-      <>
+      <div>
          <Button onClick={() => setShowSendFlow(true)} className='btn-primary'>
             <span className='text-lg'>&nbsp;&nbsp;Send&nbsp;</span>
             <ArrowUpRightIcon className='ms-2 h-5 w-5 mt-1' />
@@ -20,7 +20,7 @@ const SendButton = () => {
          >
             <SendFlow onClose={() => setShowSendFlow(false)} />
          </ViewDrawerOrModal>
-      </>
+      </div>
    );
 };
 
