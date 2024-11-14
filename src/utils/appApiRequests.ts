@@ -129,13 +129,26 @@ export const getInvoiceForTip = async (
    pubkey: string,
    amount: number,
    opts?: {
-      gift?: string;
+      giftId?: number;
       fee?: number;
       unit: Currency;
    },
 ) => {
+   const params = new URLSearchParams({
+      amount: amount.toString(),
+      unit: opts?.unit || Currency.USD,
+   });
+
+   if (opts?.giftId) {
+      params.append('giftId', opts.giftId.toString());
+   }
+
+   if (opts?.fee) {
+      params.append('fee', opts.fee.toString());
+   }
+
    return await request<LightningTipResponse>(
-      `/api/tip/${pubkey}?amount=${amount}&unit=${opts?.unit || Currency.USD}${opts?.gift ? `&gift=${opts.gift}` : ''}${opts?.fee ? `&fee=${opts.fee}` : ''}`,
+      `/api/tip/${pubkey}?${params.toString()}`,
       'GET',
       undefined,
    );

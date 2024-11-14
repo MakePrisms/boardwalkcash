@@ -31,7 +31,13 @@ import { formatUnit, getSymbolForUnit } from '@/utils/formatting';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { useSelector } from 'react-redux';
 
-type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
+type CrossMintSwapOpts = {
+   proofs?: Proof[];
+   amount?: number;
+   max?: boolean;
+   privkey?: string;
+   giftId?: number;
+};
 
 export const useCashu = () => {
    const { activeWallet, reserveWallet, getWallet, getMint, addWalletFromMintUrl } =
@@ -295,7 +301,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: to.keys.unit as Currency,
                   gift: undefined,
-                  giftId: null,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -331,7 +337,10 @@ export const useCashu = () => {
             throw new Error('this function requires proofs to be passed in');
          }
 
-         return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
+         return await swapToClaimProofs(from, opts.proofs, {
+            privkey: opts.privkey,
+            giftId: opts.giftId,
+         });
       }
       console.log('cross mint swap opts', opts);
       return await crossMintSwap(from, activeWallet, opts);
@@ -345,7 +354,7 @@ export const useCashu = () => {
    const swapToClaimProofs = async (
       wallet: CashuWallet,
       proofs: Proof[],
-      opts?: { privkey?: string },
+      opts?: { privkey?: string; giftId?: number },
    ): Promise<boolean> => {
       lockBalance();
       let success = false;
@@ -380,7 +389,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: wallet.keys.unit as Currency,
                   gift: undefined,
-                  giftId: null,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -734,7 +743,7 @@ export const useCashu = () => {
     * @param token token to claim
     * @returns true if successful
     */
-   const handleClaimToSourceMint = async (token: Token | string) => {
+   const handleClaimToSourceMint = async (token: Token | string, opts?: { giftId?: number }) => {
       const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
 
       let wallet = getWallet(keysetId);
@@ -753,7 +762,7 @@ export const useCashu = () => {
       }
       const privkey = pubkeyLock ? user.privkey : undefined;
       try {
-         return await swapToClaimProofs(wallet, proofs, { privkey });
+         return await swapToClaimProofs(wallet, proofs, { privkey, giftId: opts?.giftId });
       } catch (e) {
          console.error('Failed to initialize wallet', e);
          return false;
@@ -765,7 +774,7 @@ export const useCashu = () => {
     * @param token token to claim
     * @returns true if successful
     */
-   const handleClaimToActiveWallet = async (token: Token | string) => {
+   const handleClaimToActiveWallet = async (token: Token | string, opts?: { giftId?: number }) => {
       const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
 
       let wallet = getWallet(keysetId);
@@ -785,6 +794,7 @@ export const useCashu = () => {
       return await swapToActiveWallet(wallet, {
          proofs,
          privkey,
+         giftId: opts?.giftId,
       });
    };
 

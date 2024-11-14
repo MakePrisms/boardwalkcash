@@ -97,7 +97,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
             amountUnit + (fee || 0),
-            { gift: gift?.name, fee, unit: activeUnit },
+            { giftId: gift?.id, fee, unit: activeUnit },
          );
 
          setInvoice(invoice);

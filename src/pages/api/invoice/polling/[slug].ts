@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
    }
 
-   const giftFromDB = giftId ? await lookupGiftById(giftId) : null;
+   const giftFromDB = giftId ? await lookupGiftById(Number(giftId)) : null;
 
    // NOTE: this should currently throw an error if the keyset is no longer active
    const wallet = await initializeWallet(mintUrl, { keysetId: keysetId });
@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, giftId }, txid, true);
+               await createTokenInDb({ token: feeToken, giftId: Number(giftId) }, txid, true);
                await notifyTokenReceived(recipient, JSON.stringify({ token: feeToken }), txid);
             }
 
@@ -142,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (giftId) {
                const txid = computeTxId(token);
 
-               await createTokenInDb({ token, giftId }, txid);
+               await createTokenInDb({ token, giftId: Number(giftId) }, txid);
 
                created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
             } else {
