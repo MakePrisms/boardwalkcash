@@ -200,7 +200,11 @@ const HistoryTableRow: React.FC<{
                   {reclaiming ? (
                      <Spinner size={'sm'} />
                   ) : (
-                     <button className='underline' onClick={() => handleReclaim(tx)}>
+                     <button
+                        className='underline'
+                        onClick={() => handleReclaim(tx)}
+                        disabled={reclaiming}
+                     >
                         Reclaim
                      </button>
                   )}
@@ -209,7 +213,7 @@ const HistoryTableRow: React.FC<{
          } else if (isLightningTransaction(tx) && tx.status === TxStatus.PENDING) {
             return (
                <div className='flex justify-center'>
-                  <button onClick={() => handleTryToMint(tx)}>
+                  <button onClick={() => handleTryToMint(tx)} disabled={reclaiming}>
                      <ArrowPathIcon className={`h-5 w-5 ${reclaiming ? 'animate-spin' : ''}`} />
                   </button>
                </div>
