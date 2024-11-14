@@ -171,6 +171,8 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
    };
 
    const handleLightningInvoiceInput = async (invoice: string, lud16?: string) => {
+      setState(state => ({ ...state, isProcessing: true }));
+
       let quote: MeltQuoteResponse | undefined = undefined;
       let amount: number;
       if (isMintless) {
@@ -219,6 +221,7 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
             step: 'confirmPaymentRequest',
             paymentRequest: decoded,
             amount: decoded.amount,
+            isProcessing: false,
          });
       }
       return;

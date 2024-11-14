@@ -9,24 +9,6 @@ const ReceiveButton = () => {
    const [showReceiveFlow, setShowReceiveFlow] = useState(false);
    const { activeUnit } = useCashuContext();
 
-   // const handlePaymentSuccess = (amountUsdCents: number, wallet: Wallet, quote: string) => {
-   //    handleModalClose();
-   //    addToast('Payment received!', 'success');
-   //    dispatch(
-   //       addTransaction({
-   //          type: 'lightning',
-   //          transaction: {
-   //             amount: amountUsdCents,
-   //             date: new Date().toLocaleString(),
-   //             status: TxStatus.PAID,
-   //             mint: wallet.url,
-   //             quote,
-   //             unit: activeUnit,
-   //          },
-   //       }),
-   //    );
-   // };
-
    const handleModalClose = () => {
       setShowReceiveFlow(false);
    };

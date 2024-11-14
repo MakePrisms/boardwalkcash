@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/utility/Balance';
 import Receive from '@/components/buttons/Receive/ReceiveButton';
 import Send from '@/components/buttons/Send/SendButton';
-import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
@@ -48,7 +47,6 @@ export default function Home({ token }: { token?: string }) {
    const wallets = useSelector((state: RootState) => state.wallet.keysets);
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
-   const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
    // const { loading: loadingBalance } = useBalance();
@@ -133,49 +131,6 @@ export default function Home({ token }: { token?: string }) {
          }
       }
    }, [router.isReady]);
-
-   useEffect(() => {
-      if (tokenDecoded) return;
-      let intervalCount = 0;
-
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      /* VV causing too much spam VV */
-      // const checkProofsSequentially = async () => {
-      //    await delay(6000);
-      //    for await (const w of Object.values(wallets)) {
-      //       const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-      //       await checkProofsValid(wallet).catch();
-
-      //       // Wait 1 second between each check (adjust as needed)
-      //       await delay(10000);
-      //    }
-      // };
-
-      // checkProofsSequentially();
-      let isUpdating = false;
-
-      const intervalId = setInterval(async () => {
-         if (!isUpdating) {
-            isUpdating = true;
-            await updateProofsAndBalance();
-            isUpdating = false;
-         }
-
-         // Increment the counter
-         intervalCount += 1;
-
-         // Every eighth interval, call checkProofsValid
-         if (intervalCount >= 8) {
-            // checkProofsSequentially();
-            intervalCount = 0;
-         }
-      }, 3000); // Poll every 3 seconds
-
-      return () => {
-         clearInterval(intervalId);
-      };
-   }, [dispatch, tokenDecoded]);
 
    useEffect(() => {
       // uses session storage to identify the tab so we can ignore incoming messages from the same tab

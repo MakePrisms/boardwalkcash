@@ -16,7 +16,6 @@ model User {
   lud16                String?
   contacts             Contact[]            @relation("UserContacts")
   contactOf            Contact[]            @relation("ContactUser")
-  proofs               Proof[]
   mintQuotes           MintQuote[]
   defaultMint          Mint                 @relation(fields: [defaultMintUrl], references: [url])
   defaultMintUrl       String
@@ -54,21 +53,6 @@ model Contact {
   @@unique([userId, linkedUserId]) // can only have one contact per user
 }
 
-model Proof {
-  id           Int        @id @default(autoincrement())
-  proofId      String
-  amount       Int
-  secret       String
-  C            String
-  unit         String     @default("usd")
-  userId       Int // Foreign key to associate proof with a user
-  user         User       @relation(fields: [userId], references: [id]) // Links back to the User model
-  mintKeysetId String
-  MintKeyset   MintKeyset @relation(fields: [mintKeysetId], references: [id])
-
-  @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
-}
-
 model MintQuote {
   id      String  @id
   amount  Int
@@ -94,7 +78,6 @@ model MintKeyset {
   id        String      @id
   keys      String[]
   unit      String
-  proof     Proof[]
   mintQuote MintQuote[]
   mint      Mint        @relation(fields: [mintUrl], references: [url])
   mintUrl   String

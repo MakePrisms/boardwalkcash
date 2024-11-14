@@ -1,11 +1,15 @@
 import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import ActiveAndInactiveAmounts from '../utility/amounts/ActiveAndInactiveAmounts';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
-import { useEffect, useState, useRef, useCallback } from 'react';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
 import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
-import { getInvoiceStatus } from '@/utils/appApiRequests';
+import { useState, useEffect } from 'react';
+import { usePolling } from '@/hooks/util/usePolling';
+import useWallet from '@/hooks/boardwalk/useWallet';
+import { MintQuoteState } from '@cashu/cashu-ts';
+import { useToast } from '@/hooks/util/useToast';
 import QRCode from 'qrcode.react';
+import { getMsgFromUnknownError } from '@/utils/error';
 
 interface WaitForLightningInvoicePaymentProps {
    onSuccess: () => void;
@@ -18,82 +22,39 @@ export const WaitForLightningInvoicePayment = ({
    checkingId,
    onSuccess,
 }: WaitForLightningInvoicePaymentProps) => {
-   const [invoiceTimeout, setInvoiceTimeout] = useState(false);
    const { satsToUnit } = useExchangeRate();
    const { activeUnit } = useCashuContext();
+   const { tryToMintProofs } = useWallet();
+   const { addToast } = useToast();
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
       amountSats: number;
    } | null>(null);
-
-   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-   const pollCountRef = useRef(0);
-   const MAX_POLL_COUNT = 4;
-
-   const resetState = () => {
-      setInvoiceTimeout(false);
-      setAmountData(null);
-   };
-
-   const checkPaymentStatus = useCallback(async () => {
-      try {
-         const pubkey = window.localStorage.getItem('pubkey');
-         if (!pubkey) throw new Error('No pubkey found');
-
-         const statusResponse = await getInvoiceStatus(pubkey, checkingId);
-         return statusResponse.paid;
-      } catch (error) {
-         console.error('Error fetching payment status', error);
-         return false;
-      }
-   }, [checkingId]);
-
-   const pollPayment = useCallback(async () => {
-      console.log('checking for payment', checkingId);
-      const paid = await checkPaymentStatus();
-
-      if (paid && amountData) {
-         onSuccess();
-         resetState();
-         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      } else {
-         pollCountRef.current++;
-         if (pollCountRef.current >= MAX_POLL_COUNT) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setInvoiceTimeout(true);
-         }
-      }
-   }, [checkingId, checkPaymentStatus, amountData, onSuccess]);
-
-   const startPolling = useCallback(() => {
-      setInvoiceTimeout(false);
-      pollCountRef.current = 0;
-      pollPayment();
-
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = setInterval(pollPayment, 5000);
-   }, [pollPayment]);
-
-   useEffect(() => {
-      startPolling();
-      return () => {
-         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      };
-   }, [startPolling]);
 
    useEffect(() => {
       const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
       satsToUnit(amountSats, 'usd').then(amountUsdCents => {
          setAmountData({ amountUsdCents, amountSats });
       });
-      return () => {
-         setAmountData(null);
-      };
    }, [invoice, satsToUnit]);
 
-   const handleCheckAgain = () => {
-      startPolling();
+   const checkPaymentStatus = async () => {
+      try {
+         const status = await tryToMintProofs(checkingId);
+         if (status === MintQuoteState.ISSUED) {
+            onSuccess();
+            setAmountData(null);
+         } else if (status === 'EXPIRED') {
+            addToast('Invoice expired.', 'warning');
+         }
+         console.log('quote not paid', status);
+      } catch (error) {
+         console.error('Error fetching payment status', error);
+         addToast(getMsgFromUnknownError(error), 'error');
+      }
    };
+
+   const { isPolling } = usePolling(checkPaymentStatus, 5_000, 60_000);
 
    return (
       <div className='flex flex-col items-center justify-around space-y-4 text-gray-500 h-full'>
@@ -114,10 +75,10 @@ export const WaitForLightningInvoicePayment = ({
             className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
          />
          <div>
-            {invoiceTimeout && (
+            {!isPolling && (
                <div className='flex flex-col items-center justify-center text-center space-y-1 text-black'>
                   <p className='text-xs'>Timed out waiting for payment...</p>
-                  <button onClick={handleCheckAgain} className='underline'>
+                  <button onClick={checkPaymentStatus} className='underline'>
                      Check again
                   </button>
                </div>

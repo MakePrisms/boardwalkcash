@@ -58,6 +58,7 @@
       "redux": "^5.0.1",
       "redux-persist": "^6.0.0",
       "redux-thunk": "^3.1.0",
+      "usehooks-ts": "^3.1.0",
       "vercel": "^33.5.0"
    },
    "devDependencies": {

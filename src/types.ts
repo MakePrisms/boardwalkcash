@@ -6,6 +6,7 @@ import {
    MeltQuoteResponse,
    ApiError as CashuApiError,
    Token,
+   MintQuoteState,
 } from '@cashu/cashu-ts';
 import { Gift, MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
 import { NextApiRequest } from 'next';
@@ -397,3 +398,7 @@ export type CheckPaymentRequestResponse = {
    createdAt: Date;
    updatedAt: Date;
 };
+
+export type PendingMintQuote = MintQuoteResponse & { amount: number; keysetId: string };
+
+export type MintQuoteStateExt = MintQuoteState | 'EXPIRED';
