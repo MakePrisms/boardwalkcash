@@ -1,7 +1,7 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Currency, PayInvoiceResponse, PublicContact } from '@/types';
 import { getAmountFromInvoice } from '@/utils/bolt11';
-import { nwc } from '@getalby/sdk';
+import { nwc, Nip47Error } from '@getalby/sdk';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
@@ -32,6 +32,26 @@ const useMintlessMode = () => {
    const { addProofs } = useProofStorage();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
+
+   const handleNwcError = (error: Nip47Error) => {
+      if (error.code === 'UNAUTHORIZED') {
+        addToast('Unauthorized NWC connection. Please check your credentials.', 'error');
+      } else if (error.code === 'QUOTA_EXCEEDED') {
+        addToast('NWC budget exceeded. Please increase your budget or try again later.', 'error');
+      } else if (error.code === 'RATE_LIMITED') {
+         addToast('The client is sending commands too fast. It should retry in a few seconds.', 'error');
+      } else if (error.code === 'NOT_IMPLEMENTED') {
+         addToast('The command is not known or is intentionally not implemented.', 'error');
+      } else if (error.code === 'INSUFFICIENT_BALANCE') {
+         addToast('The wallet does not have enough funds to cover a fee reserve or the payment amount.', 'error');
+      } else if (error.code === 'RESTRICTED') {
+         addToast('This public key is not allowed to do this operation.', 'error');
+      } else if (error.code === 'INTERNAL') {
+         addToast(`Internal NWC error: ${error.message}`, 'error');
+      } else {
+         addToast(`NWC error: ${error.message}`, 'error');
+      }
+   };
 
    const connect = async (nwcUri: string, lud16: string) => {
       try {
@@ -95,7 +115,7 @@ const useMintlessMode = () => {
 
          return client;
       } catch (error: any) {
-         handleNwcError(error, addToast);
+         handleNwcError(error);
          throw error;
       }
    };
@@ -106,7 +126,7 @@ const useMintlessMode = () => {
          const { balance: balanceMsat } = await nwc.getBalance();
          return balanceMsat / 1000;
       } catch (error: any) {
-         handleNwcError(error, addToast);
+         handleNwcError(error);
       }
    };
 
@@ -138,7 +158,7 @@ const useMintlessMode = () => {
             feePaid: 0,
          };
       } catch (error: any) {
-         handleNwcError(error, addToast);
+         handleNwcError(error);
       }
    };
 
@@ -152,7 +172,7 @@ const useMintlessMode = () => {
          const invoice = await getInvoiceFromLightningAddress(lud16, amountMsats);
          return invoice;
       } catch (error: any) {
-         handleNwcError(error, addToast);
+         handleNwcError(error);
       }
    };
 
@@ -360,26 +380,6 @@ const useMintlessMode = () => {
       connect,
       disconnect,
    };
-};
-
-const handleNwcError = (error: any, addToast: (message: string, type: string) => void) => {
-   if (error.code === 'UNAUTHORIZED') {
-     addToast('Unauthorized NWC connection. Please check your credentials.', 'error');
-   } else if (error.code === 'QUOTA_EXCEEDED') {
-     addToast('NWC budget exceeded. Please increase your budget or try again later.', 'error');
-   } else if (error.code === 'RATE_LIMITED') {
-      addToast('The client is sending commands too fast. It should retry in a few seconds.', 'error');
-   } else if (error.code === 'NOT_IMPLEMENTED') {
-      addToast('The command is not known or is intentionally not implemented.', 'error');
-   } else if (error.code === 'INSUFFICIENT_BALANCE') {
-      addToast('The wallet does not have enough funds to cover a fee reserve or the payment amount.', 'error');
-   } else if (error.code === 'RESTRICTED') {
-      addToast('This public key is not allowed to do this operation.', 'error');
-   } else if (error.code === 'INTERNAL') {
-      addToast('There was an internal error with NWC.', 'error');
-   } else {
-     addToast('Error: ' + error.message, 'error');
-   }
 };
 
 export default useMintlessMode;
