@@ -504,7 +504,7 @@ export const useCashu = () => {
                unit: wallet.keys.unit,
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.giftId || null, true);
+               const txid = await postTokenToDb(feeToken, opts?.giftId, true);
                await sendTokenAsNotification(feeToken, txid);
             }
             await removeProofs(feeProofs);

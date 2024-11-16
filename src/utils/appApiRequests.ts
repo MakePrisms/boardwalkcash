@@ -162,7 +162,7 @@ export const getTipStatus = async (quoteId: string) => {
    );
 };
 
-export const postTokenToDb = async (token: string, giftId: number | null, isFee?: boolean) => {
+export const postTokenToDb = async (token: string, giftId?: number, isFee?: boolean) => {
    console.log('posting token to db', token);
    const pubkey = window.localStorage.getItem('pubkey');
    return (

@@ -252,7 +252,7 @@ export const isMintlessTransactionNotification = (
 
 export type PostTokenRequest = {
    token: string;
-   giftId: number | null;
+   giftId?: number | null;
    createdByPubkey?: string;
    isFee?: boolean;
 };

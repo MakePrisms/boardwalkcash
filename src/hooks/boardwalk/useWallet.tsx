@@ -95,7 +95,7 @@ const useWallet = () => {
          let txid: string | undefined;
          if (contact) {
             await sendTokenAsNotification(token);
-            txid = await postTokenToDb(token, null);
+            txid = await postTokenToDb(token);
          }
 
          return { token, txid, gift };

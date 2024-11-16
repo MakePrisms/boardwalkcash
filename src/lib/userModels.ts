@@ -222,7 +222,7 @@ export const getUserClaimedCampaignGifts = async (pubkey: string) => {
       select: {
          claimedCampaingGifts: {
             select: {
-               giftName: true,
+               giftId: true,
             },
          },
          nostrPubkey: true,
@@ -243,7 +243,7 @@ export const getUserClaimedCampaignGifts = async (pubkey: string) => {
          select: {
             claimedCampaingGifts: {
                select: {
-                  giftName: true,
+                  giftId: true,
                },
             },
          },
@@ -254,7 +254,7 @@ export const getUserClaimedCampaignGifts = async (pubkey: string) => {
       });
    }
 
-   return Array.from(new Set(allClaimedGifts.map(campaign => campaign.giftName)));
+   return Array.from(new Set(allClaimedGifts.map(campaign => campaign.giftId)));
 };
 
 export {

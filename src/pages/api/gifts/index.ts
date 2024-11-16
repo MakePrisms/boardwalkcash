@@ -13,19 +13,6 @@ export default async function handler(
 
       try {
          let gifts = await getAllGifts();
-         // if (!req.authenticatedPubkey) {
-         //    /* if not authenticated, filter out campaign gifts */
-         //    gifts = gifts.filter(g => !g.SingleGiftCampaign);
-         // } else {
-         //    /* if authenticated, include campaign gifts user has not claimed */
-         //    const claimedGiftIds = await getUserClaimedCampaignGifts(req.authenticatedPubkey);
-         //    if (claimedGiftIds.length > 0) {
-         //       /* filter out campaign gifts user has claimed */
-         //       gifts = gifts.filter(g => !claimedGiftIds.some(id => id === g.id));
-         //    } else if (claimedGiftIds === null) {
-         //       return res.status(404).json({ error: 'User not found' });
-         //    }
-         // }
 
          res.status(200).json({
             gifts,

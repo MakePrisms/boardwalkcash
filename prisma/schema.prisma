@@ -144,7 +144,7 @@ model SingleGiftCampaign {
   // funding source for this campaign
   nwcUri      String
   // which gift is given out
-  giftName    String    @unique
+  giftId      Int       @unique
   // max gifts that can be claimed
   totalGifts  Int
   // all users that have claimed this campaign
