@@ -42,7 +42,7 @@ const ConfirmSendGift = ({
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mt-6'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                />
             )}
          </div>
