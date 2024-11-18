@@ -183,7 +183,7 @@ export default function Home({ token }: { token?: string }) {
       };
 
       checkAndUpdatePending();
-   }, [tryToMintProofs, loadingState, history.lightning]);
+   }, [loadingState]);
 
    // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
