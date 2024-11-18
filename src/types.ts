@@ -412,3 +412,13 @@ export type CheckPaymentRequestResponse = {
 export type PendingMintQuote = MintQuoteResponse & { amount: number; keysetId: string };
 
 export type MintQuoteStateExt = MintQuoteState | 'EXPIRED';
+
+export type GetCashuPRLastPaidResponse =
+   | {
+        lastPaid: string;
+        token: string;
+     }
+   | {
+        lastPaid: null;
+        token: null;
+     };

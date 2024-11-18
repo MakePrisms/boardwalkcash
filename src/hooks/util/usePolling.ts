@@ -10,7 +10,7 @@ export const usePolling = (callback: Function, delay?: number | null, timeout?: 
    const [hasTimedOut, _, restart] = useTimeout(timeout);
 
    /* hasTimedOut returns true if the timeout has been reached */
-   const pollingPeriod = !hasTimedOut() ? delay : null;
+   const pollingPeriod = timeout === undefined || !hasTimedOut() ? delay : null;
 
    useInterval(callback, pollingPeriod);
 

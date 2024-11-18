@@ -276,7 +276,9 @@ const ReceiveFlow = ({ onClose }: ReceiveFlowProps) => {
          {state.step === 'QRScanner' && (
             <QRScanner onCancel={() => setState(defaultState)} onScan={handlePaste} />
          )}
-         {state.step === 'reusablePaymentRequest' && <ViewReusablePaymentRequest />}
+         {state.step === 'reusablePaymentRequest' && (
+            <ViewReusablePaymentRequest onSuccess={onClose} />
+         )}
       </div>
    );
 };

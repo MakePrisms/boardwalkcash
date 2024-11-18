@@ -3,12 +3,12 @@ import { getEncodedTokenV4, PaymentRequestPayload } from '@cashu/cashu-ts';
 import { computeTxId, initializeWallet } from '@/utils/cashu';
 import { createNotification } from '@/lib/notificationModels';
 import { runAuthMiddleware } from '@/utils/middleware';
-import { createTokenInDb } from '@/lib/tokenModels';
 import { NextApiResponse } from 'next';
 import {
    getPaymentRequestByIdIncludeToken,
    markPaymentRequestAsPaid,
    getPaymentRequestById,
+   addTokenToPaymentRequest,
 } from '@/lib/paymentRequestModels';
 
 export default async function handler(
@@ -109,22 +109,16 @@ export default async function handler(
 
       const txid = computeTxId(token);
       if (request.reusable) {
-         await createTokenInDb({ token, giftId: null }, txid);
-         await createNotification(
-            request.userPubkey,
-            NotificationType.Token,
-            JSON.stringify({ token }),
-            txid,
-         );
+         await addTokenToPaymentRequest(request.id, token);
       } else {
          await markPaymentRequestAsPaid(payment.id, token);
-         await createNotification(
-            request.userPubkey,
-            NotificationType.Token,
-            JSON.stringify({ token }),
-            txid,
-         );
       }
+      await createNotification(
+         request.userPubkey,
+         NotificationType.Token,
+         JSON.stringify({ token }),
+         txid,
+      );
       return res.status(200).end();
    } else {
       res.setHeader('Allow', ['GET', 'POST']);

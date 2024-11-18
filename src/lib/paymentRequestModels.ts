@@ -33,3 +33,17 @@ export const markPaymentRequestAsPaid = async (id: string, token: string) => {
       include: { tokens: true },
    });
 };
+
+export const addTokenToPaymentRequest = async (id: string, token: string) => {
+   return await prisma.paymentRequest.update({
+      where: { id },
+      data: {
+         tokens: {
+            create: {
+               id: computeTxId(token),
+               token,
+            },
+         },
+      },
+   });
+};
