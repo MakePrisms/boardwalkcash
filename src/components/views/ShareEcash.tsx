@@ -52,7 +52,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
 
    if (gift) {
       return (
-         <div className='flex flex-col justify-between items-center text-black h-full'>
+         <div className='view-ecash-container'>
             <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
                <StickerItem
                   selectedSrc={gift.selectedSrc}
@@ -67,7 +67,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                   onClick={onClose}
                />
             )}
@@ -75,7 +75,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?token=${token}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                   onClick={onClose}
                />
             )}
