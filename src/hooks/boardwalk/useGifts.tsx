@@ -14,6 +14,7 @@ import { RootState, useAppDispatch } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
+import { giftMetadata } from '@/lib/gifts/giftMetadata';
 
 interface GiftContextType {
    giftAssets: Record<string, GiftAsset>;
@@ -46,17 +47,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       const fetchGifts = async () => {
          setIsFetching(true);
          try {
-            let apiGifts: GetAllGiftsResponse;
-            if (user.pubkey) {
-               apiGifts = await authenticatedRequest<GetAllGiftsResponse>(
-                  '/api/gifts',
-                  'GET',
-                  undefined,
-               );
-            } else {
-               apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
-            }
-            const normalizedGifts = normalizeGifts(apiGifts.gifts);
+            const normalizedGifts = normalizeGifts(giftMetadata);
             setGiftAssets(normalizedGifts);
             await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.selectedSrc));
             await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.unselectedSrc));
