@@ -14,7 +14,7 @@ interface ViewReusablePaymentRequestProps {
 }
 
 const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestProps) => {
-   const { fetchPaymentRequest, fetchingPaymentRequest, lookupLastPaid } = usePaymentRequests();
+   const { fetchPaymentRequest, lookupLastPaid } = usePaymentRequests();
    const [paymentRequest, setPaymentRequest] = useState<{ pr: string; id: string } | null>(null);
    const [lastPaid, setLastPaid] = useState<string | null>(null);
    const { activeWallet, activeUnit } = useCashuContext();
@@ -82,18 +82,19 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
                You currently have a Lightning Wallet set as your main account. Select an eCash mint
                as your main account to generate an eCash request.
             </p>
-         ) : fetchingPaymentRequest ? (
+         ) : paymentRequest === null ? (
             <Spinner size='xl' />
          ) : (
             <>
+               fetchingPaymentRequest
                <div className='flex flex-col  gap-6 items-center'>
-                  <QRCode value={paymentRequest?.pr || ''} size={256} />
+                  <QRCode value={paymentRequest.pr} size={256} />
                   <p className=' text-center text-sm'>
                      Scan with any cashu wallet that supports payment requests
                   </p>
                </div>
                <ClipboardButton
-                  toCopy={paymentRequest?.pr || ''}
+                  toCopy={paymentRequest.pr}
                   toShow={'Copy Request'}
                   className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                />
