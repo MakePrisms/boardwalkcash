@@ -34,6 +34,8 @@ import { runMigrations } from '@/migrations/localStorage.migrations';
 import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { useBalance } from '@/hooks/boardwalk/useBalance';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+import useWallet from '@/hooks/boardwalk/useWallet';
+import { TxStatus } from '@/redux/slices/HistorySlice';
 
 export default function Home({ token }: { token?: string }) {
    const newUser = useRef(false);
@@ -42,9 +44,10 @@ export default function Home({ token }: { token?: string }) {
    const router = useRouter();
    const { balanceByWallet, proofsLockedTo } = useCashu();
    const { addWalletFromMintUrl, activeUnit, setActiveUnit } = useCashuContext();
+   const { tryToMintProofs } = useWallet();
 
    const dispatch = useAppDispatch();
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const history = useSelector((state: RootState) => state.history);
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
    /* modal will not show if gifts are loading, because it messes up gift selection */
@@ -158,6 +161,29 @@ export default function Home({ token }: { token?: string }) {
       };
       return () => {};
    }, []);
+
+   /* check pending lightning payments on load */
+   useEffect(() => {
+      if (loadingState) return;
+      console.log('history', history.lightning);
+      const pendingLightning = history.lightning.filter(tx => tx.status === TxStatus.PENDING);
+
+      const checkAndUpdatePending = async () => {
+         for await (const tx of pendingLightning) {
+            const { quote } = tx;
+            if (!quote) {
+               continue;
+            }
+            try {
+               await tryToMintProofs(quote);
+            } catch (e) {
+               console.error('Error trying to mint proofs', e);
+            }
+         }
+      };
+
+      checkAndUpdatePending();
+   }, [tryToMintProofs, loadingState, history.lightning]);
 
    // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
