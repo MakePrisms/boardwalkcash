@@ -28,8 +28,6 @@ model User {
   // whether or not this user is in mintless mode to receive
   mintlessReceive      Boolean              @default(false)
   Notification         Notification[]
-  // custom gifts created by this user
-  customGifts          Gift[]               @relation("CustomGifts")
   // UserCustomGift UserConditionalGift[]
   createdTokens        Token[]              @relation("TokenCreatedBy")
   receivedTokens       Token[]              @relation("TokenRecipient")
@@ -103,7 +101,7 @@ model Token {
   token            String
   createdAt        DateTime        @default(now())
   redeemedAt       DateTime?
-  gift             String?
+  giftId           Int?
   Notification     Notification[]
   createdByPubkey  String?
   recipientPubkey  String?
@@ -117,7 +115,7 @@ model Token {
 
 model MintlessTransaction {
   id              String         @id @default(uuid())
-  gift            String?
+  giftId          Int?
   notificationId  String
   amount          Int
   recipientPubkey String
@@ -125,39 +123,6 @@ model MintlessTransaction {
   createdAt       DateTime       @default(now())
   isFee           Boolean        @default(false)
   Notification    Notification[]
-}
-
-model Gift {
-  id                 Int                 @id @default(autoincrement())
-  name               String              @unique
-  amount             Int
-  unit               String              @default("usd")
-  description        String?
-  // path to image (relative path or full url)
-  imageUrlSelected   String
-  imageUrlUnselected String
-  // null -> anyone can send/receive;
-  creatorPubkey      String?
-  // the creator of the gift
-  creator            User?               @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
-  // fee in cents user has to pay to send
-  fee                Int?
-  // don't show if inactive
-  active             Boolean             @default(true)
-  // // true -> anyone can send/receive; false -> only the creator can send/receive
-  // isGlobal    Boolean @default(true)
-  // // whether or not there are `conditions`
-  // isConditional     Boolean               @default(false)
-  // // set of condiditions that must be met to send the gift
-  // sendConditions    GiftCondition[]       @relation("SendConditions")
-  // // receive conditions -> user cannot receive the gift unless they meet these conditions
-  // receiveConditions GiftCondition[]       @relation("ReceiveConditions")
-  // // the users that can send the gift
-  // userGifts         UserConditionalGift[]
-  SingleGiftCampaign SingleGiftCampaign?
-
-  @@index([creatorPubkey])
-  @@index([name])
 }
 
 model PendingOtp {
@@ -186,7 +151,6 @@ model SingleGiftCampaign {
   claimedBy   User[]
   // optionally expires and becomes inactive
   expiresAt   DateTime?
-  gift        Gift      @relation(fields: [giftId], references: [id])
   createdAt   DateTime  @default(now())
 }
 
@@ -202,30 +166,3 @@ model PaymentRequest {
   // multiple tokens if the payment request is reusable
   tokens     Token[]
 }
-
-// model GiftCondition {
-//   id                      Int    @id @default(autoincrement())
-//   giftId                  Int
-//   // one time use, limited supply, expiry, unlimited supply
-//   conditionType           String
-//   // number of gifts, expiry date, etc
-//   conditionValue          Json
-//   // array of gifts that are conditionally sendable
-//   conditionalSendGifts    Gift[] @relation("SendConditions")
-//   // array of gifts that are conditionally receivable
-//   conditionalReceiveGifts Gift[] @relation("ReceiveConditions")
-
-//   @@index([giftId])
-// }
-
-// model UserConditionalGift {
-//   id               Int  @id @default(autoincrement())
-//   userId           Int
-//   giftId           Int
-//   conditionsStatus Json
-//   user             User @relation(fields: [userId], references: [id])
-//   gift             Gift @relation(fields: [giftId], references: [id])
-
-//   @@index([userId])
-//   @@index([giftId])
-// }

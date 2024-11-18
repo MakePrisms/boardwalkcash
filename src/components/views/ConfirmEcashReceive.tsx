@@ -102,9 +102,9 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
       let success = false;
       setIsClaiming(true);
       if (choice === 'active') {
-         success = (await handleClaimToActiveWallet(token)) || false;
+         success = (await handleClaimToActiveWallet(token, { giftId: gift?.id })) || false;
       } else if (choice === 'source') {
-         success = await handleClaimToSourceMint(token);
+         success = await handleClaimToSourceMint(token, { giftId: gift?.id });
       } else if (choice === 'mintless') {
          success = await handleMintlessClaim(token);
       }

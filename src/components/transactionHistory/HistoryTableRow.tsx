@@ -9,7 +9,6 @@ import {
    isMintlessTransaction,
    updateTransactionStatus,
 } from '@/redux/slices/HistorySlice';
-import { setBalance } from '@/redux/slices/Wallet.slice';
 import { RootState } from '@/redux/store';
 import { MintQuoteState } from '@cashu/cashu-ts';
 import { ArrowPathIcon, BanknotesIcon, BoltIcon, WalletIcon } from '@heroicons/react/20/solid';
@@ -28,7 +27,7 @@ import useWallet from '@/hooks/boardwalk/useWallet';
 const HistoryTableRow: React.FC<{
    tx: Transaction;
    openSendEcashModal: (tx: EcashTransaction) => void;
-   openViewGiftModal: (tx: EcashTransaction & { gift: string }) => void;
+   openViewGiftModal: (tx: EcashTransaction & { giftId: number }) => void;
 }> = ({ tx, openSendEcashModal, openViewGiftModal }) => {
    const [reclaiming, setReclaiming] = useState(false);
 
@@ -50,7 +49,8 @@ const HistoryTableRow: React.FC<{
       }
 
       if (isEcashTransaction(tx)) {
-         if (tx.gift) {
+         /* TODO: deprecate gift, but keep it for backwards compatibility */
+         if (tx.gift || tx.giftId) {
             return <GiftIcon className='h-5 w-5' />;
          }
          return <BanknotesIcon className='h-5 w-5' />;
@@ -145,8 +145,8 @@ const HistoryTableRow: React.FC<{
          handleSpentToken(tx);
          return;
       }
-      if (tx.gift) {
-         openViewGiftModal(tx as EcashTransaction & { gift: string });
+      if (tx.giftId) {
+         openViewGiftModal(tx as EcashTransaction & { giftId: number });
       } else {
          openSendEcashModal(tx);
       }

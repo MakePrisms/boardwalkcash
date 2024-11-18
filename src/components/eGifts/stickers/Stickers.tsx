@@ -12,15 +12,10 @@ interface StickersProps {
 
 const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
    const [selectedSticker, setSelectedSticker] = useState<GiftAsset | undefined>(undefined);
-   const { giftAssets, getGiftByIdentifier } = useGifts();
+   const { giftAssets } = useGifts();
    const { activeUnit } = useCashuContext();
 
-   const handleStickerClick = (giftName: string) => {
-      const gift = getGiftByIdentifier(giftName);
-      if (!gift) {
-         console.error('Gift not found:', giftName);
-         return;
-      }
+   const handleStickerClick = (gift: GiftAsset) => {
       setSelectedSticker(gift);
       onSelectGift(gift);
    };
@@ -40,7 +35,7 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
             .map(giftAsset => (
                <div key={giftAsset.name} className='flex flex-col justify-center'>
                   <button
-                     onClick={() => handleStickerClick(giftAsset.name)}
+                     onClick={() => handleStickerClick(giftAsset)}
                      className='flex  justify-center '
                   >
                      <StickerItem

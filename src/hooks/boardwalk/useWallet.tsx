@@ -83,8 +83,8 @@ const useWallet = () => {
             console.log('creating token for ', amount);
             token = await createSendableToken(amount, {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
-               gift: gift?.name,
-               feeCents: gift?.fee,
+               giftId: gift?.id,
+               fee: gift?.fee,
             });
          }
 
@@ -159,8 +159,8 @@ const useWallet = () => {
          } else {
             sendableToken = await createSendableToken(gift.amount, {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
-               gift: gift?.name,
-               feeCents: gift?.fee,
+               giftId: gift?.id,
+               fee: gift?.fee,
             });
          }
 
@@ -171,7 +171,7 @@ const useWallet = () => {
 
          let txid: string | undefined;
          if (contact) {
-            txid = await postTokenToDb(sendableToken, gift?.name);
+            txid = await postTokenToDb(sendableToken, gift?.id);
             await sendTokenAsNotification(sendableToken, txid);
          }
 

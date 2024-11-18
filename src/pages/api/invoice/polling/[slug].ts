@@ -11,6 +11,8 @@ import {
    initializeWallet,
 } from '@/utils/cashu';
 import { createTokenInDb } from '@/lib/tokenModels';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
+import { getRecipientPubkeyFromGift } from '@/utils';
 
 export type PollingApiResponse = {
    success: boolean;
@@ -23,7 +25,7 @@ export type PollingApiResponse = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    /* amount is total amount to send, including fee */
-   const { mintUrl, keysetId, gift, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
+   const { mintUrl, keysetId, giftId, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
 
    if (req.query.isTip !== 'true') {
       throw new Error('This endpoint should only be used for tips');
@@ -33,6 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(400).send({ success: false, message: 'No mint URL provided.' });
       return;
    }
+
+   const giftFromDB = giftId ? await lookupGiftById(Number(giftId)) : null;
 
    // NOTE: this should currently throw an error if the keyset is no longer active
    const wallet = await initializeWallet(mintUrl, { keysetId: keysetId });
@@ -102,10 +106,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                });
                proofsToSendToUser = lockedUserProofs;
 
-               /* lock the fee to Boardwalk */
+               let recipient: string | undefined;
+               if (giftFromDB) {
+                  recipient = getRecipientPubkeyFromGift(giftFromDB);
+               }
+
+               if (!recipient) {
+                  throw new Error('fee set on gift, but no recipient');
+               }
+
+               /* lock the fee to recipient's pubkey */
                const { send: lockedFeeProofs } = await wallet.send(fee, feeProofs, {
                   keysetId: keysetId,
-                  pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+                  pubkey: '02' + recipient,
                });
 
                const feeToken = getEncodedTokenV4({
@@ -115,12 +128,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, gift }, txid, true);
-               await notifyTokenReceived(
-                  process.env.NEXT_PUBLIC_FEE_PUBKEY!,
-                  JSON.stringify({ token: feeToken }),
-                  txid,
-               );
+               await createTokenInDb({ token: feeToken, giftId: Number(giftId) }, txid, true);
+               await notifyTokenReceived(recipient, JSON.stringify({ token: feeToken }), txid);
             }
 
             let created;
@@ -130,10 +139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                unit: wallet.keys.unit,
             });
             /* not sure why gift is ending up as 'undefined' */
-            if (gift && gift !== 'undefined') {
+            if (giftId) {
                const txid = computeTxId(token);
 
-               await createTokenInDb({ token, gift }, txid);
+               await createTokenInDb({ token, giftId: Number(giftId) }, txid);
 
                created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
             } else {

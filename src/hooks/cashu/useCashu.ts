@@ -18,6 +18,7 @@ import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/Ac
 import {
    CrossMintQuoteResult,
    Currency,
+   GiftFee,
    InsufficientBalanceError,
    PayInvoiceResponse,
    ReserveError,
@@ -30,7 +31,13 @@ import { formatUnit, getSymbolForUnit } from '@/utils/formatting';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { useSelector } from 'react-redux';
 
-type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
+type CrossMintSwapOpts = {
+   proofs?: Proof[];
+   amount?: number;
+   max?: boolean;
+   privkey?: string;
+   giftId?: number;
+};
 
 export const useCashu = () => {
    const { activeWallet, reserveWallet, getWallet, getMint, addWalletFromMintUrl } =
@@ -294,6 +301,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: to.keys.unit as Currency,
                   gift: undefined,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -329,7 +337,10 @@ export const useCashu = () => {
             throw new Error('this function requires proofs to be passed in');
          }
 
-         return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
+         return await swapToClaimProofs(from, opts.proofs, {
+            privkey: opts.privkey,
+            giftId: opts.giftId,
+         });
       }
       console.log('cross mint swap opts', opts);
       return await crossMintSwap(from, activeWallet, opts);
@@ -343,7 +354,7 @@ export const useCashu = () => {
    const swapToClaimProofs = async (
       wallet: CashuWallet,
       proofs: Proof[],
-      opts?: { privkey?: string },
+      opts?: { privkey?: string; giftId?: number },
    ): Promise<boolean> => {
       lockBalance();
       let success = false;
@@ -378,6 +389,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: wallet.keys.unit as Currency,
                   gift: undefined,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -453,8 +465,9 @@ export const useCashu = () => {
       opts?: {
          wallet?: CashuWallet;
          pubkey?: string;
-         gift?: string;
-         feeCents?: number;
+         giftId?: number;
+         fee?: number;
+         feeSplits?: GiftFee[];
       },
    ) => {
       let wallet: CashuWallet | undefined;
@@ -466,11 +479,11 @@ export const useCashu = () => {
       }
 
       try {
-         if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
+         if (!hasSufficientBalance(amount + (opts?.fee || 0))) {
             throw new InsufficientBalanceError(
                wallet.keys.unit as Currency,
                balanceByWallet[wallet.keys.id],
-               amount + (opts?.feeCents || 0),
+               amount + (opts?.fee || 0),
             );
          }
 
@@ -478,17 +491,20 @@ export const useCashu = () => {
             pubkey: opts?.pubkey,
          });
 
-         /* create and send fee token to us if feeCents is set */
-         if (opts?.feeCents) {
-            const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
-               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+         /* create and send fee token to us if fee is set */
+         if (opts?.fee) {
+            if (!opts?.feeSplits || opts?.feeSplits.length === 0)
+               throw new Error('feeSplits must be set when fee is set');
+            const recipientPubkey = opts?.feeSplits[0].recipient;
+            const feeProofs = await getProofsToSend(opts?.fee, wallet, {
+               pubkey: '02' + recipientPubkey,
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
                unit: wallet.keys.unit,
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.gift, true);
+               const txid = await postTokenToDb(feeToken, opts?.giftId, true);
                await sendTokenAsNotification(feeToken, txid);
             }
             await removeProofs(feeProofs);
@@ -510,8 +526,8 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
-                  gift: opts?.gift,
-                  fee: opts?.feeCents,
+                  giftId: opts?.giftId || null,
+                  fee: opts?.fee,
                },
             }),
          );
@@ -727,7 +743,7 @@ export const useCashu = () => {
     * @param token token to claim
     * @returns true if successful
     */
-   const handleClaimToSourceMint = async (token: Token | string) => {
+   const handleClaimToSourceMint = async (token: Token | string, opts?: { giftId?: number }) => {
       const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
 
       let wallet = getWallet(keysetId);
@@ -746,7 +762,7 @@ export const useCashu = () => {
       }
       const privkey = pubkeyLock ? user.privkey : undefined;
       try {
-         return await swapToClaimProofs(wallet, proofs, { privkey });
+         return await swapToClaimProofs(wallet, proofs, { privkey, giftId: opts?.giftId });
       } catch (e) {
          console.error('Failed to initialize wallet', e);
          return false;
@@ -758,7 +774,7 @@ export const useCashu = () => {
     * @param token token to claim
     * @returns true if successful
     */
-   const handleClaimToActiveWallet = async (token: Token | string) => {
+   const handleClaimToActiveWallet = async (token: Token | string, opts?: { giftId?: number }) => {
       const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
 
       let wallet = getWallet(keysetId);
@@ -778,6 +794,7 @@ export const useCashu = () => {
       return await swapToActiveWallet(wallet, {
          proofs,
          privkey,
+         giftId: opts?.giftId,
       });
    };
 

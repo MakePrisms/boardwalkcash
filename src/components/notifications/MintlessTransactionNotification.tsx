@@ -1,11 +1,9 @@
+import ViewMintlessTransactionButton from './buttons/ViewMintlessTransactionButton';
+import ClearNotificationButton from './buttons/ClearNotificationButton';
 import { MintlessTransactionNotificationData } from '@/types';
+import NotificationItemText from './NotificationItemText';
 import { formatSats } from '@/utils/formatting';
 import { useMemo } from 'react';
-import ClearNotificationButton from './buttons/ClearNotificationButton';
-import NotificationItemText from './NotificationItemText';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
-import ViewMintlessTransactionButton from './buttons/ViewMintlessTransactionButton';
 
 interface TokenNotificationProps {
    data: MintlessTransactionNotificationData;
@@ -14,7 +12,6 @@ interface TokenNotificationProps {
 
 const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotificationProps) => {
    const { amount, contact, gift, timeAgo, unit } = data;
-   const user = useSelector((state: RootState) => state.user);
 
    const notificationText = useMemo(() => {
       const formattedAmount = formatSats(amount);
@@ -22,7 +19,7 @@ const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotif
          const getArticle = (word: string) => {
             return ['a', 'e', 'i', 'o', 'u'].includes(word.toLowerCase()[0]) ? 'an' : 'a';
          };
-         return `${contact?.username} sent you ${getArticle(gift)} ${gift}`;
+         return `${contact?.username} sent you ${getArticle(gift.name)} ${gift.name}`;
       } else {
          return `${contact?.username} sent you ${formattedAmount}`;
       }
@@ -36,10 +33,10 @@ const MintlessTransactionNotification = ({ data, clearNotification }: TokenNotif
             contact={contact}
             amountUnit={amount}
             unit={unit}
-            giftName={gift}
+            gift={gift}
          />,
       ];
-   }, [clearNotification, contact, amount, gift]);
+   }, [clearNotification, contact, amount, unit, gift]);
 
    return (
       <>
