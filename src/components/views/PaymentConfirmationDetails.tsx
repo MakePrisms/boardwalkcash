@@ -76,10 +76,10 @@ const PaymentConfirmationDetails = ({
 
          <div className='flex justify-between items-center gap-4'>
             <span className='text-gray-500'>{equivalantAmtLabel}</span>
-            {amount !== null ? (
+            {equivalentAmount !== null ? (
                <span>
                   {isShowingUsdEquivalent && '~'}
-                  {formatUnit(amount, equivalantUnit)}
+                  {formatUnit(equivalentAmount, equivalantUnit)}
                </span>
             ) : null}
          </div>
