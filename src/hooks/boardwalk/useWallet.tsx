@@ -89,7 +89,8 @@ const useWallet = () => {
          }
 
          if (!token) {
-            throw new Error('Failed to create ecash token');
+            /* failed to create token is handled in the token creation functions */
+            return;
          }
 
          let txid: string | undefined;
