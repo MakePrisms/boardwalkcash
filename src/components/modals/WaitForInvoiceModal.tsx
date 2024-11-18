@@ -4,7 +4,7 @@ import ClipboardButton from '@/components/buttons/utility/ClipboardButton';
 import { formatCents, formatSats } from '@/utils/formatting';
 import { useEffect, useState } from 'react';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
-import { getAmountAndExpiryFromInvoice } from '@/utils/bolt11';
+import { decodeBolt11 } from '@/utils/bolt11';
 
 interface WaitForInvoiceModalProps {
    isOpen: boolean;
@@ -19,7 +19,7 @@ export const WaitForInvoiceModalBody: React.FC<
 > = ({ invoice, invoiceTimeout, onCheckAgain }) => {
    const [amountData, setAmountData] = useState<{
       amountUsdCents: number;
-      amountSats: number;
+      amountSat: number;
    } | null>(null);
    const [loading, setLoading] = useState(true);
    const { satsToUnit } = useExchangeRate();
@@ -27,10 +27,14 @@ export const WaitForInvoiceModalBody: React.FC<
    useEffect(() => {
       setLoading(true);
       // TODO: also show expiry
-      const { amount: amountSats } = getAmountAndExpiryFromInvoice(invoice);
-      satsToUnit(amountSats, 'usd')
+      const { amountSat } = decodeBolt11(invoice);
+      if (!amountSat) {
+         /* amountless invoice isn't possible bc cashu doesn't support it */
+         return;
+      }
+      satsToUnit(amountSat, 'usd')
          .then(amountUsdCents => {
-            setAmountData({ amountUsdCents, amountSats });
+            setAmountData({ amountUsdCents, amountSat });
          })
          .finally(() =>
             setTimeout(() => {
@@ -56,7 +60,7 @@ export const WaitForInvoiceModalBody: React.FC<
                <div className='flex items-center justify-center space-x-5 text-black'>
                   <div>{`~${formatCents(amountData.amountUsdCents)}`}</div>
                   <div>|</div>
-                  <div>{formatSats(amountData.amountSats)}</div>
+                  <div>{formatSats(amountData.amountSat)}</div>
                </div>
             </div>
          )}

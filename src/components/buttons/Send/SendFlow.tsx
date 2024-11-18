@@ -10,13 +10,13 @@ import { Currency, GiftAsset, PublicContact } from '@/types';
 import SelectContact from '@/components/views/SelectContact';
 import ShareEcash from '@/components/views/ShareEcash';
 import SelectGift from '@/components/views/SelectGift';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import QRScanner from '@/components/views/QRScanner';
 import useWallet from '@/hooks/boardwalk/useWallet';
 import { useNumpad } from '@/hooks/util/useNumpad';
 import { useCashu } from '@/hooks/cashu/useCashu';
 import { useToast } from '@/hooks/util/useToast';
 import { isMobile } from 'react-device-detect';
+import { decodeBolt11 } from '@/utils/bolt11';
 import InputOptions from './InputOptions';
 import AmountInput from './AmountInput';
 import InputLud16 from './Lud16Input';
@@ -177,8 +177,12 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
       let amount: number;
       if (isMintless) {
          /* going to pay directly from lightning wallet */
-         const amtSat = getAmountFromInvoice(invoice);
-         amount = await convertToUnit(amtSat, 'sat', activeUnit);
+         const { amountSat } = decodeBolt11(invoice);
+         if (!amountSat) {
+            addToast('Amountless invoices are not supported', 'error');
+            return;
+         }
+         amount = await convertToUnit(amountSat, 'sat', activeUnit);
       } else {
          quote = await getMeltQuote(invoice);
          if (!quote) {

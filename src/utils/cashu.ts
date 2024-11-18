@@ -12,7 +12,7 @@ import { bytesToHex } from '@noble/curves/abstract/utils';
 import { sha256 } from '@noble/hashes/sha256';
 import { getTokenFromDb } from './appApiRequests';
 import { Currency } from '@/types';
-import { decodeInvoice } from './bolt11';
+import { decodeBolt11 } from './bolt11';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -437,13 +437,13 @@ export const dissectToken = (token: string | Token) => {
  * @returns boolean
  */
 export const isMintQuoteExpired = (quote: MintQuoteResponse) => {
-   const { expiryUnixSeconds: invoiceExpiry } = decodeInvoice(quote.request);
+   const { expiryUnixMs: invoiceExpiry } = decodeBolt11(quote.request);
 
    /* subtract 15 seconds just so that we underestimate the expiry time, just in case */
-   const nowSeconds = Math.floor(Date.now() / 1000) - 15;
+   const now = Math.floor(Date.now()) - 15;
 
-   const quoteExpired = quote.expiry && quote.expiry < nowSeconds;
-   const invoiceExpired = invoiceExpiry < nowSeconds;
+   const quoteExpired = quote.expiry && quote.expiry * 1000 < now;
+   const invoiceExpired = invoiceExpiry < now;
 
    return quoteExpired || invoiceExpired;
 };
