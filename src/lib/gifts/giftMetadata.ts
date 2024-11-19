@@ -1,3 +1,4 @@
+import { excludedNames } from '@/env';
 import { GiftAsset, Currency } from '@/types';
 
 const usdGifts: GiftAsset[] = [
@@ -1016,4 +1017,6 @@ const satGifts: GiftAsset[] = [
    },
 ];
 
-export const giftMetadata: GiftAsset[] = [...usdGifts, ...satGifts];
+export const giftMetadata: GiftAsset[] = [...usdGifts, ...satGifts].filter(
+   g => excludedNames.indexOf(g.name) === -1,
+);
