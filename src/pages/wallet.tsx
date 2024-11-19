@@ -23,7 +23,7 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { PublicContact, TokenProps, GiftAsset, Currency } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
 import { proofsLockedTo } from '@/utils/cashu';
-import { formatUrl } from '@/utils/url';
+import { formatUrl, getRequestedDomainFromRequest } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
@@ -292,6 +292,8 @@ export const getServerSideProps: GetServerSideProps = async (
    let gift: GiftAsset | undefined = undefined;
    const txid = context.query.txid as string;
 
+   const baseRequestUrl = getRequestedDomainFromRequest(context.req);
+
    if (txid && !token) {
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
@@ -338,6 +340,7 @@ export const getServerSideProps: GetServerSideProps = async (
          pageTitle: pageTitle(tokenData) || null,
          pageDescription: pageDescription(tokenData) || null,
          giftPath,
+         baseRequestUrl,
       },
    };
 };

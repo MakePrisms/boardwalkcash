@@ -21,6 +21,7 @@ interface CustomPageProps {
    pageTitle?: string;
    pageDescription?: string;
    giftPath?: string;
+   baseRequestUrl?: string;
 }
 
 const defaultPageDescription = 'The easiest way to send and receive cash.';
@@ -28,11 +29,11 @@ const defaultPageTitle = 'Boardwalk Cash';
 
 type CustomAppProps = AppProps<CustomPageProps>;
 export default function App({ Component, pageProps }: CustomAppProps) {
-   const { pageTitle, pageDescription, giftPath } = pageProps;
+   const { pageTitle, pageDescription, giftPath, baseRequestUrl } = pageProps;
    useViewportHeight();
    const router = useRouter();
 
-   const previewImg = `${typeof window !== 'undefined' ? window.location.origin : 'https://boardwalkcash.com'}${giftPath || '/logo-url-preview.png'}`;
+   const previewImg = `${baseRequestUrl || 'https://boardwalkcash.com'}${giftPath || '/logo-url-preview.png'}`;
 
    useEffect(() => {
       const checkAdminAccess = () => {
