@@ -56,6 +56,7 @@ export default function Home({ token }: { token?: string }) {
    const { loading: loadingExchangeRate } = useExchangeRate();
    const { loading: loadingBalance } = useBalance();
    const [loadingState, setLoadingState] = useState(true);
+   const hasCheckedPendingMintQuotes = useRef(false);
 
    useEffect(() => {
       if (user.status === 'failed') {
@@ -165,7 +166,6 @@ export default function Home({ token }: { token?: string }) {
    /* check pending lightning payments on load */
    useEffect(() => {
       if (loadingState) return;
-      console.log('history', history.lightning);
       const pendingLightning = history.lightning.filter(tx => tx.status === TxStatus.PENDING);
 
       const checkAndUpdatePending = async () => {
@@ -182,8 +182,11 @@ export default function Home({ token }: { token?: string }) {
          }
       };
 
-      checkAndUpdatePending();
-   }, [loadingState]);
+      if (!hasCheckedPendingMintQuotes.current) {
+         checkAndUpdatePending();
+         hasCheckedPendingMintQuotes.current = true;
+      }
+   }, [loadingState, history.lightning, tryToMintProofs]);
 
    // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
