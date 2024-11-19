@@ -19,12 +19,12 @@ export default async function handler(
       try {
          const paymentRequest = await getPaymentRequestByIdIncludeToken(id);
 
-         if (!paymentRequest) {
-            return res.status(404).json({ error: 'Payment request not found' });
+         if (paymentRequest?.userPubkey !== req.authenticatedPubkey) {
+            return res.status(403).json({ error: 'Unauthorized' });
          }
 
-         if (paymentRequest.userPubkey !== req.authenticatedPubkey) {
-            return res.status(403).json({ error: 'Unauthorized' });
+         if (!paymentRequest) {
+            return res.status(404).json({ error: 'Payment request not found' });
          }
 
          /* get most recent token by createdAt timestamp */
