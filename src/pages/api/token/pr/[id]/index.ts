@@ -2,7 +2,7 @@ import { AuthenticatedRequest, CheckPaymentRequestResponse, NotificationType } f
 import { getEncodedTokenV4, PaymentRequestPayload } from '@cashu/cashu-ts';
 import { computeTxId, initializeWallet } from '@/utils/cashu';
 import { createNotification } from '@/lib/notificationModels';
-import { runAuthMiddleware } from '@/utils/middleware';
+import { corsMiddleware, runAuthMiddleware, runMiddleware } from '@/utils/middleware';
 import { NextApiResponse } from 'next';
 import {
    getPaymentRequestByIdIncludeToken,
@@ -15,6 +15,8 @@ export default async function handler(
    req: AuthenticatedRequest,
    res: NextApiResponse<CheckPaymentRequestResponse | { error: string }>,
 ) {
+   await runMiddleware(req, res, corsMiddleware);
+
    if (req.method === 'GET') {
       await runAuthMiddleware(req, res);
 
