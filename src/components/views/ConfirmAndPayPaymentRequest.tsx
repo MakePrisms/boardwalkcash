@@ -3,20 +3,27 @@ import PaymentConfirmationDetails from './PaymentConfirmationDetails';
 import { PaymentRequest } from '@cashu/cashu-ts';
 import { useToast } from '@/hooks/util/useToast';
 import { Button } from 'flowbite-react';
-import { Currency } from '@/types';
 import { useState } from 'react';
 import { getMsgFromUnknownError } from '@/utils/error';
+import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface MyProps {
    paymentRequest: PaymentRequest;
-   requestAmount: number;
+   amountToPay: number;
+   displayAmount: number;
    onClose: () => void;
 }
 
-const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }: MyProps) => {
+const ConfirmAndPayPaymentRequest = ({
+   paymentRequest,
+   amountToPay,
+   displayAmount,
+   onClose,
+}: MyProps) => {
    const [isProcessing, setIsProcessing] = useState(false);
 
    const { payPaymentRequest } = usePaymentRequests();
+   const { activeUnit } = useCashuContext();
    const { addToast } = useToast();
 
    const handleClose = () => {
@@ -27,7 +34,7 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }:
    const handleSendPaymentRequest = async () => {
       try {
          setIsProcessing(true);
-         const res = await payPaymentRequest(paymentRequest, requestAmount);
+         const res = await payPaymentRequest(paymentRequest, amountToPay);
          if (res === true) {
             addToast('Payment request paid!', 'success');
          } else {
@@ -44,8 +51,8 @@ const ConfirmAndPayPaymentRequest = ({ paymentRequest, requestAmount, onClose }:
    return (
       <div className='text-black flex flex-col items-center justify-between h-full'>
          <PaymentConfirmationDetails
-            amount={requestAmount}
-            unit={(paymentRequest?.unit as Currency) || Currency.SAT}
+            amount={displayAmount}
+            unit={activeUnit}
             destination={paymentRequest?.toEncodedRequest()}
          />
          <Button
