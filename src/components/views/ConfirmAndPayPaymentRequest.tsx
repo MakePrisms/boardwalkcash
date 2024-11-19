@@ -9,16 +9,16 @@ import { useCashuContext } from '@/hooks/contexts/cashuContext';
 
 interface MyProps {
    paymentRequest: PaymentRequest;
-   requestAmount: number;
+   amountToPay: number;
    displayAmount: number;
    onClose: () => void;
 }
 
 const ConfirmAndPayPaymentRequest = ({
    paymentRequest,
-   requestAmount,
-   onClose,
+   amountToPay,
    displayAmount,
+   onClose,
 }: MyProps) => {
    const [isProcessing, setIsProcessing] = useState(false);
 
@@ -34,7 +34,7 @@ const ConfirmAndPayPaymentRequest = ({
    const handleSendPaymentRequest = async () => {
       try {
          setIsProcessing(true);
-         const res = await payPaymentRequest(paymentRequest, requestAmount);
+         const res = await payPaymentRequest(paymentRequest, amountToPay);
          if (res === true) {
             addToast('Payment request paid!', 'success');
          } else {

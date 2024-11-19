@@ -59,7 +59,7 @@ type SendFlowState = {
    | {
         step: 'confirmPaymentRequest';
         paymentRequest: PaymentRequest;
-        amount: number;
+        displayAmount: number;
         amountToPay: number;
      }
    | {
@@ -115,7 +115,7 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
             ...state,
             step: 'confirmPaymentRequest',
             paymentRequest,
-            amount: input,
+            displayAmount: input,
             amountToPay,
          }));
       } else if (state.activeTab === 'ecash') {
@@ -228,12 +228,12 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
                ...state,
                step: 'confirmPaymentRequest',
                paymentRequest: decoded,
-               amount: numpadAmount,
+               displayAmount: numpadAmount,
                amountToPay,
             });
          }
       } else {
-         const amount = await convertToUnit(
+         const displayAmount = await convertToUnit(
             decoded.amount,
             (decoded.unit as Currency) || Currency.SAT,
             activeUnit,
@@ -242,7 +242,7 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
             ...state,
             step: 'confirmPaymentRequest',
             paymentRequest: decoded,
-            amount,
+            displayAmount,
             amountToPay: decoded.amount,
             isProcessing: false,
          });
@@ -356,9 +356,9 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
          {state.step === 'confirmPaymentRequest' && (
             <ConfirmAndPayPaymentRequest
                paymentRequest={state.paymentRequest}
-               requestAmount={state.amountToPay}
+               amountToPay={state.amountToPay}
+               displayAmount={state.displayAmount}
                onClose={onClose}
-               displayAmount={state.amount}
             />
          )}
          {state.step === 'shareEcash' && (
