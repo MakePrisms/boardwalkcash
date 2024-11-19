@@ -2,19 +2,16 @@ import { findContactByUsername } from '@/lib/contactModels';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-   const { slug } = req.query;
+   const { username } = req.query;
 
-   if (!slug || typeof slug !== 'string') {
+   if (!username || typeof username !== 'string') {
       return res.status(400).json({ message: 'Invalid slug' });
    }
-
-   console.log('slug:', slug);
 
    switch (req.method) {
       case 'GET':
          try {
-            console.log('Looking for user with username:', slug.toString());
-            const user = await findContactByUsername(slug.toString());
+            const user = await findContactByUsername(username.toString());
             if (user) {
                return res.status(200).json(user);
             } else {

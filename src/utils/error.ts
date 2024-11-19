@@ -11,3 +11,10 @@ export const getMsgFromUnknownError = (
    }
    return errMsg;
 };
+
+export class TokenAlreadySpentError extends Error {
+   constructor(message?: string) {
+      super(message);
+      this.name = 'TokenAlreadySpentError';
+   }
+}
