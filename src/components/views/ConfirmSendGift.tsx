@@ -24,8 +24,8 @@ const ConfirmSendGift = ({
    contact,
 }: ConfirmSendGiftProps) => {
    return (
-      <div className='flex flex-col justify-between w-full text-black h-full'>
-         <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
+      <div className='view-ecash-container'>
+         <div className='flex flex-col justify-center items-center text-black text-lg gap-6'>
             <StickerItem
                selectedSrc={gift.selectedSrc}
                unselectedSrc={gift.selectedSrc}
@@ -42,7 +42,7 @@ const ConfirmSendGift = ({
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mt-6'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                />
             )}
          </div>
@@ -60,7 +60,7 @@ const ConfirmSendGift = ({
             </div>
          )}
          {!token && (
-            <div className='w-full flex justify-center items-center  mb-12'>
+            <div className='w-full flex justify-center items-center'>
                <Button
                   key='gift-send'
                   className='btn-primary h-full'

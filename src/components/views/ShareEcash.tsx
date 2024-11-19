@@ -52,8 +52,8 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
 
    if (gift) {
       return (
-         <div className='flex flex-col justify-between items-center text-black h-full'>
-            <div className='flex flex-col justify-center items-center text-black text-2xl gap-6'>
+         <div className='view-ecash-container'>
+            <div className='flex flex-col justify-center items-center text-black text-lg gap-6'>
                <StickerItem
                   selectedSrc={gift.selectedSrc}
                   unselectedSrc={gift.unselectedSrc}
@@ -67,7 +67,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?txid=${txid}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                   onClick={onClose}
                />
             )}
@@ -75,7 +75,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                <ClipboardButton
                   toCopy={`${window.location.origin}/wallet?token=${token}`}
                   toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)] mb-12'
+                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
                   onClick={onClose}
                />
             )}
@@ -87,7 +87,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
       <div className='flex flex-col justify-around items-center text-black space-y-3 h-full'>
          <div className='max-w-full flex flex-col justify-center items-center text-black space-y-3'>
             {contact?.username && (
-               <p className='text-2xl'>
+               <p className='text-lg'>
                   eTip for <UserLink username={contact.username} />
                </p>
             )}

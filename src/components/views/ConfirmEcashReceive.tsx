@@ -155,8 +155,8 @@ const ConfirmEcashReceive = ({ token, contact, onSuccess, onFail }: ConfirmEcash
    }
 
    return (
-      <div className='flex flex-col items-center justify-between h-full'>
-         <div className='flex flex-col items-center justify-center gap-6 mt-4'>
+      <div className='view-ecash-container'>
+         <div className='flex flex-col items-center justify-center gap-6'>
             {title && <h2 className='text-xl text-black'>{title}</h2>}
             <Tooltip content='Copy token' onClick={handleCopy}>
                <div className='flex justify-center items-center'>

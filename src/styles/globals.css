@@ -211,3 +211,7 @@ button:focus-visible {
    -ms-overflow-style: none; /* IE and Edge */
    scrollbar-width: none; /* Firefox */
 }
+
+.view-ecash-container {
+   @apply flex flex-col justify-center items-center text-black h-full w-full gap-12;
+}
