@@ -14,7 +14,6 @@ export const getSingleGiftCampaign = async (id: number) => {
       },
       include: {
          claimedBy: true,
-         gift: true,
       },
    });
 };
@@ -22,7 +21,7 @@ export const getSingleGiftCampaign = async (id: number) => {
 export const getAllSingleGiftCampaigns = async (active: boolean) => {
    return prisma.singleGiftCampaign.findMany({
       where: { active },
-      include: { gift: true, claimedBy: true },
+      include: { claimedBy: true },
    });
 };
 

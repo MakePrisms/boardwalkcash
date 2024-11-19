@@ -16,7 +16,6 @@ model User {
   lud16                String?
   contacts             Contact[]            @relation("UserContacts")
   contactOf            Contact[]            @relation("ContactUser")
-  proofs               Proof[]
   mintQuotes           MintQuote[]
   defaultMint          Mint                 @relation(fields: [defaultMintUrl], references: [url])
   defaultMintUrl       String
@@ -29,12 +28,11 @@ model User {
   // whether or not this user is in mintless mode to receive
   mintlessReceive      Boolean              @default(false)
   Notification         Notification[]
-  // custom gifts created by this user
-  customGifts          Gift[]               @relation("CustomGifts")
   // UserCustomGift UserConditionalGift[]
   createdTokens        Token[]              @relation("TokenCreatedBy")
   receivedTokens       Token[]              @relation("TokenRecipient")
   claimedCampaingGifts SingleGiftCampaign[]
+  PaymentRequest       PaymentRequest[]
 }
 
 model Contact {
@@ -51,21 +49,6 @@ model Contact {
   updatedAt    DateTime @updatedAt
 
   @@unique([userId, linkedUserId]) // can only have one contact per user
-}
-
-model Proof {
-  id           Int        @id @default(autoincrement())
-  proofId      String
-  amount       Int
-  secret       String
-  C            String
-  unit         String     @default("usd")
-  userId       Int // Foreign key to associate proof with a user
-  user         User       @relation(fields: [userId], references: [id]) // Links back to the User model
-  mintKeysetId String
-  MintKeyset   MintKeyset @relation(fields: [mintKeysetId], references: [id])
-
-  @@index([userId], name: "idx_user_id") // index to improve query performance on the userId field
 }
 
 model MintQuote {
@@ -93,7 +76,6 @@ model MintKeyset {
   id        String      @id
   keys      String[]
   unit      String
-  proof     Proof[]
   mintQuote MintQuote[]
   mint      Mint        @relation(fields: [mintUrl], references: [url])
   mintUrl   String
@@ -115,23 +97,25 @@ model Notification {
 }
 
 model Token {
-  id              String         @id
-  token           String
-  createdAt       DateTime       @default(now())
-  redeemedAt      DateTime?
-  gift            String?
-  Notification    Notification[]
-  createdByPubkey String?
-  recipientPubkey String?
+  id               String          @id
+  token            String
+  createdAt        DateTime        @default(now())
+  redeemedAt       DateTime?
+  giftId           Int?
+  Notification     Notification[]
+  createdByPubkey  String?
+  recipientPubkey  String?
   // whether or not this token is a fee
-  isFee           Boolean        @default(false)
-  recipient       User?          @relation(fields: [recipientPubkey], references: [pubkey], name: "TokenRecipient")
-  createdBy       User?          @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
+  isFee            Boolean         @default(false)
+  recipient        User?           @relation(fields: [recipientPubkey], references: [pubkey], name: "TokenRecipient")
+  createdBy        User?           @relation(fields: [createdByPubkey], references: [pubkey], name: "TokenCreatedBy")
+  paymentRequest   PaymentRequest? @relation(fields: [paymentRequestId], references: [id])
+  paymentRequestId String?
 }
 
 model MintlessTransaction {
   id              String         @id @default(uuid())
-  gift            String?
+  giftId          Int?
   notificationId  String
   amount          Int
   recipientPubkey String
@@ -139,39 +123,6 @@ model MintlessTransaction {
   createdAt       DateTime       @default(now())
   isFee           Boolean        @default(false)
   Notification    Notification[]
-}
-
-model Gift {
-  id                 Int                 @id @default(autoincrement())
-  name               String              @unique
-  amount             Int
-  unit               String              @default("usd")
-  description        String?
-  // path to image (relative path or full url)
-  imageUrlSelected   String
-  imageUrlUnselected String
-  // null -> anyone can send/receive;
-  creatorPubkey      String?
-  // the creator of the gift
-  creator            User?               @relation("CustomGifts", fields: [creatorPubkey], references: [pubkey])
-  // fee in cents user has to pay to send
-  fee                Int?
-  // don't show if inactive
-  active             Boolean             @default(true)
-  // // true -> anyone can send/receive; false -> only the creator can send/receive
-  // isGlobal    Boolean @default(true)
-  // // whether or not there are `conditions`
-  // isConditional     Boolean               @default(false)
-  // // set of condiditions that must be met to send the gift
-  // sendConditions    GiftCondition[]       @relation("SendConditions")
-  // // receive conditions -> user cannot receive the gift unless they meet these conditions
-  // receiveConditions GiftCondition[]       @relation("ReceiveConditions")
-  // // the users that can send the gift
-  // userGifts         UserConditionalGift[]
-  SingleGiftCampaign SingleGiftCampaign?
-
-  @@index([creatorPubkey])
-  @@index([name])
 }
 
 model PendingOtp {
@@ -200,33 +151,18 @@ model SingleGiftCampaign {
   claimedBy   User[]
   // optionally expires and becomes inactive
   expiresAt   DateTime?
-  gift        Gift      @relation(fields: [giftId], references: [id])
   createdAt   DateTime  @default(now())
 }
 
-// model GiftCondition {
-//   id                      Int    @id @default(autoincrement())
-//   giftId                  Int
-//   // one time use, limited supply, expiry, unlimited supply
-//   conditionType           String
-//   // number of gifts, expiry date, etc
-//   conditionValue          Json
-//   // array of gifts that are conditionally sendable
-//   conditionalSendGifts    Gift[] @relation("SendConditions")
-//   // array of gifts that are conditionally receivable
-//   conditionalReceiveGifts Gift[] @relation("ReceiveConditions")
-
-//   @@index([giftId])
-// }
-
-// model UserConditionalGift {
-//   id               Int  @id @default(autoincrement())
-//   userId           Int
-//   giftId           Int
-//   conditionsStatus Json
-//   user             User @relation(fields: [userId], references: [id])
-//   gift             Gift @relation(fields: [giftId], references: [id])
-
-//   @@index([userId])
-//   @@index([giftId])
-// }
+model PaymentRequest {
+  id         String   @id @default(uuid())
+  amount     Int?
+  userPubkey String
+  paid       Boolean  @default(false)
+  reusable   Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userPubkey], references: [pubkey])
+  // multiple tokens if the payment request is reusable
+  tokens     Token[]
+}

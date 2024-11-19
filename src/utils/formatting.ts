@@ -20,6 +20,17 @@ export const formatUnit = (amount: number, unit?: string) => {
    }
 };
 
+export const getUnitSymbol = (unit: Currency) => {
+   switch (unit) {
+      case 'usd':
+         return '$';
+      case 'sat':
+         return '₿';
+      default:
+         return '';
+   }
+};
+
 export const formatCents = (cents: number, decimals = true) => {
    if (cents < 0) {
       throw new Error('Cents must be a non-negative number');

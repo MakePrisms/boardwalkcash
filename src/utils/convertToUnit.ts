@@ -1,4 +1,4 @@
-const DEFAULT_USD_BTC_RATE = 60000;
+const DEFAULT_USD_BTC_RATE = 65000;
 
 const getUsdToSatRate = async (): Promise<number> => {
    try {

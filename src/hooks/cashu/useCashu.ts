@@ -12,27 +12,36 @@ import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { useToast } from '../util/useToast';
-import { useAppDispatch } from '@/redux/store';
+import { RootState, useAppDispatch } from '@/redux/store';
 import { TxStatus, addTransaction } from '@/redux/slices/HistorySlice';
 import { resetStatus, setError, setSending, setSuccess } from '@/redux/slices/ActivitySlice';
 import {
    CrossMintQuoteResult,
    Currency,
+   GiftFee,
    InsufficientBalanceError,
    PayInvoiceResponse,
    ReserveError,
    TransactionError,
 } from '@/types';
-import { initializeWallet, proofsLockedTo } from '@/utils/cashu';
+import { dissectToken, initializeWallet, proofsLockedTo } from '@/utils/cashu';
 import useNotifications from '../boardwalk/useNotifications';
 import { postTokenToDb } from '@/utils/appApiRequests';
 import { formatUnit, getSymbolForUnit } from '@/utils/formatting';
 import { useExchangeRate } from '../util/useExchangeRate';
+import { useSelector } from 'react-redux';
 
-type CrossMintSwapOpts = { proofs?: Proof[]; amount?: number; max?: boolean; privkey?: string };
+type CrossMintSwapOpts = {
+   proofs?: Proof[];
+   amount?: number;
+   max?: boolean;
+   privkey?: string;
+   giftId?: number;
+};
 
 export const useCashu = () => {
-   const { activeWallet, reserveWallet, getWallet, getMint } = useCashuContext();
+   const { activeWallet, reserveWallet, getWallet, getMint, addWalletFromMintUrl } =
+      useCashuContext();
    const {
       addProofs,
       removeProofs,
@@ -43,11 +52,11 @@ export const useCashu = () => {
       lockBalance,
       unlockBalance,
    } = useProofStorage();
-   const { requestDeposit, getReserveUri, createProofsFromReserve, checkDeposit } =
-      useNostrMintConnect();
+   const { requestDeposit, getReserveUri, createProofsFromReserve } = useNostrMintConnect();
    const { sendTokenAsNotification } = useNotifications();
    const { addToast, toastSwapSuccess, toastSwapError } = useToast();
    const { satsToUnit, unitToSats } = useExchangeRate();
+   const user = useSelector((state: RootState) => state.user);
 
    const dispatch = useAppDispatch();
 
@@ -266,9 +275,11 @@ export const useCashu = () => {
          lockBalance();
 
          await addProofs([...newProofs, ...change]);
-         if (opts.amount || opts.max) {
+         if ((opts.amount || opts.max) && !swappedToUnlock) {
             // this means we were not give then proofs to melt, so we need to remove the proofs from the storage
-            await removeProofs(proofsToMelt);
+            await removeProofs(proofsToMelt).catch(e => {
+               console.error('error removing proofs', e);
+            });
          }
          const newProofAmt = newProofs.reduce((a, b) => a + b.amount, 0);
          // const amountSwapped = await convertToUnit(amountToMint, from.keys.unit, to.keys.unit);
@@ -290,6 +301,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: to.keys.unit as Currency,
                   gift: undefined,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -325,8 +337,12 @@ export const useCashu = () => {
             throw new Error('this function requires proofs to be passed in');
          }
 
-         return await swapToClaimProofs(from, opts.proofs, { privkey: opts.privkey });
+         return await swapToClaimProofs(from, opts.proofs, {
+            privkey: opts.privkey,
+            giftId: opts.giftId,
+         });
       }
+      console.log('cross mint swap opts', opts);
       return await crossMintSwap(from, activeWallet, opts);
    };
 
@@ -338,7 +354,7 @@ export const useCashu = () => {
    const swapToClaimProofs = async (
       wallet: CashuWallet,
       proofs: Proof[],
-      opts?: { privkey?: string },
+      opts?: { privkey?: string; giftId?: number },
    ): Promise<boolean> => {
       lockBalance();
       let success = false;
@@ -373,6 +389,7 @@ export const useCashu = () => {
                   status: TxStatus.PAID,
                   unit: wallet.keys.unit as Currency,
                   gift: undefined,
+                  giftId: opts?.giftId || null,
                },
             }),
          );
@@ -448,8 +465,9 @@ export const useCashu = () => {
       opts?: {
          wallet?: CashuWallet;
          pubkey?: string;
-         gift?: string;
-         feeCents?: number;
+         giftId?: number;
+         fee?: number;
+         feeSplits?: GiftFee[];
       },
    ) => {
       let wallet: CashuWallet | undefined;
@@ -461,11 +479,11 @@ export const useCashu = () => {
       }
 
       try {
-         if (!hasSufficientBalance(amount + (opts?.feeCents || 0))) {
+         if (!hasSufficientBalance(amount + (opts?.fee || 0))) {
             throw new InsufficientBalanceError(
                wallet.keys.unit as Currency,
                balanceByWallet[wallet.keys.id],
-               amount + (opts?.feeCents || 0),
+               amount + (opts?.fee || 0),
             );
          }
 
@@ -473,17 +491,20 @@ export const useCashu = () => {
             pubkey: opts?.pubkey,
          });
 
-         /* create and send fee token to us if feeCents is set */
-         if (opts?.feeCents) {
-            const feeProofs = await getProofsToSend(opts?.feeCents, wallet, {
-               pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+         /* create and send fee token to us if fee is set */
+         if (opts?.fee) {
+            if (!opts?.feeSplits || opts?.feeSplits.length === 0)
+               throw new Error('feeSplits must be set when fee is set');
+            const recipientPubkey = opts?.feeSplits[0].recipient;
+            const feeProofs = await getProofsToSend(opts?.fee, wallet, {
+               pubkey: '02' + recipientPubkey,
             });
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
                unit: wallet.keys.unit,
             });
             if (feeToken) {
-               const txid = await postTokenToDb(feeToken, opts?.gift, true);
+               const txid = await postTokenToDb(feeToken, opts?.giftId, true);
                await sendTokenAsNotification(feeToken, txid);
             }
             await removeProofs(feeProofs);
@@ -505,8 +526,8 @@ export const useCashu = () => {
                   status: TxStatus.PENDING,
                   date: new Date().toLocaleString(),
                   pubkey: opts?.pubkey,
-                  gift: opts?.gift,
-                  fee: opts?.feeCents,
+                  giftId: opts?.giftId || null,
+                  fee: opts?.fee,
                },
             }),
          );
@@ -550,7 +571,7 @@ export const useCashu = () => {
       invoice: string,
       meltQuote?: MeltQuoteResponse,
       wallet?: CashuWallet,
-   ): Promise<PayInvoiceResponse> => {
+   ): Promise<PayInvoiceResponse | undefined> => {
       if (!wallet) {
          if (!activeWallet) {
             throw new Error('No active wallet set');
@@ -717,6 +738,66 @@ export const useCashu = () => {
       return balanceByWallet[activeKeysetId] >= amountUsdCents;
    };
 
+   /**
+    * Claim a token to the mint that created it
+    * @param token token to claim
+    * @returns true if successful
+    */
+   const handleClaimToSourceMint = async (token: Token | string, opts?: { giftId?: number }) => {
+      const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
+
+      let wallet = getWallet(keysetId);
+
+      if (!wallet) {
+         try {
+            wallet = await initializeWallet(mintUrl, { unit });
+
+            /* set active unit to undefined because we only want to add the wallet, not set it as active */
+            await addWalletFromMintUrl(mintUrl, undefined);
+         } catch (e) {
+            console.error('Failed to initialize wallet', e);
+            addToast(`Failed to initialize a wallet for ${mintUrl}.`, 'error');
+            return false;
+         }
+      }
+      const privkey = pubkeyLock ? user.privkey : undefined;
+      try {
+         return await swapToClaimProofs(wallet, proofs, { privkey, giftId: opts?.giftId });
+      } catch (e) {
+         console.error('Failed to initialize wallet', e);
+         return false;
+      }
+   };
+
+   /**
+    * Claim a token to `activeWallet`
+    * @param token token to claim
+    * @returns true if successful
+    */
+   const handleClaimToActiveWallet = async (token: Token | string, opts?: { giftId?: number }) => {
+      const { mintUrl, unit, proofs, keysetId, pubkeyLock } = dissectToken(token);
+
+      let wallet = getWallet(keysetId);
+
+      if (!wallet) {
+         try {
+            wallet = await initializeWallet(mintUrl, { unit });
+         } catch (e) {
+            console.error('Failed to initialize wallet', e);
+            addToast(`Failed to initialize a wallet for ${mintUrl}.`, 'error');
+            return false;
+         }
+      }
+
+      let privkey = pubkeyLock ? user.privkey : undefined;
+
+      return await swapToActiveWallet(wallet, {
+         proofs,
+         privkey,
+         giftId: opts?.giftId,
+      });
+   };
+
    return {
       swapToActiveWallet,
       crossMintSwap,
@@ -726,6 +807,7 @@ export const useCashu = () => {
       balanceByWallet,
       getMint,
       createSendableToken,
+      getProofsToSend,
       getMeltQuote,
       payInvoice,
       requestMintInvoice,
@@ -734,5 +816,7 @@ export const useCashu = () => {
       isTokenSpent,
       claimToken,
       unlockProofs,
+      handleClaimToSourceMint,
+      handleClaimToActiveWallet,
    };
 };

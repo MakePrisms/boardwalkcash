@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { authenticatedRequest, request } from '@/utils/appApiRequests';
 import { computeTxId, getMintFromToken } from '@/utils/cashu';
 import {
-   Currency,
    GetAllGiftsResponse,
    GetGiftResponse,
+   GetTokenResponse,
    GiftAsset,
    PostSendGiftResponse,
 } from '@/types';
@@ -14,13 +14,14 @@ import { RootState, useAppDispatch } from '@/redux/store';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
+import { giftMetadata } from '@/lib/gifts/giftMetadata';
 
 interface GiftContextType {
    giftAssets: Record<string, GiftAsset>;
-   getGiftByIdentifier: (identifier: string) => GiftAsset | undefined;
+   getGiftById: (id: number) => GiftAsset | null;
    getGiftFromToken: (token: string | Token) => Promise<GiftAsset | null>;
    loadingGifts: boolean;
-   fetchGift: (identifier: string) => Promise<GiftAsset | null>;
+   fetchGift: (identifier: number) => Promise<GiftAsset | null>;
    loadUserCustomGifts: (creatorPubkey: string) => Promise<void>;
    sendCampaignGift: (
       gift: GiftAsset,
@@ -35,7 +36,7 @@ interface GiftProviderProps {
 }
 
 export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
-   const [giftAssets, setGiftAssets] = useState<Record<string, GiftAsset>>({});
+   const [giftAssets, setGiftAssets] = useState<Record<number, GiftAsset>>({});
    const [isFetching, setIsFetching] = useState(false);
    const user = useSelector((state: RootState) => state.user);
    const { isContactAdded } = useContacts();
@@ -46,17 +47,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       const fetchGifts = async () => {
          setIsFetching(true);
          try {
-            let apiGifts: GetAllGiftsResponse;
-            if (user.pubkey) {
-               apiGifts = await authenticatedRequest<GetAllGiftsResponse>(
-                  '/api/gifts',
-                  'GET',
-                  undefined,
-               );
-            } else {
-               apiGifts = await request<GetAllGiftsResponse>('/api/gifts', 'GET');
-            }
-            const normalizedGifts = normalizeGifts(apiGifts.gifts);
+            const normalizedGifts = normalizeGifts(giftMetadata);
             setGiftAssets(normalizedGifts);
             await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.selectedSrc));
             await preloadAndCacheImages(Object.values(normalizedGifts).map(g => g.unselectedSrc));
@@ -97,18 +88,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                return acc;
             }
 
-            const giftAsset: GiftAsset = {
-               amount: gift.amount,
-               unit: gift.unit as Currency,
-               name: gift.name,
-               selectedSrc: gift.imageUrlSelected,
-               unselectedSrc: gift.imageUrlUnselected,
-               description: gift.description,
-               creatorPubkey: gift.creatorPubkey,
-               campaingId: gift.campaignId,
-               fee: gift.fee ? gift.fee : undefined,
-            };
-            acc[gift.name] = giftAsset;
+            acc[gift.id] = gift;
             return acc;
          },
          {} as Record<string, GiftAsset>,
@@ -135,7 +115,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       await Promise.all(srcs.map(preloadAndCacheImage));
    };
 
-   const fetchGift = async (identifier: string): Promise<GiftAsset | null> => {
+   const fetchGift = async (identifier: number): Promise<GiftAsset | null> => {
       const apiGift = await request<GetGiftResponse>(`/api/gifts/${identifier}`, 'GET');
       if (!apiGift) {
          return null;
@@ -143,22 +123,24 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
       return normalizeGifts([apiGift], true)[identifier];
    };
 
-   const getGiftByIdentifier = (identifier: string): GiftAsset | undefined => {
-      return giftAssets[identifier];
+   const getGiftById = (id: number): GiftAsset | null => {
+      return giftAssets[id] || null;
    };
 
    const getGiftFromToken = async (token: string | Token): Promise<GiftAsset | null> => {
-      const txid =
-         typeof token === 'string' ? computeTxId(token) : computeTxId(getEncodedTokenV4(token));
-      console.log('txid', txid);
-      const { gift } = await request<{ gift: string }>(`/api/token/${txid}`, 'GET');
-      console.log('gift', gift);
-      if (!gift) return null;
-      const localGift = getGiftByIdentifier(gift) || null;
-      if (localGift) {
-         return localGift;
-      } else {
-         return await fetchGift(gift);
+      try {
+         const txid =
+            typeof token === 'string' ? computeTxId(token) : computeTxId(getEncodedTokenV4(token));
+         const { giftId } = await request<GetTokenResponse>(`/api/token/${txid}`, 'GET');
+         if (!giftId) return null;
+         const localGift = getGiftById(giftId) || null;
+         if (localGift) {
+            return localGift;
+         } else {
+            return await fetchGift(giftId);
+         }
+      } catch (e) {
+         return null;
       }
    };
 
@@ -193,7 +175,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
                      status: TxStatus.PENDING,
                      unit: 'usd',
                      mint: mint,
-                     gift: gift.name,
+                     giftId: gift.id,
                      fee: undefined,
                      pubkey: '02' + recipientPubkey,
                   },
@@ -212,7 +194,7 @@ export const GiftProvider: React.FC<GiftProviderProps> = ({ children }) => {
 
    const value: GiftContextType = {
       giftAssets,
-      getGiftByIdentifier,
+      getGiftById,
       getGiftFromToken,
       loadingGifts: isFetching,
       fetchGift,
