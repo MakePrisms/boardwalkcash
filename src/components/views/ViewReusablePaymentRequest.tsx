@@ -1,6 +1,6 @@
 import { usePaymentRequests } from '@/hooks/cashu/usePaymentRequests';
 import QRCode from 'qrcode.react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ClipboardButton from '../buttons/utility/ClipboardButton';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { decodePaymentRequest } from '@cashu/cashu-ts';
@@ -8,14 +8,18 @@ import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import { Spinner } from 'flowbite-react';
 import { usePolling } from '@/hooks/util/usePolling';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { useLocalStorage } from 'usehooks-ts';
 
 interface ViewReusablePaymentRequestProps {
    onSuccess?: () => void;
 }
 
 const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestProps) => {
+   const [paymentRequest, setPaymentRequest] = useLocalStorage<{ pr: string; id: string } | null>(
+      'reusablePaymentRequest',
+      null,
+   );
    const { fetchPaymentRequest, lookupLastPaid } = usePaymentRequests();
-   const [paymentRequest, setPaymentRequest] = useState<{ pr: string; id: string } | null>(null);
    const [lastPaid, setLastPaid] = useState<string | null>(null);
    const { activeWallet, activeUnit } = useCashuContext();
    const { handleClaimToSourceMint } = useCashu();
@@ -48,11 +52,9 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
    useEffect(() => {
       if (!activeWallet) return;
       if (!activeUnit) return;
-      const storedPaymentRequest = localStorage.getItem('paymentRequest');
-      const storedRequestId = localStorage.getItem('paymentRequestId');
-      if (storedPaymentRequest && storedRequestId) {
-         console.log('payment request found', storedPaymentRequest);
-         const { mints, unit } = decodePaymentRequest(storedPaymentRequest);
+
+      if (paymentRequest) {
+         const { mints, unit } = decodePaymentRequest(paymentRequest.pr);
          if (
             mints &&
             mints.length > 0 &&
@@ -60,20 +62,14 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
          ) {
             fetchPaymentRequest(undefined, true).then(({ pr, id }) => {
                setPaymentRequest({ pr, id });
-               localStorage.setItem('paymentRequest', pr);
-               localStorage.setItem('paymentRequestId', id);
             });
-         } else {
-            setPaymentRequest({ pr: storedPaymentRequest, id: storedRequestId });
          }
       } else {
          fetchPaymentRequest(undefined, true).then(({ pr, id }) => {
             setPaymentRequest({ pr, id });
-            localStorage.setItem('paymentRequest', pr);
-            localStorage.setItem('paymentRequestId', id);
          });
       }
-   }, [activeWallet, activeUnit, fetchPaymentRequest]);
+   }, [activeWallet, activeUnit, fetchPaymentRequest, paymentRequest, setPaymentRequest]);
 
    return (
       <div className='text-black flex flex-col justify-around items-center gap-6 h-full'>
@@ -86,7 +82,6 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
             <Spinner size='xl' />
          ) : (
             <>
-               fetchingPaymentRequest
                <div className='flex flex-col  gap-6 items-center'>
                   <QRCode value={paymentRequest.pr} size={256} />
                   <p className=' text-center text-sm'>
