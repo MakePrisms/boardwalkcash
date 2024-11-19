@@ -9,8 +9,8 @@ import { useInterval, useTimeout } from 'react-use';
 export const usePolling = (callback: Function, delay?: number | null, timeout?: number) => {
    const [hasTimedOut, _, restart] = useTimeout(timeout);
 
-   /* hasTimedOut returns true if the timeout has been reached  or null if timeout is undefind*/
-   const pollingPeriod = hasTimedOut === null ? delay : !hasTimedOut() ? delay : null;
+   /* hasTimedOut returns true if the timeout has been reached */
+   const pollingPeriod = timeout === undefined || !hasTimedOut() ? delay : null;
 
    useInterval(callback, pollingPeriod);
 
