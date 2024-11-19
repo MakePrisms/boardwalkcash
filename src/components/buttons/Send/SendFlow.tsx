@@ -60,6 +60,7 @@ type SendFlowState = {
         step: 'confirmPaymentRequest';
         paymentRequest: PaymentRequest;
         amount: number;
+        amountToPay: number;
      }
    | {
         step: 'confirmSendGift';
@@ -99,17 +100,23 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
    const numpad = useNumpad({ showDecimal });
    const { numpadValueIsEmpty, clearNumpadInput, numpadValue, numpadAmount } = numpad;
 
-   const handleAmountInputSubmit = (input: number) => {
+   const handleAmountInputSubmit = async (input: number) => {
       if (state.step !== 'input') return;
 
       const paymentRequest = state.paymentRequest;
       if (paymentRequest !== undefined) {
          /* user entered an amountless payment request */
+         const amountToPay = await convertToUnit(
+            input,
+            activeUnit,
+            (paymentRequest.unit as Currency) || Currency.SAT,
+         );
          setState(state => ({
             ...state,
             step: 'confirmPaymentRequest',
             paymentRequest,
             amount: input,
+            amountToPay,
          }));
       } else if (state.activeTab === 'ecash') {
          return handleSendEcash(input);
@@ -211,20 +218,32 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
             addToast('Enter an amount to send', 'info');
          } else {
             /* user already entered an amount */
-            decoded.amount = Number(numpadValue);
+            const amountToPay = await convertToUnit(
+               numpadAmount,
+               activeUnit,
+               (decoded.unit as Currency) || Currency.SAT,
+            );
+            decoded.amount = amountToPay;
             setState({
                ...state,
                step: 'confirmPaymentRequest',
                paymentRequest: decoded,
-               amount: Number(numpadValue),
+               amount: numpadAmount,
+               amountToPay,
             });
          }
       } else {
+         const amount = await convertToUnit(
+            decoded.amount,
+            (decoded.unit as Currency) || Currency.SAT,
+            activeUnit,
+         );
          setState({
             ...state,
             step: 'confirmPaymentRequest',
             paymentRequest: decoded,
-            amount: decoded.amount,
+            amount,
+            amountToPay: decoded.amount,
             isProcessing: false,
          });
       }
@@ -337,8 +356,9 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
          {state.step === 'confirmPaymentRequest' && (
             <ConfirmAndPayPaymentRequest
                paymentRequest={state.paymentRequest}
-               requestAmount={state.amount}
+               requestAmount={state.amountToPay}
                onClose={onClose}
+               displayAmount={state.amount}
             />
          )}
          {state.step === 'shareEcash' && (
