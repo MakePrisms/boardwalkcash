@@ -1,6 +1,7 @@
 import {
    CheckPaymentRequestResponse,
    Currency,
+   GetCashuPRLastPaidResponse,
    GetPaymentRequestResponse,
    PayInvoiceResponse,
 } from '@/types';
@@ -22,7 +23,7 @@ import { useProofStorage } from './useProofStorage';
 import { useAppDispatch } from '@/redux/store';
 import { addTransaction, TxStatus } from '@/redux/slices/HistorySlice';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export const usePaymentRequests = () => {
    const [fetchingPaymentRequest, setFetchingPaymentRequest] = useState(false);
@@ -34,7 +35,7 @@ export const usePaymentRequests = () => {
 
    const dispatch = useAppDispatch();
 
-   const fetchPaymentRequest = async (amount?: number, reusable?: boolean) => {
+   const fetchPaymentRequest = useCallback(async (amount?: number, reusable?: boolean) => {
       setFetchingPaymentRequest(true);
       const params = new URLSearchParams();
       if (amount !== undefined) params.append('amount', amount.toString());
@@ -48,7 +49,7 @@ export const usePaymentRequests = () => {
       setFetchingPaymentRequest(false);
 
       return res;
-   };
+   }, []);
 
    const checkPaymentRequest = async (id: string) => {
       return await authenticatedRequest<CheckPaymentRequestResponse>(
@@ -57,6 +58,14 @@ export const usePaymentRequests = () => {
          undefined,
       );
    };
+
+   const lookupLastPaid = useCallback(async (id: string) => {
+      return await authenticatedRequest<GetCashuPRLastPaidResponse>(
+         `/api/token/pr/${id}/last-paid`,
+         'GET',
+         undefined,
+      );
+   }, []);
 
    const createPayload = async (request: PaymentRequest): Promise<PaymentRequestPayload> => {
       if (!request.amount) {
@@ -252,5 +261,11 @@ export const usePaymentRequests = () => {
          throw e;
       }
    };
-   return { fetchPaymentRequest, checkPaymentRequest, payPaymentRequest, fetchingPaymentRequest };
+   return {
+      fetchPaymentRequest,
+      checkPaymentRequest,
+      payPaymentRequest,
+      lookupLastPaid,
+      fetchingPaymentRequest,
+   };
 };
