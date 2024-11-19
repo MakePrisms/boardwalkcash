@@ -21,7 +21,7 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
    const { handleClaimToSourceMint } = useCashu();
    const { isMintless } = useMintlessMode();
 
-   const pollPaymentRequest = useCallback(async () => {
+   const pollPaymentRequest = async () => {
       if (!paymentRequest?.id) return;
 
       try {
@@ -41,7 +41,7 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
       } catch (e) {
          console.warn('Failed to poll payment request:', e);
       }
-   }, [paymentRequest?.id, lastPaid, lookupLastPaid, handleClaimToSourceMint, onSuccess]);
+   };
 
    usePolling(pollPaymentRequest, 1000);
 
