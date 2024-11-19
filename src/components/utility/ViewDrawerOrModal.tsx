@@ -20,7 +20,7 @@ const ViewDrawerOrModal = ({ isOpen, onClose, title, children }: ViewDrawerOrMod
                   onClose={onClose}
                   position='bottom'
                   theme={bottomSheetDrawerTheme}
-                  className='h-[calc(100%-75px)] rounded-t-xl'
+                  className='h-[calc(100%-75px)] rounded-t-xl overflow-hidden'
                >
                   <Drawer.Header
                      title={title}

@@ -28,7 +28,7 @@ const Stickers: React.FC<StickersProps> = ({ onSelectGift, contact }) => {
    }, [giftAssets, contact]);
 
    return (
-      <div className='grid grid-cols-2 gap-4 w-full'>
+      <div className='grid grid-cols-2 gap-4 w-full mb-20'>
          {processedGifts
             .filter(g => g.unit === activeUnit)
             /* sort greatest to least by amount */
