@@ -21,7 +21,7 @@ const HistoryTable: React.FC<{
    const [selectedGift, setSelectedGift] = useState<GiftAsset | undefined>(undefined);
 
    const { fetchContact } = useContacts();
-   const { fetchGift } = useGifts();
+   const { getGiftById } = useGifts();
 
    const closeViewGiftModal = () => {
       setIsViewGiftModalOpen(false);
@@ -30,7 +30,7 @@ const HistoryTable: React.FC<{
    const openViewGiftModal = async (tx: EcashTransaction & { giftId: number }) => {
       setIsViewGiftModalOpen(true);
       setIsSendModalOpen(false);
-      const gift = await fetchGift(tx.giftId);
+      const gift = await getGiftById(tx.giftId);
       if (!gift) {
          console.error('Gift not found:', tx.gift);
          return;
