@@ -62,7 +62,7 @@ const SelectContact = ({
    };
 
    return (
-      <div className='flex flex-col items-center justify-center space-y-4 w-full'>
+      <div className='flex flex-col items-center justify-start space-y-4 w-full h-full'>
          {currentView === 'select' ? (
             <>
                <div className='flex justify-between items-center mb-3 w-full'>
@@ -76,8 +76,8 @@ const SelectContact = ({
                      <UserPlusIcon className='h-6 w-6 text-gray-600' />
                   </button>
                </div>
-               <div className='max-h-[300px] overflow-y-auto w-full'>
-                  <Table>
+               <div className='no-scrollbar overflow-y-auto w-full'>
+                  <Table className='mb-24'>
                      <Table.Body>
                         {filteredContacts.length > 0 && (
                            <>

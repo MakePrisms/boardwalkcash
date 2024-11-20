@@ -181,7 +181,7 @@ const HistoryTableRow: React.FC<{
    const getStatusCell = useCallback(
       (tx: Transaction) => {
          if (isEcashTransaction(tx) && tx.status === TxStatus.PENDING) {
-            if (tx.gift) {
+            if (tx.giftId) {
                return (
                   <div className='flex justify-center'>
                      <button className='underline' onClick={() => handleLockedToken(tx)}>
