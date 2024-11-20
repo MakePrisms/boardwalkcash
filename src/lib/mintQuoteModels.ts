@@ -20,7 +20,7 @@ export const createMintQuote = async (
          request,
          pubkey,
          amount: amountUnit ? amountUnit : amount, // this is a hack to get the amount in the correct unit
-         expiryUnix: expiry,
+         expiryUnix: expiry || Infinity,
          paid: false,
          mintKeysetId: keysetId,
       },

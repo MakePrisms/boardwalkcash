@@ -443,7 +443,7 @@ export const isMintQuoteExpired = (quote: MintQuoteResponse) => {
    const now = Math.floor(Date.now()) - 15;
 
    const quoteExpired = quote.expiry && quote.expiry * 1000 < now;
-   const invoiceExpired = invoiceExpiry < now;
+   const invoiceExpired = invoiceExpiry ? invoiceExpiry < now : false;
 
    return quoteExpired || invoiceExpired;
 };
