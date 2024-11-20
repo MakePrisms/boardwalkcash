@@ -10,7 +10,7 @@ const findSection = <T extends Section['name']>(
 /**
  * Decodes a BOLT11 invoice
  * @param invoice invoice to decode
- * @returns decoded invoice data
+ * @returns invoice `amountSat` and `expiryUnixMs`. `expiryUnixMs` is undefined if the invoice does not have an expiry
  */
 export const decodeBolt11 = (invoice: string) => {
    const decoded = bolt11Decoder.decode(invoice);
