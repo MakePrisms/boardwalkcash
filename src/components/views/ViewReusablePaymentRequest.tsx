@@ -84,7 +84,7 @@ const ViewReusablePaymentRequest = ({ onSuccess }: ViewReusablePaymentRequestPro
             <>
                <div className='flex flex-col  gap-6 items-center'>
                   <QRCode value={paymentRequest.pr} size={256} />
-                  <p className=' text-center text-sm'>
+                  <p className=' text-center text-sm max-w-[263px]'>
                      Scan with any cashu wallet that supports payment requests
                   </p>
                </div>

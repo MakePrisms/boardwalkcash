@@ -67,8 +67,8 @@ const WaitForEcashPayment = ({ request, onSuccess }: WaitForEcashPaymentProps) =
                />
             )}
             <QRCode value={request.pr} size={256} />
-            <p className='text-center text-sm'>
-               Scan with any ecash wallet that supports payment requests
+            <p className='text-center text-sm max-w-[263px]'>
+               Scan with any cashu wallet that supports payment requests
             </p>
          </div>
          <ClipboardButton
