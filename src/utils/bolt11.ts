@@ -10,7 +10,7 @@ const findSection = <T extends Section['name']>(
 /**
  * Decodes a BOLT11 invoice
  * @param invoice invoice to decode
- * @returns decoded invoice data
+ * @returns invoice `amountSat` and `expiryUnixMs`. `expiryUnixMs` is undefined if the invoice does not have an expiry
  */
 export const decodeBolt11 = (invoice: string) => {
    const decoded = bolt11Decoder.decode(invoice);
@@ -18,8 +18,15 @@ export const decodeBolt11 = (invoice: string) => {
    const amountSection = findSection(decoded.sections, 'amount');
    const amountSat = amountSection?.value ? Number(amountSection.value) / 1000 : undefined;
 
-   const expiryUnixSeconds = decoded.expiry;
-   const expiryUnixMs = decoded.expiry * 1000;
+   const expirySection = findSection(decoded.sections, 'expiry');
+   const timestampSection = findSection(decoded.sections, 'timestamp');
+
+   let expiryUnixSec: number | undefined = undefined;
+   if (expirySection && timestampSection) {
+      expiryUnixSec = timestampSection.value + expirySection.value;
+   }
+
+   const expiryUnixMs = expiryUnixSec ? expiryUnixSec * 1000 : undefined;
 
    return { amountSat, expiryUnixMs };
 };
