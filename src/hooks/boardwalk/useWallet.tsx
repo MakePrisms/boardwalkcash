@@ -85,6 +85,7 @@ const useWallet = () => {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
                giftId: gift?.id,
                fee: gift?.fee,
+               feeSplits: gift?.splits,
             });
          }
 
@@ -162,6 +163,7 @@ const useWallet = () => {
                pubkey: contact ? `02${contact.pubkey}` : undefined,
                giftId: gift?.id,
                fee: gift?.fee,
+               feeSplits: gift?.splits,
             });
          }
 
