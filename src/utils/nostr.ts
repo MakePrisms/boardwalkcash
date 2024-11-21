@@ -37,7 +37,7 @@ const initializeNDK = async (relays = defaultRelays) => {
       privkey = process.env.BOARDWALK_NOSTR_PRIVKEY;
    }
    if (privkey?.startsWith('nsec1')) {
-      privkey = nip19.decode(privkey).data as Uint8Array;
+      privkey = nip19.decode<'nsec'>(privkey as `nsec1${string}`).data;
       privkey = bytesToHex(privkey);
    }
    if (!privkey) {
