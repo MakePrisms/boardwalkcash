@@ -590,9 +590,9 @@ export const useCashu = () => {
       dispatch(setSending('Sending...'));
 
       try {
-         const proofsToSend = getProofsByAmount(
+         const proofsToSend = await getProofsToSend(
             meltQuote.amount + meltQuote.fee_reserve,
-            wallet.keys.id,
+            wallet,
          );
 
          if (!proofsToSend || proofsToSend.length === 0) {
