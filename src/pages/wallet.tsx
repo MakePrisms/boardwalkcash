@@ -61,6 +61,8 @@ export default function Home({ token }: { token?: string }) {
    useEffect(() => {
       if (user.status === 'failed') {
          setLoadingState(false);
+      } else if (user.status === 'idle' && !loadingExchangeRate && !loadingBalance) {
+         setLoadingState(false);
       } else if (user.status !== 'succeeded' || loadingExchangeRate || loadingBalance) {
          setLoadingState(true);
       } else if (user.status === 'succeeded' && !loadingExchangeRate && !loadingBalance) {
