@@ -1,5 +1,5 @@
 import { NostrError } from '@/types';
-import { hexToBytes } from '@noble/curves/abstract/utils';
+import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils';
 import NDK, {
    NDKEvent,
    NDKKind,
@@ -37,7 +37,8 @@ const initializeNDK = async (relays = defaultRelays) => {
       privkey = process.env.BOARDWALK_NOSTR_PRIVKEY;
    }
    if (privkey?.startsWith('nsec1')) {
-      privkey = nip19.decode(privkey).data as string;
+      privkey = nip19.decode<'nsec'>(privkey as `nsec1${string}`).data;
+      privkey = bytesToHex(privkey);
    }
    if (!privkey) {
       throw new Error('Boardwalk Nostr private key not found');
