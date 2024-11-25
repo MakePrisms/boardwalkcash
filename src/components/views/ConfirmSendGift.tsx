@@ -38,14 +38,14 @@ const ConfirmSendGift = ({
                   eGift for <UserLink username={contact.username} />
                </p>
             )}
-            {txid && (
-               <ClipboardButton
-                  toCopy={`${window.location.origin}/wallet?txid=${txid}`}
-                  toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
-               />
-            )}
          </div>
+         {txid && (
+            <ClipboardButton
+               toCopy={`${window.location.origin}/wallet?txid=${txid}`}
+               toShow={'Share'}
+               className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+            />
+         )}
          {gift?.fee && (
             <div className='flex justify-center'>
                <p className='text-xs flex items-center text-gray-500'>
@@ -63,7 +63,7 @@ const ConfirmSendGift = ({
             <div className='w-full flex justify-center items-center'>
                <Button
                   key='gift-send'
-                  className='btn-primary h-full'
+                  className='btn-primary !p-0'
                   onClick={onSendGift}
                   isProcessing={sendingGift}
                   id='send-button'
