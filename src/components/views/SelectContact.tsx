@@ -7,6 +7,7 @@ import { PublicContact } from '@/types';
 import { useToast } from '@/hooks/util/useToast';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { getMsgFromUnknownError } from '@/utils/error';
+import { contactsTableTheme } from '@/themes/tableThemes';
 
 const SelectContact = ({
    onSelectContact,
@@ -77,7 +78,7 @@ const SelectContact = ({
                   </button>
                </div>
                <div className='no-scrollbar overflow-y-auto w-full'>
-                  <Table className='mb-24'>
+                  <Table className='mb-24' theme={contactsTableTheme}>
                      <Table.Body>
                         {filteredContacts.length > 0 && (
                            <>
