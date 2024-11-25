@@ -25,7 +25,7 @@ const ConfirmSendGift = ({
 }: ConfirmSendGiftProps) => {
    return (
       <div className='view-ecash-container'>
-         <div className='flex flex-col justify-center items-center text-black text-lg gap-6'>
+         <div className='flex flex-col justify-center items-center text-black gap-6'>
             <StickerItem
                selectedSrc={gift.selectedSrc}
                unselectedSrc={gift.selectedSrc}
