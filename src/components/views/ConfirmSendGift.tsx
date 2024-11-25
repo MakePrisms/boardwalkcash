@@ -25,7 +25,7 @@ const ConfirmSendGift = ({
 }: ConfirmSendGiftProps) => {
    return (
       <div className='view-ecash-container'>
-         <div className='flex flex-col justify-center items-center text-black text-lg gap-6'>
+         <div className='flex flex-col justify-center items-center text-black gap-6'>
             <StickerItem
                selectedSrc={gift.selectedSrc}
                unselectedSrc={gift.selectedSrc}
@@ -38,21 +38,21 @@ const ConfirmSendGift = ({
                   eGift for <UserLink username={contact.username} />
                </p>
             )}
-            {txid && (
-               <ClipboardButton
-                  toCopy={`${window.location.origin}/wallet?txid=${txid}`}
-                  toShow={'Share'}
-                  className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
-               />
-            )}
          </div>
+         {txid && (
+            <ClipboardButton
+               toCopy={`${window.location.origin}/wallet?txid=${txid}`}
+               toShow={'Share'}
+               className='btn-primary hover:!bg-[var(--btn-primary-bg)]'
+            />
+         )}
          {gift?.fee && (
-            <div className='flex justify-center mb-2'>
+            <div className='flex justify-center'>
                <p className='text-xs flex items-center text-gray-500'>
                   <span className='flex items-center'>
-                     <Tooltip position='top' content='50% of the fee is paid to OpenSats'>
-                        <div className='flex items-center justify-center w-4 h-4'>
-                           <SplitIcon className='h-3 w-3 text-gray-500' />
+                     <Tooltip position='top' content='10% shared with the artist'>
+                        <div className='flex items-center justify-center'>
+                           <SplitIcon className='h-8 w-8 text-gray-500' />
                         </div>
                      </Tooltip>
                   </span>
@@ -63,7 +63,7 @@ const ConfirmSendGift = ({
             <div className='w-full flex justify-center items-center'>
                <Button
                   key='gift-send'
-                  className='btn-primary h-full'
+                  className='btn-primary !p-0'
                   onClick={onSendGift}
                   isProcessing={sendingGift}
                   id='send-button'

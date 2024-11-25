@@ -132,7 +132,13 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
          return;
       }
       setState(state => ({ ...state, isProcessing: true }));
-      const res = await sendEcash(amount, activeUnit, onClose, undefined, state.contact);
+      const res = await sendEcash(
+         Math.floor(amount),
+         activeUnit,
+         onClose,
+         undefined,
+         state.contact,
+      );
       if (res) {
          setState(state => ({
             ...state,

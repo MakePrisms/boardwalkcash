@@ -53,7 +53,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
    if (gift) {
       return (
          <div className='view-ecash-container'>
-            <div className='flex flex-col justify-center items-center text-black text-lg gap-6'>
+            <div className='flex flex-col justify-center items-center text-black gap-6'>
                <StickerItem
                   selectedSrc={gift.selectedSrc}
                   unselectedSrc={gift.unselectedSrc}
@@ -61,7 +61,9 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                   alt={'gift'}
                   size='lg'
                />
-               {contact?.username && <UserLink username={contact.username} />}
+               <p className='text-md text-center'>
+                  eGift for {contact?.username && <UserLink username={contact.username} />}
+               </p>
             </div>
             {txid && (
                <ClipboardButton
@@ -87,7 +89,7 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
       <div className='flex flex-col justify-around items-center text-black space-y-3 h-full'>
          <div className='max-w-full flex flex-col justify-center items-center text-black space-y-3'>
             {contact?.username && (
-               <p className='text-lg'>
+               <p className='text-md text-center'>
                   eTip for <UserLink username={contact.username} />
                </p>
             )}

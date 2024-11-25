@@ -11,8 +11,10 @@ import { hashToCurve } from '@cashu/crypto/modules/common';
 import { bytesToHex } from '@noble/curves/abstract/utils';
 import { sha256 } from '@noble/hashes/sha256';
 import { getTokenFromDb } from './appApiRequests';
-import { Currency } from '@/types';
+import { CrossMintQuoteResult, Currency } from '@/types';
+import { convertToUnit } from './convertToUnit';
 import { decodeBolt11 } from './bolt11';
+import { TokenAlreadySpentError } from './error';
 
 /**
  * Only takes needed proofs and puts the rest back to local storage.
@@ -446,4 +448,59 @@ export const isMintQuoteExpired = (quote: MintQuoteResponse) => {
    const invoiceExpired = invoiceExpiry ? invoiceExpiry < now : false;
 
    return quoteExpired || invoiceExpired;
+};
+
+export const getCrossMintQuotes = async (
+   fromWallet: CashuWallet,
+   toWallet: CashuWallet,
+   totalProofsAmount: number,
+   maxAttempts = 5,
+): Promise<CrossMintQuoteResult> => {
+   let attempts = 0;
+   let amountToMint = totalProofsAmount;
+
+   while (attempts < maxAttempts) {
+      attempts++;
+
+      /* convert amount to mint to toWallet's unit */
+      const convertedAmountToMint = await convertToUnit(
+         amountToMint,
+         fromWallet.keys.unit,
+         toWallet.keys.unit,
+      );
+
+      if (convertedAmountToMint < 1) {
+         throw new Error('Token is too small to melt');
+      }
+
+      const mintQuote = await toWallet.createMintQuote(convertedAmountToMint);
+      const meltQuote = await fromWallet.createMeltQuote(mintQuote.request);
+
+      if (meltQuote.amount + meltQuote.fee_reserve <= totalProofsAmount) {
+         console.log('Found valid quotes');
+         return { mintQuote, meltQuote, amountToMint: convertedAmountToMint };
+      }
+      const difference = meltQuote.amount + meltQuote.fee_reserve - totalProofsAmount;
+      amountToMint = amountToMint - difference;
+   }
+
+   throw new Error('Failed to find valid quotes after maximum attempts.');
+};
+
+/**
+ * Returns unspent proofs or throws error if all proofs are spent
+ * @param wallet CashuWallet that the proofs are from
+ * @param proofs Proofs to check
+ * @returns Unspent proofs
+ * @throws Error if all proofs are spent
+ */
+export const getUnspentProofs = async (wallet: CashuWallet, proofs: Proof[]): Promise<Proof[]> => {
+   const alreadySpent = await wallet.checkProofsSpent(proofs);
+   const unspentProofs = proofs.filter(p => !alreadySpent.some(s => s.secret === p.secret));
+
+   if (unspentProofs.length === 0) {
+      throw new TokenAlreadySpentError();
+   }
+
+   return unspentProofs;
 };
