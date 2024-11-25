@@ -521,18 +521,36 @@ export const useCashu = () => {
             if (!opts?.feeSplits || opts?.feeSplits.length === 0)
                throw new Error('feeSplits must be set when fee is set');
             const recipientPubkey = opts?.feeSplits[0].recipient;
-            const feeProofs = await getProofsToSend(opts?.fee, wallet, {
-               pubkey: '02' + recipientPubkey,
-            });
+            let feeProofs;
+            try {
+               feeProofs = await getProofsToSend(opts?.fee, wallet, {
+                  pubkey: '02' + recipientPubkey,
+               });
+            } catch (error) {
+               console.error('Failed to get proofs to send fee:', error);
+               /* still return the token to send */
+               return token;
+            }
             const feeToken = getEncodedTokenV4({
                token: [{ proofs: feeProofs, mint: wallet.mint.mintUrl }],
                unit: wallet.keys.unit,
             });
-            if (feeToken) {
+            try {
                const txid = await postTokenToDb(feeToken, opts?.giftId, true);
                await sendTokenAsNotification(feeToken, txid);
+            } catch (error) {
+               console.error('Failed to send fee token:', error);
+               /* try to reclaim proofs */
+               unlockProofs(wallet, feeProofs)
+                  .then(unlocked => {
+                     addProofs(unlocked);
+                     console.log('recalimed', unlocked);
+                  })
+                  .catch(console.error);
+            } finally {
+               /* these are locked (unspendable), so remove no matter what */
+               removeProofs(feeProofs);
             }
-            await removeProofs(feeProofs);
          }
 
          return token;
