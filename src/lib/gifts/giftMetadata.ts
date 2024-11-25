@@ -1,8 +1,8 @@
 import { excludedNames } from '@/env';
 import { GiftAsset, Currency, GiftFee } from '@/types';
 
-// currently bob5's pubkey
-const AwayukiPubkey = '9b1172ec6741e6555ad06fb864b7df7efd24e915733b564000e26e3b8c2525c5';
+// currently boardwalks's pubkey on prod
+const AwayukiPubkey = 'd763326c758ea7404c92e9f2573b17e0536850ac495bcb67f09c75999033d9c4';
 
 const AwayykiSplit: GiftFee = {
    recipient: AwayukiPubkey,
