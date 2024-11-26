@@ -36,6 +36,10 @@ const Amount: React.FC<AmountProps> = ({
          const decimalParts = val.split('.');
 
          if (!hasDecimal) {
+            /* Ensure numericValue is defined before calling toLocaleString */
+            if (typeof numericValue !== 'number' || isNaN(numericValue)) {
+               return { formattedValue: '0', greyZeros: '' };
+            }
             return { formattedValue: numericValue.toLocaleString('en-US'), greyZeros: '' };
          }
 
@@ -49,8 +53,10 @@ const Amount: React.FC<AmountProps> = ({
       }
 
       const val = stringValue.startsWith('.') ? `0${stringValue}` : stringValue;
+      /* Ensure val is a valid number before calling toLocaleString */
+      const num = Number(val);
       return {
-         formattedValue: val === '' ? '0' : Number(val).toLocaleString('en-US'),
+         formattedValue: val === '' || isNaN(num) ? '0' : num.toLocaleString('en-US'),
          greyZeros: '',
       };
    }, [value, unit, isDollarAmount]);
