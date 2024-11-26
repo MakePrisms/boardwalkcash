@@ -1,6 +1,6 @@
 import ContactTableRowItem from '../modals/ContactsModal/ContactTableRowItem';
 import useContacts from '@/hooks/boardwalk/useContacts';
-import { ArrowRightIcon, UserPlusIcon } from '@heroicons/react/20/solid';
+import { UserPlusIcon } from '@heroicons/react/20/solid';
 import { Button, Table, TextInput } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 import { PublicContact } from '@/types';
@@ -103,7 +103,6 @@ const SelectContact = ({
                      className='btn-primary'
                   >
                      Skip
-                     <ArrowRightIcon className='h-5 w-5' />
                   </Button>
                </div>
             </div>

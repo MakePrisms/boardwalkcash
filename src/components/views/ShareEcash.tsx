@@ -61,9 +61,11 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                   alt={'gift'}
                   size='lg'
                />
-               <p className='text-md text-center'>
-                  eGift for {contact?.username && <UserLink username={contact.username} />}
-               </p>
+               {contact?.username && (
+                  <p className='text-md text-center'>
+                     eGift for {contact.username && <UserLink username={contact.username} />}
+                  </p>
+               )}
             </div>
             {txid && (
                <ClipboardButton
