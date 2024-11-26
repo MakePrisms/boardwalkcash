@@ -5,11 +5,7 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ 
-    pkgs.git
-    pkgs.jq
-    pkgs.bun
-  ];
+  packages = [ pkgs.git pkgs.jq pkgs.bun ];
 
   # https://devenv.sh/languages/
   # languages.rust.enable = true;
