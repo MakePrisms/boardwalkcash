@@ -43,7 +43,12 @@ export default async function handler(
                .status(400)
                .json({ error: 'Does not support checking reusable payment requests' });
          } else if (paymentRequest.tokens.length > 0) {
-            token = paymentRequest.tokens[0].token;
+            const prTok = paymentRequest.tokens[0].token;
+            if (prTok) {
+               token = prTok;
+            } else {
+               throw new Error('Token does not exist on payment request');
+            }
          }
 
          return res.status(200).json({

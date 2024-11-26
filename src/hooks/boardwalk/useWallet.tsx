@@ -3,12 +3,12 @@ import { Currency, GiftAsset, MintQuoteStateExt, PublicContact } from '@/types';
 import { useProofStorage } from '../cashu/useProofStorage';
 import { useCashuContext } from '../contexts/cashuContext';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
-import { postTokenToDb } from '@/utils/appApiRequests';
+import { postTokenToDb, postUnlockedGiftToDb } from '@/utils/appApiRequests';
 import useNotifications from './useNotifications';
 import { MintQuoteState } from '@cashu/cashu-ts';
 import { formatUnit } from '@/utils/formatting';
 import useMintlessMode from './useMintlessMode';
-import { isMintQuoteExpired } from '@/utils/cashu';
+import { computeTxId, isMintQuoteExpired } from '@/utils/cashu';
 import { useAppDispatch } from '@/redux/store';
 import { useCashu } from '../cashu/useCashu';
 import { useToast } from '../util/useToast';
@@ -176,13 +176,16 @@ const useWallet = () => {
          if (contact) {
             txid = await postTokenToDb(sendableToken, gift?.id);
             await sendTokenAsNotification(sendableToken, txid);
+         } else if (gift) {
+            txid = computeTxId(sendableToken);
+            await postUnlockedGiftToDb(txid, gift.id);
          }
 
          addToast(
             `eGift sent (${formatUnit(gift.amount + (gift?.fee || 0), activeUnit)})`,
             'success',
          );
-         return { txid, token: sendableToken };
+         return { txid: contact ? txid : undefined, token: sendableToken };
       } catch (error: any) {
          console.error('Error sending token:', error);
          const msg = error.message || 'Failed to send token';

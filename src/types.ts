@@ -257,12 +257,17 @@ export type PostTokenRequest = {
    isFee?: boolean;
 };
 
+export type PostUnlockedGiftRequest = {
+   giftId: number;
+   txid: string;
+};
+
 export type PostTokenResponse = {
    txid: string;
 };
 
 export type GetTokenResponse = {
-   token: string;
+   token: string | null;
    giftId: number | null;
 };
 

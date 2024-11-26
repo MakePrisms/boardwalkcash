@@ -22,6 +22,19 @@ export const createTokenInDb = async (data: PostTokenRequest, txid: string, isFe
    return token;
 };
 
+export const createUnlockedGift = async (txid: string, giftId: number) => {
+   const token = await prisma.token.create({
+      data: {
+         giftId,
+         id: txid,
+         recipientPubkey: null,
+         isFee: false,
+      },
+   });
+
+   return token;
+};
+
 export const findTokenByTxId = async (txid: string) => {
    return await prisma.token.findUnique({
       where: {

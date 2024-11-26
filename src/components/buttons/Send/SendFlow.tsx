@@ -272,7 +272,7 @@ const SendFlow = ({ onClose }: SendFlowProps) => {
       }
    };
 
-   const handleSelectContact = (contact: PublicContact) => {
+   const handleSelectContact = (contact?: PublicContact) => {
       if (state.isGiftMode) {
          setState({ ...state, step: 'selectGift', contact });
       } else {

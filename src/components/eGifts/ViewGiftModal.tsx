@@ -11,15 +11,25 @@ interface ViewGiftModalProps {
    stickerPath: string;
    selectedContact: PublicContact | null;
    txid: string;
+   token?: string;
 }
 
 interface ViewGiftModalBodyProps {
    amountCents: number;
    stickerPath: string;
    txid?: string;
+   token?: string;
 }
 
-export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftModalBodyProps) => {
+export const ViewGiftModalBody = ({
+   amountCents,
+   stickerPath,
+   txid,
+   token,
+}: ViewGiftModalBodyProps) => {
+   const base = `${window.location.origin}/wallet?`;
+   const toCopy = token ? base + `token=${token}` : base + `txid=${txid}`;
+
    return (
       <Modal.Body>
          <div className='flex flex-col justify-center items-center text-black text-4xl '>
@@ -32,7 +42,7 @@ export const ViewGiftModalBody = ({ amountCents, stickerPath, txid }: ViewGiftMo
             />
             {txid && (
                <ClipboardButton
-                  toCopy={`${window.location.origin}/wallet?txid=${txid}`}
+                  toCopy={toCopy}
                   toShow={'Share'}
                   className='btn-primary hover:!bg-[var(--btn-primary-bg)] mt-6'
                />
@@ -49,6 +59,7 @@ export const ViewGiftModal = ({
    stickerPath,
    selectedContact,
    txid,
+   token,
 }: ViewGiftModalProps) => {
    return (
       <Modal show={isOpen} onClose={() => onClose()}>
@@ -60,7 +71,12 @@ export const ViewGiftModal = ({
                </a>
             </h2>
          </Modal.Header>
-         <ViewGiftModalBody amountCents={amountCents} stickerPath={stickerPath} txid={txid} />
+         <ViewGiftModalBody
+            amountCents={amountCents}
+            stickerPath={stickerPath}
+            txid={txid}
+            token={token}
+         />
       </Modal>
    );
 };
