@@ -1,6 +1,6 @@
 import ContactTableRowItem from '../modals/ContactsModal/ContactTableRowItem';
 import useContacts from '@/hooks/boardwalk/useContacts';
-import { UserPlusIcon } from '@heroicons/react/20/solid';
+import { ArrowRightIcon, UserPlusIcon } from '@heroicons/react/20/solid';
 import { Button, Table, TextInput } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 import { PublicContact } from '@/types';
@@ -12,7 +12,7 @@ import { contactsTableTheme } from '@/themes/tableThemes';
 const SelectContact = ({
    onSelectContact,
 }: {
-   onSelectContact: (contact: PublicContact) => void;
+   onSelectContact: (contact?: PublicContact) => void;
 }) => {
    const [currentView, setCurrentView] = useState<'select' | 'add'>('select');
    const [addingContact, setAddingContact] = useState(false);
@@ -65,7 +65,7 @@ const SelectContact = ({
    return (
       <div className='flex flex-col items-center justify-start space-y-4 w-full h-full'>
          {currentView === 'select' ? (
-            <>
+            <div className='flex flex-col h-full w-full'>
                <div className='flex justify-between items-center mb-3 w-full'>
                   <TextInput
                      placeholder='Search contacts'
@@ -96,7 +96,17 @@ const SelectContact = ({
                      </Table.Body>
                   </Table>
                </div>
-            </>
+               <div className='mt-auto self-end'>
+                  <Button
+                     onClick={() => onSelectContact(undefined)}
+                     color='primary'
+                     className='btn-primary'
+                  >
+                     Skip
+                     <ArrowRightIcon className='h-5 w-5' />
+                  </Button>
+               </div>
+            </div>
          ) : (
             <form onSubmit={handleAddContact} className='w-full'>
                <div>

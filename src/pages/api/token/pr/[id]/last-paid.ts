@@ -35,7 +35,7 @@ export default async function handler(
                  )
                : null;
 
-         if (!latestToken) {
+         if (!latestToken || !latestToken.token) {
             return res.status(200).json({ token: null, lastPaid: null });
          }
 

@@ -22,7 +22,7 @@ import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { PublicContact, TokenProps, GiftAsset, Currency } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
-import { proofsLockedTo } from '@/utils/cashu';
+import { computeTxId, proofsLockedTo } from '@/utils/cashu';
 import { formatUrl, getRequestedDomainFromRequest } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatTokenAmount } from '@/utils/formatting';
@@ -292,18 +292,26 @@ export const getServerSideProps: GetServerSideProps = async (
    let token = context.query.token as string;
    let giftPath = null;
    let gift: GiftAsset | undefined = undefined;
-   const txid = context.query.txid as string;
+   const txid = context.query.txid
+      ? (context.query.txid as string)
+      : token
+        ? computeTxId(token)
+        : undefined;
 
    const baseRequestUrl = getRequestedDomainFromRequest(context.req);
 
-   if (txid && !token) {
+   if (txid) {
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
-         token = tokenEntry.token;
          if (tokenEntry.giftId) {
             gift = await lookupGiftById(tokenEntry.giftId);
             giftPath = gift?.selectedSrc || null;
          }
+      }
+
+      if (!token) {
+         if (!tokenEntry?.token) throw new Error('Token not found');
+         token = tokenEntry.token;
       }
    }
 

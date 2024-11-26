@@ -175,6 +175,10 @@ export const postTokenToDb = async (token: string, giftId?: number, isFee?: bool
    ).txid;
 };
 
+export const postUnlockedGiftToDb = async (txid: string, giftId: number) => {
+   return await request<PostTokenResponse>(`/api/token/gift`, 'POST', { txid, giftId });
+};
+
 export const getTokenFromDb = async (txid: string) => {
    return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
 };
