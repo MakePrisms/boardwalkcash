@@ -7,3 +7,9 @@ devenv.local.nix
 
 # pre-commit
 .pre-commit-config.yaml
+
+node_modules
+
+/.cache
+/build
+.env
