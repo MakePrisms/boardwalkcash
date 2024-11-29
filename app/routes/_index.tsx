@@ -1,9 +1,9 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from '@remix-run/node';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Boardwalk" },
-    { name: "description", content: "Welcome to Boardwalk!" },
+    { title: 'Boardwalk' },
+    { name: 'description', content: 'Welcome to Boardwalk!' },
   ];
 };
 
