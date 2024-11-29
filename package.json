@@ -8,10 +8,10 @@
     "build:remix": "remix vite:build",
     "build:server": "cross-env NODE_ENV=production bun build ./app/server.ts --target=node --format=esm --outdir=./build --external=build/server/index.js",
     "dev": "tsx watch --exclude 'vite.config.ts.timestamp-*' ./app/server.ts",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint": "biome lint",
     "start": "cross-env NODE_ENV=production node ./build/server.js",
     "typecheck": "tsc",
-    "biome": "biome"
+    "format:all": "biome format --write"
   },
   "scripts:comments": {
     "dev": "We are using tsx instead of bun because bun doesn't support all node APIs that Remix development server needs. See https://bun.sh/guides/ecosystem/remix. We need to exclude the config file from tsx watch because vite seems to be writing to those temporary files which causes watcher loop.",
