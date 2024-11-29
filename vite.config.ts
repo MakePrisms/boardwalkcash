@@ -21,4 +21,7 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  build: {
+    emptyOutDir: false
+  }
 });

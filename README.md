@@ -1,6 +1,6 @@
 # Boardwalkcash
 
-This app is using [Remix](https://remix.run/docs)
+This app is using [Remix](https://remix.run/docs) framework but it is hosted on a custom [express](https://expressjs.com/) server.
 
 ## Getting started
 
