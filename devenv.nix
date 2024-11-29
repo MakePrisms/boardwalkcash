@@ -43,7 +43,10 @@
   '';
 
   # https://devenv.sh/pre-commit-hooks/
-  # pre-commit.hooks.shellcheck.enable = true;
+  pre-commit.hooks.biome = {
+    enable = true;
+    entry = "bun run fix:staged";
+  };
 
   # See full reference at https://devenv.sh/reference/options/
 }
