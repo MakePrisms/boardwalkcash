@@ -9,6 +9,7 @@
     pkgs.git
     pkgs.jq
     pkgs.bun
+    pkgs.fnm
   ];
 
   # https://devenv.sh/languages/
@@ -22,12 +23,15 @@
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''
-    echo hello from $GREET
+    echo Hello from $GREET
   '';
+  scripts.webstorm.exec = "$DEVENV_ROOT/tools/devenv/webstorm.sh $@";
+
 
   enterShell = ''
     hello
     git --version
+    echo Bun version: $(bun --version)
   '';
 
   # https://devenv.sh/tasks/
