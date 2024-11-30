@@ -24,6 +24,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
+    "@cashu/cashu-ts": "2.0.0",
     "@remix-run/express": "2.15.0",
     "@remix-run/node": "2.15.0",
     "@remix-run/react": "2.15.0",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@remix-run/dev": "2.15.0",
+    "@types/bun": "1.1.14",
     "@types/express": "5.0.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
