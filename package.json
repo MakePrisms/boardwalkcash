@@ -24,6 +24,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
+    "@cashu/cashu-ts": "2.1.0",
     "@opensecret/react": "0.3.0",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@remix-run/dev": "2.15.0",
+    "@types/bun": "1.1.14",
     "@types/express": "5.0.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
