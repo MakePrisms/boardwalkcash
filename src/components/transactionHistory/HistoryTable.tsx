@@ -17,6 +17,7 @@ const HistoryTable: React.FC<{
    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
    const [tokenLockedTo, setTokenLockedTo] = useState<PublicContact | null>(null);
    const [txid, setTxid] = useState<string | undefined>();
+   const [token, setToken] = useState<string | undefined>();
    const [isViewGiftModalOpen, setIsViewGiftModalOpen] = useState(false);
    const [selectedGift, setSelectedGift] = useState<GiftAsset | undefined>(undefined);
 
@@ -30,21 +31,22 @@ const HistoryTable: React.FC<{
    const openViewGiftModal = async (tx: EcashTransaction & { giftId: number }) => {
       setIsViewGiftModalOpen(true);
       setIsSendModalOpen(false);
-      const gift = await getGiftById(tx.giftId);
+      const gift = getGiftById(tx.giftId);
       if (!gift) {
          console.error('Gift not found:', tx.gift);
          return;
       }
       setSelectedGift(gift);
+      /** Begin backwards compatibility  for < v0.2.2 */
+      if (new Date(tx.date).getTime() > 1724352697905) {
+         setTxid(computeTxId(tx.token));
+      }
+      /** End backwards compatibility  for < v0.2.2 */
       if (tx.pubkey) {
-         /** Begin backwards compatibility  for < v0.2.2 */
-         if (new Date(tx.date).getTime() > 1724352697905) {
-            setTxid(computeTxId(tx.token));
-         }
-         /** End backwards compatibility  for < v0.2.2 */
          const contact = await fetchContact(tx.pubkey?.slice(2));
          setTokenLockedTo(contact);
       }
+      setToken(tx.token);
    };
 
    const openSendEcashModal = async (tx: EcashTransaction) => {
@@ -94,6 +96,7 @@ const HistoryTable: React.FC<{
                selectedContact={tokenLockedTo}
                amountCents={selectedGift.amount}
                txid={txid}
+               token={token}
             />
          )}
       </>

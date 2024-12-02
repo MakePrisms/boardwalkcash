@@ -98,7 +98,7 @@ model Notification {
 
 model Token {
   id               String          @id
-  token            String
+  token            String?
   createdAt        DateTime        @default(now())
   redeemedAt       DateTime?
   giftId           Int?
