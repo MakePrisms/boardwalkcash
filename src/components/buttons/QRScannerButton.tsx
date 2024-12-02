@@ -1,9 +1,14 @@
-import { QrCodeIcon } from '@heroicons/react/20/solid';
 import { Button, Modal } from 'flowbite-react';
 import { useRef, useState } from 'react';
-import QrReaderComponent from '../utility/QRReader';
+import QrReaderComponent from '../utility/QR/QRReader';
+import ScanIcon from '../icons/ScanIcon';
 
-const QRScannerButton: React.FC<{ onScan: (result: string) => void }> = ({ onScan }) => {
+const QRScannerButton: React.FC<{
+   onScan: (result: string) => void;
+   btnText?: string;
+   onClick?: () => void;
+   onClose?: () => void;
+}> = ({ onScan, btnText, onClick, onClose }) => {
    const [isScannerOpen, setIsScannerOpen] = useState(false);
    const qrReaderRef = useRef<any>(null);
 
@@ -13,26 +18,34 @@ const QRScannerButton: React.FC<{ onScan: (result: string) => void }> = ({ onSca
       onScan(result);
    };
 
+   const handleBtnClick = () => {
+      onClick?.();
+      setIsScannerOpen(true);
+   };
+
+   const handleClose = () => {
+      setIsScannerOpen(false);
+      qrReaderRef.current.stopScanner();
+      onClose?.();
+   };
+
    return (
       <>
-         <button onClick={() => setIsScannerOpen(true)}>
-            <QrCodeIcon className='text-gray-500 size-8 p-0 m-0' />
-         </button>
-         <Modal show={isScannerOpen} onClose={() => setIsScannerOpen(false)}>
+         {btnText ? (
+            <Button className='btn-primary' onClick={handleBtnClick}>
+               {btnText}
+            </Button>
+         ) : (
+            <button onClick={handleBtnClick}>
+               <ScanIcon className='text-gray-500 size-8' />
+            </button>
+         )}
+         <Modal show={isScannerOpen} onClose={handleClose}>
+            <Modal.Header>Scan QR Code</Modal.Header>
             {/* <Modal.Header>Scan QR Code</Modal.Header>
             <Modal.Body className='h-full'> */}
             <QrReaderComponent ref={qrReaderRef} onDecode={handleQRResult} />
             {/* </Modal.Body> */}
-            <Modal.Footer>
-               <Button
-                  onClick={() => {
-                     setIsScannerOpen(false);
-                     qrReaderRef.current.stopScanner();
-                  }}
-               >
-                  Close
-               </Button>
-            </Modal.Footer>
          </Modal>
       </>
    );

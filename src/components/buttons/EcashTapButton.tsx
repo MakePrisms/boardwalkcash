@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import SendEcashModalBody from '@/components/modals/SendEcashModalBody';
 import { resetStatus, setSending } from '@/redux/slices/ActivitySlice';
 import { useCashu } from '@/hooks/cashu/useCashu';
+import { isMobile } from 'react-device-detect';
 
 export const BanknoteIcon = ({ className }: { className?: string }) => (
    <svg
@@ -24,11 +25,7 @@ export const BanknoteIcon = ({ className }: { className?: string }) => (
    </svg>
 );
 
-interface EcashTapButtonProps {
-   isMobile: boolean;
-}
-
-const EcashTapButton = ({ isMobile }: EcashTapButtonProps) => {
+const EcashTapButton = () => {
    const [creatingToken, setCreatingToken] = useState(false);
    const [tokenToSend, setTokenToSend] = useState<string | undefined>(undefined);
    const [showEcashTapModal, setShowEcashTapModal] = useState(false);

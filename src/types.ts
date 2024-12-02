@@ -6,8 +6,9 @@ import {
    MeltQuoteResponse,
    ApiError as CashuApiError,
    Token,
+   MintQuoteState,
 } from '@cashu/cashu-ts';
-import { Gift, MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
+import { MintlessTransaction, Notification, Token as TokenPrisma } from '@prisma/client';
 import { NextApiRequest } from 'next';
 import { formatUnit } from './utils/formatting';
 
@@ -191,7 +192,7 @@ export type TokenNotificationData = {
    isTip: boolean;
    timeAgo: string;
    tokenState: 'claimed' | 'unclaimed';
-   gift?: string;
+   gift: GiftAsset | null;
    isFee: boolean;
    type: NotificationType.Token;
 };
@@ -211,7 +212,7 @@ export type MintlessTransactionNotificationData = {
    contact?: PublicContact; // TODO should be required
    isFee: boolean;
    timeAgo: string;
-   gift: string | null;
+   gift: GiftAsset | null;
    type: NotificationType.MintlessTransaction;
 };
 
@@ -251,9 +252,14 @@ export const isMintlessTransactionNotification = (
 
 export type PostTokenRequest = {
    token: string;
-   gift?: string;
+   giftId?: number | null;
    createdByPubkey?: string;
    isFee?: boolean;
+};
+
+export type PostUnlockedGiftRequest = {
+   giftId: number;
+   txid: string;
 };
 
 export type PostTokenResponse = {
@@ -261,17 +267,26 @@ export type PostTokenResponse = {
 };
 
 export type GetTokenResponse = {
-   token: string;
-   gift?: string;
+   token: string | null;
+   giftId: number | null;
 };
 
 export type GetAllGiftsResponse = {
-   gifts: (Gift & { campaignId?: number })[];
+   gifts: (GiftAsset & { campaignId?: number })[];
 };
 
-export type GetGiftResponse = Gift & { campaignId?: number };
+export type GetGiftResponse = GiftAsset & { campaignId?: number };
+
+export type GiftFee = {
+   /* fee amount relative to rest of the splits */
+   weight: number;
+
+   /* boardwalk pubkey to send fee to */
+   recipient: string;
+};
 
 export interface GiftAsset {
+   id: number;
    amount: number;
    unit: Currency;
    name: string;
@@ -281,6 +296,7 @@ export interface GiftAsset {
    creatorPubkey: string | null;
    campaingId?: number;
    fee?: number;
+   splits?: GiftFee[];
 }
 
 export interface InvoicePollingRequest {
@@ -288,7 +304,7 @@ export interface InvoicePollingRequest {
    amount: number;
    keysetId: string;
    mintUrl: string;
-   gift?: string;
+   giftId: number | null;
    fee?: number;
 }
 
@@ -365,7 +381,7 @@ export type PayInvoiceResponse =
    | undefined;
 
 export type MintlessTransactionRequest = {
-   gift: string | null;
+   giftId: number | null;
    amount: number;
    recipientPubkey: string;
    createdByPubkey: string;
@@ -381,3 +397,33 @@ export enum Currency {
    USD = 'usd',
    SAT = 'sat',
 }
+
+export type GetPaymentRequestResponse = {
+   /* encoded payment request */
+   pr: string;
+
+   /* payment request id */
+   id: string;
+};
+
+export type CheckPaymentRequestResponse = {
+   paid: boolean;
+   token?: string;
+   id: string;
+   createdAt: Date;
+   updatedAt: Date;
+};
+
+export type PendingMintQuote = MintQuoteResponse & { amount: number; keysetId: string };
+
+export type MintQuoteStateExt = MintQuoteState | 'EXPIRED';
+
+export type GetCashuPRLastPaidResponse =
+   | {
+        lastPaid: string;
+        token: string;
+     }
+   | {
+        lastPaid: null;
+        token: null;
+     };

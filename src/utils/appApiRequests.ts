@@ -1,11 +1,8 @@
 // a hook for making api requests to this app
 
-import { PostMintQuoteApiResponse } from '@/pages/api/quotes/mint';
-import { PollingApiResponse } from '@/pages/api/invoice/polling/[slug]';
 import { NDKEvent, NDKKind, NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk';
 import { calculateSha256 } from './crypto';
 import { UserWithContacts } from '@/pages/api/users/[pubkey]';
-import { Proof } from '@prisma/client';
 import { ContactData } from '@/lib/userModels';
 import {
    Currency,
@@ -99,37 +96,6 @@ export const authenticatedRequest = async <T>(
    }
 };
 
-export const postUserMintQuote = async (
-   pubkey: string,
-   quoteId: string,
-   request: string,
-   mintUrl: string,
-   keysetId: string,
-) => {
-   return await authenticatedRequest<PostMintQuoteApiResponse>(`/api/quotes/mint`, 'POST', {
-      pubkey,
-      quoteId,
-      request,
-      mintUrl,
-      keysetId,
-   });
-};
-
-export const pollForInvoicePayment = async (
-   pubkey: string,
-   quote: string,
-   amount: number,
-   mintUrl: string,
-   keysetId: string,
-) => {
-   return await authenticatedRequest<PollingApiResponse>(`/api/invoice/polling/${quote}`, 'POST', {
-      pubkey,
-      amount,
-      mintUrl,
-      keysetId,
-   });
-};
-
 export const fetchUser = async (pubkey: string) => {
    return await authenticatedRequest<UserWithContacts>(`/api/users/${pubkey}`, 'GET', undefined);
 };
@@ -159,29 +125,30 @@ export const addContactRequest = async (pubkey: string, contact: ContactData) =>
    return await authenticatedRequest<ContactData>(`/api/users/${pubkey}`, 'PUT', contact);
 };
 
-export const deleteProofById = async (proofId: number) => {
-   console.log('deleting proof', proofId);
-   return await authenticatedRequest<undefined>(`/api/proofs/${proofId}`, 'DELETE');
-};
-
-export const getProofsFromServer = async (pubkey: string) => {
-   return await authenticatedRequest<{
-      proofs: (Proof & { MintKeyset: { unit: 'usd' | 'sat' } })[];
-      receiving: boolean;
-   }>(`/api/proofs/${pubkey}`, 'GET', undefined);
-};
-
 export const getInvoiceForTip = async (
    pubkey: string,
    amount: number,
    opts?: {
-      gift?: string;
+      giftId?: number;
       fee?: number;
       unit: Currency;
    },
 ) => {
+   const params = new URLSearchParams({
+      amount: amount.toString(),
+      unit: opts?.unit || Currency.USD,
+   });
+
+   if (opts?.giftId) {
+      params.append('giftId', opts.giftId.toString());
+   }
+
+   if (opts?.fee) {
+      params.append('fee', opts.fee.toString());
+   }
+
    return await request<LightningTipResponse>(
-      `/api/tip/${pubkey}?amount=${amount}&unit=${opts?.unit || Currency.USD}${opts?.gift ? `&gift=${opts.gift}` : ''}${opts?.fee ? `&fee=${opts.fee}` : ''}`,
+      `/api/tip/${pubkey}?${params.toString()}`,
       'GET',
       undefined,
    );
@@ -195,35 +162,23 @@ export const getTipStatus = async (quoteId: string) => {
    );
 };
 
-export const postTokenToDb = async (token: string, gift?: string, isFee?: boolean) => {
+export const postTokenToDb = async (token: string, giftId?: number, isFee?: boolean) => {
    console.log('posting token to db', token);
    const pubkey = window.localStorage.getItem('pubkey');
    return (
       await request<PostTokenResponse>(`/api/token`, 'POST', {
          token,
-         gift,
+         giftId,
          isFee,
          createdByPubkey: pubkey,
       } as PostTokenRequest)
    ).txid;
 };
 
+export const postUnlockedGiftToDb = async (txid: string, giftId: number) => {
+   return await request<PostTokenResponse>(`/api/token/gift`, 'POST', { txid, giftId });
+};
+
 export const getTokenFromDb = async (txid: string) => {
    return await request<GetTokenResponse>(`/api/token/${txid}`, 'GET', undefined);
-};
-
-export const getInvoiceForLNReceive = async (pubkey: string, amount: number, keysetId: string) => {
-   return await authenticatedRequest<LightningTipResponse>(
-      `/api/users/${pubkey}/receive?amount=${amount}&keysetId=${keysetId}`,
-      'GET',
-      undefined,
-   );
-};
-
-export const getInvoiceStatus = async (pubkey: string, checkingId: string) => {
-   return await authenticatedRequest<LightningTipStatusResponse>(
-      `/api/users/${pubkey}/receive/${checkingId}`,
-      'GET',
-      undefined,
-   );
 };

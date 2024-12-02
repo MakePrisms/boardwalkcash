@@ -28,7 +28,7 @@ const Tooltip = ({
          case 'bottom':
             return { top: 'calc(100% + 5px)', left: '50%', transform: 'translateX(-50%)' };
          case 'left':
-            return { top: '50%', right: 'calc(100% + 5px)', transform: 'translateY(-50%)' };
+            return { top: '15%', right: 'calc(100% + 5px)', transform: 'translateY(-50%)' };
          case 'right':
             return { top: '50%', left: 'calc(100% + 5px)', transform: 'translateY(-50%)' };
       }
@@ -41,7 +41,7 @@ const Tooltip = ({
          case 'bottom':
             return { top: '-8px', left: '50%', transform: 'translateX(-50%)' };
          case 'left':
-            return { top: '50%', right: '-8px', transform: 'translateY(-50%) rotate(90deg)' };
+            return { top: '60%', right: '-8px', transform: 'translateY(-50%) rotate(90deg)' };
          case 'right':
             return { top: '50%', left: '-8px', transform: 'translateY(-50%) rotate(-90deg)' };
       }

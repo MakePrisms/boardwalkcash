@@ -1,7 +1,8 @@
-import { Currency, PublicContact } from '@/types';
+import { Currency, PublicContact, Wallet } from '@/types';
 import { createUser, fetchUser, updateUser } from '@/utils/appApiRequests';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { generateSecretKey, getPublicKey } from 'nostr-tools';
+import { RootState } from '@/redux/store';
 
 interface UserState {
    pubkey?: string;
@@ -30,12 +31,12 @@ const initialState: UserState = {
    lud16: null,
    sendMode: 'default_mint',
    receiveMode: 'default_mint',
-   defaultUnit: Currency.USD,
+   defaultUnit: Currency.SAT,
 };
 
-export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: string }>(
+export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: string; state: RootState }>(
    'user/initializeUser',
-   async (_, { rejectWithValue }) => {
+   async (_, { rejectWithValue, getState }) => {
       try {
          let storedPrivKey = localStorage.getItem('privkey');
          let storedPubKey = localStorage.getItem('pubkey');
@@ -48,11 +49,15 @@ export const initializeUser = createAsyncThunk<UserState, void, { rejectValue: s
             localStorage.setItem('privkey', newSecretKeyHex);
             localStorage.setItem('pubkey', newPubKey);
 
-            const keysets = JSON.parse(localStorage.getItem('keysets') || '[]');
+            const keysets: Wallet[] = JSON.parse(localStorage.getItem('keysets') || '[]');
 
-            const defaultKeyset = keysets[0];
+            const defaultUnit = getState().user.defaultUnit;
+
+            const defaultKeyset = keysets.find(x => x.keys.unit === defaultUnit);
+            if (!defaultKeyset) {
+               throw new Error(`Cannot find keyset for the currency ${defaultUnit}`);
+            }
             const defaultMintUrl = defaultKeyset.url;
-            const defaultUnit = defaultKeyset.keys.unit as Currency;
 
             const placeholderUsername = `user-${newPubKey.slice(0, 5)}`;
 

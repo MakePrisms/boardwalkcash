@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Balance from '@/components/utility/Balance';
-import Receive from '@/components/buttons/Receive';
-import Send from '@/components/buttons/Send';
-import { useProofManager } from '@/hooks/cashu/useProofManager.ts';
+import Receive from '@/components/buttons/Receive/ReceiveButton';
+import Send from '@/components/buttons/Send/SendButton';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useAppDispatch } from '@/redux/store';
@@ -23,41 +22,46 @@ import { useCashu } from '@/hooks/cashu/useCashu';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import { PublicContact, TokenProps, GiftAsset, Currency } from '@/types';
 import { findContactByPubkey, isContactsTrustedMint } from '@/lib/contactModels';
-import { proofsLockedTo } from '@/utils/cashu';
-import { formatUrl } from '@/utils/url';
+import { computeTxId, proofsLockedTo } from '@/utils/cashu';
+import { formatUrl, getRequestedDomainFromRequest } from '@/utils/url';
 import NotificationDrawer from '@/components/notifications/NotificationDrawer';
 import { formatTokenAmount } from '@/utils/formatting';
 import { findTokenByTxId } from '@/lib/tokenModels';
-import { getGiftByName } from '@/lib/gifts';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { Button, Dropdown } from 'flowbite-react';
 import { runMigrations } from '@/migrations/localStorage.migrations';
 import ToggleCurrencyDropdown from '@/components/ToggleCurrencyDropdown';
 import { useBalance } from '@/hooks/boardwalk/useBalance';
 import { useExchangeRate } from '@/hooks/util/useExchangeRate';
+import useWallet from '@/hooks/boardwalk/useWallet';
+import { TxStatus } from '@/redux/slices/HistorySlice';
 
-export default function Home({ isMobile, token }: { isMobile: boolean; token?: string }) {
+export default function Home({ token }: { token?: string }) {
    const newUser = useRef(false);
    const [tokenDecoded, setTokenDecoded] = useState<Token | null>(null);
    const [ecashReceiveModalOpen, setEcashReceiveModalOpen] = useState(false);
    const router = useRouter();
    const { balanceByWallet, proofsLockedTo } = useCashu();
    const { addWalletFromMintUrl, activeUnit, setActiveUnit } = useCashuContext();
+   const { tryToMintProofs } = useWallet();
 
    const dispatch = useAppDispatch();
-   const wallets = useSelector((state: RootState) => state.wallet.keysets);
+   const history = useSelector((state: RootState) => state.history);
    const user = useSelector((state: RootState) => state.user);
    const { addToast } = useToast();
-   const { updateProofsAndBalance, checkProofsValid } = useProofManager();
    /* modal will not show if gifts are loading, because it messes up gift selection */
    const { loadingGifts } = useGifts();
    // const { loading: loadingBalance } = useBalance();
    const { loading: loadingExchangeRate } = useExchangeRate();
    const { loading: loadingBalance } = useBalance();
    const [loadingState, setLoadingState] = useState(true);
+   const hasCheckedPendingMintQuotes = useRef(false);
 
    useEffect(() => {
       if (user.status === 'failed') {
+         setLoadingState(false);
+      } else if (user.status === 'idle' && !loadingExchangeRate && !loadingBalance) {
          setLoadingState(false);
       } else if (user.status !== 'succeeded' || loadingExchangeRate || loadingBalance) {
          setLoadingState(true);
@@ -135,49 +139,6 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
    }, [router.isReady]);
 
    useEffect(() => {
-      if (tokenDecoded) return;
-      let intervalCount = 0;
-
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      /* VV causing too much spam VV */
-      // const checkProofsSequentially = async () => {
-      //    await delay(6000);
-      //    for await (const w of Object.values(wallets)) {
-      //       const wallet = new CashuWallet(new CashuMint(w.url), { ...w });
-      //       await checkProofsValid(wallet).catch();
-
-      //       // Wait 1 second between each check (adjust as needed)
-      //       await delay(10000);
-      //    }
-      // };
-
-      // checkProofsSequentially();
-      let isUpdating = false;
-
-      const intervalId = setInterval(async () => {
-         if (!isUpdating) {
-            isUpdating = true;
-            await updateProofsAndBalance();
-            isUpdating = false;
-         }
-
-         // Increment the counter
-         intervalCount += 1;
-
-         // Every eighth interval, call checkProofsValid
-         if (intervalCount >= 8) {
-            // checkProofsSequentially();
-            intervalCount = 0;
-         }
-      }, 3000); // Poll every 3 seconds
-
-      return () => {
-         clearInterval(intervalId);
-      };
-   }, [dispatch, tokenDecoded]);
-
-   useEffect(() => {
       // uses session storage to identify the tab so we can ignore incoming messages from the same tab
       if (!sessionStorage.getItem('tabId')) {
          sessionStorage.setItem(
@@ -203,6 +164,31 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
       };
       return () => {};
    }, []);
+
+   /* check pending lightning payments on load */
+   useEffect(() => {
+      if (loadingState) return;
+      const pendingLightning = history.lightning.filter(tx => tx.status === TxStatus.PENDING);
+
+      const checkAndUpdatePending = async () => {
+         for await (const tx of pendingLightning) {
+            const { quote } = tx;
+            if (!quote) {
+               continue;
+            }
+            try {
+               await tryToMintProofs(quote);
+            } catch (e) {
+               console.error('Error trying to mint proofs', e);
+            }
+         }
+      };
+
+      if (!hasCheckedPendingMintQuotes.current) {
+         checkAndUpdatePending();
+         hasCheckedPendingMintQuotes.current = true;
+      }
+   }, [loadingState, history.lightning, tryToMintProofs]);
 
    // useNwc({ privkey: user.privkey, pubkey: user.pubkey });
 
@@ -261,11 +247,9 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
             <div className='mb-10'>
                <ToggleCurrencyDropdown />
             </div>
-            <div className=' flex flex-col justify-center py-8 w-full'>
-               <div className='flex flex-row justify-center mx-auto space-x-9 items-center'>
-                  <Receive />
-                  <Send />
-               </div>
+            <div className='flex flex-row justify-center mx-auto space-x-9 items-center py-8'>
+               <Receive />
+               <Send />
             </div>
             <footer className='fixed inset-x-0 bottom-0 text-center p-4 shadow-md flex flex-col items-center justify-center'>
                <Disclaimer />
@@ -275,7 +259,7 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
          <NotificationDrawer />
          <SettingsSidebar />
          <TransactionHistoryDrawer />
-         <EcashTapButton isMobile={isMobile} />
+         <EcashTapButton />
          {tokenDecoded && !newUser.current && !loadingGifts && (
             <ConfirmEcashReceiveModal
                token={tokenDecoded}
@@ -305,31 +289,29 @@ export default function Home({ isMobile, token }: { isMobile: boolean; token?: s
 export const getServerSideProps: GetServerSideProps = async (
    context: GetServerSidePropsContext,
 ) => {
-   const userAgent = context.req.headers['user-agent'];
-   const isMobile = /mobile/i.test(userAgent as string);
-
    let token = context.query.token as string;
    let giftPath = null;
    let gift: GiftAsset | undefined = undefined;
-   const txid = context.query.txid as string;
+   const txid = context.query.txid
+      ? (context.query.txid as string)
+      : token
+        ? computeTxId(token)
+        : undefined;
 
-   if (txid && !token) {
+   const baseRequestUrl = getRequestedDomainFromRequest(context.req);
+
+   if (txid) {
       const tokenEntry = await findTokenByTxId(txid);
       if (tokenEntry) {
-         token = tokenEntry.token;
-         if (tokenEntry.gift) {
-            gift = await getGiftByName(tokenEntry.gift as string).then(g => {
-               if (!g) return;
-               return {
-                  amount: g.amount,
-                  name: g.name,
-                  selectedSrc: g.imageUrlSelected,
-                  unselectedSrc: g.imageUrlUnselected,
-                  description: g.description,
-               } as GiftAsset;
-            });
+         if (tokenEntry.giftId) {
+            gift = await lookupGiftById(tokenEntry.giftId);
             giftPath = gift?.selectedSrc || null;
          }
+      }
+
+      if (!token) {
+         if (!tokenEntry?.token) throw new Error('Token not found');
+         token = tokenEntry.token;
       }
    }
 
@@ -364,11 +346,11 @@ export const getServerSideProps: GetServerSideProps = async (
 
    return {
       props: {
-         isMobile,
          token: token || null,
          pageTitle: pageTitle(tokenData) || null,
          pageDescription: pageDescription(tokenData) || null,
          giftPath,
+         baseRequestUrl,
       },
    };
 };

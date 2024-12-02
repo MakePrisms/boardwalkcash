@@ -45,7 +45,7 @@ const FirstPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
 const WarningPage = ({ nextPage }: { nextPage: (pgNum: number) => void }) => {
    return (
       <main className='flex flex-col md:flex-row items-center justify-center mx-auto min-h-screen'>
-         <div className='w-full md:w-1/2 space-y-4 p-5'>
+         <div className='w-full md:w-1/2 space-y-4 px-5 pt-10 pb-32'>
             <h2 className='underline text-2xl'>Warning!</h2>
             <p>
                Boardwalk Cash is a self-custodial wallet that enables you to manage payments on your

@@ -1,10 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { CashuMint, CashuWallet, getEncodedTokenV4, Proof } from '@cashu/cashu-ts';
-import { createManyProofs } from '@/lib/proofModels';
+import { getEncodedTokenV4, Proof } from '@cashu/cashu-ts';
 import { findUserByPubkey, updateUser } from '@/lib/userModels';
 import { updateMintQuote } from '@/lib/mintQuoteModels';
-import { InvoicePollingRequest, NotificationType, ProofData } from '@/types';
-import { findMintByUrl } from '@/lib/mintModels';
+import { InvoicePollingRequest, NotificationType } from '@/types';
 import { createNotification, notifyTokenReceived } from '@/lib/notificationModels';
 import {
    computeTxId,
@@ -13,6 +11,8 @@ import {
    initializeWallet,
 } from '@/utils/cashu';
 import { createTokenInDb } from '@/lib/tokenModels';
+import { lookupGiftById } from '@/lib/gifts/giftHelpers';
+import { getRecipientPubkeyFromGift } from '@/utils';
 
 export type PollingApiResponse = {
    success: boolean;
@@ -25,42 +25,18 @@ export type PollingApiResponse = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
    const { slug } = req.query;
    /* amount is total amount to send, including fee */
-   const { mintUrl, keysetId, gift, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
-   const isTip = req.query.isTip === 'true';
+   const { mintUrl, keysetId, giftId, pubkey, amount, fee = 0 } = req.body as InvoicePollingRequest;
+
+   if (req.query.isTip !== 'true') {
+      throw new Error('This endpoint should only be used for tips');
+   }
 
    if (!mintUrl) {
       res.status(400).send({ success: false, message: 'No mint URL provided.' });
       return;
    }
 
-   // const mint = new CashuMint(mintUrl);
-   // const keys = await mint.getKeys(keysetId);
-   // // const keyset = activeKeys.keysets.find(keyset => keyset.id === keysetId);
-
-   // const mintLocal = await findMintByUrl(mintUrl);
-
-   // const keyset = mintLocal.keysets.find(keyset => keyset.id === keysetId);
-   // if (!keyset) {
-   //    res.status(404).send({ success: false, message: 'Keyset not found.' });
-   //    return;
-   // }
-
-   // const keys = keyset.keys.reduce(
-   //    (acc, key) => {
-   //       const [tokenAmt, pubkey] = key.split(':');
-   //       acc[tokenAmt] = pubkey;
-   //       return acc;
-   //    },
-   //    {} as Record<string, string>,
-   // );
-
-   // const wallet = new CashuWallet(new CashuMint(mintLocal.url), {
-   //    keys: {
-   //       id: keysetId,
-   //       keys,
-   //       unit: keyset.unit,
-   //    },
-   // });
+   const giftFromDB = giftId ? await lookupGiftById(Number(giftId)) : null;
 
    // NOTE: this should currently throw an error if the keyset is no longer active
    const wallet = await initializeWallet(mintUrl, { keysetId: keysetId });
@@ -71,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    }
 
    // Set user's "receiving" to true at the start of polling
-   !isTip && (await updateUser(pubkey, { receiving: true }));
+   await updateUser(pubkey, { receiving: true });
 
    try {
       let paymentConfirmed = false;
@@ -81,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const user = await findUserByPubkey(pubkey);
       if (!user) {
-         !isTip && (await updateUser(pubkey, { receiving: false }));
+         await updateUser(pubkey, { receiving: false });
          res.status(404).send({ success: false, message: 'User not found.' });
          return;
       }
@@ -90,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          console.log('polling', attempts);
 
          if (attempts === 10) {
-            !isTip && (await updateUser(pubkey, { receiving: false }));
+            await updateUser(pubkey, { receiving: false });
          }
 
          try {
@@ -98,11 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (fee === 0) {
                const { proofs } = await wallet.mintTokens(amount, slug, {
                   keysetId: keysetId,
-                  pubkey: isTip ? `02${pubkey}` : undefined, // if its a tip, we should lock the tokens. TOOD: always lock to pubkey, this will just require that the frontend unlocks them when polling to updateProofsAndBalance. We know the pubkey that's recieving the proofs, so we can lock to that
+                  pubkey: `02${pubkey}`,
                });
                proofsToSendToUser = proofs;
             } else {
-               /* have to create unlocked proofs, then lock them bc there's only one invoice */
+               /* have to create unlocked proofs, then lock them individually because cashu-ts doesn't support locking all at once */
 
                /* clalculate amount preferences so we can have the correct proofs for fee */
                const { amountPreference, feePreference } = createPreferredProofsForFee(
@@ -123,21 +99,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   amountPreference,
                );
 
-               if (isTip) {
-                  /* lock the user's tokens */
-                  const { send: lockedUserProofs } = await wallet.send(amount - fee, amountProofs, {
-                     keysetId: keysetId,
-                     pubkey: '02' + pubkey,
-                  });
-                  proofsToSendToUser = lockedUserProofs;
-               } else {
-                  proofsToSendToUser = amountProofs;
+               /* lock the user's tokens */
+               const { send: lockedUserProofs } = await wallet.send(amount - fee, amountProofs, {
+                  keysetId: keysetId,
+                  pubkey: '02' + pubkey,
+               });
+               proofsToSendToUser = lockedUserProofs;
+
+               let recipient: string | undefined;
+               if (giftFromDB) {
+                  recipient = getRecipientPubkeyFromGift(giftFromDB);
                }
 
-               /* lock the fee to Boardwalk */
+               if (!recipient) {
+                  throw new Error('fee set on gift, but no recipient');
+               }
+
+               /* lock the fee to recipient's pubkey */
                const { send: lockedFeeProofs } = await wallet.send(fee, feeProofs, {
                   keysetId: keysetId,
-                  pubkey: '02' + process.env.NEXT_PUBLIC_FEE_PUBKEY!,
+                  pubkey: '02' + recipient,
                });
 
                const feeToken = getEncodedTokenV4({
@@ -147,57 +128,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                /* send fee as a notification to Boardwalk */
                const txid = computeTxId(feeToken);
-               await createTokenInDb({ token: feeToken, gift }, txid, true);
-               await notifyTokenReceived(
-                  process.env.NEXT_PUBLIC_FEE_PUBKEY!,
-                  JSON.stringify({ token: feeToken }),
-                  txid,
-               );
+               await createTokenInDb({ token: feeToken, giftId: Number(giftId) }, txid, true);
+               await notifyTokenReceived(recipient, JSON.stringify({ token: feeToken }), txid);
             }
-
-            let proofsPayload: ProofData[] = proofsToSendToUser.map(proof => {
-               return {
-                  proofId: proof.id,
-                  secret: proof.secret,
-                  amount: proof.amount,
-                  C: proof.C,
-                  userId: user.id,
-                  mintKeysetId: keysetId,
-                  unit: wallet.keys.unit as 'usd' | 'sat',
-               };
-            });
 
             let created;
             let token: string | undefined;
-            if (isTip) {
-               /* if its a tip, send as a notification */
-               token = getEncodedTokenV4({
-                  token: [{ proofs: proofsToSendToUser, mint: wallet.mint.mintUrl }],
-                  unit: wallet.keys.unit,
-               });
-               /* not sure why gift is ending up as 'undefined' */
-               if (gift && gift !== 'undefined') {
-                  const txid = computeTxId(token);
+            token = getEncodedTokenV4({
+               token: [{ proofs: proofsToSendToUser, mint: wallet.mint.mintUrl }],
+               unit: wallet.keys.unit,
+            });
+            /* not sure why gift is ending up as 'undefined' */
+            if (giftId) {
+               const txid = computeTxId(token);
 
-                  await createTokenInDb({ token, gift }, txid);
+               await createTokenInDb({ token, giftId: Number(giftId) }, txid);
 
-                  created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
-               } else {
-                  created = await createNotification(pubkey, NotificationType.TIP, token);
-               }
+               created = await notifyTokenReceived(pubkey, JSON.stringify({ token }), txid);
             } else {
-               created = await createManyProofs(proofsPayload);
+               created = await createNotification(pubkey, NotificationType.TIP, token);
             }
 
             if (!created) {
-               !isTip && (await updateUser(pubkey, { receiving: false }));
+               await updateUser(pubkey, { receiving: false });
                res.status(500).send({ success: false, message: 'Failed to create proofs.' });
                return;
             }
 
             await updateMintQuote(slug, { paid: true, token });
 
-            !isTip && (await updateUser(pubkey, { receiving: false }));
+            await updateUser(pubkey, { receiving: false });
 
             res.status(200).send({
                success: true,
@@ -211,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                attempts++;
                await new Promise(resolve => setTimeout(resolve, interval));
             } else {
-               !isTip && (await updateUser(pubkey, { receiving: false }));
+               await updateUser(pubkey, { receiving: false });
                throw e;
             }
          }

@@ -19,3 +19,16 @@ export const customDrawerTheme: DeepPartial<FlowbiteDrawerTheme> = {
       },
    },
 };
+
+export const bottomSheetDrawerTheme: DeepPartial<FlowbiteDrawerTheme> = {
+   root: {
+      base: 'fixed z-40 overflow-y-auto p-4 transition-transform bg-white text-white flex flex-col rounded-t-xl',
+   },
+   header: {
+      inner: {
+         titleText: 'mb-4 text-3xl inline-flex items-center font-semibold text-black',
+         closeButton:
+            'absolute end-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-transparent text-sm text-black',
+      },
+   },
+};

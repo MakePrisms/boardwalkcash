@@ -25,3 +25,9 @@ export const leaderboardTableTheme = {
       },
    },
 };
+
+export const contactsTableTheme = {
+   root: {
+      shadow: 'absolute left-0 top-0 -z-10 h-full w-full rounded-lg bg-white dark:bg-black',
+   },
+};

@@ -1,7 +1,7 @@
 import { RootState, useAppDispatch } from '@/redux/store';
 import { Currency, PayInvoiceResponse, PublicContact } from '@/types';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import { nwc, Nip47Error } from '@getalby/sdk';
+import { decodeBolt11 } from '@/utils/bolt11';
 import { useSelector } from 'react-redux';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
@@ -16,11 +16,18 @@ import {
 } from '@/redux/slices/UserSlice';
 import { authenticatedRequest, updateUser } from '@/utils/appApiRequests';
 import { useToast } from '../util/useToast';
-import { initializeWallet, isTestMint } from '@/utils/cashu';
-import { CashuWallet, getEncodedTokenV4, MeltQuoteResponse, Token } from '@cashu/cashu-ts';
+import { dissectToken, initializeWallet, isTestMint } from '@/utils/cashu';
+import {
+   CashuWallet,
+   getDecodedToken,
+   getEncodedTokenV4,
+   MeltQuoteResponse,
+   Token,
+} from '@cashu/cashu-ts';
 import { useCashu } from '../cashu/useCashu';
 import { useProofStorage } from '../cashu/useProofStorage';
 import { useCashuContext } from '../contexts/cashuContext';
+import { getMsgFromUnknownError } from '@/utils/error';
 
 const useMintlessMode = () => {
    const { nwcUri, pubkey, lud16, sendMode, receiveMode } = useSelector(
@@ -32,6 +39,7 @@ const useMintlessMode = () => {
    const { addProofs } = useProofStorage();
    const dispatch = useAppDispatch();
    const { addToast } = useToast();
+   const user = useSelector((state: RootState) => state.user);
 
    const handleNwcError = (error: Nip47Error) => {
       if (error.code === 'UNAUTHORIZED') {
@@ -136,11 +144,20 @@ const useMintlessMode = () => {
 
          const res = await nwc.payInvoice({ invoice });
 
-         const amountSats = getAmountFromInvoice(invoice);
 
-         dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));
-         dispatch(
-            addTransaction({
+      const { amountSat } = decodeBolt11(invoice);
+
+      if (!amountSat) {
+         throw new Error('Amountless invoices are not supported');
+      }
+
+      dispatch(setSuccess(`Sent ${formatSats(amountSat)}!`));
+      dispatch(
+         addTransaction({
+            type: 'mintless',
+            transaction: {
+               amount: -amountSat,
+               unit: Currency.SAT,
                type: 'mintless',
                transaction: {
                   amount: -amountSats,
@@ -239,43 +256,71 @@ const useMintlessMode = () => {
       if (!contact.mintlessReceive) {
          throw new Error('Contact is not in mintless receive mode');
       }
-      const amountSats = await convertToUnit(amountUnit, unit, 'sat');
-      const invoice = await getInvoiceFromLightningAddress(contact.lud16, amountSats * 1000);
-      let tx: PayInvoiceResponse | undefined;
-      if (sendMode === 'mintless') {
-         tx = await payInvoice(invoice);
-      } else {
-         console.log('paying invoice with cashu', invoice);
-         tx = await cashuPayInvoice(invoice);
-         dispatch(
-            addTransaction({
-               type: 'ecash',
-               transaction: {
-                  amount: amountSats,
-                  date: new Date().toLocaleString(),
-                  status: TxStatus.PAID,
-                  mint: null,
-                  quote: null,
-                  unit: 'sat',
-                  memo: undefined,
-                  appName: undefined,
-                  pubkey: undefined,
-               },
-            }),
+      try {
+         const amountSats = await convertToUnit(amountUnit, unit, 'sat');
+         const invoice = await getInvoiceFromLightningAddress(contact.lud16, amountSats * 1000);
+         let tx: PayInvoiceResponse | undefined;
+         if (sendMode === 'mintless') {
+            tx = await payInvoice(invoice);
+         } else {
+            console.log('paying invoice with cashu', invoice);
+            tx = await cashuPayInvoice(invoice);
+            dispatch(
+               addTransaction({
+                  type: 'ecash',
+                  transaction: {
+                     amount: amountSats,
+                     date: new Date().toLocaleString(),
+                     status: TxStatus.PAID,
+                     mint: null,
+                     quote: null,
+                     unit: 'sat',
+                     memo: undefined,
+                     appName: undefined,
+                     pubkey: undefined,
+                  },
+               }),
+            );
+         }
+         if (!pubkey) {
+            throw new Error('Bug: pubkey is null');
+         }
+         await authenticatedRequest<undefined>(`/api/mintless/transaction`, 'POST', {
+            gift,
+            amount: amountSats,
+            recipientPubkey: contact.pubkey,
+            createdByPubkey: pubkey,
+            isFee: false,
+         });
+         addToast(
+            `Sent ${formatSats(amountSats)} to ${contact.username || contact.lud16}`,
+            'success',
          );
+      } catch (e) {
+         addToast(getMsgFromUnknownError(e), 'error');
       }
-      if (!pubkey) {
-         alert('Bug: pubkey is null');
-         throw new Error('Bug: pubkey is null');
+   };
+
+   const handleMintlessClaim = async (token: Token | string) => {
+      const { mintUrl, unit, pubkeyLock } = dissectToken(token);
+      const wallet = await initializeWallet(mintUrl, { unit });
+      const privkey = pubkeyLock ? user.privkey : undefined;
+
+      token = typeof token === 'string' ? getDecodedToken(token) : token;
+
+      try {
+         const { amountMeltedSat } = await mintlessClaimToken(wallet, token, {
+            privkey,
+         });
+         if (!amountMeltedSat) throw new Error('Failed to claim token');
+         addToast(`Claimed ${formatSats(amountMeltedSat)} to Lightning Wallet`, 'success');
+         return true;
+      } catch (error: any) {
+         console.error('Error claiming token:', error);
+         const msg = error.message || 'Failed to claim token';
+         addToast(msg, 'error');
+         return false;
       }
-      const res = await authenticatedRequest<undefined>(`/api/mintless/transaction`, 'POST', {
-         gift,
-         amount: amountSats,
-         recipientPubkey: contact.pubkey,
-         createdByPubkey: pubkey!,
-         isFee: false,
-      });
-      addToast(`Sent ${formatSats(amountSats)} to ${contact.username || contact.lud16}`, 'success');
    };
 
    const mintlessClaimToken = async (
@@ -375,10 +420,12 @@ const useMintlessMode = () => {
       mintlessClaimToken,
       getNwcBalance,
       sendToMintlessUser,
+      handleMintlessClaim,
       toggleSendMode,
       toggleReceiveMode,
       connect,
       disconnect,
+      isMintless: user.receiveMode === 'mintless' || user.sendMode === 'mintless',
    };
 };
 

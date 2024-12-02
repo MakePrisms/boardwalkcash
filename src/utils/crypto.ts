@@ -5,6 +5,7 @@ import { splitAmount } from '@cashu/cashu-ts/dist/lib/es5/utils';
 import { BlindedMessage } from '@cashu/cashu-ts/dist/lib/es5/model/BlindedMessage';
 import {
    BlindedMessageData,
+   Keys,
    MintKeys,
    Proof,
    SerializedBlindedMessage,
@@ -46,8 +47,8 @@ export function constructProofs(
 }
 
 // Generate a blinded message for a given amount
-export function createBlindedMessages(amount: number, keysetId: string): BlindedMessageData {
-   const amounts = splitAmount(amount);
+export function createBlindedMessages(amount: number, keys: MintKeys): BlindedMessageData {
+   const amounts = splitAmount(amount, keys.keys);
    const blindedMessages: Array<SerializedBlindedMessage> = [];
    const secrets: Array<Uint8Array> = [];
    const rs: Array<bigint> = [];
@@ -59,7 +60,7 @@ export function createBlindedMessages(amount: number, keysetId: string): Blinded
       const { B_, r } = blindMessage(secretBytes);
       rs.push(r);
 
-      const blindedMessage = new BlindedMessage(amounts[i], B_, keysetId);
+      const blindedMessage = new BlindedMessage(amounts[i], B_, keys.id);
       blindedMessages.push(blindedMessage.getSerializedBlindedMessage());
    }
    return { blindedMessages, rs, secrets };
