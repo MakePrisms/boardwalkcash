@@ -28,6 +28,7 @@ const AddToOtherBrowser = dynamic(() => import('./AddToOtherBrowser'), {
 });
 
 import useUserAgent from '@/hooks/util/useUserAgent';
+import { useRouter } from 'next/router';
 
 type AddToHomeScreenPromptType =
    | 'safari'
@@ -43,6 +44,7 @@ const COOKIE_NAME = 'addToHomeScreenPrompt';
 export default function AddToHomeScreen() {
    const [displayPrompt, setDisplayPrompt] = useState<AddToHomeScreenPromptType>('');
    const { userAgent, isMobile, isStandalone, isIOS } = useUserAgent();
+   const router = useRouter();
 
    const closePrompt = () => {
       setDisplayPrompt('');
@@ -59,7 +61,7 @@ export default function AddToHomeScreen() {
    useEffect(() => {
       const addToHomeScreenPromptCookie = getCookie(COOKIE_NAME);
 
-      if (addToHomeScreenPromptCookie !== 'dontShow') {
+      if (addToHomeScreenPromptCookie !== 'dontShow' && !router.query.txid && !router.query.token) {
          // Only show prompt if user is on mobile and app is not installed
          if (isMobile && !isStandalone) {
             if (userAgent === 'Safari') {
