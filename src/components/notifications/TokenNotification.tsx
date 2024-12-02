@@ -25,8 +25,8 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
 
    const notificationText = useMemo(() => {
       const formattedAmount = formatTokenAmount(token);
-      if (isFee === true) {
-         return `${contact?.username} sent ${gift}: ${formattedAmount} fee`;
+      if (isFee === true && gift) {
+         return `${contact?.username} sent ${gift.name}: ${formattedAmount} fee`;
       }
       if (isTip) {
          return `You got tipped ${formattedAmount}`;
@@ -43,12 +43,11 @@ const TokenNotification = ({ data, clearNotification }: TokenNotificationProps) 
       };
 
       if (gift) {
-         const giftName = gift;
-         const article = getArticle(giftName);
-         return `${firstPart} ${article} ${giftName} eGift`;
+         const article = getArticle(gift.name);
+         return `${firstPart} ${article} ${gift.name} eGift`;
       }
       return `${firstPart} ${formattedAmount}`;
-   }, [contact, amountCents, isTip, gift, isFee]);
+   }, [contact, isTip, gift, isFee, token]);
 
    const buttons = useMemo(() => {
       if (tokenState === 'claimed') {

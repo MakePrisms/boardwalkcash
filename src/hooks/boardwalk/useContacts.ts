@@ -5,6 +5,7 @@ import { useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { addContactAction, deleteContactAction } from '@/redux/slices/UserSlice';
 import { HttpResponseError, addContactRequest, authenticatedRequest } from '@/utils/appApiRequests';
+import { useCashuContext } from '../contexts/cashuContext';
 
 type ContactTxData = {
    numTxs: number;
@@ -15,9 +16,11 @@ type ContactTxData = {
 type ContactTxDataRecord = Record<string, ContactTxData>;
 
 const useContacts = () => {
-   const contacts = useSelector((state: RootState) => state.user.contacts);
-   const pubkey = useSelector((state: RootState) => state.user.pubkey);
    const txHistory = useSelector((state: RootState) => state.history);
+   const user = useSelector((state: RootState) => state.user);
+   const { pubkey, contacts } = user;
+
+   const { activeWallet } = useCashuContext();
 
    const dispatch = useAppDispatch();
 
@@ -206,6 +209,14 @@ const useContacts = () => {
       isContactAdded,
       discoverContacts,
       deleteContact,
+      user: {
+         username: user.username ? `${user.username} (me)` : '(me)',
+         pubkey: user.pubkey!,
+         lud16: user.lud16,
+         mintlessReceive: user.receiveMode === 'mintless',
+         defaultMintUrl: activeWallet?.mint.mintUrl,
+         defaultUnit: activeWallet?.keys.unit,
+      } as PublicContact,
    };
 };
 

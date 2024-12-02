@@ -19,7 +19,7 @@ export default async function handler(
 
          const gifts = await prisma.token.findMany({
             where: {
-               gift: {
+               giftId: {
                   not: null,
                },
                createdAt: {

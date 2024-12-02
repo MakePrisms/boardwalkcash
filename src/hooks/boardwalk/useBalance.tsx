@@ -74,11 +74,11 @@ export const BalanceProvider: React.FC<React.PropsWithChildren> = ({ children })
       if (usdBalance === null || satBalance === null) return '';
 
       if (!showFxValue) {
-         return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance.toLocaleString();
+         return activeUnit === 'usd' ? formatUsdBalance(usdBalance) : satBalance?.toLocaleString();
       } else {
          if (activeUnit === 'usd') {
             const sats = await unitToSats(usdBalance / 100, 'usd');
-            return sats.toLocaleString();
+            return sats?.toLocaleString();
          } else {
             const usd = await satsToUnit(satBalance, 'usd');
             return formatUsdBalance(usd);

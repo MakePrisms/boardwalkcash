@@ -5,10 +5,10 @@ import { incrementConnectionSpent, setLastNwcReqTimestamp } from '@/redux/slices
 import { NDKEvent, NDKFilter, NDKKind, NostrEvent } from '@nostr-dev-kit/ndk';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nip04 } from 'nostr-tools';
-import { getAmountFromInvoice } from '@/utils/bolt11';
 import { useExchangeRate } from '../util/useExchangeRate';
 import { setError } from '@/redux/slices/ActivitySlice';
 import { useCashu } from '../cashu/useCashu';
+import { decodeBolt11 } from '@/utils/bolt11';
 
 enum ErrorCodes {
    NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -341,7 +341,11 @@ const useNwc = ({ privkey, pubkey }: NwcProps) => {
             if (request.params.amount) {
                amount = Math.floor(request.params.amount / 1000);
             } else {
-               amount = getAmountFromInvoice(request.params.invoice);
+               const { amountSat } = decodeBolt11(request.params.invoice);
+               if (!amountSat) {
+                  throw new NWCError(ErrorCodes.INTERNAL, 'Amountless invoice');
+               }
+               amount = amountSat;
             }
 
             console.log('## AMOUNT SATS: ', amount);

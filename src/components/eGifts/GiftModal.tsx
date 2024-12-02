@@ -89,15 +89,15 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
       setCurrentStep(GiftStep.SelectGift);
    };
 
-   const handleLightningTip = async (amountUnit: number, feeCents?: number) => {
+   const handleLightningTip = async (amountUnit: number, fee?: number) => {
       if (!selectedContact) {
          throw new Error('No contact selected');
       }
       try {
          const { checkingId, invoice } = await getInvoiceForTip(
             selectedContact.pubkey,
-            amountUnit + (feeCents || 0),
-            { gift: gift?.name, fee: feeCents, unit: activeUnit },
+            amountUnit + (fee || 0),
+            { giftId: gift?.id, fee, unit: activeUnit },
          );
 
          setInvoice(invoice);
@@ -205,8 +205,9 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
          } else {
             sendableToken = await createSendableToken(amountUnit, {
                pubkey: `02${selectedContact?.pubkey}`,
-               gift: gift?.name,
-               feeCents: gift?.fee,
+               giftId: gift?.id,
+               fee: gift?.fee,
+               feeSplits: gift?.splits,
             });
          }
 
@@ -215,7 +216,7 @@ const GiftModal = ({ isOpen, onClose, contact, useInvoice }: GiftModalProps) => 
             return;
          }
 
-         const txid = await postTokenToDb(sendableToken, gift?.name);
+         const txid = await postTokenToDb(sendableToken, gift?.id);
          // TODO: won't work if tokes are not locked
          await sendTokenAsNotification(sendableToken, txid);
          setToken(sendableToken);

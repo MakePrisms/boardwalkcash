@@ -40,8 +40,8 @@ export default function StickerItem({
    }, [selectedSrc, unselectedSrc]);
 
    const sizeClasses = {
-      md: 'w-[125px] h-[120]  sm:w-[150px] sm:h-[140]',
-      lg: 'w-[160px] h-[143]  sm:w-[170px] sm:h-[150]',
+      md: 'w-[125px] h-auto',
+      lg: 'w-[210px] h-auto',
    };
 
    return (

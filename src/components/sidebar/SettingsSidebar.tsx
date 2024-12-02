@@ -70,7 +70,7 @@ export const SettingsSidebar = () => {
                className='drawer-header'
                closeIcon={() => <XMarkIcon className='h-8 w-8' />}
             />
-            <Drawer.Items className='md:w-96 max-w-screen-sm'>
+            <Drawer.Items className='md:w-96 max-w-screen-sm' key={hidden.toString()}>
                <div className='flex align-middle items-center justify-around '></div>
 
                <div className='  space-y-2 border-b pt-4 first:mt-0 first:border-b-0 first:pt-0 border-gray-300'>

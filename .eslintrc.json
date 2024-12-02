@@ -1,8 +1,4 @@
 {
-   "extends": "next/core-web-vitals"
-   // "rules": {
-   //    "no-unused-vars": "error",
-   //    "unused-imports/no-unused-imports": "error"
-   // },
-   // "plugins": ["unused-imports"]
+   "extends": "next/core-web-vitals",
+   "rules": {}
 }

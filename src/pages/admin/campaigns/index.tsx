@@ -72,8 +72,8 @@ const CampaignsPage = ({ gifts }: { gifts: GetAllGiftsResponse['gifts'] }) => {
                         className='transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg'
                      >
                         <StickerItem
-                           selectedSrc={gift.imageUrlSelected}
-                           unselectedSrc={gift.imageUrlUnselected}
+                           selectedSrc={gift.selectedSrc}
+                           unselectedSrc={gift.unselectedSrc}
                            isSelected={formData.giftId === gift.id.toString()}
                            alt={gift.name}
                            size='md'
@@ -147,7 +147,7 @@ const CampaignsPage = ({ gifts }: { gifts: GetAllGiftsResponse['gifts'] }) => {
 };
 
 import { GetServerSideProps } from 'next';
-import { getAllGifts } from '@/lib/gifts';
+import { getAllGifts } from '@/lib/gifts/giftHelpers';
 import { GetAllGiftsResponse } from '@/types';
 import StickerItem from '@/components/eGifts/stickers/StickerItem';
 import { Button } from 'flowbite-react';
@@ -158,17 +158,18 @@ import { useRouter } from 'next/router';
 export const getServerSideProps: GetServerSideProps = async () => {
    try {
       /* only show inactive gifts for creating a campaign */
-      const gifts = await getAllGifts(false);
+      // const gifts = await getAllGifts(false);
+      const gifts = await getAllGifts();
       console.log('gifts', gifts);
       return {
          props: {
             gifts: gifts
-               .filter(g => !g.SingleGiftCampaign)
+               //  .filter(g => !g.SingleGiftCampaign)
                .map(g => ({
                   name: g.name,
                   id: g.id,
-                  imageUrlUnselected: g.imageUrlUnselected,
-                  imageUrlSelected: g.imageUrlSelected,
+                  imageUrlUnselected: g.unselectedSrc,
+                  imageUrlSelected: g.selectedSrc,
                })),
          },
       };
