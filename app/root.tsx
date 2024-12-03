@@ -29,8 +29,8 @@ export const links: LinksFunction = () => [
 
 export const loader = async (args: LoaderFunctionArgs) => {
   // In Remix the loader can be called in two ways, on initial full page load and subsequently when doing client side
-  // navigation via a fetch request. Referer header is set on the request only when it is called via the fetch request.
-  // We are using that fact to set the css prop only on the initial server side page load.
+  // navigation via a fetch request. When doing a full page load 'sec-fetch-dest' header is set to 'document' so we can
+  // use that to only return initial render css on the initial load.
   const isDocumentRequest =
     args.request.headers.get('sec-fetch-dest') === 'document';
 

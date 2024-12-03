@@ -1,4 +1,3 @@
-import path from 'path';
 import { vitePlugin as remix } from '@remix-run/dev';
 import { tamaguiPlugin } from '@tamagui/vite-plugin';
 import { defineConfig } from 'vite';
@@ -27,11 +26,7 @@ export default defineConfig({
       config: './tamagui.config',
       optimize: true,
       outputCSS: './app/tamagui.css',
-      components: [
-        'tamagui',
-        path.resolve(__dirname, './app/components/teal-heading.tsx'),
-        path.resolve(__dirname, './app/components/testing-button.tsx'),
-      ],
+      components: ['tamagui', './app/components/index.ts'],
     }),
   ],
   build: {

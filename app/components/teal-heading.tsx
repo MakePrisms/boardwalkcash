@@ -3,7 +3,13 @@ import type { ReactNode } from 'react';
 
 export const TealHeading = ({ children }: { children: ReactNode }) => {
   return (
-    <Text tag="h1" fontSize={23} color="teal" padding={109}>
+    <Text
+      tag="h1"
+      fontSize={23}
+      color="teal"
+      padding={109}
+      backgroundColor="$background"
+    >
       {children}
     </Text>
   );
