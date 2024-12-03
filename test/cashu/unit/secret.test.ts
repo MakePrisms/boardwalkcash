@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { parseSecret } from '../../lib/cashu';
+import { parseSecret } from '../../../lib/cashu';
 
 describe('parseSecret', () => {
   test('should return a secret as described in NUT00', () => {
