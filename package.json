@@ -16,7 +16,9 @@
     "format:check": "biome format",
     "fix:all": "bun run typecheck && biome check --write --verbose",
     "fix:staged": "bun run typecheck && biome check --write --staged --verbose",
-    "check:all": "run-p typecheck lint:check format:check"
+    "check:all": "run-p typecheck lint:check format:check",
+    "test:unit": "bun test test/cashu/unit",
+    "test:integration": "bun test test/cashu/integration"
   },
   "scripts:comments": {
     "dev": "We are using tsx instead of bun because bun doesn't support all node APIs that Remix development server needs. See https://bun.sh/guides/ecosystem/remix. We need to exclude the config file from tsx watch because vite seems to be writing to those temporary files which causes watcher loop.",
