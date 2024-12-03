@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/util/useToast';
 import useGifts from '@/hooks/boardwalk/useGifts';
 import { getMsgFromUnknownError } from '@/utils/error';
 import { contactsTableTheme } from '@/themes/tableThemes';
+import { isMobile } from 'react-device-detect';
 
 const SelectContact = ({
    onSelectContact,
@@ -96,14 +97,13 @@ const SelectContact = ({
                      </Table.Body>
                   </Table>
                </div>
-               <div className='mt-auto self-end'>
+               <div className={`mt-auto self-end ${isMobile ? 'mb-24' : ''}`}>
                   <Button
                      onClick={() => onSelectContact(undefined)}
                      color='primary'
                      className='btn-primary'
                   >
                      Skip
-                     <ArrowRightIcon className='h-5 w-5' />
                   </Button>
                </div>
             </div>
