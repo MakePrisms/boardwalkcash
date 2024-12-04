@@ -1,4 +1,4 @@
-import { createFont, createTamagui } from '@tamagui/web';
+import { createFont, createTamagui } from 'tamagui';
 
 const body = createFont({
   family: 'Inter',
