@@ -1,0 +1,56 @@
+{
+  "name": "boardwalkcash",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "run-p build:remix build:server",
+    "build:remix": "remix vite:build",
+    "build:server": "cross-env NODE_ENV=production bun build ./app/server.ts --target=node --format=esm --outdir=./build --external=build/server/index.js",
+    "dev": "tsx watch --exclude 'vite.config.ts.timestamp-*' ./app/server.ts",
+    "start": "cross-env NODE_ENV=production node ./build/server.js",
+    "typecheck": "tsc",
+    "lint": "biome lint --write",
+    "lint:check": "biome lint",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "fix:all": "bun run typecheck && biome check --write --verbose",
+    "fix:staged": "bun run typecheck && biome check --write --staged --verbose",
+    "check:all": "run-p typecheck lint:check format:check"
+  },
+  "scripts:comments": {
+    "dev": "We are using tsx instead of bun because bun doesn't support all node APIs that Remix development server needs. See https://bun.sh/guides/ecosystem/remix. We need to exclude the config file from tsx watch because vite seems to be writing to those temporary files which causes watcher loop.",
+    "build:server": "We are building for node for now. We will see what we will be using in the runtime once we implement the deployment. Depending on that we might change this to target bun. 'cross-env NODE_ENV=production' is needed because bun build otherwise seems to be setting it to 'development'.",
+    "start": "We are running the build in node because atm we are using node as the build target."
+  },
+  "dependencies": {
+    "@remix-run/express": "2.15.0",
+    "@remix-run/node": "2.15.0",
+    "@remix-run/react": "2.15.0",
+    "cross-env": "7.0.3",
+    "express": "4.21.1",
+    "isbot": "4.4.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@remix-run/dev": "2.15.0",
+    "@types/express": "5.0.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "npm-run-all": "4.1.5",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vite": "5.4.11",
+    "vite-tsconfig-paths": "4.3.2"
+  },
+  "engines": {
+    "bun": "1.1.34",
+    "node": "22.x"
+  },
+  "engines:comments": {
+    "bun": "Bun is pinned to this version because that is the version of bun installed by devenv. See if we can specify that version somehow instead of taking whatever devenv gives us",
+    "node": "Node is pinned to major version of node because vercel doesn't allow pinning minor or patch version. See https://vercel.com/docs/functions/runtimes/node-js/node-js-versions"
+  }
+}
