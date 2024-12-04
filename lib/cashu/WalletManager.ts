@@ -1,4 +1,5 @@
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import * as bip39 from 'bip39';
 
 export type Mint = {
   url: string;
@@ -33,6 +34,7 @@ export type CashuConfig = {
   mints: Mint[];
   activeMintUrl: string | null;
   activeUnit: string | null;
+  bip39Mnemonic: string;
 };
 
 export type CashuTransactionHistory = {
@@ -131,6 +133,7 @@ const initStore = async (storage: CashuStorage) => {
     mints: [],
     activeMintUrl: null,
     activeUnit: null,
+    bip39Mnemonic: bip39.generateMnemonic(),
   });
 };
 
@@ -153,10 +156,6 @@ class WalletManager {
     if (storeVersion === undefined) {
       await initStore(this.storage);
     } else if (storeVersion !== version) {
-      console.log('storeVersion', storeVersion);
-      console.log('storeVersion t ype', typeof storeVersion);
-      console.log('version', version);
-      console.log('version t ype', typeof version);
       // TODO: handle migration
       throw new Error(
         `Need to handle migration from ${storeVersion} to ${version}`,
@@ -182,7 +181,9 @@ class WalletManager {
         };
       }),
     );
+
     const units = ['sat', 'usd'];
+    const seed = new Uint8Array(bip39.mnemonicToSeedSync(config.bip39Mnemonic));
 
     // initialize wallet classes for each unit and mint
     for (const { mint, allKeys, allKeysets, mintInfo } of mintData) {
@@ -195,7 +196,13 @@ class WalletManager {
         if (keys.length > 0 && keysets.length > 0) {
           unitWallets.set(
             unit,
-            new CashuWallet(mint, { unit, keys, keysets, mintInfo }),
+            new CashuWallet(mint, {
+              unit,
+              keys,
+              keysets,
+              mintInfo,
+              bip39seed: seed,
+            }),
           );
         }
       }
