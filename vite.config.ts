@@ -1,4 +1,5 @@
 import { vitePlugin as remix } from '@remix-run/dev';
+import { tamaguiPlugin } from '@tamagui/vite-plugin';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -20,6 +21,15 @@ export default defineConfig({
       },
     }),
     tsconfigPaths(),
+    tamaguiPlugin({
+      config: './tamagui.config',
+      optimize: true,
+      outputCSS: './app/tamagui.css',
+      logTimings: true,
+      components: ['tamagui'],
+      // components: ['./app/components/index.ts'],
+      // platform: 'web',
+    }),
   ],
   build: {
     emptyOutDir: false,

@@ -1,0 +1,53 @@
+._ovs-contain {
+  overscroll-behavior: contain;
+}
+.is_Text .is_Text {
+  display: inline-flex;
+}
+._dsp_contents {
+  display: contents;
+}
+:root {
+  --c-color-primary: #bada55;
+  --c-color-secondary: #ffa500;
+  --c-size-small: 8px;
+  --c-size-medium: 16px;
+  --c-size-large: 32px;
+  --c-space-small: 4px;
+  --c-space-medium: 8px;
+  --c-space-large: 16px;
+  --c-radius-small: 2px;
+  --c-radius-medium: 4px;
+  --c-radius-large: 8px;
+  --c-zIndex-low: 1;
+  --c-zIndex-medium: 10;
+  --c-zIndex-high: 100;
+}
+:root .font_body,
+:root .t_lang-body-default .font_body {
+  --f-family: Inter;
+  --f-size-1: 12px;
+  --f-size-2: 14px;
+  --f-size-3: 16px;
+  --f-size-4: 20px;
+  --f-size-5: 24px;
+  --f-size-6: 32px;
+  --f-size-7: 48px;
+  --f-size-8: 64px;
+}
+:root .t_dark .t_light,
+:root .t_dark .t_light .t_dark .t_light,
+:root .t_light,
+:root .t_light,
+:root .t_light .t_dark .t_light {
+  --background: #fecc1b;
+  --color: #131313;
+}
+:root .t_dark,
+:root .t_dark,
+:root .t_dark .t_light .t_dark,
+:root .t_light .t_dark,
+:root .t_light .t_dark .t_light .t_dark {
+  --background: #121212;
+  --color: #d83bd2;
+}
