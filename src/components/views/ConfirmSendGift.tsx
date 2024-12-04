@@ -33,11 +33,13 @@ const ConfirmSendGift = ({
                alt={'gift'}
                size='lg'
             />
-            {contact?.username && (
-               <p className='text-center text-md'>
-                  eGift for <UserLink username={contact.username} />
+             <p className='text-md text-center'>
+                  {contact?.username ? (
+                     <>eGift for <UserLink username={contact.username} /></>
+                  ) : (
+                     'eGift'
+                  )}
                </p>
-            )}
          </div>
          {txid && (
             <ClipboardButton
