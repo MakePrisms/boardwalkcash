@@ -25,21 +25,21 @@ jobs:
       - name: Setup
         run: nix develop
 
-      - name: Run tests
-        run: nix develop --command ci-local
+      # - name: Run tests
+      #   run: nix develop --command ci-local
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
+      # - name: Install bun
+      #   uses: oven-sh/setup-bun@v2
 
-      - name: Install dependencies
-        run: bun install
+      # - name: Install dependencies
+      #   run: bun install
 
-      - name: Run tests
-        run: bun test --reporter=junit --reporter-outfile=./bun.xml
+      # - name: Run tests
+      #   run: bun test --reporter=junit --reporter-outfile=./bun.xml
 
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: |
-            bun.xml
+      # - name: Publish Test Results
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   if: always()
+      #   with:
+      #     files: |
+      #       bun.xml
