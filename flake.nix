@@ -21,16 +21,16 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       pkgsFor = system: nixpkgs.legacyPackages.${system};
       
-      # startupRegtestScript = system: (pkgsFor system).fetchFromGitHub {
-      #   owner = "ElementsProject";
-      #   repo = "lightning";
-      #   rev = "v24.08.2"; 
-      #   sha256 = "sha256-61QgbrYiFjwMoYw3Wg8JW5FMisd4/Px4z0+F1uavYl4=";
-      #   sparseCheckout = [ "contrib/startup_regtest.sh" ];
-      # };
+      startupRegtestScript = system: (pkgsFor system).fetchFromGitHub {
+        owner = "ElementsProject";
+        repo = "lightning";
+        rev = "v24.08.2"; 
+        sha256 = "sha256-61QgbrYiFjwMoYw3Wg8JW5FMisd4/Px4z0+F1uavYl4=";
+        sparseCheckout = [ "contrib/startup_regtest.sh" ];
+      };
     in
     # System-specific logic
-    flake-utils.lib.eachDefaultSystem
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ]
       (system:
       let
         pkgs = import nixpkgs { inherit overlays system; };
@@ -39,12 +39,9 @@
         start-mints = pkgs.writeScriptBin "start-mints" ''
           #!${pkgs.bash}/bin/bash
 
-
-        
-
           # add aliases: start_ln, fund_nodes, connect, stop_ln, destroy_ln
-           source tools/cashu/startup_regtest.sh
-          # TODO: make sure only one bitcoin-core is running
+          source ${startupRegtestScript system}/contrib/startup_regtest.sh
+        # TODO: make sure only one bitcoin-core is running
           set -ex
 
           # start a 3 node network and creates aliases: l1-cli, l2-cli, l3-cli
@@ -114,9 +111,9 @@
                 bun
                 bitcoind
                 clightning
-              ]);
-
-              packages = with pkgs; [ clightning ];
+              ] ++ (if system == "x86_64-linux" then [
+                libeatmydata
+              ] else []));
 
               shellHook = ''
                 mkdir -p .bitcoin
@@ -125,7 +122,7 @@
                 export BITCOIN_DIR=$(pwd)/.bitcoin
 
                 # add aliases: start_ln, fund_nodes, connect, stop_ln, destroy_ln
-                source tools/cashu/startup_regtest.sh 
+                source ${startupRegtestScript system}/contrib/startup_regtest.sh
 
                 alias lightning-cli
                 
