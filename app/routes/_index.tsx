@@ -1,16 +1,6 @@
 import type { MetaFunction } from '@remix-run/node';
 import { Button } from '~/components/ui/button';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from '~/components/ui/sidebar';
+import { SettingsSidebar } from '~/features/settings/settings-sidebar';
 
 export const meta: MetaFunction = () => {
   return [
@@ -30,33 +20,7 @@ export default function Index() {
         <Button variant="link">Link</Button>
         <Button variant="destructive">Destructive</Button>
         <Button variant="ghost">Ghost</Button>
-      </div>
-      <div className="h-svh">
-        <SidebarProvider>
-          <Sidebar>
-            <SidebarHeader>
-              <h2 className="px-4 font-semibold text-lg">Boardwalk</h2>
-            </SidebarHeader>
-            <SidebarContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>Dashboard</SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>Settings</SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter>
-              <div className="px-4 py-2">
-                <SidebarTrigger />
-              </div>
-            </SidebarFooter>
-          </Sidebar>
-          <main className="ml-[--sidebar-width] p-4">
-            {/* Main content goes here */}
-          </main>
-        </SidebarProvider>
+        <SettingsSidebar />
       </div>
     </div>
   );
