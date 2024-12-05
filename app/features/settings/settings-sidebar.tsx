@@ -8,7 +8,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '~/components/ui/sidebar';
-import { AccountCollapse } from './account-collapse';
+import { AccountMenu } from './account-menu';
 
 export function SettingsSidebar() {
   return (
@@ -26,7 +26,7 @@ export function SettingsSidebar() {
             </div>
           </SidebarHeader>
           <SidebarContent>
-            <AccountCollapse />
+            <AccountMenu />
           </SidebarContent>
           <SidebarFooter>
             <div className="text-sidebar-foreground/70 text-xs">

@@ -12,7 +12,7 @@ import {
 } from '~/components/ui/sidebar';
 import { useSettings } from './use-settings';
 
-export function AccountCollapse() {
+export function AccountMenu() {
   const [open, setOpen] = React.useState(false);
   const { addAccount } = useSettings();
 
