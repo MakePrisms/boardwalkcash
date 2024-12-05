@@ -23,6 +23,9 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup
+        run: nix develop
+
+      - name: Run tests
         run: nix develop --command ci-local
 
       - name: Install bun

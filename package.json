@@ -30,6 +30,7 @@
     "@remix-run/express": "2.15.0",
     "@remix-run/node": "2.15.0",
     "@remix-run/react": "2.15.0",
+    "bip39": "3.1.0",
     "cross-env": "7.0.3",
     "express": "4.21.1",
     "isbot": "4.4.0",

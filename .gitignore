@@ -21,3 +21,7 @@ node_modules
 /.cache
 /build
 .env
+
+.lightning
+.bitcoin
+.cashu
