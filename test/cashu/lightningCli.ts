@@ -9,9 +9,8 @@ export async function lightningCli<T>(
   command: string[],
   options: LightningCliOptions,
 ): Promise<T> {
-  const baseDir =
-    options.baseDir ||
-    '/home/gudnuf/prism/boardwalkcash/tools/cashu/.lightning';
+  const baseDir = process.env.LIGHTNING_BASE_DIR || options.baseDir;
+
   const lightningDir = `${baseDir}/l${options.nodeNumber}`;
 
   return new Promise((resolve, reject) => {
