@@ -22,13 +22,13 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup
-        run: nix develop
+      # - name: Setup
+      #   run: nix develop --accept-flake-config
 
       - name: Run tests
         env:
           LIGHTNING_BASE_DIR: ${{ github.workspace }}/.lightning
-        run: nix develop --command ci-local
+        run: nix develop --accept-flake-config --command ci-local
 
       # - name: Install bun
       #   uses: oven-sh/setup-bun@v2
