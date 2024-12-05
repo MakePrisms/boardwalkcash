@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  checks: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v17
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Setup
+      #   run: nix develop --accept-flake-config
+
+      - name: Run tests
+        env:
+          LIGHTNING_BASE_DIR: ${{ github.workspace }}/.lightning
+        run: nix develop --accept-flake-config --command ci-local
+
+      # - name: Install bun
+      #   uses: oven-sh/setup-bun@v2
+
+      # - name: Install dependencies
+      #   run: bun install
+
+      # - name: Run tests
+      #   run: bun test --reporter=junit --reporter-outfile=./bun.xml
+
+      # - name: Publish Test Results
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   if: always()
+      #   with:
+      #     files: |
+      #       bun.xml

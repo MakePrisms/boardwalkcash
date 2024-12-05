@@ -5,12 +5,7 @@
   env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = [ 
-    pkgs.git
-    pkgs.jq
-    pkgs.bun
-    pkgs.fnm
-  ];
+  packages = [ pkgs.git pkgs.jq pkgs.bun pkgs.fnm ];
 
   # https://devenv.sh/languages/
   # languages.rust.enable = true;
@@ -26,7 +21,6 @@
     echo Hello from $GREET
   '';
   scripts.webstorm.exec = "$DEVENV_ROOT/tools/devenv/webstorm.sh $@";
-
 
   enterShell = ''
     hello
