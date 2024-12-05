@@ -76,6 +76,11 @@
         "useGetterReturn": "error",
         "useValidTypeof": "error"
       },
+      "style": {
+        "useImportType": {
+          "level": "error"
+        }
+      },
       "nursery": {
         "useSortedClasses": {
           "options": {
