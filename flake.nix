@@ -124,7 +124,7 @@ download-buffer-size = 1000000000;
 
         runCiLocally = pkgs.writeScriptBin "ci-local" ''
           echo "Running CI locally"
-          
+
           # Run tests
           bun install
           echo "Installed bun"
@@ -200,7 +200,7 @@ EOF
               done
 
               bitcoind -datadir="$BITCOIN_DIR" -regtest -txindex -fallbackfee=0.00000253 -daemon
-              lightningd --network=regtest --lightning-dir=$LIGHTNING_DI --daemon --log-level=debug --log-file=$LIGHTNING_DIR/l1/log --addr=localhost:7171 --allow-deprecated-apis=false --developer --dev-fast-gossip --dev-bitcoind-poll=5 --experimental-dual-fund --experimental-splicing --experimental-offers --funder-policy=match --funder-policy-mod=100 --funder-min-their-funding=10000 --funder-per-channel-max=100000 --funder-fuzz-percent=0 --funder-lease-requests-only --lease-fee-base-sat=2sat --lease-fee-basis=50 --invoices-onchain-fallback
+              lightningd --network=regtest --lightning-dir=$LIGHTNING_DIR --daemon --log-level=debug --log-file=$LIGHTNING_DIR/l1/log --addr=localhost:7171 --allow-deprecated-apis=false --developer --dev-fast-gossip --dev-bitcoind-poll=5 --experimental-dual-fund --experimental-splicing --experimental-offers --funder-policy=match --funder-policy-mod=100 --funder-min-their-funding=10000 --funder-per-channel-max=100000 --funder-fuzz-percent=0 --funder-lease-requests-only --lease-fee-base-sat=2sat --lease-fee-basis=50 --invoices-onchain-fallback
               cdk-mintd --work-dir=./.cashu/mint1 &
               # stop_ln
               # destroy_ln
