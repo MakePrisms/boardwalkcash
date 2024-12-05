@@ -75,6 +75,15 @@
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
         "useValidTypeof": "error"
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "options": {
+            "functions": ["cva", "clsx"]
+          },
+          "level": "error",
+          "fix": "safe"
+        }
       }
     }
   },
