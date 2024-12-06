@@ -1,4 +1,4 @@
-import type { ColorMode, Theme } from './theme.types';
+import type { ColorMode, Theme } from './types';
 
 // Themes - defines styles for currency variants
 export const themes: Theme[] = ['usd', 'btc'] as const;

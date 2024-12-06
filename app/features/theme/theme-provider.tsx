@@ -8,8 +8,8 @@ import {
   defaultPrefersDark,
   defaultTheme,
   themes,
-} from './theme.constants';
-import type { ColorMode, Theme, ThemeContextType } from './theme.types';
+} from './constants';
+import type { ColorMode, Theme, ThemeContextType } from './types';
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(
   undefined,
