@@ -6,7 +6,8 @@ import {
   Scripts,
   ScrollRestoration,
 } from '@remix-run/react';
-import { ThemeProvider, getThemeCookies, useTheme } from '~/features/theme';
+import { ThemeProvider, useTheme } from '~/features/theme';
+import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
 
 export const links: LinksFunction = () => [
