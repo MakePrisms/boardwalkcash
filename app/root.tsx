@@ -1,5 +1,4 @@
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { json } from '@remix-run/node';
 import {
   Links,
   Meta,
@@ -32,13 +31,23 @@ export type RootLoaderData = {
   cookieSettings: CookieSettings | null;
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({
+  request,
+}: LoaderFunctionArgs): Promise<RootLoaderData> {
   /** Returns user settings from cookies */
   const cookieSettings = getCookieSettings(request);
-  return json<RootLoaderData>({ cookieSettings: cookieSettings || null });
+  return { cookieSettings: cookieSettings || null };
 }
 
-function Document({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </ThemeProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const { themeClassName } = useTheme();
 
   return (
@@ -59,11 +68,5 @@ function Document({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return (
-    <ThemeProvider>
-      <Document>
-        <Outlet />
-      </Document>
-    </ThemeProvider>
-  );
+  return <Outlet />;
 }
