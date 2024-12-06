@@ -6,9 +6,6 @@ import {
 } from './theme.constants';
 import type { ColorMode, Theme, ThemeCookieValues } from './theme.types';
 
-/**
- * Returns cookie settings from request
- */
 export function getThemeCookies(request: Request): ThemeCookieValues | null {
   const theme = getCookieValue<Theme>(request, THEME_COOKIE_NAME);
   const colorMode = getCookieValue<ColorMode>(request, COLOR_MODE_COOKIE_NAME);
