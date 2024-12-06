@@ -6,12 +6,9 @@ import {
   Scripts,
   ScrollRestoration,
 } from '@remix-run/react';
+import { ThemeProvider, useTheme } from '~/features/theme';
+import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
-import {
-  type CookieSettings,
-  getCookieSettings,
-} from './helpers/cookies.server';
-import { ThemeProvider, useTheme } from './hooks/use-theme';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -28,14 +25,14 @@ export const links: LinksFunction = () => [
 ];
 
 export type RootLoaderData = {
-  cookieSettings: CookieSettings | null;
+  cookieSettings: ReturnType<typeof getThemeCookies>;
 };
 
 export async function loader({
   request,
 }: LoaderFunctionArgs): Promise<RootLoaderData> {
   /** Returns user settings from cookies */
-  const cookieSettings = getCookieSettings(request);
+  const cookieSettings = getThemeCookies(request);
   return { cookieSettings: cookieSettings || null };
 }
 
