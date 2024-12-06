@@ -62,7 +62,11 @@ const ShareEcash = ({ token, txid, gift, onClose, contact }: ShareEcashProps) =>
                   size='lg'
                />
                <p className='text-md text-center'>
-                  eGift for {contact?.username && <UserLink username={contact.username} />}
+                  {contact?.username ? (
+                     <>eGift for <UserLink username={contact.username} /></>
+                  ) : (
+                     'eGift'
+                  )}
                </p>
             </div>
             {txid && (
