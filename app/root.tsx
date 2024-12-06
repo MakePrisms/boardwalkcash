@@ -1,4 +1,3 @@
-import type { LinksFunction } from '@remix-run/node';
 import {
   Links,
   Meta,
@@ -6,6 +5,8 @@ import {
   Scripts,
   ScrollRestoration,
 } from '@remix-run/react';
+import { Analytics } from '@vercel/analytics/react';
+import type { LinksFunction } from '@vercel/remix';
 import stylesheet from '~/tailwind.css?url';
 
 export const links: LinksFunction = () => [
@@ -22,6 +23,11 @@ export const links: LinksFunction = () => [
   },
 ];
 
+const vercelAnalyticsMode =
+  process.env.NODE_ENV === 'production' && process.env.VERCEL
+    ? 'production'
+    : 'development';
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -35,6 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Analytics mode={vercelAnalyticsMode} />
       </body>
     </html>
   );

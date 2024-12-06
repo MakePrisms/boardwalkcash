@@ -10,6 +10,7 @@
     pkgs.jq
     pkgs.bun
     pkgs.fnm
+    pkgs.nodePackages.vercel
   ];
 
   # https://devenv.sh/languages/

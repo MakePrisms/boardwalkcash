@@ -34,6 +34,12 @@ Then run the app in production mode:
 bun start
 ```
 
+The app is deployed to Vercel. Every push to GitHub triggers a new Vercel deployment. Pushes to `main` branch
+are deploying a new live version. Currently, Vercel doesn't support running Remix with custom server (see the docs 
+[here](https://vercel.com/docs/frameworks/remix#using-a-custom-server-file)). This means that our custom express server
+is used only when running locally. We are still keeping the express server because the plan is to eventually move to
+self-hosting.
+
 ## Code style & formatting
 
 Type checking is separated from build and is performed using Typescript compiler. To run type check manually run 
