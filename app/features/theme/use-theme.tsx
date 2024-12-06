@@ -1,36 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getLoaderData } from '~/loaders';
-
-// Themes - defines styles for currency variants
-export const themes = ['usd', 'btc'] as const;
-export type Theme = (typeof themes)[number];
-
-// Color modes - how we determine if dark mode is enabled
-export const colorModes = ['light', 'dark', 'system'] as const;
-export type ColorMode = (typeof colorModes)[number];
-
-export const defaultTheme: Theme = 'btc';
-export const defaultColorMode: ColorMode = 'system';
-export const defaultPrefersDark = false;
-
-export const THEME_COOKIE_NAME = 'theme';
-export const COLOR_MODE_COOKIE_NAME = 'color-mode';
-export const PREFERS_DARK_COOKIE_NAME = 'prefers-dark';
-
-// NOTE: user's appearance can be in 4 states (dark:btc, dark:usd, light:btc, light:usd)
-
-interface ThemeContextType {
-  /** color variants for different currencies */
-  theme: Theme;
-  /** system or user defined */
-  colorMode: ColorMode;
-  /** light/dark based on color mode and system preference */
-  effectiveColorMode: 'light' | 'dark';
-  /** the class name to apply to the root for the theme to take effect */
-  themeClassName: string;
-  setTheme: (theme: Theme) => void;
-  setColorMode: (mode: ColorMode) => void;
-}
+import {
+  COLOR_MODE_COOKIE_NAME,
+  PREFERS_DARK_COOKIE_NAME,
+  THEME_COOKIE_NAME,
+  defaultColorMode,
+  defaultPrefersDark,
+  defaultTheme,
+  themes,
+} from './theme.constants';
+import type { ColorMode, Theme, ThemeContextType } from './theme.types';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 

@@ -1,12 +1,10 @@
 import { getCookieValue } from '~/lib/cookies.server';
-import type { ThemeCookieValues } from './theme.types';
 import {
   COLOR_MODE_COOKIE_NAME,
-  type ColorMode,
   PREFERS_DARK_COOKIE_NAME,
   THEME_COOKIE_NAME,
-  type Theme,
-} from './use-theme';
+} from './theme.constants';
+import type { ColorMode, Theme, ThemeCookieValues } from './theme.types';
 
 /**
  * Returns cookie settings from request
