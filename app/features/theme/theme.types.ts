@@ -1,11 +1,7 @@
 export type Theme = 'usd' | 'btc';
 export type ColorMode = 'light' | 'dark' | 'system';
 
-/**
- * Settings saved as plain cookie values used for
- * theming, language and similar settings to be
- * saved across visits to the app
- */
+/** Theme settings for figuring out how to render the app*/
 export type ThemeCookieValues = {
   theme: Theme;
   colorMode: ColorMode;
