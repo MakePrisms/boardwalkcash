@@ -1,5 +1,6 @@
 import type { MetaFunction } from '@remix-run/node';
 import { Button } from '~/components/ui/button';
+import { useTheme } from '~/hooks/use-theme';
 
 export const meta: MetaFunction = () => {
   return [
@@ -9,16 +10,20 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
+  const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
+    useTheme();
   return (
     <div>
       <h1>Welcome to Boardwalk!</h1>
       <div className="flex flex-row gap-2">
-        <Button variant="default">Default</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="outline">Outline</Button>
-        <Button variant="link">Link</Button>
-        <Button variant="destructive">Destructive</Button>
-        <Button variant="ghost">Ghost</Button>
+        <Button onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}>
+          {theme}
+        </Button>
+        <Button
+          onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
+        >
+          {effectiveColorMode}
+        </Button>
       </div>
     </div>
   );
