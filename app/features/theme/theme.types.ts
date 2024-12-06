@@ -5,7 +5,7 @@ export type ColorMode = 'light' | 'dark' | 'system';
 export type ThemeCookieValues = {
   theme: Theme;
   colorMode: ColorMode;
-  prefersDark: boolean;
+  systemColorMode: 'light' | 'dark';
 };
 
 export type ThemeContextType = {

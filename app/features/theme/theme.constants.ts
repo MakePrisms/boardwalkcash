@@ -9,9 +9,9 @@ export const colorModes: ColorMode[] = ['light', 'dark', 'system'] as const;
 // Default values for new users
 export const defaultTheme: Theme = 'btc';
 export const defaultColorMode: ColorMode = 'system';
-export const defaultPrefersDark = false;
+export const defaultSystemColorMode = 'light';
 
 // Cookies we need to save to persist theme settings
 export const THEME_COOKIE_NAME = 'theme';
 export const COLOR_MODE_COOKIE_NAME = 'color-mode';
-export const PREFERS_DARK_COOKIE_NAME = 'prefers-dark';
+export const SYSTEM_COLOR_MODE_COOKIE_NAME = 'system-color-mode';

@@ -3,25 +3,34 @@ import { createContext, useEffect, useState } from 'react';
 import type { loader as rootLoader } from '~/root';
 import {
   COLOR_MODE_COOKIE_NAME,
-  PREFERS_DARK_COOKIE_NAME,
+  SYSTEM_COLOR_MODE_COOKIE_NAME,
   THEME_COOKIE_NAME,
   defaultColorMode,
-  defaultPrefersDark,
+  defaultSystemColorMode,
   defaultTheme,
   themes,
 } from './theme.constants';
-import type { ColorMode, Theme, ThemeContextType } from './theme.types';
+import type {
+  ColorMode,
+  Theme,
+  ThemeContextType,
+  ThemeCookieValues,
+} from './theme.types';
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(
   undefined,
 );
 
-function saveCookies(theme: Theme, colorMode: ColorMode, prefersDark: boolean) {
+function saveCookies(
+  theme: Theme,
+  colorMode: ColorMode,
+  systemColorMode: ThemeCookieValues['systemColorMode'],
+) {
   if (typeof window === 'object') {
     const oneYear = 60 * 60 * 24 * 365;
     document.cookie = `${THEME_COOKIE_NAME}=${theme}; samesite=lax; max-age=${oneYear}`;
     document.cookie = `${COLOR_MODE_COOKIE_NAME}=${colorMode}; samesite=lax; max-age=${oneYear}`;
-    document.cookie = `${PREFERS_DARK_COOKIE_NAME}=${prefersDark}; samesite=lax; max-age=${oneYear}`;
+    document.cookie = `${SYSTEM_COLOR_MODE_COOKIE_NAME}=${systemColorMode}; samesite=lax; max-age=${oneYear}`;
   }
 }
 
@@ -55,37 +64,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     cookieSettings?.colorMode || defaultColorMode,
   );
 
-  const [prefersDark, setPrefersDark] = useState<boolean>(() => {
+  const [systemColorMode, setSystemColorMode] = useState<
+    ThemeCookieValues['systemColorMode']
+  >(() => {
     if (typeof window !== 'object') {
       // Server-side, always use cookie settings if available
-      if (cookieSettings?.prefersDark !== undefined) {
-        return cookieSettings.prefersDark;
+      if (cookieSettings?.systemColorMode !== undefined) {
+        return cookieSettings.systemColorMode;
       }
-      return defaultPrefersDark;
+      return defaultSystemColorMode;
     }
 
     // Client-side, check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   });
 
   const effectiveColorMode =
-    colorMode === 'system' ? (prefersDark ? 'dark' : 'light') : colorMode;
+    colorMode === 'system' ? (systemColorMode ? 'dark' : 'light') : colorMode;
 
   // Save cookies on first load if they don't exist
   useEffect(() => {
     if (!cookieSettings) {
-      saveCookies(theme, colorMode, prefersDark);
+      saveCookies(theme, colorMode, systemColorMode);
     }
-  }, [prefersDark, colorMode, theme, cookieSettings]);
+  }, [systemColorMode, colorMode, theme, cookieSettings]);
 
   // Update color mode when system color mode changes
   useEffect(() => {
     if (colorMode === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = () => {
-        const newPrefersDark = mediaQuery.matches;
-        setPrefersDark(newPrefersDark);
-        saveCookies(theme, colorMode, newPrefersDark);
+        const newSystemColorMode = mediaQuery.matches ? 'dark' : 'light';
+        setSystemColorMode(newSystemColorMode);
+        saveCookies(theme, colorMode, newSystemColorMode);
       };
       mediaQuery.addEventListener('change', handler);
       return () => mediaQuery.removeEventListener('change', handler);
@@ -99,13 +112,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Set theme and save cookies
   const setTheme = (newTheme: Theme) => {
-    saveCookies(newTheme, colorMode, prefersDark);
+    saveCookies(newTheme, colorMode, systemColorMode);
     setThemeState(newTheme);
   };
 
   // Set color mode and save cookies
   const setColorMode = (newMode: ColorMode) => {
-    saveCookies(theme, newMode, prefersDark);
+    saveCookies(theme, newMode, systemColorMode);
     setColorModeState(newMode);
   };
 
