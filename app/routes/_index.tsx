@@ -1,4 +1,4 @@
-import type { MetaFunction } from '@remix-run/node';
+import type { MetaFunction } from '@vercel/remix';
 import { Button } from '~/components/ui/button';
 import { useTheme } from '~/features/theme';
 

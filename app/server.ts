@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequestHandler } from '@remix-run/express';
+import { createRequestHandler } from '@vercel/remix/server';
 import express from 'express';
 
 const viteDevServer =
