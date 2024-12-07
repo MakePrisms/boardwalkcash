@@ -56,6 +56,18 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+
+  /* USD theme */
+  .usd,
+  :root[class~="usd"] {
+    --background: 178 100% 15%;
+  }
+
+  /* SAT theme */
+  .btc,
+  :root[class~="btc"] {
+    --background: 217 68% 35%;
+  }
 }
 @layer base {
   * {

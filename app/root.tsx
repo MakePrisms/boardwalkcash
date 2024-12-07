@@ -1,3 +1,4 @@
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import {
   Links,
   Meta,
@@ -7,6 +8,8 @@ import {
 } from '@remix-run/react';
 import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
+import { ThemeProvider, useTheme } from '~/features/theme';
+import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
 
 export const links: LinksFunction = () => [
@@ -23,6 +26,17 @@ export const links: LinksFunction = () => [
   },
 ];
 
+type RootLoaderData = {
+  cookieSettings: ReturnType<typeof getThemeCookies>;
+};
+
+export async function loader({
+  request,
+}: LoaderFunctionArgs): Promise<RootLoaderData> {
+  /** Returns user settings from cookies */
+  const cookieSettings = getThemeCookies(request);
+  return { cookieSettings: cookieSettings || null };
+}
 const vercelAnalyticsMode =
   process.env.NODE_ENV === 'production' && process.env.VERCEL
     ? 'production'
@@ -30,7 +44,17 @@ const vercelAnalyticsMode =
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <ThemeProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </ThemeProvider>
+  );
+}
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const { themeClassName } = useTheme();
+
+  return (
+    <html lang="en" className={themeClassName}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
