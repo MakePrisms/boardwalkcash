@@ -1,6 +1,6 @@
 import { useRouteLoaderData } from '@remix-run/react';
 import { createContext, useEffect, useState } from 'react';
-import type { RootLoaderData } from '~/root';
+import type { getThemeCookies } from './theme-cookies.server';
 import {
   COLOR_MODE_COOKIE_NAME,
   SYSTEM_COLOR_MODE_COOKIE_NAME,
@@ -53,7 +53,9 @@ function updateDocumentClasses(
   root.classList.add(effectiveColorMode);
 }
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const rootData = useRouteLoaderData<RootLoaderData>('root');
+  const rootData = useRouteLoaderData<{
+    cookieSettings: ReturnType<typeof getThemeCookies>;
+  }>('root');
   const cookieSettings = rootData?.cookieSettings;
 
   const [theme, setThemeState] = useState<Theme>(

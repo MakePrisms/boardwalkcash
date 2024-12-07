@@ -24,7 +24,7 @@ export const links: LinksFunction = () => [
   },
 ];
 
-export type RootLoaderData = {
+type RootLoaderData = {
   cookieSettings: ReturnType<typeof getThemeCookies>;
 };
 
