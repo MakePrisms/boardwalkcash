@@ -1,5 +1,4 @@
 import { useOpenSecret } from '@opensecret/react';
-import { Link } from '@remix-run/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import {
@@ -11,18 +10,22 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
-import { useToast } from '~/hooks/use-toast';
+import { toast } from '~/hooks/use-toast';
+import { generateRandomPassword } from '~/lib/password-generator';
+import { computeSHA256 } from '~/lib/sha256';
 import { buildEmailValidator } from '~/lib/validation';
 
-type Props = { onBack: () => void };
+type Props = {
+  onRequested: (email: string, secret: string) => void;
+  onBack: () => void;
+};
 
-type FormValues = { email: string; password: string };
+type FormValues = { email: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
 
-export function LoginForm({ onBack }: Props) {
-  const { signIn } = useOpenSecret();
-  const { toast } = useToast();
+export function RequestPasswordReset({ onRequested, onBack }: Props) {
+  const { requestPasswordReset } = useOpenSecret();
   const {
     register,
     handleSubmit,
@@ -31,11 +34,14 @@ export function LoginForm({ onBack }: Props) {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
-      await signIn(data.email, data.password);
+      const secret = generateRandomPassword(20);
+      const hash = await computeSHA256(secret);
+      await requestPasswordReset(data.email, hash);
+      onRequested(data.email, secret);
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Error! Login failed',
+        title: 'Error! Failed to request password reset',
         description: 'Please try again later or contact support',
       });
     }
@@ -44,9 +50,9 @@ export function LoginForm({ onBack }: Props) {
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle className="text-2xl">Login</CardTitle>
+        <CardTitle className="text-2xl">Reset Password</CardTitle>
         <CardDescription>
-          Enter your email below to login to your wallet
+          Enter your email address to request a password reset.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,28 +79,6 @@ export function LoginForm({ onBack }: Props) {
               </span>
             )}
           </div>
-          <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                to="/forgot-password"
-                className="ml-auto inline-block text-sm underline"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              aria-invalid={errors.password ? 'true' : 'false'}
-              {...register('password', { required: 'Password is required' })}
-            />
-            {errors.password && (
-              <span role="alert" className="text-red-500 text-sm">
-                {errors.password.message}
-              </span>
-            )}
-          </div>
           <Button type="submit" className="w-full" loading={isSubmitting}>
             Login
           </Button>
@@ -107,12 +91,6 @@ export function LoginForm({ onBack }: Props) {
             Back
           </Button>
         </form>
-        <div className="mt-4 text-center text-sm">
-          Don&apos;t have a wallet?{' '}
-          <Link to="/signup" className="underline">
-            Sign up
-          </Link>
-        </div>
       </CardContent>
     </Card>
   );
