@@ -2,6 +2,7 @@ import { useOpenSecret } from '@opensecret/react';
 import type { MetaFunction } from '@vercel/remix';
 import { useState } from 'react';
 import { Button } from '~/components/ui/button';
+import { SettingsSidebar } from '~/features/settings/settings-sidebar';
 import { useTheme } from '~/features/theme';
 
 export const meta: MetaFunction = () => {
@@ -22,10 +23,12 @@ export default function Index() {
   if (os.auth.loading) {
     return <div>Loading...</div>;
   }
-
   if (os.auth.user) {
     return (
-      <div>
+      <div className="relative">
+        <div className="absolute top-4 right-4">
+          <SettingsSidebar />
+        </div>
         <h1>Welcome to Boardwalk!</h1>
         <div>id: {os.auth.user.user.id}</div>
         <div>email: {os.auth.user.user.email}</div>
