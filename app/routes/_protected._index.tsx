@@ -1,5 +1,6 @@
 import { useOpenSecret } from '@opensecret/react';
 import { Button } from '~/components/ui/button';
+import { SettingsSidebar } from '~/features/settings/settings-sidebar';
 import { useTheme } from '~/features/theme';
 
 export default function Index() {
@@ -13,7 +14,10 @@ export default function Index() {
   }
 
   return (
-    <div>
+    <div className="relative">
+      <div className="absolute top-4 right-4">
+        <SettingsSidebar />
+      </div>
       <h1>Welcome to Boardwalk!</h1>
       <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>
