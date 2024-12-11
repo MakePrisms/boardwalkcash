@@ -1,3 +1,4 @@
+import { useNavigate } from '@remix-run/react';
 import { Edit, Landmark, QrCode, Share, X } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import {
@@ -6,7 +7,6 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarSeparator,
-  useSidebar,
 } from '~/components/ui/sidebar';
 import { formatUnit } from '~/lib/formatting';
 import { canShare, shareContent } from '~/lib/share';
@@ -19,8 +19,8 @@ const activeMintBalance = 10_000;
 const activeMintUnit = 'usd';
 
 export function MainView() {
-  const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const { navigateToView } = useSettingsSidebar();
+  const navigate = useNavigate();
 
   const handleShare = async () => {
     const data = {
@@ -34,11 +34,7 @@ export function MainView() {
     <>
       <SidebarHeader>
         <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => (isMobile ? setOpenMobile(false) : setOpen(false))}
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <X />
           </Button>
           <div className="flex items-center gap-2">
@@ -65,7 +61,7 @@ export function MainView() {
             <Edit />
             <span>Edit profile</span>
           </SettingsNavButton>
-          <SettingsNavButton onNavigate={() => navigateToView('all-accounts')}>
+          <SettingsNavButton navigateTo="/wallet/settings/accounts">
             <Landmark /> {activeMintName}{' '}
             {formatUnit(activeMintBalance, activeMintUnit)}
           </SettingsNavButton>

@@ -11,6 +11,7 @@ export type SettingsView =
 
 export type SettingsSidebarState = {
   view: SettingsView;
+  previousView?: SettingsView;
 } & (
   | {
       view: 'single-account';

@@ -1,4 +1,6 @@
 import { useOpenSecret } from '@opensecret/react';
+import { Outlet, useNavigate } from '@remix-run/react';
+import { Cog } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { SettingsSidebar } from '~/features/settings/settings-sidebar';
 import { useTheme } from '~/features/theme';
@@ -7,25 +9,32 @@ export default function Index() {
   const os = useOpenSecret();
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
+  const navigate = useNavigate();
 
   // Will remove this if later
-  if (!os.auth.user) {
-    throw new Error('Something is wrong');
-  }
+  // if (!os.auth.user) {
+  //   throw new Error('Something is wrong');
+  // }
 
   return (
     <div className="relative">
       <div className="absolute top-4 right-4">
-        <SettingsSidebar />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/settings')}
+        >
+          <Cog />
+        </Button>
       </div>
       <h1>Welcome to Boardwalk!</h1>
-      <div>id: {os.auth.user.user.id}</div>
+      {/* <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>
       <div>name: {os.auth.user.user.name}</div>
       <div>email verified: {os.auth.user.user.email_verified}</div>
       <div>login method: {os.auth.user.user.login_method}</div>
       <div>created at: {os.auth.user.user.created_at}</div>
-      <div>updated at: {os.auth.user.user.updated_at}</div>
+      <div>updated at: {os.auth.user.user.updated_at}</div> */}
       <Button variant="default" onClick={os.signOut} className="mt-2">
         Log out
       </Button>
@@ -43,6 +52,7 @@ export default function Index() {
           {effectiveColorMode}
         </Button>
       </div>
+      <Outlet />
     </div>
   );
 }

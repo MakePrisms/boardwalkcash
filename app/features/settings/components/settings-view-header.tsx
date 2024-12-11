@@ -1,10 +1,10 @@
+import { useNavigate } from '@remix-run/react';
 import { X } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { SidebarHeader } from '~/components/ui/sidebar';
-import { useSettingsSidebar } from '../settings-sidebar-provider';
 
 export const SettingsViewHeader = ({ title }: { title: string }) => {
-  const { navigateToView } = useSettingsSidebar();
+  const navigate = useNavigate();
 
   return (
     <SidebarHeader>
@@ -12,7 +12,7 @@ export const SettingsViewHeader = ({ title }: { title: string }) => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigateToView('main')}
+          onClick={() => navigate(-1)}
           className="absolute left-0"
         >
           <X />
