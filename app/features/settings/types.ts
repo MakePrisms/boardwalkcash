@@ -13,6 +13,7 @@ export type AccountType = 'spark' | 'cashu' | 'nwc';
 
 export type SettingsSidebarState = {
   view: SettingsView;
+  previousState: SettingsSidebarState | null;
 } & (
   | {
       view: 'single-account';

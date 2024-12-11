@@ -4,7 +4,7 @@ import { SidebarHeader } from '~/components/ui/sidebar';
 import { useSettingsSidebar } from '../settings-sidebar-provider';
 
 export const SettingsViewHeader = ({ title }: { title: string }) => {
-  const { navigateToView } = useSettingsSidebar();
+  const { goBack } = useSettingsSidebar();
 
   return (
     <SidebarHeader>
@@ -12,7 +12,7 @@ export const SettingsViewHeader = ({ title }: { title: string }) => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigateToView('main')}
+          onClick={goBack}
           className="absolute left-0"
         >
           <ChevronLeft />

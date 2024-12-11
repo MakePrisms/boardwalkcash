@@ -8,6 +8,7 @@ import type {
 interface SettingsSidebarContextType {
   state: SettingsSidebarState;
   navigateToView: NavigateToView;
+  goBack: () => void;
 }
 
 interface SettingsSidebarProviderProps {
@@ -20,6 +21,7 @@ const SettingsSidebarContext = createContext<
 
 const defaultState: SettingsSidebarState = {
   view: 'main',
+  previousState: null,
 };
 
 export function SettingsSidebarProvider({
@@ -32,13 +34,39 @@ export function SettingsSidebarProvider({
     params?: { accountID: string },
   ) => {
     if (view === 'single-account') {
-      // Can we make it so that params is always defined if we're navigating to single-account?
       if (!params) throw new Error('Missing accountID param');
-      // TODO: Validate accountID
-      setState({ view, selectedAccountID: params.accountID });
+      setState((prevState) => ({
+        view,
+        selectedAccountID: params.accountID,
+        previousState: prevState,
+      }));
     } else {
-      setState({ view });
+      setState((prevState) => ({
+        view,
+        previousState: prevState,
+      }));
     }
+  };
+
+  const goBack = () => {
+    setState((prevState) => {
+      if (!prevState.previousState) return defaultState;
+
+      if (prevState.previousState.view === 'single-account') {
+        if (!prevState.previousState.selectedAccountID)
+          throw new Error('Missing previous accountID');
+        return {
+          view: prevState.previousState.view,
+          selectedAccountID: prevState.previousState.selectedAccountID,
+          previousState: null,
+        };
+      }
+
+      return {
+        view: prevState.previousState.view,
+        previousState: null,
+      };
+    });
   };
 
   return (
@@ -46,6 +74,7 @@ export function SettingsSidebarProvider({
       value={{
         state,
         navigateToView,
+        goBack,
       }}
     >
       {children}
