@@ -9,6 +9,8 @@ export type SettingsView =
   | 'appearance'
   | 'contacts';
 
+export type AccountType = 'spark' | 'cashu' | 'nwc';
+
 export type SettingsSidebarState = {
   view: SettingsView;
 } & (

@@ -1,53 +1,73 @@
+import { ChevronLeft, Landmark } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { Label } from '~/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select';
-import { SidebarContent } from '~/components/ui/sidebar';
+import { Button } from '~/components/ui/button';
+import { SidebarContent, SidebarHeader } from '~/components/ui/sidebar';
 import { AddLightningWalletForm } from '../components/add-ln-wallet-form';
 import { AddMintForm } from '../components/add-mint-form';
+import { SettingsNavButton } from '../components/settings-nav-button';
 import { SettingsViewHeader } from '../components/settings-view-header';
+import type { AccountType } from '../types';
 
 export function AddAccountView() {
-  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<AccountType | null>(null);
+  const headerTitle =
+    selectedType === null
+      ? 'Add Account'
+      : `Add ${selectedType.charAt(0).toUpperCase()}${selectedType.slice(1)}`;
 
   return (
     <>
-      <SettingsViewHeader title="Add Account" />
-      <SidebarContent>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="account-type">Account Type</Label>
-            <Select
-              value={selectedType}
-              onValueChange={(value) => setSelectedType(value)}
-            >
-              <SelectTrigger id="account-type">
-                <SelectValue placeholder="Select account type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="spark">Spark</SelectItem>
-                <SelectItem value="nwc">NWC Wallet</SelectItem>
-                <SelectItem value="cashu">Cashu Mint</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedType === 'spark' && (
-            <div className="text-muted-foreground text-sm">
-              Spark wallet connection coming soon
-            </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedType}
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          transition={{
+            duration: 0.2,
+            ease: 'linear',
+          }}
+        >
+          {selectedType === null ? (
+            <>
+              <SettingsViewHeader title={headerTitle} />
+              <SidebarContent>
+                <SettingsNavButton onNavigate={() => setSelectedType('spark')}>
+                  <span>Spark</span>
+                </SettingsNavButton>
+                <SettingsNavButton onNavigate={() => setSelectedType('nwc')}>
+                  Lightning Wallet
+                </SettingsNavButton>
+                <SettingsNavButton onNavigate={() => setSelectedType('cashu')}>
+                  <Landmark />
+                  <span>Cashu Mint</span>
+                </SettingsNavButton>
+              </SidebarContent>
+            </>
+          ) : (
+            <>
+              <SidebarHeader>
+                <div className="relative flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedType(null)}
+                    className="absolute left-0"
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  <h2 className="w-full text-center font-semibold text-lg">
+                    {headerTitle}
+                  </h2>
+                </div>
+              </SidebarHeader>
+              {selectedType === 'spark' && <div>Spark coming soon</div>}
+              {selectedType === 'nwc' && <AddLightningWalletForm />}
+              {selectedType === 'cashu' && <AddMintForm unit="sat" />}
+            </>
           )}
-
-          {selectedType === 'nwc' && <AddLightningWalletForm />}
-
-          {selectedType === 'cashu' && <AddMintForm unit="sat" />}
-        </div>
-      </SidebarContent>
+        </motion.div>
+      </AnimatePresence>
     </>
   );
 }
