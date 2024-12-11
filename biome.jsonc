@@ -23,7 +23,8 @@
         "noExtraBooleanCast": "error",
         "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
-        "noWith": "error"
+        "noWith": "error",
+        "noForEach": "off"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -48,7 +49,8 @@
         "noUnusedVariables": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noUnusedImports": "error"
       },
       "suspicious": {
         "noAssignInExpressions": "error",

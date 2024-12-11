@@ -1,3 +1,4 @@
+import { OpenSecretProvider } from '@opensecret/react';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import {
   Links,
@@ -8,6 +9,10 @@ import {
 } from '@remix-run/react';
 import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
+import { useState } from 'react';
+import { Hydrate, QueryClient, QueryClientProvider } from 'react-query';
+import { useDehydratedState } from 'use-dehydrated-state';
+import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
@@ -66,11 +71,25 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <ScrollRestoration />
         <Scripts />
         <Analytics mode={vercelAnalyticsMode} />
+        <Toaster />
       </body>
     </html>
   );
 }
 
 export default function App() {
-  return <Outlet />;
+  const [queryClient] = useState(() => new QueryClient());
+
+  const dehydratedState = useDehydratedState();
+
+  // TODO: OpenSecretProvider apiUrl url to settings
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Hydrate state={dehydratedState}>
+        <OpenSecretProvider apiUrl="https://preview-enclave.opensecret.cloud">
+          <Outlet />
+        </OpenSecretProvider>
+      </Hydrate>
+    </QueryClientProvider>
+  );
 }
