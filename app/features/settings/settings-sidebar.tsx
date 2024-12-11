@@ -1,4 +1,5 @@
 import { Cog } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   Sidebar,
   SidebarProvider,
@@ -24,25 +25,37 @@ export function SettingsSidebarContent() {
 
   return (
     <Sidebar side="right">
-      {view === 'main' && <MainView />}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          transition={{
+            duration: 0.2,
+            ease: 'linear',
+          }}
+        >
+          {view === 'main' && <MainView />}
 
-      {view === 'qr' && <QrView />}
+          {view === 'qr' && <QrView />}
 
-      {view === 'edit-profile' && <EditProfileView />}
+          {view === 'edit-profile' && <EditProfileView />}
 
-      {view === 'all-accounts' && <AllAccountsView />}
+          {view === 'all-accounts' && <AllAccountsView />}
 
-      {view === 'single-account' && (
-        <SingleAccountView accountID={state.selectedAccountID} />
-      )}
+          {view === 'single-account' && (
+            <SingleAccountView accountID={state.selectedAccountID} />
+          )}
 
-      {view === 'contacts' && <ContactsView />}
+          {view === 'contacts' && <ContactsView />}
 
-      {view === 'appearance' && <AppearanceView />}
+          {view === 'appearance' && <AppearanceView />}
 
-      {view === 'add-account' && <AddAccountView />}
+          {view === 'add-account' && <AddAccountView />}
 
-      {view === 'advanced' && <AdvancedSettingsView />}
+          {view === 'advanced' && <AdvancedSettingsView />}
+        </motion.div>
+      </AnimatePresence>
     </Sidebar>
   );
 }
