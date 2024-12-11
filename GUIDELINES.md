@@ -27,7 +27,6 @@ app/
 2. **Feature Code** (`app/features/*`)
    - Can import from `app/components/*` and `app/lib/*`
    - Cannot import from `app/routes/*`
-   - Cannot import from other features directly
    - Example: `app/features/theme/use-theme.tsx`
 
 3. **App Code** (`app/routes/*`, `root.tsx`)
@@ -49,14 +48,6 @@ Features are organized as vertical slices:
   ├── theme.types.ts
   └── use-theme.tsx
   ```
-
-### Cross-Feature Communication
-
-- Features should not import directly from each other
-- Shared code needed across features should be moved to:
-  - `app/components/ui/*` if it's a reusable UI component
-  - `app/lib/*` if it's a utility function
-  - `app/features/shared/*` if it's feature-specific shared logic
 
 ### File Naming Conventions
 
