@@ -3,6 +3,7 @@ import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { SettingsSidebar } from '~/features/settings/settings-sidebar';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
@@ -44,7 +45,10 @@ export default function Index() {
   };
 
   return (
-    <div className="p-4">
+    <div className="relative p-4">
+      <div className="absolute top-4 right-4">
+        <SettingsSidebar />
+      </div>
       <h1>Welcome to Boardwalk!</h1>
       {}
       {isGuestAccount && <div>Guest account</div>}
