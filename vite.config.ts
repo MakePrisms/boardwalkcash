@@ -2,6 +2,7 @@ import { type Preset, vitePlugin as remix } from '@remix-run/dev';
 import { vercelPreset } from '@vercel/remix/vite';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+const { jsonRoutes } = require('remix-json-routes');
 
 declare module '@remix-run/node' {
   interface Future {
@@ -24,55 +25,66 @@ export default defineConfig({
         v3_lazyRouteDiscovery: true,
       },
       routes: async (defineRoutes) => {
-        // If you need to do async work, do it before calling `defineRoutes`, we use
-        // the call stack of `route` inside to set nesting.
-
-        return defineRoutes((route) => {
-          // if you want to nest routes, use the optional callback argument
-          route('/', 'routes/_app.tsx', () => {
-            // - path is relative to parent path
-            // - filenames are still relative to the app directory
-            route('settings', 'features/settings/routes/layout.tsx', () => {
-              route('', 'features/settings/routes/_index.tsx', { index: true });
-              route(
-                'accounts',
-                'features/settings/routes/accounts/_index.tsx',
-                {
-                  index: true,
-                },
-              );
-              route(
-                'accounts/:account_id',
-                'features/settings/routes/accounts/$account_id.tsx',
-              );
-              route(
-                'accounts/create',
-                'features/settings/routes/accounts/create/_index.tsx',
-                { index: true },
-              );
-              route(
-                'accounts/create/nwc',
-                'features/settings/routes/accounts/create/nwc.tsx',
-              );
-              route(
-                'accounts/create/spark',
-                'features/settings/routes/accounts/create/spark.tsx',
-              );
-              route(
-                'accounts/create/cashu',
-                'features/settings/routes/accounts/create/cashu.tsx',
-              );
-
-              route('qr', 'features/settings/routes/qr.tsx');
-              route('appearance', 'features/settings/routes/appearance.tsx');
-              route('advanced', 'features/settings/routes/advanced.tsx');
-              route(
-                'profile/edit',
-                'features/settings/routes/profile/edit.tsx',
-              );
-            });
-          });
-        });
+        return jsonRoutes(defineRoutes, [
+          {
+            path: '/',
+            file: 'routes/_app.tsx',
+            children: [
+              {
+                path: 'settings',
+                file: 'features/settings/routes/layout.tsx',
+                children: [
+                  {
+                    index: true,
+                    file: 'features/settings/routes/_index.tsx',
+                  },
+                  {
+                    path: 'accounts',
+                    file: 'features/settings/routes/accounts/_index.tsx',
+                    index: true,
+                  },
+                  {
+                    path: 'accounts/:account_id',
+                    file: 'features/settings/routes/accounts/$account_id.tsx',
+                  },
+                  {
+                    path: 'accounts/create',
+                    file: 'features/settings/routes/accounts/create/_index.tsx',
+                    index: true,
+                  },
+                  {
+                    path: 'accounts/create/nwc',
+                    file: 'features/settings/routes/accounts/create/nwc.tsx',
+                  },
+                  {
+                    path: 'accounts/create/spark',
+                    file: 'features/settings/routes/accounts/create/spark.tsx',
+                  },
+                  {
+                    path: 'accounts/create/cashu',
+                    file: 'features/settings/routes/accounts/create/cashu.tsx',
+                  },
+                  {
+                    path: 'qr',
+                    file: 'features/settings/routes/qr.tsx',
+                  },
+                  {
+                    path: 'appearance',
+                    file: 'features/settings/routes/appearance.tsx',
+                  },
+                  {
+                    path: 'advanced',
+                    file: 'features/settings/routes/advanced.tsx',
+                  },
+                  {
+                    path: 'profile/edit',
+                    file: 'features/settings/routes/profile/edit.tsx',
+                  },
+                ],
+              },
+            ],
+          },
+        ]);
       },
     }),
     tsconfigPaths(),
