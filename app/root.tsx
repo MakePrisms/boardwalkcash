@@ -43,6 +43,12 @@ export async function loader({
   const cookieSettings = getThemeCookies(request);
   return { cookieSettings: cookieSettings || null };
 }
+
+// prevent loader from being revalidated
+export function shouldRevalidate() {
+  return false;
+}
+
 const vercelAnalyticsMode =
   process.env.NODE_ENV === 'production' && process.env.VERCEL
     ? 'production'
