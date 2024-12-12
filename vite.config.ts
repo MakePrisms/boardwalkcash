@@ -29,7 +29,7 @@ export default defineConfig({
 
         return defineRoutes((route) => {
           // if you want to nest routes, use the optional callback argument
-          route('/', 'routes/_app.tsx', () => {
+          route('/', 'routes/_protected.tsx', () => {
             // - path is relative to parent path
             // - filenames are still relative to the app directory
             route('settings', 'features/settings/routes/layout.tsx', () => {

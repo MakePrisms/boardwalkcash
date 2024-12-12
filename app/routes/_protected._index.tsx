@@ -1,4 +1,6 @@
 import { useOpenSecret } from '@opensecret/react';
+import { useNavigate } from '@remix-run/react';
+import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
@@ -15,6 +17,7 @@ export default function Index() {
   const os = useOpenSecret();
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
+  const navigate = useNavigate();
 
   // Will remove this if later
   if (!os.auth.user) {
@@ -44,7 +47,16 @@ export default function Index() {
   };
 
   return (
-    <div className="p-4">
+    <div className="relative">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/settings')}
+        >
+          <Cog />
+        </Button>
+      </div>
       <h1>Welcome to Boardwalk!</h1>
       {}
       {isGuestAccount && <div>Guest account</div>}
