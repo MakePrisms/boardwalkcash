@@ -1,4 +1,5 @@
 import { useOpenSecret } from '@opensecret/react';
+import { Link } from '@remix-run/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
@@ -46,7 +47,9 @@ export default function Index() {
   return (
     <div className="p-4">
       <h1>Welcome to Boardwalk!</h1>
-      {}
+      <br />
+      <Link to="/test">Test</Link>
+      <br />
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>

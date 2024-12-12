@@ -1,0 +1,11 @@
+import { Link } from '@remix-run/react';
+
+export default function Test() {
+  return (
+    <div>
+      <div>This is test page</div>
+      <br />
+      <Link to="/">Home</Link>
+    </div>
+  );
+}
