@@ -1,6 +1,6 @@
 import { useOpenSecret } from '@opensecret/react';
-import { Link, useNavigate } from '@remix-run/react';
-import { useEffect, useState } from 'react';
+import { useNavigate } from '@remix-run/react';
+import { useState } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import {

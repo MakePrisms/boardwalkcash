@@ -16,6 +16,7 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { AnimatedNavigationProvider } from './lib/animated-navigation';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -87,7 +88,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Hydrate state={dehydratedState}>
         <OpenSecretProvider apiUrl="https://preview-enclave.opensecret.cloud">
-          <Outlet />
+          <AnimatedNavigationProvider>
+            <Outlet />
+          </AnimatedNavigationProvider>
         </OpenSecretProvider>
       </Hydrate>
     </QueryClientProvider>

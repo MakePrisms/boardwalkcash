@@ -1,10 +1,13 @@
 import { useOpenSecret } from '@opensecret/react';
+import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
+import { Page, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
+import { AnimatedLink } from '~/lib/animated-navigation';
 import { buildEmailValidator } from '~/lib/validation';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
@@ -44,7 +47,17 @@ export default function Index() {
   };
 
   return (
-    <div className="p-4">
+    <Page>
+      <PageHeader>
+        <div className="flex items-center justify-end">
+          <AnimatedLink to="/settings" direction="left">
+            <Button variant="ghost">
+              <Cog />
+            </Button>
+          </AnimatedLink>
+        </div>
+      </PageHeader>
+
       <h1>Welcome to Boardwalk!</h1>
       {}
       {isGuestAccount && <div>Guest account</div>}
@@ -144,6 +157,6 @@ export default function Index() {
           </form>
         </div>
       )}
-    </div>
+    </Page>
   );
 }
