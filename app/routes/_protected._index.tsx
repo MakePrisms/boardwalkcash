@@ -48,7 +48,9 @@ export default function Index() {
     <div className="p-4">
       <h1>Welcome to Boardwalk!</h1>
       <br />
-      <Link to="/test">Test</Link>
+      <Link to="/test" viewTransition>
+        Test
+      </Link>
       <br />
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>

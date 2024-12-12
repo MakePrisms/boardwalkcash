@@ -5,7 +5,9 @@ export default function Test() {
     <div>
       <div>This is test page</div>
       <br />
-      <Link to="/">Home</Link>
+      <Link to="/" viewTransition>
+        Home
+      </Link>
     </div>
   );
 }
