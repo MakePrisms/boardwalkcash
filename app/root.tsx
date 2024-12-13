@@ -79,35 +79,66 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 type AnimationDirection = 'left' | 'right' | 'up' | 'down';
+type TransitionType = 'open' | 'close';
 
 const DIRECTION_ANIMATIONS: Record<
   AnimationDirection,
-  {
-    out: string;
-    in: string;
-  }
+  Record<
+    TransitionType,
+    {
+      out: string;
+      in: string;
+    }
+  >
 > = {
   right: {
-    out: 'slide-out-to-right',
-    in: 'slide-in-from-left',
+    open: {
+      out: 'none',
+      in: 'slide-in-from-left',
+    },
+    close: {
+      out: 'slide-out-to-right',
+      in: 'none',
+    },
   },
   left: {
-    out: 'slide-out-to-left',
-    in: 'slide-in-from-right',
+    open: {
+      out: 'none',
+      in: 'slide-in-from-right',
+    },
+    close: {
+      out: 'slide-out-to-left',
+      in: 'none',
+    },
   },
   up: {
-    out: 'slide-out-to-top',
-    in: 'slide-in-from-bottom',
+    open: {
+      out: 'none',
+      in: 'slide-in-from-bottom',
+    },
+    close: {
+      out: 'slide-out-to-top',
+      in: 'none',
+    },
   },
   down: {
-    out: 'slide-out-to-bottom',
-    in: 'slide-in-from-top',
+    open: {
+      out: 'none',
+      in: 'slide-in-from-top',
+    },
+    close: {
+      out: 'slide-out-to-bottom',
+      in: 'none',
+    },
   },
 } as const;
 
-function applyAnimationDirectionStyles(direction: AnimationDirection | null) {
+function applyAnimationDirectionStyles(
+  direction: AnimationDirection | null,
+  type: TransitionType,
+) {
   if (direction) {
-    const animations = DIRECTION_ANIMATIONS[direction];
+    const animations = DIRECTION_ANIMATIONS[direction][type];
     document.documentElement.style.setProperty(
       '--direction-out',
       animations.out,
@@ -130,11 +161,13 @@ export default function App() {
     if (navigation.state === 'loading') {
       const transitionDirection: AnimationDirection =
         navigation.location.state?.transitionDirection;
+      const transitionType: TransitionType =
+        navigation.location.state?.type ?? 'open';
       console.log(
         'Route is about to change. Transition direction is: ',
         transitionDirection,
       );
-      applyAnimationDirectionStyles(transitionDirection);
+      applyAnimationDirectionStyles(transitionDirection, transitionType);
     }
   }, [navigation]);
 

@@ -5,7 +5,11 @@ export default function Test() {
     <div>
       <div>This is test page</div>
       <br />
-      <Link to="/" viewTransition state={{ transitionDirection: 'right' }}>
+      <Link
+        to="/"
+        viewTransition
+        state={{ transitionDirection: 'right', type: 'close' }}
+      >
         Home
       </Link>
     </div>

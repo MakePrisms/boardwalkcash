@@ -181,9 +181,9 @@
 /*}*/
 
 ::view-transition-old(root) {
-  animation: var(--direction-out) 0.3s ease-in both;
+  animation: var(--direction-out) 0.1s ease-in both;
 }
 
 ::view-transition-new(root) {
-  animation: var(--direction-in) 0.3s ease-in both;
+  animation: var(--direction-in) 0.1s ease-in both;
 }

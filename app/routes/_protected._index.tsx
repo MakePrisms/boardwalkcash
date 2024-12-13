@@ -48,13 +48,22 @@ export default function Index() {
     <div className="p-4">
       <h1>Welcome to Boardwalk!</h1>
       <br />
-      <Link to="/test" viewTransition state={{ transitionDirection: 'left' }}>
+      <Link
+        to="/test"
+        viewTransition
+        state={{ transitionDirection: 'left', type: 'open' }}
+      >
         Test Slide From Right
       </Link>
       <br />
-      <Link to="/test2" viewTransition state={{ transitionDirection: 'up' }}>
+      <Link
+        to="/test2"
+        viewTransition
+        state={{ transitionDirection: 'up', type: 'open' }}
+      >
         Test Slide From Bottom
       </Link>
+      <br />
       <br />
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
