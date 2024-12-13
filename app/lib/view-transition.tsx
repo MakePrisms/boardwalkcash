@@ -164,9 +164,10 @@ type ViewTransitionState = {
 };
 
 // location.state might be defined but set by someone else, so we need to check it
-function validateViewTransitionState(state: ViewTransitionState) {
+function validateViewTransitionState(state: ViewTransitionState | null) {
   if (
     typeof state === 'object' &&
+    state !== null &&
     'transitionDirection' in state &&
     'transitionType' in state &&
     'transitionStyle' in state &&
@@ -191,6 +192,8 @@ export function useViewTransitionEffect() {
       if (!state) {
         return removeAnimationDirectionStyles();
       }
+
+      console.error('STATE', state);
 
       const transitionDirection: TransitionDirection =
         state.transitionDirection;
