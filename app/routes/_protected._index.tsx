@@ -64,6 +64,14 @@ export default function Index() {
         Test Slide From Bottom
       </Link>
       <br />
+      <Link
+        to="/test3"
+        viewTransition
+        state={{ transitionDirection: 'right', type: 'open' }}
+      >
+        Test Slide From Left
+      </Link>
+      <br />
       <br />
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
