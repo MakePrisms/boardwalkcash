@@ -7,8 +7,8 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
-import { AnimatedLink } from '~/lib/animated-navigation';
 import { buildEmailValidator } from '~/lib/validation';
+import { ViewTransition } from '~/lib/view-transition';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
 
@@ -50,9 +50,9 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-end">
-          <AnimatedLink to="/settings" direction="left">
+          <ViewTransition to="/settings" direction="left">
             <Cog />
-          </AnimatedLink>
+          </ViewTransition>
         </div>
       </PageHeader>
 

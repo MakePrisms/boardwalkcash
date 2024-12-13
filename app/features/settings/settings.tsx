@@ -1,9 +1,9 @@
 import { Edit, Landmark, QrCode, Share, X } from 'lucide-react';
 import { PageContent, PageFooter, PageHeader } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
-import { AnimatedLink } from '~/lib/animated-navigation';
 import { formatUnit } from '~/lib/formatting';
 import { canShare, shareContent } from '~/lib/share';
+import { ViewTransition } from '~/lib/view-transition';
 import { SettingsNavButton } from './components/settings-nav-button';
 
 const username = 'satoshi';
@@ -24,13 +24,13 @@ export default function Settings() {
     <>
       <PageHeader>
         <div className="flex items-center justify-between">
-          <AnimatedLink to="/" direction="right">
+          <ViewTransition to="/" direction="right">
             <X />
-          </AnimatedLink>
+          </ViewTransition>
           <div className="flex items-center gap-2">
-            <AnimatedLink to="/settings/qr" direction="left">
+            <ViewTransition to="/settings/qr" direction="up">
               <QrCode />
-            </AnimatedLink>
+            </ViewTransition>
             {canShare() && (
               <button type="button" onClick={handleShare}>
                 <Share />

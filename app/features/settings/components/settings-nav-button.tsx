@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '~/components/ui/button';
-import { AnimatedLink } from '~/lib/animated-navigation';
+import { ViewTransition } from '~/lib/view-transition';
 
 interface SettingsNavButtonProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ export function SettingsNavButton({
   variant = 'default',
 }: SettingsNavButtonProps) {
   return (
-    <AnimatedLink to={to} direction="left">
+    <ViewTransition to={to} direction="left">
       <Button
         variant={variant === 'destructive' ? 'destructive' : 'ghost'}
         className={'flex w-full items-center justify-between'}
@@ -23,6 +23,6 @@ export function SettingsNavButton({
         <div className="flex items-center gap-2">{children}</div>
         <ChevronRight />
       </Button>
-    </AnimatedLink>
+    </ViewTransition>
   );
 }
