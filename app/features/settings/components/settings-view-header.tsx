@@ -6,7 +6,7 @@ export const SettingsViewHeader = ({ title }: { title: string }) => {
   return (
     <PageHeader>
       <div className="relative flex items-center">
-        <ViewTransition to="back" direction="right">
+        <ViewTransition back>
           <ChevronLeft />
         </ViewTransition>
         <h2 className="w-full text-center font-semibold text-lg">{title}</h2>

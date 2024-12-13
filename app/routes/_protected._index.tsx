@@ -1,4 +1,5 @@
 import { useOpenSecret } from '@opensecret/react';
+import { NavLink } from '@remix-run/react';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Page, PageHeader } from '~/components/page';
@@ -50,14 +51,24 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-end">
-          <ViewTransition to="/settings" direction="left">
+          <ViewTransition to="/settings" direction="left" type="open">
             <Cog />
           </ViewTransition>
         </div>
       </PageHeader>
 
       <h1>Welcome to Boardwalk!</h1>
-      {}
+      <ViewTransition as={NavLink} to="/settings" direction="left" type="open">
+        <Button>As NavLink</Button>
+      </ViewTransition>
+      <ViewTransition
+        to="/settings"
+        direction="left"
+        type="open"
+        style="dynamic"
+      >
+        <Button>Dynamic Transition</Button>
+      </ViewTransition>
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>

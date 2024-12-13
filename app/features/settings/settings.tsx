@@ -24,11 +24,11 @@ export default function Settings() {
     <>
       <PageHeader>
         <div className="flex items-center justify-between">
-          <ViewTransition to="/" direction="right">
+          <ViewTransition to="/" direction="right" type="close">
             <X />
           </ViewTransition>
           <div className="flex items-center gap-2">
-            <ViewTransition to="/settings/qr" direction="up">
+            <ViewTransition to="/settings/qr" direction="up" type="open">
               <QrCode />
             </ViewTransition>
             {canShare() && (

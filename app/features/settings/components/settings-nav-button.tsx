@@ -15,7 +15,7 @@ export function SettingsNavButton({
   variant = 'default',
 }: SettingsNavButtonProps) {
   return (
-    <ViewTransition to={to} direction="left">
+    <ViewTransition to={to} direction="left" type="open">
       <Button
         variant={variant === 'destructive' ? 'destructive' : 'ghost'}
         className={'flex w-full items-center justify-between'}

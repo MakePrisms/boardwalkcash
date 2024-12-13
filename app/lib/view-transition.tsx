@@ -1,47 +1,15 @@
 // requires that view-transitions and animations are setup in in the app's tailwind.css
-import {
-  Link as RemixLink,
-  useLocation,
-  useNavigate as useRemixNavigate,
-} from '@remix-run/react';
-import { create } from 'zustand';
+import { Link, NavLink, useLocation, useNavigation } from '@remix-run/react';
+import { useEffect } from 'react';
 
-type AnimationDirection = 'left' | 'right' | 'up' | 'down';
+type TransitionDirection = 'left' | 'right' | 'up' | 'down';
+type TransitionType = 'open' | 'close';
+type TransitionStyle = 'static' | 'dynamic';
 
-interface HistoryStackItem {
-  path: string;
-  /** direction of the transition that created this item */
-  direction: AnimationDirection;
-}
-
-interface TransitionHistoryStore {
-  history: HistoryStackItem[];
-  push: (entry: HistoryStackItem) => void;
-  pop: () => HistoryStackItem | undefined;
-  clear: () => void;
-}
-
-const useStore = create<TransitionHistoryStore>((set, get) => ({
-  history: [],
-  push: (entry) => set((state) => ({ history: [...state.history, entry] })),
-  pop: () => {
-    const current = get().history;
-    if (current.length === 0) return undefined;
-    const item = current[current.length - 1];
-    set({ history: current.slice(0, -1) });
-    return item;
-  },
-  clear: () => {
-    set({ history: [] });
-  },
-}));
-
-const DIRECTION_ANIMATIONS: Record<
-  AnimationDirection,
-  {
-    out: string;
-    in: string;
-  }
+// old page transitions out as new page transitions in
+const DYNAMIC_ANIMATIONS: Record<
+  TransitionDirection,
+  { out: string; in: string }
 > = {
   right: {
     out: 'slide-out-to-right',
@@ -61,109 +29,259 @@ const DIRECTION_ANIMATIONS: Record<
   },
 } as const;
 
-const getOppositeDirection = (
-  direction: AnimationDirection,
-): AnimationDirection => {
-  const opposites = {
+type StaticAnimation = {
+  out: { animationName: string; zIndex: number };
+  in: { animationName: string; zIndex: number };
+};
+
+// creates a more native-like transition
+const STATIC_ANIMATIONS: Record<
+  TransitionDirection,
+  {
+    open: StaticAnimation;
+    close: StaticAnimation;
+  }
+> = {
+  right: {
+    open: {
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-left', zIndex: 1 },
+    },
+    close: {
+      out: { animationName: 'slide-out-to-right', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
+    },
+  },
+  left: {
+    open: {
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-right', zIndex: 1 },
+    },
+    close: {
+      out: { animationName: 'slide-out-to-left', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
+    },
+  },
+  up: {
+    open: {
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-bottom', zIndex: 1 },
+    },
+    close: {
+      out: { animationName: 'slide-out-to-top', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
+    },
+  },
+  down: {
+    open: {
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-top', zIndex: 1 },
+    },
+    close: {
+      out: { animationName: 'slide-out-to-bottom', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
+    },
+  },
+} as const;
+
+const getOppositeTransition = (
+  direction: TransitionDirection,
+  type: TransitionType,
+): {
+  transitionDirection: TransitionDirection;
+  transitionType: TransitionType;
+} => {
+  const oppositeDirections = {
     left: 'right',
     right: 'left',
     up: 'down',
     down: 'up',
   } as const;
-  return opposites[direction];
+
+  const oppositeTypes = {
+    open: 'close',
+    close: 'open',
+  } as const;
+
+  return {
+    transitionDirection: oppositeDirections[direction],
+    transitionType: oppositeTypes[type],
+  };
 };
 
 /**
  * Changes the direction of the animation for the view transition.
  */
-function applyAnimationDirectionStyles(direction: AnimationDirection) {
-  const animations = DIRECTION_ANIMATIONS[direction];
-  document.documentElement.style.setProperty('--direction-out', animations.out);
-  document.documentElement.style.setProperty('--direction-in', animations.in);
+function applyAnimationDirectionStyles(
+  direction: TransitionDirection,
+  type: TransitionType,
+  style: TransitionStyle,
+) {
+  if (style === 'dynamic') {
+    const animations = DYNAMIC_ANIMATIONS[direction];
+
+    document.documentElement.style.setProperty(
+      '--direction-out',
+      animations.out,
+    );
+    document.documentElement.style.setProperty('--direction-in', animations.in);
+  } else {
+    const animations = STATIC_ANIMATIONS[direction][type];
+
+    document.documentElement.style.setProperty(
+      '--direction-out',
+      animations.out.animationName,
+    );
+    document.documentElement.style.setProperty(
+      '--view-transition-out-z-index',
+      animations.out.zIndex.toString(),
+    );
+    document.documentElement.style.setProperty(
+      '--direction-in',
+      animations.in.animationName,
+    );
+    document.documentElement.style.setProperty(
+      '--view-transition-in-z-index',
+      animations.in.zIndex.toString(),
+    );
+  }
 }
 
-/** a wrapper around useNavigate that will animate the page transitions */
-function useViewTransition() {
-  const navigate = useRemixNavigate();
-  const location = useLocation();
-
-  const {
-    push: pushHistory,
-    pop: popHistory,
-    clear: clearHistory,
-  } = useStore();
-
-  const addCurrentLocationToHistory = (direction: AnimationDirection) => {
-    pushHistory({ path: location.pathname, direction });
-  };
-
-  const goHome = () => {
-    applyAnimationDirectionStyles('right');
-    navigate('/', { viewTransition: true });
-    clearHistory();
-  };
-
-  const goBack = () => {
-    const previousView = popHistory();
-    console.log('previousView', previousView);
-    if (previousView) {
-      const oppositeDirection = getOppositeDirection(previousView.direction);
-      applyAnimationDirectionStyles(oppositeDirection);
-      navigate(previousView.path, { viewTransition: true });
-    } else {
-      goHome();
-    }
-  };
-
-  return {
-    goBack,
-    addCurrentLocationToHistory,
-  };
+function removeAnimationDirectionStyles() {
+  document.documentElement.style.removeProperty('--direction-out');
+  document.documentElement.style.removeProperty('--direction-in');
+  document.documentElement.style.removeProperty('--view-transition-in-z-index');
+  document.documentElement.style.removeProperty(
+    '--view-transition-out-z-index',
+  );
 }
 
-interface ViewTransitionProps
-  extends Omit<React.ComponentProps<typeof RemixLink>, 'to'> {
-  direction?: AnimationDirection;
-  to: string | 'back';
+type ViewTransitionState = {
+  transitionDirection: TransitionDirection;
+  transitionType: TransitionType;
+  transitionStyle: TransitionStyle;
+  previousPath: string; // so we can go back to the previous page
+};
+
+// location.state might be defined but set by someone else, so we need to check it
+function validateViewTransitionState(state: ViewTransitionState) {
+  if (
+    typeof state === 'object' &&
+    'transitionDirection' in state &&
+    'transitionType' in state &&
+    'transitionStyle' in state &&
+    'previousPath' in state
+  ) {
+    return state as ViewTransitionState;
+  }
+
+  return null;
 }
 
 /**
- * A wrapper around Link that when used will animate the page transitions.
+ * Applies the animation direction styles based on the navigation state.
+ * Must be used in the root component of the app.
+ */
+export function useViewTransitionEffect() {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    if (navigation.state === 'loading') {
+      const state = validateViewTransitionState(navigation.location.state);
+      if (!state) {
+        return removeAnimationDirectionStyles();
+      }
+
+      const transitionDirection: TransitionDirection =
+        state.transitionDirection;
+      const transitionType: TransitionType = state.transitionType;
+      const transitionStyle: TransitionStyle = state.transitionStyle;
+
+      applyAnimationDirectionStyles(
+        transitionDirection,
+        transitionType,
+        transitionStyle,
+      );
+    }
+  }, [navigation]);
+}
+
+type ViewTransitionCommonProps = {
+  back?: boolean;
+  style?: TransitionStyle;
+} & (
+  | {
+      back: true;
+      direction?: never;
+      type?: never;
+      to?: never;
+    }
+  | {
+      back?: false;
+      direction: TransitionDirection;
+      type: TransitionType;
+      to: string;
+    }
+);
+
+type ViewTransitionLinkProps = ViewTransitionCommonProps & {
+  as?: typeof Link;
+} & Omit<React.ComponentProps<typeof Link>, 'to'>;
+
+type ViewTransitionNavLinkProps = ViewTransitionCommonProps & {
+  as: typeof NavLink;
+} & Omit<React.ComponentProps<typeof NavLink>, 'to'>;
+
+/**
+ * A wrapper around Link/NavLink that when used will animate the page transitions.
  *
  * Default is to prefetch the link when it is rendered to optimize the mobile experience,
  * but this can be overridden by setting the prefetch prop.
  *
- * Special case: when `to="back"` is used, it will navigate back in the history stack
- * with the appropriate animation direction.
+ * Special case: when back=true, navigates to previous path with opposite animation.
  *
- * @param props - direction: 'left' | 'right' | 'up' | 'down'
+ * @param props - direction: 'left' | 'right' | 'up' | 'down', type: 'open' | 'close', style: 'static' | 'dynamic'
  */
-export function ViewTransition({
-  direction = 'left',
-  to,
-  ...props
-}: ViewTransitionProps) {
-  const { goBack, addCurrentLocationToHistory } = useViewTransition();
+export function ViewTransition<
+  T extends ViewTransitionLinkProps | ViewTransitionNavLinkProps,
+>({ direction, type, to, back, style = 'static', as = Link, ...props }: T) {
+  const location = useLocation();
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (to === 'back') {
-      // prevent link from being followed directly
-      e.preventDefault();
-      goBack();
-    } else {
-      applyAnimationDirectionStyles(direction);
-      addCurrentLocationToHistory(direction);
-    }
-    props.onClick?.(e);
+  const previousState = validateViewTransitionState(location.state);
+
+  const linkState =
+    back && previousState
+      ? {
+          previousPath: previousState.previousPath,
+          transitionStyle: previousState.transitionStyle,
+          ...getOppositeTransition(
+            previousState.transitionDirection,
+            previousState.transitionType,
+          ),
+        }
+      : {
+          previousPath: location.pathname,
+          transitionDirection: direction,
+          transitionType: type,
+          transitionStyle: style,
+        };
+
+  const linkTo = back ? (previousState?.previousPath ?? '/') : to;
+
+  const commonProps = {
+    ...props,
+    prefetch: props.prefetch ?? 'viewport',
+    onClick: props.onClick,
+    viewTransition: true,
+    to: linkTo,
+    state: linkState,
   };
 
-  return (
-    <RemixLink
-      {...props}
-      prefetch={props.prefetch ?? 'viewport'}
-      onClick={handleClick}
-      viewTransition
-      to={to}
-    />
-  );
+  if (as === NavLink) {
+    return (
+      <NavLink {...(commonProps as React.ComponentProps<typeof NavLink>)} />
+    );
+  }
+
+  return <Link {...(commonProps as React.ComponentProps<typeof Link>)} />;
 }

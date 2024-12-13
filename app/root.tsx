@@ -16,6 +16,7 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { useViewTransitionEffect } from './lib/view-transition';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -86,6 +87,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
   const dehydratedState = useDehydratedState();
+  useViewTransitionEffect();
 
   // TODO: OpenSecretProvider apiUrl url to settings
   return (
