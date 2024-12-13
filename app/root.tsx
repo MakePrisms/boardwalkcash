@@ -86,49 +86,49 @@ const DIRECTION_ANIMATIONS: Record<
   Record<
     TransitionType,
     {
-      out: string;
-      in: string;
+      out: { animationName: string; zIndex: number };
+      in: { animationName: string; zIndex: number };
     }
   >
 > = {
   right: {
     open: {
-      out: 'none',
-      in: 'slide-in-from-left',
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-left', zIndex: 1 },
     },
     close: {
-      out: 'slide-out-to-right',
-      in: 'none',
+      out: { animationName: 'slide-out-to-right', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
     },
   },
   left: {
     open: {
-      out: 'none',
-      in: 'slide-in-from-right',
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-right', zIndex: 1 },
     },
     close: {
-      out: 'slide-out-to-left',
-      in: 'none',
+      out: { animationName: 'slide-out-to-left', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
     },
   },
   up: {
     open: {
-      out: 'none',
-      in: 'slide-in-from-bottom',
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-bottom', zIndex: 1 },
     },
     close: {
-      out: 'slide-out-to-top',
-      in: 'none',
+      out: { animationName: 'slide-out-to-top', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
     },
   },
   down: {
     open: {
-      out: 'none',
-      in: 'slide-in-from-top',
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-top', zIndex: 1 },
     },
     close: {
-      out: 'slide-out-to-bottom',
-      in: 'none',
+      out: { animationName: 'slide-out-to-bottom', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
     },
   },
 } as const;
@@ -141,12 +141,29 @@ function applyAnimationDirectionStyles(
     const animations = DIRECTION_ANIMATIONS[direction][type];
     document.documentElement.style.setProperty(
       '--direction-out',
-      animations.out,
+      animations.out.animationName,
     );
-    document.documentElement.style.setProperty('--direction-in', animations.in);
+    document.documentElement.style.setProperty(
+      '--view-transition-out-z-index',
+      animations.out.zIndex.toString(),
+    );
+    document.documentElement.style.setProperty(
+      '--direction-in',
+      animations.in.animationName,
+    );
+    document.documentElement.style.setProperty(
+      '--view-transition-in-z-index',
+      animations.in.zIndex.toString(),
+    );
   } else {
     document.documentElement.style.removeProperty('--direction-out');
     document.documentElement.style.removeProperty('--direction-in');
+    document.documentElement.style.removeProperty(
+      '--view-transition-in-z-index',
+    );
+    document.documentElement.style.removeProperty(
+      '--view-transition-out-z-index',
+    );
   }
 }
 
