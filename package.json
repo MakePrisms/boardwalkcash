@@ -24,7 +24,6 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@hookform/resolvers": "3.9.1",
     "@opensecret/react": "0.3.0",
     "@radix-ui/react-dropdown-menu": "2.1.2",
     "@radix-ui/react-label": "^2.1.0",
@@ -49,8 +48,7 @@
     "react-query": "3.39.3",
     "tailwind-merge": "2.5.5",
     "tailwindcss-animate": "1.0.7",
-    "use-dehydrated-state": "0.1.0",
-    "zustand": "5.0.2"
+    "use-dehydrated-state": "0.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
