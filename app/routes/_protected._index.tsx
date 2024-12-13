@@ -51,9 +51,7 @@ export default function Index() {
       <PageHeader>
         <div className="flex items-center justify-end">
           <AnimatedLink to="/settings" direction="left">
-            <Button variant="ghost">
-              <Cog />
-            </Button>
+            <Cog />
           </AnimatedLink>
         </div>
       </PageHeader>
