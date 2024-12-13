@@ -6,10 +6,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from '@remix-run/react';
 import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Hydrate, QueryClient, QueryClientProvider } from 'react-query';
 import { useDehydratedState } from 'use-dehydrated-state';
 import { Toaster } from '~/components/ui/toaster';
@@ -77,10 +78,65 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+type AnimationDirection = 'left' | 'right' | 'up' | 'down';
+
+const DIRECTION_ANIMATIONS: Record<
+  AnimationDirection,
+  {
+    out: string;
+    in: string;
+  }
+> = {
+  right: {
+    out: 'slide-out-to-right',
+    in: 'slide-in-from-left',
+  },
+  left: {
+    out: 'slide-out-to-left',
+    in: 'slide-in-from-right',
+  },
+  up: {
+    out: 'slide-out-to-top',
+    in: 'slide-in-from-bottom',
+  },
+  down: {
+    out: 'slide-out-to-bottom',
+    in: 'slide-in-from-top',
+  },
+} as const;
+
+function applyAnimationDirectionStyles(direction: AnimationDirection | null) {
+  if (direction) {
+    const animations = DIRECTION_ANIMATIONS[direction];
+    document.documentElement.style.setProperty(
+      '--direction-out',
+      animations.out,
+    );
+    document.documentElement.style.setProperty('--direction-in', animations.in);
+  } else {
+    document.documentElement.style.removeProperty('--direction-out');
+    document.documentElement.style.removeProperty('--direction-in');
+  }
+}
+
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
 
   const dehydratedState = useDehydratedState();
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    if (navigation.state === 'loading') {
+      const transitionDirection: AnimationDirection =
+        navigation.location.state?.transitionDirection;
+      console.log(
+        'Route is about to change. Transition direction is: ',
+        transitionDirection,
+      );
+      applyAnimationDirectionStyles(transitionDirection);
+    }
+  }, [navigation]);
 
   // TODO: OpenSecretProvider apiUrl url to settings
   return (
