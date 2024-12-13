@@ -49,7 +49,8 @@
     "react-query": "3.39.3",
     "tailwind-merge": "2.5.5",
     "tailwindcss-animate": "1.0.7",
-    "use-dehydrated-state": "0.1.0"
+    "use-dehydrated-state": "0.1.0",
+    "zustand": "5.0.2"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
