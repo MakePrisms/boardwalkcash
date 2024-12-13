@@ -2,6 +2,7 @@
 
 import {
   Link as RemixLink,
+  useLocation,
   useNavigate as useRemixNavigate,
 } from '@remix-run/react';
 import { useEffect } from 'react';
@@ -11,12 +12,19 @@ type AnimationDirection = 'left' | 'right' | null;
 
 interface AnimatedNavigationStore {
   direction: AnimationDirection;
+  history: string[];
   setDirection: (direction: AnimationDirection) => void;
+  addToHistory: (path: string) => void;
+  popHistory: () => void;
 }
 
 const useStore = create<AnimatedNavigationStore>((set) => ({
   direction: null,
   setDirection: (direction) => set({ direction }),
+  history: [],
+  addToHistory: (path) =>
+    set((state) => ({ history: [...state.history, path] })),
+  popHistory: () => set((state) => ({ history: state.history.slice(0, -1) })),
 }));
 
 const DIRECTION_ANIMATIONS: Record<
@@ -58,9 +66,10 @@ export function AnimatedNavigationProvider({
 
   return children;
 }
-
-interface AnimatedLinkProps extends React.ComponentProps<typeof RemixLink> {
+interface AnimatedLinkProps
+  extends Omit<React.ComponentProps<typeof RemixLink>, 'to'> {
   direction?: 'left' | 'right';
+  to: string | 'back';
 }
 
 /**
@@ -69,23 +78,38 @@ interface AnimatedLinkProps extends React.ComponentProps<typeof RemixLink> {
  * Default is to prefetch the link when it is rendered to optimize the mobile experience,
  * but this can be overridden by setting the prefetch prop.
  *
+ * Special case: when `to="back"` is used, it will navigate back in the history stack
+ * with the appropriate animation direction.
+ *
  * @param props - direction: 'left' | 'right'
  */
 export function AnimatedLink({
   direction = 'left',
+  to,
   ...props
 }: AnimatedLinkProps) {
-  const setDirection = useStore((state) => state.setDirection);
+  const { goBack, setDirection, addCurrentLocationToHistory } =
+    useAnimatedNavigate();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (to === 'back') {
+      // prevent link from being followed directly
+      e.preventDefault();
+      goBack(direction);
+    } else {
+      setDirection(direction);
+      addCurrentLocationToHistory();
+    }
+    props.onClick?.(e);
+  };
 
   return (
     <RemixLink
       {...props}
       prefetch={props.prefetch ?? 'viewport'}
-      onClick={(e) => {
-        setDirection(direction);
-        props.onClick?.(e);
-      }}
+      onClick={handleClick}
       viewTransition
+      to={to}
     />
   );
 }
@@ -93,10 +117,42 @@ export function AnimatedLink({
 /** a wrapper around useNavigate that will animate the page transitions */
 export function useAnimatedNavigate() {
   const navigate = useRemixNavigate();
+  const location = useLocation();
   const setDirection = useStore((state) => state.setDirection);
+  const addToHistory = useStore((state) => state.addToHistory);
+  const popHistory = useStore((state) => state.popHistory);
+  const history = useStore((state) => state.history);
 
-  return (to: string, options?: { direction?: 'left' | 'right' }) => {
+  const addCurrentLocationToHistory = () => {
+    addToHistory(location.pathname);
+  };
+
+  const animatedNavigate = (
+    to: string,
+    options?: { direction?: 'left' | 'right' },
+  ) => {
     setDirection(options?.direction ?? 'left');
+    addCurrentLocationToHistory();
     navigate(to);
+  };
+
+  const goBack = (direction: NonNullable<AnimationDirection>) => {
+    setDirection(direction);
+    if (history.length > 0) {
+      const lastPath = history[history.length - 1];
+      popHistory();
+      navigate(lastPath, { viewTransition: true });
+    } else {
+      navigate('/', { viewTransition: true });
+    }
+  };
+
+  // QUESTION: should we only export goBack and goForward instead of allowng animatedNavigate to be called? This would
+  // make it easer to enforce the history.
+  return {
+    navigate: animatedNavigate,
+    goBack,
+    setDirection,
+    addCurrentLocationToHistory,
   };
 }
