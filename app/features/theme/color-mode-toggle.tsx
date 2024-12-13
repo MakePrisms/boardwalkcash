@@ -1,4 +1,11 @@
+import { Laptop, Moon, Sun } from 'lucide-react';
 import { Button } from '~/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 import { colorModes } from './theme.constants';
 import type { ColorMode } from './theme.types';
 import { useTheme } from './use-theme';
@@ -6,33 +13,42 @@ import { useTheme } from './use-theme';
 export function ColorModeToggle() {
   const { colorMode, setColorMode } = useTheme();
 
-  const handleToggle = () => {
-    // Cycle through modes: light -> dark -> system
-    const currentIndex = colorModes.indexOf(colorMode);
-    const nextIndex = (currentIndex + 1) % colorModes.length;
-    setColorMode(colorModes[nextIndex]);
-  };
-
   const getIcon = (mode: ColorMode) => {
     switch (mode) {
       case 'light':
-        return '☀️';
+        return <Sun className="h-4 w-4" />;
       case 'dark':
-        return '🌙';
+        return <Moon className="h-4 w-4" />;
       case 'system':
-        return '💻';
+        return <Laptop className="h-4 w-4" />;
       default:
-        return '☀️';
+        return <Sun className="h-4 w-4" />;
     }
   };
 
   return (
-    <Button
-      onClick={handleToggle}
-      aria-label={`Current color mode: ${colorMode}. Click to switch.`}
-      className="rounded p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-    >
-      {getIcon(colorMode)}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Current color mode: ${colorMode}. Click to switch.`}
+        >
+          {getIcon(colorMode)}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {colorModes.map((mode) => (
+          <DropdownMenuItem
+            key={mode}
+            onClick={() => setColorMode(mode)}
+            className="flex items-center gap-2"
+          >
+            {getIcon(mode)}
+            <span className="capitalize">{mode}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
