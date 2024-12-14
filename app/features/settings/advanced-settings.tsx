@@ -10,8 +10,8 @@ export default function AdvancedSettings() {
         title="Advanced Settings"
         navBack={{
           to: '/settings',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
 

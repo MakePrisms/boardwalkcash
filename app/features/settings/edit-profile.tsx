@@ -32,8 +32,8 @@ export default function EditProfile() {
         title="Edit Profile"
         navBack={{
           to: '/settings',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>

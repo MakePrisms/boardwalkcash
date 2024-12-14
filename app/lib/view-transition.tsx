@@ -1,128 +1,112 @@
-// requires that view-transitions and animations are setup in in the app's tailwind.css
 import { Link, NavLink, useNavigation } from '@remix-run/react';
-import { useEffect } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 
-export type TransitionDirection = 'left' | 'right' | 'up' | 'down';
-export type TransitionType = 'open' | 'close';
-export type TransitionStyle = 'static' | 'dynamic';
+const transitions = [
+  'slideLeft',
+  'slideRight',
+  'slideUp',
+  'slideDown',
+] as const;
+export type Transition = (typeof transitions)[number];
 
-// old page transitions out as new page transitions in
-const DYNAMIC_ANIMATIONS: Record<
-  TransitionDirection,
-  { out: string; in: string }
+const isTransition = (value: unknown): value is Transition =>
+  transitions.includes(value as Transition);
+
+const applyToTypes = ['newView', 'oldView', 'bothViews'] as const;
+export type ApplyTo = (typeof applyToTypes)[number];
+
+const isApplyTo = (value: unknown): value is ApplyTo =>
+  applyToTypes.includes(value as ApplyTo);
+
+type AnimationDefinition = { animationName: string; zIndex?: number };
+
+const ANIMATIONS: Record<
+  Transition,
+  Record<ApplyTo, { out: AnimationDefinition; in: AnimationDefinition }>
 > = {
-  right: {
-    out: 'slide-out-to-right',
-    in: 'slide-in-from-left',
-  },
-  left: {
-    out: 'slide-out-to-left',
-    in: 'slide-in-from-right',
-  },
-  up: {
-    out: 'slide-out-to-top',
-    in: 'slide-in-from-bottom',
-  },
-  down: {
-    out: 'slide-out-to-bottom',
-    in: 'slide-in-from-top',
-  },
-} as const;
-
-type StaticAnimation = {
-  out: { animationName: string; zIndex: number };
-  in: { animationName: string; zIndex: number };
-};
-
-// creates a more native-like transition
-const STATIC_ANIMATIONS: Record<
-  TransitionDirection,
-  {
-    open: StaticAnimation;
-    close: StaticAnimation;
-  }
-> = {
-  right: {
-    open: {
-      out: { animationName: 'none', zIndex: 0 },
-      in: { animationName: 'slide-in-from-left', zIndex: 1 },
-    },
-    close: {
-      out: { animationName: 'slide-out-to-right', zIndex: 1 },
-      in: { animationName: 'none', zIndex: 0 },
-    },
-  },
-  left: {
-    open: {
+  slideLeft: {
+    newView: {
       out: { animationName: 'none', zIndex: 0 },
       in: { animationName: 'slide-in-from-right', zIndex: 1 },
     },
-    close: {
+    oldView: {
       out: { animationName: 'slide-out-to-left', zIndex: 1 },
       in: { animationName: 'none', zIndex: 0 },
     },
+    bothViews: {
+      out: { animationName: 'slide-out-to-left' },
+      in: { animationName: 'slide-in-from-right' },
+    },
   },
-  up: {
-    open: {
+  slideRight: {
+    newView: {
+      out: { animationName: 'none', zIndex: 0 },
+      in: { animationName: 'slide-in-from-left', zIndex: 1 },
+    },
+    oldView: {
+      out: { animationName: 'slide-out-to-right', zIndex: 1 },
+      in: { animationName: 'none', zIndex: 0 },
+    },
+    bothViews: {
+      out: { animationName: 'slide-out-to-right' },
+      in: { animationName: 'slide-in-from-left' },
+    },
+  },
+  slideUp: {
+    newView: {
       out: { animationName: 'none', zIndex: 0 },
       in: { animationName: 'slide-in-from-bottom', zIndex: 1 },
     },
-    close: {
+    oldView: {
       out: { animationName: 'slide-out-to-top', zIndex: 1 },
       in: { animationName: 'none', zIndex: 0 },
     },
+    bothViews: {
+      out: { animationName: 'slide-out-to-top' },
+      in: { animationName: 'slide-in-from-bottom' },
+    },
   },
-  down: {
-    open: {
+  slideDown: {
+    newView: {
       out: { animationName: 'none', zIndex: 0 },
       in: { animationName: 'slide-in-from-top', zIndex: 1 },
     },
-    close: {
+    oldView: {
       out: { animationName: 'slide-out-to-bottom', zIndex: 1 },
       in: { animationName: 'none', zIndex: 0 },
     },
+    bothViews: {
+      out: { animationName: 'slide-out-to-bottom' },
+      in: { animationName: 'slide-in-from-top' },
+    },
   },
-} as const;
+};
 
 /**
  * Changes the direction of the animation for the view transition.
  */
-function applyAnimationDirectionStyles(
-  direction: TransitionDirection,
-  type: TransitionType,
-  style: TransitionStyle,
-) {
-  if (style === 'dynamic') {
-    const animations = DYNAMIC_ANIMATIONS[direction];
+function applyTransitionStyles(transition: Transition, applyTo: ApplyTo) {
+  const animationDefinition = ANIMATIONS[transition][applyTo];
 
-    document.documentElement.style.setProperty(
-      '--direction-out',
-      animations.out,
-    );
-    document.documentElement.style.setProperty('--direction-in', animations.in);
-  } else {
-    const animations = STATIC_ANIMATIONS[direction][type];
-
-    document.documentElement.style.setProperty(
-      '--direction-out',
-      animations.out.animationName,
-    );
-    document.documentElement.style.setProperty(
-      '--view-transition-out-z-index',
-      animations.out.zIndex.toString(),
-    );
-    document.documentElement.style.setProperty(
-      '--direction-in',
-      animations.in.animationName,
-    );
-    document.documentElement.style.setProperty(
-      '--view-transition-in-z-index',
-      animations.in.zIndex.toString(),
-    );
-  }
+  document.documentElement.style.setProperty(
+    '--direction-out',
+    animationDefinition.out.animationName,
+  );
+  document.documentElement.style.setProperty(
+    '--view-transition-out-z-index',
+    animationDefinition.out.zIndex?.toString() ?? 'auto',
+  );
+  document.documentElement.style.setProperty(
+    '--direction-in',
+    animationDefinition.in.animationName,
+  );
+  document.documentElement.style.setProperty(
+    '--view-transition-in-z-index',
+    animationDefinition.in.zIndex?.toString() ?? 'auto',
+  );
 }
 
-function removeAnimationDirectionStyles() {
+function removeTransitionStyles() {
   document.documentElement.style.removeProperty('--direction-out');
   document.documentElement.style.removeProperty('--direction-in');
   document.documentElement.style.removeProperty('--view-transition-in-z-index');
@@ -132,24 +116,25 @@ function removeAnimationDirectionStyles() {
 }
 
 type ViewTransitionState = {
-  transitionDirection: TransitionDirection;
-  transitionType: TransitionType;
-  transitionStyle: TransitionStyle;
+  transition: Transition;
+  applyTo: ApplyTo;
 };
 
-// location.state might be defined but set by someone else, so we need to check it
-function validateViewTransitionState(state: ViewTransitionState | null) {
-  if (
-    typeof state === 'object' &&
-    state !== null &&
-    'transitionDirection' in state &&
-    'transitionType' in state &&
-    'transitionStyle' in state
-  ) {
-    return state as ViewTransitionState;
+function getViewTransitionState(state: unknown): ViewTransitionState | null {
+  if (state == null || typeof state !== 'object') {
+    return null;
   }
 
-  return null;
+  if (!('transition' in state) || !isTransition(state.transition)) {
+    return null;
+  }
+
+  const applyTo =
+    'applyTo' in state && isApplyTo(state.applyTo)
+      ? state.applyTo
+      : 'bothViews';
+
+  return { transition: state.transition, applyTo };
 }
 
 /**
@@ -161,29 +146,20 @@ export function useViewTransitionEffect() {
 
   useEffect(() => {
     if (navigation.state === 'loading') {
-      const state = validateViewTransitionState(navigation.location.state);
-      if (!state) {
-        return removeAnimationDirectionStyles();
+      const state = getViewTransitionState(navigation.location.state);
+      console.log('nvaigation state: ', state);
+      if (state) {
+        applyTransitionStyles(state.transition, state.applyTo);
+      } else {
+        removeTransitionStyles();
       }
-
-      const transitionDirection: TransitionDirection =
-        state.transitionDirection;
-      const transitionType: TransitionType = state.transitionType;
-      const transitionStyle: TransitionStyle = state.transitionStyle;
-
-      applyAnimationDirectionStyles(
-        transitionDirection,
-        transitionType,
-        transitionStyle,
-      );
     }
   }, [navigation]);
 }
 
 type ViewTransitionCommonProps = {
-  style?: TransitionStyle;
-  direction?: TransitionDirection;
-  type?: TransitionType;
+  transition: Transition;
+  applyTo?: ApplyTo;
 };
 
 export type ViewTransitionLinkProps = ViewTransitionCommonProps & {
@@ -199,24 +175,13 @@ type ViewTransitionNavLinkProps = ViewTransitionCommonProps & {
  *
  * Default is to prefetch the link when it is rendered to optimize the mobile experience,
  * but this can be overridden by setting the prefetch prop.
- *
- * Special case: when back=true, navigates to previous path with opposite animation.
- *
- * @param props - direction: 'left' | 'right' | 'up' | 'down', type: 'open' | 'close', style: 'static' | 'dynamic'
  */
 export function ViewTransition<
   T extends ViewTransitionLinkProps | ViewTransitionNavLinkProps,
->({
-  direction = 'left',
-  type = 'open',
-  style = 'static',
-  as = Link,
-  ...props
-}: T) {
+>({ transition, applyTo = 'bothViews', as = Link, ...props }: T) {
   const linkState: ViewTransitionState = {
-    transitionDirection: direction,
-    transitionType: type,
-    transitionStyle: style,
+    transition,
+    applyTo,
   };
 
   const commonProps = {
@@ -228,10 +193,8 @@ export function ViewTransition<
   };
 
   if (as === NavLink) {
-    return (
-      <NavLink {...(commonProps as React.ComponentProps<typeof NavLink>)} />
-    );
+    return <NavLink {...(commonProps as ComponentProps<typeof NavLink>)} />;
   }
 
-  return <Link {...(commonProps as React.ComponentProps<typeof Link>)} />;
+  return <Link {...(commonProps as ComponentProps<typeof Link>)} />;
 }

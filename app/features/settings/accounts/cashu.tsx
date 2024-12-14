@@ -9,8 +9,8 @@ export default function AddCashuAccountView() {
         title="Create Cashu Account"
         navBack={{
           to: '/settings/accounts',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>

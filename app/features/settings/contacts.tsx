@@ -8,8 +8,8 @@ export default function Contacts() {
         title="Contacts"
         navBack={{
           to: '/settings',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>
