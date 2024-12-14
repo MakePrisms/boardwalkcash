@@ -9,8 +9,8 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
         title="Single Account"
         navBack={{
           to: '/settings/accounts',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>

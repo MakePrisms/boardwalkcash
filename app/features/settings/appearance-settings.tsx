@@ -12,8 +12,8 @@ export default function AppearanceSettings() {
         title="Appearance"
         navBack={{
           to: '/settings',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>

@@ -51,23 +51,29 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-end">
-          <ViewTransition to="/settings" direction="left" type="open">
+          <ViewTransition
+            to="/settings"
+            transition="slideLeft"
+            applyTo="newView"
+          >
             <Cog />
           </ViewTransition>
         </div>
       </PageHeader>
 
       <h1>Welcome to Boardwalk!</h1>
-      <ViewTransition as={NavLink} to="/settings" direction="left" type="open">
+      <ViewTransition
+        as={NavLink}
+        to="/settings"
+        transition="slideLeft"
+        applyTo="newView"
+      >
         <Button>As NavLink</Button>
       </ViewTransition>
-      <ViewTransition
-        to="/settings"
-        direction="left"
-        type="open"
-        style="dynamic"
-      >
-        <Button>Dynamic Transition</Button>
+      <br />
+      <br />
+      <ViewTransition to="/settings" transition="slideLeft" applyTo="bothViews">
+        <Button>Slide both views</Button>
       </ViewTransition>
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>

@@ -9,8 +9,8 @@ export default function CreateAccount() {
         title="Add Account"
         navBack={{
           to: '/settings',
-          direction: 'right',
-          type: 'close',
+          transition: 'slideRight',
+          applyTo: 'oldView',
         }}
       />
       <PageContent>
