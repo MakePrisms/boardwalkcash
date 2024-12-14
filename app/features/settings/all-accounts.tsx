@@ -43,7 +43,14 @@ export default function AllAccounts() {
 
   return (
     <>
-      <SettingsViewHeader title="All Accounts" />
+      <SettingsViewHeader
+        title="All Accounts"
+        navBack={{
+          to: '/settings',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
       <PageContent>
         <Tabs defaultValue={getTabByUnit(activeUnit).value}>
           <TabsList className="grid w-full grid-cols-2">

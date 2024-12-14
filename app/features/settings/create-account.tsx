@@ -5,7 +5,14 @@ import { SettingsViewHeader } from '~/features/settings/components/settings-view
 export default function CreateAccount() {
   return (
     <>
-      <SettingsViewHeader title="Add Account" />
+      <SettingsViewHeader
+        title="Add Account"
+        navBack={{
+          to: '/settings',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
       <PageContent>
         <div className="grid gap-4">
           <SettingsNavButton to="/settings/accounts/create/spark">

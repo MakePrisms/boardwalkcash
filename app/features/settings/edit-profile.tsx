@@ -28,7 +28,14 @@ export default function EditProfile() {
 
   return (
     <>
-      <SettingsViewHeader title="Edit Profile" />
+      <SettingsViewHeader
+        title="Edit Profile"
+        navBack={{
+          to: '/settings',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
       <PageContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">

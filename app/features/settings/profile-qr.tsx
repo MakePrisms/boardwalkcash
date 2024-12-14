@@ -7,7 +7,14 @@ export default function ProfileQR() {
 
   return (
     <>
-      <SettingsViewHeader title="Scan QR Code" />
+      <SettingsViewHeader
+        title="Scan QR Code"
+        navBack={{
+          to: '/settings',
+          direction: 'down',
+          type: 'close',
+        }}
+      />
       <PageContent>
         <div className="flex flex-col items-center gap-6 p-4">
           <h2 className="font-semibold text-xl">@{username}</h2>

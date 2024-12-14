@@ -8,7 +8,14 @@ export default function AppearanceSettings() {
 
   return (
     <>
-      <SettingsViewHeader title="Appearance" />
+      <SettingsViewHeader
+        title="Appearance"
+        navBack={{
+          to: '/settings',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
       <PageContent>
         <p>Theme: {colorMode}</p>
         <ColorModeToggle />

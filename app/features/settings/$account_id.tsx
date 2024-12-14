@@ -5,7 +5,14 @@ import { SettingsViewHeader } from './components/settings-view-header';
 export default function SingleAccount({ accountId }: { accountId: string }) {
   return (
     <>
-      <SettingsViewHeader title="Single Account" />
+      <SettingsViewHeader
+        title="Single Account"
+        navBack={{
+          to: '/settings/accounts',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
       <PageContent>
         {accountId === '123' && (
           <div>

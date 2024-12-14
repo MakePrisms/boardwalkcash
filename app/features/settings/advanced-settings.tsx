@@ -6,7 +6,14 @@ import { SettingsViewHeader } from './components/settings-view-header';
 export default function AdvancedSettings() {
   return (
     <>
-      <SettingsViewHeader title="Advanced Settings" />
+      <SettingsViewHeader
+        title="Advanced Settings"
+        navBack={{
+          to: '/settings',
+          direction: 'right',
+          type: 'close',
+        }}
+      />
 
       <PageContent>
         <div className="text-lg">

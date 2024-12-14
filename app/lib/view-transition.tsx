@@ -1,10 +1,10 @@
 // requires that view-transitions and animations are setup in in the app's tailwind.css
-import { Link, NavLink, useLocation, useNavigation } from '@remix-run/react';
+import { Link, NavLink, useNavigation } from '@remix-run/react';
 import { useEffect } from 'react';
 
-type TransitionDirection = 'left' | 'right' | 'up' | 'down';
-type TransitionType = 'open' | 'close';
-type TransitionStyle = 'static' | 'dynamic';
+export type TransitionDirection = 'left' | 'right' | 'up' | 'down';
+export type TransitionType = 'open' | 'close';
+export type TransitionStyle = 'static' | 'dynamic';
 
 // old page transitions out as new page transitions in
 const DYNAMIC_ANIMATIONS: Record<
@@ -84,31 +84,6 @@ const STATIC_ANIMATIONS: Record<
   },
 } as const;
 
-const getOppositeTransition = (
-  direction: TransitionDirection,
-  type: TransitionType,
-): {
-  transitionDirection: TransitionDirection;
-  transitionType: TransitionType;
-} => {
-  const oppositeDirections = {
-    left: 'right',
-    right: 'left',
-    up: 'down',
-    down: 'up',
-  } as const;
-
-  const oppositeTypes = {
-    open: 'close',
-    close: 'open',
-  } as const;
-
-  return {
-    transitionDirection: oppositeDirections[direction],
-    transitionType: oppositeTypes[type],
-  };
-};
-
 /**
  * Changes the direction of the animation for the view transition.
  */
@@ -160,7 +135,6 @@ type ViewTransitionState = {
   transitionDirection: TransitionDirection;
   transitionType: TransitionType;
   transitionStyle: TransitionStyle;
-  previousPath: string; // so we can go back to the previous page
 };
 
 // location.state might be defined but set by someone else, so we need to check it
@@ -170,8 +144,7 @@ function validateViewTransitionState(state: ViewTransitionState | null) {
     state !== null &&
     'transitionDirection' in state &&
     'transitionType' in state &&
-    'transitionStyle' in state &&
-    'previousPath' in state
+    'transitionStyle' in state
   ) {
     return state as ViewTransitionState;
   }
@@ -193,8 +166,6 @@ export function useViewTransitionEffect() {
         return removeAnimationDirectionStyles();
       }
 
-      console.error('STATE', state);
-
       const transitionDirection: TransitionDirection =
         state.transitionDirection;
       const transitionType: TransitionType = state.transitionType;
@@ -210,30 +181,18 @@ export function useViewTransitionEffect() {
 }
 
 type ViewTransitionCommonProps = {
-  back?: boolean;
   style?: TransitionStyle;
-} & (
-  | {
-      back: true;
-      direction?: never;
-      type?: never;
-      to?: never;
-    }
-  | {
-      back?: false;
-      direction: TransitionDirection;
-      type: TransitionType;
-      to: string;
-    }
-);
+  direction?: TransitionDirection;
+  type?: TransitionType;
+};
 
-type ViewTransitionLinkProps = ViewTransitionCommonProps & {
+export type ViewTransitionLinkProps = ViewTransitionCommonProps & {
   as?: typeof Link;
-} & Omit<React.ComponentProps<typeof Link>, 'to'>;
+} & React.ComponentProps<typeof Link>;
 
 type ViewTransitionNavLinkProps = ViewTransitionCommonProps & {
   as: typeof NavLink;
-} & Omit<React.ComponentProps<typeof NavLink>, 'to'>;
+} & React.ComponentProps<typeof NavLink>;
 
 /**
  * A wrapper around Link/NavLink that when used will animate the page transitions.
@@ -247,36 +206,24 @@ type ViewTransitionNavLinkProps = ViewTransitionCommonProps & {
  */
 export function ViewTransition<
   T extends ViewTransitionLinkProps | ViewTransitionNavLinkProps,
->({ direction, type, to, back, style = 'static', as = Link, ...props }: T) {
-  const location = useLocation();
-
-  const previousState = validateViewTransitionState(location.state);
-
-  const linkState =
-    back && previousState
-      ? {
-          previousPath: previousState.previousPath,
-          transitionStyle: previousState.transitionStyle,
-          ...getOppositeTransition(
-            previousState.transitionDirection,
-            previousState.transitionType,
-          ),
-        }
-      : {
-          previousPath: location.pathname,
-          transitionDirection: direction,
-          transitionType: type,
-          transitionStyle: style,
-        };
-
-  const linkTo = back ? (previousState?.previousPath ?? '/') : to;
+>({
+  direction = 'left',
+  type = 'open',
+  style = 'static',
+  as = Link,
+  ...props
+}: T) {
+  const linkState: ViewTransitionState = {
+    transitionDirection: direction,
+    transitionType: type,
+    transitionStyle: style,
+  };
 
   const commonProps = {
     ...props,
     prefetch: props.prefetch ?? 'viewport',
     onClick: props.onClick,
     viewTransition: true,
-    to: linkTo,
     state: linkState,
   };
 
