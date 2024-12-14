@@ -3,7 +3,7 @@ import { PageContent, PageFooter, PageHeader } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
 import { formatUnit } from '~/lib/formatting';
 import { canShare, shareContent } from '~/lib/share';
-import { ViewTransition } from '~/lib/transitions';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { SettingsNavButton } from './components/settings-nav-button';
 
 const username = 'satoshi';
@@ -24,17 +24,21 @@ export default function Settings() {
     <>
       <PageHeader>
         <div className="flex items-center justify-between">
-          <ViewTransition to="/" transition="slideRight" applyTo="oldView">
+          <LinkWithViewTransition
+            to="/"
+            transition="slideRight"
+            applyTo="oldView"
+          >
             <X />
-          </ViewTransition>
+          </LinkWithViewTransition>
           <div className="flex items-center gap-2">
-            <ViewTransition
+            <LinkWithViewTransition
               to="/settings/qr"
               transition="slideUp"
               applyTo="newView"
             >
               <QrCode />
-            </ViewTransition>
+            </LinkWithViewTransition>
             {canShare() && (
               <button type="button" onClick={handleShare}>
                 <Share />

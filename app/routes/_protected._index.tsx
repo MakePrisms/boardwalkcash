@@ -8,7 +8,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
-import { ViewTransition } from '~/lib/transitions';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
@@ -51,30 +51,34 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-end">
-          <ViewTransition
+          <LinkWithViewTransition
             to="/settings"
             transition="slideLeft"
             applyTo="newView"
           >
             <Cog />
-          </ViewTransition>
+          </LinkWithViewTransition>
         </div>
       </PageHeader>
 
       <h1>Welcome to Boardwalk!</h1>
-      <ViewTransition
+      <LinkWithViewTransition
         as={NavLink}
         to="/settings"
         transition="slideLeft"
         applyTo="newView"
       >
         <Button>As NavLink</Button>
-      </ViewTransition>
+      </LinkWithViewTransition>
       <br />
       <br />
-      <ViewTransition to="/settings" transition="slideLeft" applyTo="bothViews">
+      <LinkWithViewTransition
+        to="/settings"
+        transition="slideLeft"
+        applyTo="bothViews"
+      >
         <Button>Slide both views</Button>
-      </ViewTransition>
+      </LinkWithViewTransition>
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>

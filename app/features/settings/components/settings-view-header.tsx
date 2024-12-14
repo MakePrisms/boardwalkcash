@@ -2,8 +2,8 @@ import { ChevronLeft } from 'lucide-react';
 import { PageHeader } from '~/components/page';
 import {
   type ApplyTo,
+  LinkWithViewTransition,
   type Transition,
-  ViewTransition,
 } from '~/lib/transitions';
 
 export const SettingsViewHeader = ({
@@ -20,9 +20,9 @@ export const SettingsViewHeader = ({
   return (
     <PageHeader>
       <div className="relative flex items-center">
-        <ViewTransition {...navBack}>
+        <LinkWithViewTransition {...navBack}>
           <ChevronLeft />
-        </ViewTransition>
+        </LinkWithViewTransition>
         <h2 className="w-full text-center font-semibold text-lg">{title}</h2>
       </div>
     </PageHeader>

@@ -176,7 +176,7 @@ type ViewTransitionNavLinkProps = ViewTransitionCommonProps & {
  * Default is to prefetch the link when it is rendered to optimize the mobile experience,
  * but this can be overridden by setting the prefetch prop.
  */
-export function ViewTransition<
+export function LinkWithViewTransition<
   T extends ViewTransitionLinkProps | ViewTransitionNavLinkProps,
 >({ transition, applyTo = 'bothViews', as = Link, ...props }: T) {
   const linkState: ViewTransitionState = {
