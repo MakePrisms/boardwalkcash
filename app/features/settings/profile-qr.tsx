@@ -11,7 +11,7 @@ export default function ProfileQR() {
         title="Scan QR Code"
         navBack={{
           to: '/settings',
-          transition: 'slideRight',
+          transition: 'slideDown',
           applyTo: 'oldView',
         }}
       />
