@@ -16,10 +16,11 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
-import { useViewTransitionEffect } from './lib/view-transition';
+import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
+  { rel: 'stylesheet', href: transitionStyles },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',

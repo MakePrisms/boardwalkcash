@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '~/components/ui/button';
-import { ViewTransition } from '~/lib/view-transition';
+import { ViewTransition } from '~/lib/transitions';
 
 interface SettingsNavButtonProps {
   children: ReactNode;

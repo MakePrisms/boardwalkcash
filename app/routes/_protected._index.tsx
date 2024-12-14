@@ -8,8 +8,8 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
+import { ViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
-import { ViewTransition } from '~/lib/view-transition';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
 

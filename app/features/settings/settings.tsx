@@ -3,7 +3,7 @@ import { PageContent, PageFooter, PageHeader } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
 import { formatUnit } from '~/lib/formatting';
 import { canShare, shareContent } from '~/lib/share';
-import { ViewTransition } from '~/lib/view-transition';
+import { ViewTransition } from '~/lib/transitions';
 import { SettingsNavButton } from './components/settings-nav-button';
 
 const username = 'satoshi';

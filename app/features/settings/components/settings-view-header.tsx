@@ -4,7 +4,7 @@ import {
   type ApplyTo,
   type Transition,
   ViewTransition,
-} from '~/lib/view-transition';
+} from '~/lib/transitions';
 
 export const SettingsViewHeader = ({
   title,
