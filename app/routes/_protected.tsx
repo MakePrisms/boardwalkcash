@@ -16,14 +16,14 @@ export default function ProtectedRoute() {
   const isVerifyEmailRoute = location.pathname === '/verify-email';
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
 
-  // console.log('_protected.tsx - location: ', location.pathname);
-  // console.log('user: ', user);
-  // console.log('loading: ', loading);
-  // console.log('isGuestUser: ', isGuestUser);
-  // console.log('hasVerifiedEmail: ', hasVerifiedEmail);
-  // console.log('shouldVerifyEmail: ', shouldVerifyEmail);
-  // console.log('isVerifyEmailRoute: ', isVerifyEmailRoute);
-  // console.log('shouldRedirectToVerifyEmail: ', shouldRedirectToVerifyEmail);
+  console.log('_protected.tsx - location: ', location.pathname);
+  console.log('user: ', user);
+  console.log('loading: ', loading);
+  console.log('isGuestUser: ', isGuestUser);
+  console.log('hasVerifiedEmail: ', hasVerifiedEmail);
+  console.log('shouldVerifyEmail: ', shouldVerifyEmail);
+  console.log('isVerifyEmailRoute: ', isVerifyEmailRoute);
+  console.log('shouldRedirectToVerifyEmail: ', shouldRedirectToVerifyEmail);
 
   useEffectNoStrictMode(
     () => {
