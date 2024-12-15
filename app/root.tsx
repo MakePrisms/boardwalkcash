@@ -16,9 +16,11 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
+  { rel: 'stylesheet', href: transitionStyles },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'preconnect',
@@ -42,6 +44,12 @@ export async function loader({
   const cookieSettings = getThemeCookies(request);
   return { cookieSettings: cookieSettings || null };
 }
+
+// prevent loader from being revalidated
+export function shouldRevalidate() {
+  return false;
+}
+
 const vercelAnalyticsMode =
   process.env.NODE_ENV === 'production' && process.env.VERCEL
     ? 'production'
@@ -79,8 +87,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
-
   const dehydratedState = useDehydratedState();
+  useViewTransitionEffect();
 
   // TODO: OpenSecretProvider apiUrl url to settings
   return (

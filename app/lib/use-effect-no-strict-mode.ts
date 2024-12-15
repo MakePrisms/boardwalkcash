@@ -1,4 +1,3 @@
-import * as process from 'node:process';
 import {
   type DependencyList,
   type EffectCallback,

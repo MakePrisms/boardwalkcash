@@ -1,10 +1,14 @@
 import { useOpenSecret } from '@opensecret/react';
+import { NavLink } from '@remix-run/react';
+import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
+import { Page, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
 import { toast } from '~/hooks/use-toast';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
@@ -44,9 +48,37 @@ export default function Index() {
   };
 
   return (
-    <div className="p-4">
+    <Page>
+      <PageHeader>
+        <div className="flex items-center justify-end">
+          <LinkWithViewTransition
+            to="/settings"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Cog />
+          </LinkWithViewTransition>
+        </div>
+      </PageHeader>
+
       <h1>Welcome to Boardwalk!</h1>
-      {}
+      <LinkWithViewTransition
+        as={NavLink}
+        to="/settings"
+        transition="slideLeft"
+        applyTo="newView"
+      >
+        <Button>As NavLink</Button>
+      </LinkWithViewTransition>
+      <br />
+      <br />
+      <LinkWithViewTransition
+        to="/settings"
+        transition="slideLeft"
+        applyTo="bothViews"
+      >
+        <Button>Slide both views</Button>
+      </LinkWithViewTransition>
       {isGuestAccount && <div>Guest account</div>}
       <div>id: {os.auth.user.user.id}</div>
       <div>email: {os.auth.user.user.email}</div>
@@ -144,6 +176,6 @@ export default function Index() {
           </form>
         </div>
       )}
-    </div>
+    </Page>
   );
 }
