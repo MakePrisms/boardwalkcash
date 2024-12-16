@@ -1,4 +1,3 @@
-import { useOpenSecret } from '@opensecret/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import {
@@ -10,6 +9,7 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { useAuthActions } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
 
 type Props = {
@@ -26,7 +26,7 @@ type FormValues = {
 };
 
 export function PasswordReset({ email, secret, onSuccess, onBack }: Props) {
-  const { confirmPasswordReset } = useOpenSecret();
+  const { confirmPasswordReset } = useAuthActions();
   const { toast } = useToast();
   const {
     register,

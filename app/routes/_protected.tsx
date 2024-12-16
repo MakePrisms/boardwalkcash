@@ -1,55 +1,48 @@
-import { useOpenSecret } from '@opensecret/react';
 import { Outlet, useLocation, useNavigate } from '@remix-run/react';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import { useAuthState } from '~/features/user/auth';
+import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
+import { UserProvider } from '~/features/user/user-provider';
 import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
 
 export default function ProtectedRoute() {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    auth: { user, loading },
-  } = useOpenSecret();
-  const isLoggedIn = !!user;
-  const isGuestUser = isLoggedIn ? !user.user.email : undefined;
-  const hasVerifiedEmail = isLoggedIn && user.user.email_verified;
-  const shouldVerifyEmail = isGuestUser === false && !hasVerifiedEmail;
-  const isVerifyEmailRoute = location.pathname === '/verify-email';
+  const { loading, isLoggedIn, user } = useAuthState();
+  const shouldVerifyEmail = user ? shouldUserVerifyEmail(user) : false;
+  const isVerifyEmailRoute = location.pathname.startsWith('/verify-email');
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
 
-  console.log('_protected.tsx - location: ', location.pathname);
-  console.log('user: ', user);
-  console.log('loading: ', loading);
-  console.log('isGuestUser: ', isGuestUser);
-  console.log('hasVerifiedEmail: ', hasVerifiedEmail);
-  console.log('shouldVerifyEmail: ', shouldVerifyEmail);
-  console.log('isVerifyEmailRoute: ', isVerifyEmailRoute);
-  console.log('shouldRedirectToVerifyEmail: ', shouldRedirectToVerifyEmail);
+  console.debug('Rendering protected layout', {
+    location: location.pathname,
+    loading,
+    user: user,
+    shouldVerifyEmail,
+    isVerifyEmailRoute,
+    shouldRedirectToVerifyEmail,
+  });
 
-  useEffectNoStrictMode(
-    () => {
-      if (!loading && !isLoggedIn) {
-        console.log('++++++++ redirecting from protected to signup');
-        navigate('/signup');
-      }
-    },
-    [loading, isLoggedIn, navigate],
-    '_protected.tsx - signup redirect',
-  );
+  useEffectNoStrictMode(() => {
+    if (!loading && !isLoggedIn) {
+      console.debug('Redirecting from protected page to signup');
+      navigate('/signup');
+    }
+  }, [loading, isLoggedIn, navigate]);
 
-  useEffectNoStrictMode(
-    () => {
-      if (shouldRedirectToVerifyEmail) {
-        console.log('++++++++ redirecting from protected to verify email');
-        navigate('/verify-email');
-      }
-    },
-    [shouldRedirectToVerifyEmail, navigate],
-    '_protected.tsx - verify email redirect',
-  );
+  useEffectNoStrictMode(() => {
+    if (shouldRedirectToVerifyEmail) {
+      console.debug('Redirecting from protected page to verify email');
+      navigate('/verify-email');
+    }
+  }, [shouldRedirectToVerifyEmail, navigate]);
 
   if (!isLoggedIn || shouldRedirectToVerifyEmail) {
     return <LoadingScreen />;
   }
 
-  return <Outlet />;
+  return (
+    <UserProvider user={user}>
+      <Outlet />
+    </UserProvider>
+  );
 }
