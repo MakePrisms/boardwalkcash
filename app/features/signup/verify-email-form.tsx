@@ -1,7 +1,5 @@
-import { useOpenSecret } from '@opensecret/react';
-import { useNavigate } from '@remix-run/react';
 import { useState } from 'react';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -12,50 +10,46 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import {
+  useRequestEmailVerificationCode,
+  useVerifyEmailOnLoad,
+} from '~/features/signup/verify-email';
+import { useAuthActions } from '~/features/user/auth';
+import type { FullUser } from '~/features/user/user';
+import { useUserStore } from '~/features/user/user-provider';
 import { useToast } from '~/hooks/use-toast';
-import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
 
 type FormValues = { code: string };
+type Step = 'auto-verification' | 'manual-verification';
+type Props = { user: FullUser; code?: string };
 
-export function VerifyEmailForm() {
-  // TODO: ask OS why do they have requestNewVerificationCode and requestNewVerificationEmail which seem to be doing the same thing
-  const {
-    auth,
-    verifyEmail,
-    requestNewVerificationCode,
-    signOut,
-    refetchUser,
-  } = useOpenSecret();
-  const [requestingVerificationCode, setRequestingVerificationCode] =
-    useState<boolean>(false);
-  const navigate = useNavigate();
-  // TODO: handle this better later so we don't have to use !
-  // biome-ignore lint/style/noNonNullAssertion: temporary
-  const user = auth.user!.user;
-  const isGuestUser = !user.email;
+export function VerifyEmailForm({ user, code }: Props) {
+  const [step, setStep] = useState<Step>(() => {
+    return code ? 'auto-verification' : 'manual-verification';
+  });
+  const { signOut } = useAuthActions();
+  const verifyEmail = useUserStore((state) => state.verifyEmail);
   const { toast } = useToast();
+  const { requestingEmailVerificationCode, requestEmailVerificationCode } =
+    useRequestEmailVerificationCode();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>();
 
-  // TODO: handling this redirect probably doesn't belong here
-  useEffectNoStrictMode(
-    () => {
-      if (user.email_verified || isGuestUser) {
-        console.log('++++++++ redirecting from verify email to /');
-        navigate('/');
-      }
-    },
-    [user.email_verified, isGuestUser, navigate],
-    'verify email - home redirect',
-  );
+  useVerifyEmailOnLoad({
+    code,
+    onFailed: () => setStep('manual-verification'),
+  });
 
-  const onSubmit: SubmitHandler<FormValues> = async (data) => {
+  if (step === 'auto-verification') {
+    return 'Verifying email...';
+  }
+
+  const onSubmit = async (data: FormValues) => {
     try {
       await verifyEmail(data.code);
-      await refetchUser();
     } catch {
       toast({
         variant: 'destructive',
@@ -64,27 +58,6 @@ export function VerifyEmailForm() {
       });
     }
   };
-
-  const handleResendVerificationEmail = async () => {
-    if (requestingVerificationCode) return;
-
-    try {
-      setRequestingVerificationCode(true);
-      await requestNewVerificationCode();
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to send new verification email',
-        description: 'Please try again or contact support',
-      });
-    } finally {
-      setRequestingVerificationCode(false);
-    }
-  };
-
-  if (user.email_verified || isGuestUser) {
-    return null;
-  }
 
   return (
     <Card className="mx-auto w-full max-w-sm">
@@ -125,8 +98,8 @@ export function VerifyEmailForm() {
             type="button"
             className="w-full"
             variant="outline"
-            loading={requestingVerificationCode}
-            onClick={handleResendVerificationEmail}
+            loading={requestingEmailVerificationCode}
+            onClick={requestEmailVerificationCode}
           >
             Resend Verification Email
           </Button>

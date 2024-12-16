@@ -1,4 +1,3 @@
-import { useOpenSecret } from '@opensecret/react';
 import { Link } from '@remix-run/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
@@ -11,6 +10,7 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { useAuthActions } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -21,7 +21,7 @@ type FormValues = { email: string; password: string };
 const validateEmail = buildEmailValidator('Invalid email');
 
 export function LoginForm({ onBack }: Props) {
-  const { signIn } = useOpenSecret();
+  const { signIn } = useAuthActions();
   const { toast } = useToast();
   const {
     register,
@@ -60,6 +60,7 @@ export function LoginForm({ onBack }: Props) {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="satoshi@nakamoto.com"
               aria-invalid={errors.email ? 'true' : 'false'}
               {...register('email', {
@@ -86,6 +87,7 @@ export function LoginForm({ onBack }: Props) {
             <Input
               id="password"
               type="password"
+              autoComplete="current-password"
               aria-invalid={errors.password ? 'true' : 'false'}
               {...register('password', { required: 'Password is required' })}
             />

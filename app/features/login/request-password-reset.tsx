@@ -1,4 +1,3 @@
-import { useOpenSecret } from '@opensecret/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
 import {
@@ -10,9 +9,8 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { useAuthActions } from '~/features/user/auth';
 import { toast } from '~/hooks/use-toast';
-import { generateRandomPassword } from '~/lib/password-generator';
-import { computeSHA256 } from '~/lib/sha256';
 import { buildEmailValidator } from '~/lib/validation';
 
 type Props = {
@@ -25,7 +23,7 @@ type FormValues = { email: string };
 const validateEmail = buildEmailValidator('Invalid email');
 
 export function RequestPasswordReset({ onRequested, onBack }: Props) {
-  const { requestPasswordReset } = useOpenSecret();
+  const { requestPasswordReset } = useAuthActions();
   const {
     register,
     handleSubmit,
@@ -34,9 +32,7 @@ export function RequestPasswordReset({ onRequested, onBack }: Props) {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
-      const secret = generateRandomPassword(20);
-      const hash = await computeSHA256(secret);
-      await requestPasswordReset(data.email, hash);
+      const { secret } = await requestPasswordReset(data.email);
       onRequested(data.email, secret);
     } catch {
       toast({

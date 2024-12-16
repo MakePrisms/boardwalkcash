@@ -147,7 +147,7 @@ export function useViewTransitionEffect() {
   useEffect(() => {
     if (navigation.state === 'loading') {
       const state = getViewTransitionState(navigation.location.state);
-      console.log('nvaigation state: ', state);
+      console.debug('navigation state: ', state);
       if (state) {
         applyTransitionStyles(state.transition, state.applyTo);
       } else {

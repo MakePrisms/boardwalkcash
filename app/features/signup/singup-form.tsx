@@ -1,4 +1,3 @@
-import { useOpenSecret } from '@opensecret/react';
 import { Link } from '@remix-run/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
@@ -11,6 +10,7 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { useAuthActions } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -21,7 +21,7 @@ type FormValues = { email: string; password: string; confirmPassword: string };
 const validateEmail = buildEmailValidator('Invalid email');
 
 export function SignupForm({ onBack }: Props) {
-  const { signUp } = useOpenSecret();
+  const { signUp } = useAuthActions();
   const { toast } = useToast();
   const {
     register,
@@ -31,7 +31,7 @@ export function SignupForm({ onBack }: Props) {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
-      await signUp(data.email, data.password, '');
+      await signUp(data.email, data.password);
     } catch (e) {
       if (e instanceof Error && e.message === 'Email already registered') {
         toast({
@@ -68,6 +68,7 @@ export function SignupForm({ onBack }: Props) {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="satoshi@nakamoto.com"
               aria-invalid={errors.email ? 'true' : 'false'}
               {...register('email', {
@@ -86,6 +87,7 @@ export function SignupForm({ onBack }: Props) {
             <Input
               id="password"
               type="password"
+              autoComplete="new-password"
               aria-invalid={errors.password ? 'true' : 'false'}
               {...register('password', {
                 required: 'Password is required',
@@ -106,6 +108,7 @@ export function SignupForm({ onBack }: Props) {
             <Input
               id="confirmPassword"
               type="password"
+              autoComplete="new-password"
               aria-invalid={errors.confirmPassword ? 'true' : 'false'}
               {...register('confirmPassword', {
                 required: 'Password confirmation is required',

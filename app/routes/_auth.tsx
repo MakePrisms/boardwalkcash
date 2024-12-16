@@ -1,29 +1,26 @@
-import { useOpenSecret } from '@opensecret/react';
 import { Outlet, useLocation, useNavigate } from '@remix-run/react';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import { useAuthState } from '~/features/user/auth';
 import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
 
 export default function AuthRoute() {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    auth: { user, loading },
-  } = useOpenSecret();
-  const isLoggedIn = !!user;
-  console.log('_auth.tsx - location: ', location.pathname);
-  console.log('isLoggedIn: ', isLoggedIn);
-  console.log('user: ', user);
+  const { loading, isLoggedIn, user } = useAuthState();
 
-  useEffectNoStrictMode(
-    () => {
-      if (isLoggedIn) {
-        console.log('++++++++ redirecting from auth to /');
-        navigate('/');
-      }
-    },
-    [isLoggedIn, navigate],
-    '_auth.tsx - home redirect',
-  );
+  console.debug('Rendering auth layout', {
+    location: location.pathname,
+    loading,
+    isLoggedIn,
+    user,
+  });
+
+  useEffectNoStrictMode(() => {
+    if (isLoggedIn) {
+      console.debug('Redirecting from auth page to /');
+      navigate('/');
+    }
+  }, [isLoggedIn, navigate]);
 
   if (loading || isLoggedIn) {
     return <LoadingScreen />;

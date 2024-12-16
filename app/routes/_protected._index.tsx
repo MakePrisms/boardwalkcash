@@ -1,4 +1,3 @@
-import { useOpenSecret } from '@opensecret/react';
 import { NavLink } from '@remix-run/react';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
@@ -7,6 +6,8 @@ import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useTheme } from '~/features/theme';
+import { useAuthActions } from '~/features/user/auth';
+import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
@@ -16,16 +17,13 @@ type FormValues = { email: string; password: string; confirmPassword: string };
 const validateEmail = buildEmailValidator('Invalid email');
 
 export default function Index() {
-  const os = useOpenSecret();
+  const { signOut } = useAuthActions();
+  const user = useUserStore((s) => s.user);
+  const upgradeGuestToFullAccount = useUserStore(
+    (s) => s.upgradeGuestToFullAccount,
+  );
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
-
-  // Will remove this if later
-  if (!os.auth.user) {
-    throw new Error('Something is wrong');
-  }
-
-  const isGuestAccount = !os.auth.user.user.email;
 
   const {
     register,
@@ -35,15 +33,21 @@ export default function Index() {
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
-      await os.convertGuestToUserAccount(data.email, data.password);
-      localStorage.removeItem('guestAccount.id');
-      localStorage.removeItem('guestAccount.password');
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Error! Failed to convert account',
-        description: 'Please try again later or contact support',
-      });
+      await upgradeGuestToFullAccount(data.email, data.password);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'Email already registered') {
+        toast({
+          title: 'Email already taken',
+          description:
+            'Please try again with different email or login to your existing account',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error! Failed to convert account',
+          description: 'Please try again later or contact support',
+        });
+      }
     }
   };
 
@@ -79,17 +83,14 @@ export default function Index() {
       >
         <Button>Slide both views</Button>
       </LinkWithViewTransition>
-      {isGuestAccount && <div>Guest account</div>}
-      <div>id: {os.auth.user.user.id}</div>
-      <div>email: {os.auth.user.user.email}</div>
-      <div>name: {os.auth.user.user.name}</div>
-      <div>
-        email verified: {os.auth.user.user.email_verified ? 'true' : 'false'}
-      </div>
-      <div>login method: {os.auth.user.user.login_method}</div>
-      <div>created at: {os.auth.user.user.created_at}</div>
-      <div>updated at: {os.auth.user.user.updated_at}</div>
-      <Button variant="default" onClick={os.signOut} className="mt-2">
+      {user.isGuest && <div>Guest account</div>}
+      <div>id: {user.id}</div>
+      <div>email: {!user.isGuest ? user.email : ''}</div>
+      <div>email verified: {user.emailVerified ? 'true' : 'false'}</div>
+      <div>login method: {user.loginMethod}</div>
+      <div>created at: {user.createdAt}</div>
+      <div>updated at: {user.updatedAt}</div>
+      <Button variant="default" onClick={signOut} className="mt-2">
         Log out
       </Button>
       <div className="mt-2 flex flex-row gap-2">
@@ -106,7 +107,7 @@ export default function Index() {
           {effectiveColorMode}
         </Button>
       </div>
-      {isGuestAccount && (
+      {user.isGuest && (
         <div className="mt-4 max-w-md">
           <h2>Upgrade to full account:</h2>
           <form
@@ -137,6 +138,7 @@ export default function Index() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 aria-invalid={errors.password ? 'true' : 'false'}
                 {...register('password', {
                   required: 'Password is required',
@@ -157,6 +159,7 @@ export default function Index() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                 {...register('confirmPassword', {
                   required: 'Password confirmation is required',
