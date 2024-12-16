@@ -1,10 +1,9 @@
-import { Outlet, useLocation, useNavigate } from '@remix-run/react';
+import { Outlet, useLocation } from '@remix-run/react';
+import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
-import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
 
 export default function AuthRoute() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { loading, isLoggedIn, user } = useAuthState();
 
@@ -15,15 +14,16 @@ export default function AuthRoute() {
     user,
   });
 
-  useEffectNoStrictMode(() => {
-    if (isLoggedIn) {
-      console.debug('Redirecting from auth page to /');
-      navigate('/');
-    }
-  }, [isLoggedIn, navigate]);
-
-  if (loading || isLoggedIn) {
+  if (loading) {
     return <LoadingScreen />;
+  }
+
+  if (isLoggedIn) {
+    return (
+      <Redirect to="/" logMessage="Redirecting from auth page to /">
+        <LoadingScreen />
+      </Redirect>
+    );
   }
 
   return <Outlet />;
