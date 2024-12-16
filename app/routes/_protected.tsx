@@ -1,14 +1,14 @@
-import { Outlet, useLocation, useNavigate } from '@remix-run/react';
+import { Outlet, useLocation } from '@remix-run/react';
+import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
 import { UserProvider } from '~/features/user/user-provider';
-import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
 
 export default function ProtectedRoute() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { loading, isLoggedIn, user } = useAuthState();
+  const shouldRedirectToSignup = !loading && !isLoggedIn;
   const shouldVerifyEmail = user ? shouldUserVerifyEmail(user) : false;
   const isVerifyEmailRoute = location.pathname.startsWith('/verify-email');
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
@@ -16,27 +16,37 @@ export default function ProtectedRoute() {
   console.debug('Rendering protected layout', {
     location: location.pathname,
     loading,
-    user: user,
+    isLoggedIn,
+    user,
+    shouldRedirectToSignup,
     shouldVerifyEmail,
     isVerifyEmailRoute,
     shouldRedirectToVerifyEmail,
   });
 
-  useEffectNoStrictMode(() => {
-    if (!loading && !isLoggedIn) {
-      console.debug('Redirecting from protected page to signup');
-      navigate('/signup');
-    }
-  }, [loading, isLoggedIn, navigate]);
+  if (shouldRedirectToSignup) {
+    return (
+      <Redirect
+        to="/signup"
+        logMessage="Redirecting from protected page to signup"
+      >
+        <LoadingScreen />
+      </Redirect>
+    );
+  }
 
-  useEffectNoStrictMode(() => {
-    if (shouldRedirectToVerifyEmail) {
-      console.debug('Redirecting from protected page to verify email');
-      navigate('/verify-email');
-    }
-  }, [shouldRedirectToVerifyEmail, navigate]);
+  if (shouldRedirectToVerifyEmail) {
+    return (
+      <Redirect
+        to="/verify-email"
+        logMessage="Redirecting from protected page to verify email"
+      >
+        <LoadingScreen />
+      </Redirect>
+    );
+  }
 
-  if (!isLoggedIn || shouldRedirectToVerifyEmail) {
+  if (!isLoggedIn) {
     return <LoadingScreen />;
   }
 
