@@ -22,8 +22,7 @@ export const useEffectNoStrictMode = (
   // biome-ignore lint/correctness/useExhaustiveDependencies: we are ignoring this because biome sees effect as missing dep. We can safely do that because effect will change only when the deps change too.
   useEffect(() => {
     // Strict mode is on only in development mode so no need to have special handling if we are not running in that mode
-    const nodeEnv: string = import.meta.env.NODE_ENV ?? 'development';
-    const isDevelopmentMode = nodeEnv === 'development';
+    const isDevelopmentMode = import.meta.env.MODE === 'development';
     if (!isDevelopmentMode || hasRunOnce.current) {
       return effect();
     }
