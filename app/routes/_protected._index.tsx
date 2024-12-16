@@ -138,6 +138,7 @@ export default function Index() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 aria-invalid={errors.password ? 'true' : 'false'}
                 {...register('password', {
                   required: 'Password is required',
@@ -158,6 +159,7 @@ export default function Index() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                 {...register('confirmPassword', {
                   required: 'Password confirmation is required',

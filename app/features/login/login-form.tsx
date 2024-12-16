@@ -60,6 +60,7 @@ export function LoginForm({ onBack }: Props) {
             <Input
               id="email"
               type="email"
+              autoComplete="username"
               placeholder="satoshi@nakamoto.com"
               aria-invalid={errors.email ? 'true' : 'false'}
               {...register('email', {
@@ -86,6 +87,7 @@ export function LoginForm({ onBack }: Props) {
             <Input
               id="password"
               type="password"
+              autoComplete="current-password"
               aria-invalid={errors.password ? 'true' : 'false'}
               {...register('password', { required: 'Password is required' })}
             />
