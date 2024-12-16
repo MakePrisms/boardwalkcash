@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useParams } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -22,10 +21,9 @@ import { useToast } from '~/hooks/use-toast';
 
 type FormValues = { code: string };
 type Step = 'auto-verification' | 'manual-verification';
-type Props = { user: FullUser };
+type Props = { user: FullUser; code?: string };
 
-export function VerifyEmailForm({ user }: Props) {
-  const { code } = useParams<{ code?: string }>();
+export function VerifyEmailForm({ user, code }: Props) {
   const [step, setStep] = useState<Step>(() => {
     return code ? 'auto-verification' : 'manual-verification';
   });

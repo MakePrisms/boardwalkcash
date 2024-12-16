@@ -17,12 +17,20 @@ const assertGuestAccountDetails = (
   );
 };
 
+const safeJsonParse = (value: string): unknown | null => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
 const getGuestAccount = (): GuestAccountDetails | null => {
   const dataString = localStorage.getItem(storageKey);
   if (!dataString) {
     return null;
   }
-  const dataObject = JSON.parse(dataString);
+  const dataObject = safeJsonParse(dataString);
   if (!assertGuestAccountDetails(dataObject)) {
     console.error(
       'Invalid guest account data found in the storage',
