@@ -40,7 +40,10 @@ export function VerifyEmailForm({ user }: Props) {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>();
 
-  useVerifyEmailOnLoad(code, () => setStep('manual-verification'));
+  useVerifyEmailOnLoad({
+    code,
+    onFailed: () => setStep('manual-verification'),
+  });
 
   if (step === 'auto-verification') {
     return 'Verifying email...';

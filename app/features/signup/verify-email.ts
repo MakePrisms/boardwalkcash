@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useUserStore } from '~/features/user/user-provider';
 import { useToast } from '~/hooks/use-toast';
 
-export const useVerifyEmailOnLoad = (
-  code: string | undefined,
-  onFailed: () => void,
-) => {
+export const useVerifyEmailOnLoad = ({
+  code,
+  onFailed,
+}: {
+  code: string | undefined;
+  onFailed: () => void;
+}) => {
   const verifyEmail = useUserStore((state) => state.verifyEmail);
   const { toast } = useToast();
   const failedRef = useRef(onFailed);

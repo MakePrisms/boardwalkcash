@@ -34,12 +34,20 @@ export default function Index() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
       await upgradeGuestToFullAccount(data.email, data.password);
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Error! Failed to convert account',
-        description: 'Please try again later or contact support',
-      });
+    } catch (e) {
+      if (e instanceof Error && e.message === 'Email already registered') {
+        toast({
+          title: 'Email already taken',
+          description:
+            'Please try again with different email or login to your existing account',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error! Failed to convert account',
+          description: 'Please try again later or contact support',
+        });
+      }
     }
   };
 
