@@ -1,7 +1,9 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
+import { jwtDecode } from 'jwt-decode';
 import { useCallback, useMemo, useRef } from 'react';
 import { guestAccountStorage } from '~/features/user/guest-account-storage';
 import type { User } from '~/features/user/user';
+import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
 
@@ -171,4 +173,98 @@ export const useAuthActions = (): AuthActions => {
     requestPasswordReset,
     confirmPasswordReset: confirmPasswordResetRef.current,
   };
+};
+
+type OpenSecretJwt = {
+  /**
+   * Token expiration time. It's a unix timestamp in seconds
+   */
+  exp: number;
+
+  /**
+   * Time when the token was issues. It's a unix timestamp in seconds
+   */
+  iat: number;
+
+  /**
+   * ID of the logged-in user
+   */
+  sub: string;
+
+  /**
+   * Audience
+   */
+  aud: 'access' | 'refresh';
+};
+
+const accessTokenKey = 'access_token';
+const refreshTokenKey = 'refresh_token';
+
+const getJwt = (key: string): OpenSecretJwt | null => {
+  const jwt = localStorage.getItem(key);
+  if (!jwt) {
+    return null;
+  }
+  return jwtDecode<OpenSecretJwt>(jwt);
+};
+
+const removeKeys = () => {
+  localStorage.removeItem(accessTokenKey);
+  localStorage.removeItem(refreshTokenKey);
+};
+
+const getRefreshToken = () => getJwt(refreshTokenKey);
+
+const getRemainingSessionTimeInMs = (
+  token: OpenSecretJwt | null,
+): number | null => {
+  if (!token) {
+    return null;
+  }
+  // We are treating the session as expired 5 seconds before the actual expiry just in case
+  const fiveSecondsBeforeExpiry = token.exp - 5;
+  const fiveSecondsBeforeExpiryInMs = fiveSecondsBeforeExpiry * 1000;
+  const remainingTime = fiveSecondsBeforeExpiryInMs - Date.now();
+  return Math.max(remainingTime, 0);
+};
+
+type HandleSessionExpiryProps = {
+  isGuestAccount: boolean;
+  onLogout: () => void;
+};
+
+export const useHandleSessionExpiry = ({
+  isGuestAccount,
+  onLogout,
+}: HandleSessionExpiryProps) => {
+  const { signUpGuest: extendGuestSession, signOut } = useAuthActions();
+  const refreshToken = getRefreshToken();
+  const remainingSessionTime = getRemainingSessionTimeInMs(refreshToken);
+
+  const handleSessionExpiry = async () => {
+    try {
+      if (isGuestAccount) {
+        // Extend guest session will get new extended access and refresh token from Open Secret. The OS code can be seen
+        // here https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L441. Because setState is
+        // called after this method is executed the new render will be triggered and useHandleSessionExpiry will be
+        // executed again which will result in new session expiry timeout being set.
+        await extendGuestSession();
+      } else {
+        onLogout();
+        // Open secret is already handling potential errors in signOut method and removes the keys from the storage so
+        // in that case our catch should never be triggered, which is fine. We are leaving it there for the guest use
+        // case and just in case.
+        await signOut();
+      }
+    } catch (e) {
+      console.error(
+        'Failed to handle session expiry. Performing manual log out.',
+        e,
+      );
+      removeKeys();
+      window.location.reload();
+    }
+  };
+
+  useLongTimeout(handleSessionExpiry, remainingSessionTime);
 };

@@ -7,12 +7,14 @@ import {
   useRef,
 } from 'react';
 import { useStore } from 'zustand';
+import { useHandleSessionExpiry } from '~/features/user/auth';
 import type { User } from '~/features/user/user';
 import {
   type UserState,
   type UserStore,
   createUserStore,
 } from '~/features/user/user-store';
+import { useToast } from '~/hooks/use-toast';
 
 const UserContext = createContext<UserStore | null>(null);
 
@@ -21,6 +23,7 @@ type Props = PropsWithChildren<{
 }>;
 
 export const UserProvider = ({ user, children }: Props) => {
+  const { toast } = useToast();
   const openSecret = useOpenSecret();
   const storeRef = useRef<UserStore>();
   if (!storeRef.current) {
@@ -39,6 +42,17 @@ export const UserProvider = ({ user, children }: Props) => {
       state.setUser(user);
     }
   }, [user]);
+
+  useHandleSessionExpiry({
+    isGuestAccount: user.isGuest,
+    onLogout: () => {
+      toast({
+        title: 'Session expired',
+        description:
+          'The session has expired. You will be redirected to the login page.',
+      });
+    },
+  });
 
   return (
     <UserContext.Provider value={storeRef.current}>
