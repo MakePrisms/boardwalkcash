@@ -2,7 +2,7 @@ import { useNavigate } from '@remix-run/react';
 import type { To } from '@remix-run/router';
 import type { PropsWithChildren } from 'react';
 import type { NavigateOptions } from 'react-router';
-import { useEffectNoStrictMode } from '~/lib/use-effect-no-strict-mode';
+import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 
 type Props = PropsWithChildren<{
   to: To;
