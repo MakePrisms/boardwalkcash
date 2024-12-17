@@ -76,7 +76,7 @@ export default function AllAccounts() {
         {accounts.map((account) => (
           <SettingsNavButton key={account.name} to="/settings/accounts/123">
             <p>{account.name}</p>
-            <p>{formatUnit(account.usdBalance, 'usd')}</p>
+            <p>{formatUnit(account.usdBalance, 'cent')}</p>
             {account.satBalance && (
               <p>{formatUnit(account.satBalance, 'sat')}</p>
             )}
