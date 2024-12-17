@@ -9,7 +9,7 @@ import { SettingsNavButton } from './components/settings-nav-button';
 const username = 'satoshi';
 const activeMintName = 'Coinos';
 const activeMintBalance = 10_000;
-const activeMintUnit = 'usd';
+const activeMintUnit = 'cent';
 
 export default function Settings() {
   const handleShare = async () => {

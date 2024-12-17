@@ -17,7 +17,7 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
         {accountId === '123' && (
           <div>
             <p>Stablenut</p>
-            <p>{formatUnit(10_000, 'usd')}</p>
+            <p>{formatUnit(10_000, 'cent')}</p>
             <p>{formatUnit(10_000, 'sat')}</p>
           </div>
         )}
