@@ -1,4 +1,4 @@
-import { NavLink } from '@remix-run/react';
+import { NavLink, useOutletContext } from '@remix-run/react';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Page, PageHeader } from '~/components/page';
@@ -13,6 +13,8 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
+import { type ExchangeRates, convertToUnit } from '~/lib/exchange-rate';
+import { formatUnit } from '~/lib/formatting';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -55,6 +57,7 @@ export default function Index() {
   );
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
+  const { rates } = useOutletContext<{ rates: ExchangeRates }>();
 
   const {
     register,
@@ -85,6 +88,16 @@ export default function Index() {
   return (
     <Page>
       <PageHeader>
+        <div className="flex items-center justify-start gap-2">
+          <div>
+            {/* dollars per bitcoin */}
+            {formatUnit(rates.BTCUSD, 'usd')}/BTC
+          </div>
+          <div>
+            {/* sats per dollar */}
+            {formatUnit(convertToUnit(1, 'usd', 'sat', rates), 'sat')}/$
+          </div>
+        </div>
         <div className="flex items-center justify-end">
           <LinkWithViewTransition
             to="/settings"
