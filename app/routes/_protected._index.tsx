@@ -94,6 +94,13 @@ export default function Index() {
         >
           <Button>Slide both views</Button>
         </LinkWithViewTransition>
+        <LinkWithViewTransition
+          to="/receive"
+          transition="slideUp"
+          applyTo="newView"
+        >
+          <Button>Receive</Button>
+        </LinkWithViewTransition>
         {user.isGuest && <div>Guest account</div>}
         <div>id: {user.id}</div>
         <div>email: {!user.isGuest ? user.email : ''}</div>
