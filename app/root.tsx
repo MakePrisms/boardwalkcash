@@ -16,6 +16,7 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { Page } from './components/page';
 import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
@@ -29,7 +30,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Kode+Mono:wght@400..700&family=Teko:wght@300..700&display=swap',
   },
 ];
 
@@ -74,13 +75,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <Page>
         {children}
         <ScrollRestoration />
         <Scripts />
         <Analytics mode={vercelAnalyticsMode} />
         <Toaster />
-      </body>
+      </Page>
     </html>
   );
 }

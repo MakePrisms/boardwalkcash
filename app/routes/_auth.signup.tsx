@@ -1,9 +1,10 @@
+import { PageContent } from '~/components/page';
 import { Signup } from '~/features/signup/signup';
 
 export default function SignupPage() {
   return (
-    <div className="flex h-screen w-full items-center justify-center px-4">
+    <PageContent className="justify-center">
       <Signup />
-    </div>
+    </PageContent>
   );
 }
