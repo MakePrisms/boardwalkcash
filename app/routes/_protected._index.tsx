@@ -5,6 +5,10 @@ import { Page, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import {
+  type Account,
+  AccountSelector,
+} from '~/features/accounts/account-selector';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
@@ -15,6 +19,33 @@ import { buildEmailValidator } from '~/lib/validation';
 type FormValues = { email: string; password: string; confirmPassword: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
+
+const accounts: Account[] = [
+  {
+    id: '1',
+    name: 'Testnut',
+    unit: 'sat',
+    type: 'cashu',
+    mintUrl: 'https://testnut.cashu.space',
+    balance: 54_000,
+  },
+  {
+    id: '2',
+    name: 'Start9',
+    unit: 'sat',
+    type: 'nwc',
+    nwcUrl: 'nwc connection string',
+    balance: 321,
+  },
+  {
+    id: '3',
+    name: 'Stablenut',
+    unit: 'usd',
+    type: 'cashu',
+    mintUrl: 'https://stablenut.umint.cash.',
+    balance: 121,
+  },
+];
 
 export default function Index() {
   const { signOut } = useAuthActions();
@@ -74,6 +105,9 @@ export default function Index() {
       >
         <Button>As NavLink</Button>
       </LinkWithViewTransition>
+      <br />
+      <br />
+      <AccountSelector accounts={accounts} onSelect={() => console.log} />
       <br />
       <br />
       <LinkWithViewTransition
