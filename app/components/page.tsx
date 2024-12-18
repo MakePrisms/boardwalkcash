@@ -6,7 +6,7 @@ import {
 } from '~/lib/transitions';
 import { cn } from '~/lib/utils';
 
-interface PageProps extends React.HTMLAttributes<HTMLBodyElement> {
+interface PageProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
 }
 
@@ -30,7 +30,7 @@ export function Page({ children, className, ...props }: PageProps) {
   }, []);
 
   return (
-    <body
+    <div
       className={cn(
         'mx-auto flex h-[var(--vh)] w-full flex-col p-4 font-primary sm:px-6 lg:px-8',
         className,
@@ -38,7 +38,7 @@ export function Page({ children, className, ...props }: PageProps) {
       {...props}
     >
       {children}
-    </body>
+    </div>
   );
 }
 
