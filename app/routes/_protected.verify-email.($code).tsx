@@ -1,5 +1,5 @@
 import { useParams } from '@remix-run/react';
-import { PageContent } from '~/components/page';
+import { Page, PageContent } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { VerifyEmailForm } from '~/features/signup/verify-email-form';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
@@ -15,8 +15,10 @@ export default function VerifyEmail() {
   }
 
   return (
-    <PageContent className="justify-center">
-      <VerifyEmailForm user={user} code={code} />
-    </PageContent>
+    <Page>
+      <PageContent className="justify-center">
+        <VerifyEmailForm user={user} code={code} />
+      </PageContent>
+    </Page>
   );
 }

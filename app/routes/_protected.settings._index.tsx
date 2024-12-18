@@ -1,5 +1,10 @@
+import { Page } from '~/components/page';
 import Settings from '~/features/settings/settings';
 
 export default function SettingsPage() {
-  return <Settings />;
+  return (
+    <Page>
+      <Settings />
+    </Page>
+  );
 }

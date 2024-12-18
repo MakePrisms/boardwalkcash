@@ -1,7 +1,12 @@
 import { NavLink, useOutletContext } from '@remix-run/react';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import { PageContent, PageHeader, PageHeaderTitle } from '~/components/page';
+import {
+  Page,
+  PageContent,
+  PageHeader,
+  PageHeaderTitle,
+} from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -55,7 +60,7 @@ export default function Index() {
   };
 
   return (
-    <>
+    <Page>
       <PageHeader>
         <PageHeaderTitle>
           <div>
@@ -193,6 +198,6 @@ export default function Index() {
           </div>
         )}
       </PageContent>
-    </>
+    </Page>
   );
 }

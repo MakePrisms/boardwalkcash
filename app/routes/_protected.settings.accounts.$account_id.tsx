@@ -1,4 +1,5 @@
 import { useParams } from '@remix-run/react';
+import { Page } from '~/components/page';
 import SingleAccount from '~/features/settings/$account_id';
 
 export default function SingleAccountPage() {
@@ -8,5 +9,9 @@ export default function SingleAccountPage() {
     throw new Error('Account ID is required');
   }
 
-  return <SingleAccount accountId={account_id} />;
+  return (
+    <Page>
+      <SingleAccount accountId={account_id} />
+    </Page>
+  );
 }

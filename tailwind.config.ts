@@ -53,8 +53,8 @@ export default {
         },
       },
       fontFamily: {
-        teko: ['Teko', 'sans-serif'],
-        'kode-mono': ['Kode Mono', 'monospace'],
+        numeric: ['Teko', 'sans-serif'],
+        primary: ['Kode Mono', 'monospace'],
       },
     },
   },

@@ -1,5 +1,10 @@
+import { Page } from '~/components/page';
 import AdvancedSettings from '~/features/settings/advanced-settings';
 
 export default function AdvancedSettingsPage() {
-  return <AdvancedSettings />;
+  return (
+    <Page>
+      <AdvancedSettings />
+    </Page>
+  );
 }
