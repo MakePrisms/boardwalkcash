@@ -57,7 +57,7 @@ export default function Index() {
   return (
     <>
       <PageHeader>
-        <PageHeaderTitle>
+        <PageHeaderTitle className="gap-2 font-teko">
           <div>
             {/* dollars per bitcoin */}
             {formatUnit(rates.BTCUSD, 'usd')}/BTC;

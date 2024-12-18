@@ -54,7 +54,7 @@ export default {
       },
       fontFamily: {
         teko: ['Teko', 'sans-serif'],
-        'kode-mono': ['Kode Mono', 'monospace'],
+        mono: ['Kode Mono', 'monospace'],
       },
     },
   },

@@ -32,7 +32,7 @@ export function Page({ children, className, ...props }: PageProps) {
   return (
     <body
       className={cn(
-        'mx-auto flex h-[var(--vh)] w-full flex-col p-4 font-kode-mono sm:px-6 lg:px-8',
+        'mx-auto flex h-[var(--vh)] w-full flex-col p-4 font-mono sm:px-6 lg:px-8',
         className,
       )}
       {...props}

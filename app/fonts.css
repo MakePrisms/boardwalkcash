@@ -1,0 +1,13 @@
+@font-face {
+  font-family: "Kode Mono";
+  src: url("/fonts/KodeMono-VF.woff2") format("woff2-variations");
+  font-display: swap; /* prevent flash of unstyled text */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Teko";
+  src: url("/fonts/Teko-VF.woff2") format("woff2-variations");
+  font-display: swap;
+  font-style: normal;
+}

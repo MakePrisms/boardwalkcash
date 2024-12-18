@@ -15,6 +15,7 @@ import { useDehydratedState } from 'use-dehydrated-state';
 import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
+import fontStyles from '~/fonts.css?url';
 import stylesheet from '~/tailwind.css?url';
 import { Page } from './components/page';
 import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
@@ -22,15 +23,20 @@ import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
   { rel: 'stylesheet', href: transitionStyles },
-  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+  { rel: 'stylesheet', href: fontStyles },
   {
-    rel: 'preconnect',
-    href: 'https://fonts.gstatic.com',
+    rel: 'preload',
+    href: '/fonts/KodeMono-VF.woff2',
+    as: 'font',
+    type: 'font/woff2',
     crossOrigin: 'anonymous',
   },
   {
-    rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Kode+Mono:wght@400..700&family=Teko:wght@300..700&display=swap',
+    rel: 'preload',
+    href: '/fonts/Teko-VF.woff2',
+    as: 'font',
+    type: 'font/woff2',
+    crossOrigin: 'anonymous',
   },
 ];
 
