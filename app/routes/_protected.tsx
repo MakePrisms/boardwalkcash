@@ -1,25 +1,24 @@
 import type { LoaderFunction } from '@remix-run/node';
-import { Outlet, useLoaderData, useLocation } from '@remix-run/react';
+import { Outlet, useLocation } from '@remix-run/react';
+import { QueryClient, dehydrate } from '@tanstack/react-query';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
 import { UserProvider } from '~/features/user/user-provider';
-import { type ExchangeRates, fetchRates } from '~/lib/exchange-rate';
+import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 
-export const loader: LoaderFunction = async (): Promise<{
-  rates: ExchangeRates;
-}> => {
-  const rateSource = 'average';
-  try {
-    const rates = await fetchRates(rateSource);
-    console.log('Rates in loader: ', rates);
-    return { rates };
-  } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-    // TODO: maybe we should have a cached exchange rate and then a fallback as a last resort
-    return { rates: { BTCUSD: 100_000, timestamp: Date.now() } };
-  }
+export const loader: LoaderFunction = async () => {
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: ['exchangeRate'],
+    // queryFn: () => fetchRates('average'),
+    queryFn: ({ signal }) =>
+      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
+  });
+
+  return { dehydratedState: dehydrate(queryClient) };
 };
 
 // prevent loader from being revalidated
@@ -33,7 +32,6 @@ export default function ProtectedRoute() {
   const shouldVerifyEmail = user ? shouldUserVerifyEmail(user) : false;
   const isVerifyEmailRoute = location.pathname.startsWith('/verify-email');
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
-  const { rates } = useLoaderData<{ rates: ExchangeRates }>();
 
   console.debug('Rendering protected layout', {
     location: location.pathname,
@@ -74,7 +72,7 @@ export default function ProtectedRoute() {
 
   return (
     <UserProvider user={user}>
-      <Outlet context={{ rates }} />
+      <Outlet />
     </UserProvider>
   );
 }
