@@ -1,5 +1,10 @@
-import { Edit, Landmark, QrCode, Share, X } from 'lucide-react';
-import { PageContent, PageFooter, PageHeader } from '~/components/page';
+import { Edit, Landmark, QrCode, Share } from 'lucide-react';
+import {
+  ClosePageButton,
+  PageContent,
+  PageFooter,
+  PageHeader,
+} from '~/components/page';
 import { Separator } from '~/components/ui/separator';
 import { formatUnit } from '~/lib/formatting';
 import { canShare, shareContent } from '~/lib/share';
@@ -23,29 +28,19 @@ export default function Settings() {
   return (
     <>
       <PageHeader>
-        <div className="flex items-center justify-between">
-          <LinkWithViewTransition
-            to="/"
-            transition="slideRight"
-            applyTo="oldView"
-          >
-            <X />
-          </LinkWithViewTransition>
-          <div className="flex items-center gap-2">
-            <LinkWithViewTransition
-              to="/settings/qr"
-              transition="slideUp"
-              applyTo="newView"
-            >
-              <QrCode />
-            </LinkWithViewTransition>
-            {canShare() && (
-              <button type="button" onClick={handleShare}>
-                <Share />
-              </button>
-            )}
-          </div>
-        </div>
+        <ClosePageButton to="/" transition="slideRight" applyTo="oldView" />
+        <LinkWithViewTransition
+          to="/settings/qr"
+          transition="slideUp"
+          applyTo="newView"
+        >
+          <QrCode />
+        </LinkWithViewTransition>
+        {canShare() && (
+          <button type="button" onClick={handleShare}>
+            <Share />
+          </button>
+        )}
       </PageHeader>
 
       <PageContent>

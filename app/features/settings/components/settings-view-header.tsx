@@ -1,30 +1,21 @@
-import { ChevronLeft } from 'lucide-react';
-import { PageHeader } from '~/components/page';
 import {
-  type ApplyTo,
-  LinkWithViewTransition,
-  type Transition,
-} from '~/lib/transitions';
+  PageBackButton,
+  type PageBackButtonProps,
+  PageHeader,
+  PageHeaderTitle,
+} from '~/components/page';
 
 export const SettingsViewHeader = ({
   title,
   navBack,
 }: {
   title: string;
-  navBack: {
-    to: string;
-    transition: Transition;
-    applyTo?: ApplyTo;
-  };
+  navBack: PageBackButtonProps;
 }) => {
   return (
     <PageHeader>
-      <div className="relative flex items-center">
-        <LinkWithViewTransition {...navBack}>
-          <ChevronLeft />
-        </LinkWithViewTransition>
-        <h2 className="w-full text-center font-semibold text-lg">{title}</h2>
-      </div>
+      <PageBackButton {...navBack} />
+      <PageHeaderTitle>{title}</PageHeaderTitle>
     </PageHeader>
   );
 };
