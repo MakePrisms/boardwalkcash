@@ -87,15 +87,15 @@ export default function Index() {
 
       <div>
         SATS per USD:{' '}
-        {formatUnit(currencyConverter.convert(100, 'USD', 'SAT', rates), 'sat')}
+        {formatUnit(currencyConverter.convert(100, 'USD', 'BTC', rates), 'sat')}
         <br />
         $5 in SATS:{' '}
-        {formatUnit(currencyConverter.convert(500, 'USD', 'SAT', rates), 'sat')}
+        {formatUnit(currencyConverter.convert(500, 'USD', 'BTC', rates), 'sat')}
         <br />
         5k sats in USD:{' '}
         {formatUnit(
-          currencyConverter.convert(5000, 'SAT', 'USD', rates),
-          'usd',
+          currencyConverter.convert(5000, 'BTC', 'USD', rates),
+          'cent',
         )}
       </div>
       <br />

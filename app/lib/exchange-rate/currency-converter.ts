@@ -9,13 +9,10 @@ type Currency = {
   exponent: number;
 };
 
-const SATS_PER_BTC = 100_000_000;
-
 class CurrencyConverter {
   private currencies: Map<CurrencyCode, Currency> = new Map([
     ['USD', { code: 'USD', base: 10, exponent: 2 }],
     ['BTC', { code: 'BTC', base: 10, exponent: 8 }],
-    ['SAT', { code: 'SAT', base: 10, exponent: 0 }],
   ]);
 
   getCurrency(code: CurrencyCode): Currency | undefined {
@@ -23,20 +20,6 @@ class CurrencyConverter {
   }
 
   getConversionRate(from: CurrencyCode, to: CurrencyCode, rates: Rates): Rate {
-    // Handle SAT conversions
-    if (from === 'SAT' && to === 'BTC') {
-      return 1 / SATS_PER_BTC;
-    }
-    if (from === 'BTC' && to === 'SAT') {
-      return SATS_PER_BTC;
-    }
-    if (from === 'SAT') {
-      return this.getConversionRate('BTC', to, rates) / SATS_PER_BTC;
-    }
-    if (to === 'SAT') {
-      return this.getConversionRate(from, 'BTC', rates) * SATS_PER_BTC;
-    }
-
     const key = `${from}-${to}`;
     const inverseKey = `${to}-${from}`;
 
