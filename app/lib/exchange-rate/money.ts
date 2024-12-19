@@ -1,83 +1,184 @@
-// This code was copied from https://github.com/Dintero/money and slightly adjusted
-import type { RoundingMode } from 'big.js';
 import { Big } from 'big.js';
 
-type NumberInput = number | string | Big;
-type Factor = number | Big;
+export type NumberInput = number | string | Big;
 
-type TagValue = string | number | boolean | null | undefined;
-
-type Tags = { [key: string]: TagValue };
-
-export type AdditionalOptions = {
-  decimals?: number;
-  roundingMode?: RoundingMode;
-  tags?: Partial<Tags>;
+export type MoneyInput = {
+  /**
+   * Money amount
+   */
+  amount: NumberInput;
+  /**
+   * Currency for the provided amount of money
+   */
+  currency: string;
+  /**
+   * Unit of currency to use. For example for USD it can be 'usd' or 'cent', for BTC 'btc', 'sat' or 'sat', etc.
+   * If not provided the default/base unit is used (bitcoin for BTC, dollar for USD, etc.)
+   */
+  unit?: string;
 };
 
-export type MoneyInputData = {
-  amount: NumberInput;
-  currency: string;
-  decimals?: number;
-  roundingMode?: RoundingMode;
-  tags?: Partial<Tags>;
+type FormatOptions = {
+  locale?: string;
+  currency?: string;
+};
+
+type CurrencyUnit = {
+  name: string;
+  decimals: number;
+  symbol: string;
+  factor: Big;
+  format: (value: number, options?: FormatOptions) => string;
+};
+
+type CurrencyData = {
+  baseUnit: string;
+  units: CurrencyUnit[];
+};
+
+type BaseFormatOptions = FormatOptions & { decimals: number };
+
+function baseFormat(value: number, options: BaseFormatOptions) {
+  const { locale, decimals, currency } = options;
+  const formatOptions: Parameters<typeof Intl.NumberFormat>[1] = {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  };
+  if (currency) {
+    formatOptions.style = 'currency';
+    formatOptions.currency = currency;
+  }
+  return Intl.NumberFormat(locale, formatOptions).format(value);
+}
+
+const currencyDataMap: Record<string, CurrencyData> = {
+  USD: {
+    baseUnit: 'usd',
+    units: [
+      {
+        name: 'usd',
+        decimals: 2,
+        symbol: '$',
+        factor: new Big(1),
+        format: function (value: number, options: FormatOptions = {}) {
+          return baseFormat(value, { ...options, decimals: this.decimals });
+        },
+      },
+      {
+        name: 'cent',
+        decimals: 0,
+        symbol: '¢',
+        factor: new Big(10 ** -2),
+        format: function (value: number, options: FormatOptions = {}) {
+          let formattedValue = baseFormat(value, {
+            ...options,
+            decimals: this.decimals,
+          });
+          formattedValue = formattedValue.replace('$', '').trim();
+          return `${formattedValue}${this.symbol}`;
+        },
+      },
+    ],
+  },
+  BTC: {
+    baseUnit: 'btc',
+    units: [
+      {
+        name: 'btc',
+        decimals: 8,
+        symbol: '₿',
+        factor: new Big(1),
+        format: function (value: number, options: FormatOptions = {}) {
+          let formattedValue = baseFormat(value, {
+            ...options,
+            decimals: this.decimals,
+          });
+          formattedValue = formattedValue.replace('BTC', '').trim();
+          return `${this.symbol}${formattedValue}`;
+        },
+      },
+      {
+        name: 'sat',
+        decimals: 0,
+        symbol: '₿',
+        factor: new Big(10 ** -8),
+        format: function (value: number, options: FormatOptions = {}) {
+          let formattedValue = baseFormat(value, {
+            ...options,
+            decimals: this.decimals,
+          });
+          formattedValue = formattedValue.replace('BTC', '').trim();
+          return `${formattedValue}${this.symbol}`;
+        },
+      },
+      {
+        name: 'msat',
+        decimals: 0,
+        symbol: 'msat',
+        factor: new Big(10 ** -11),
+        format: function (value: number, options: FormatOptions = {}) {
+          let formattedValue = baseFormat(value, {
+            ...options,
+            decimals: this.decimals,
+          });
+          formattedValue = formattedValue.replace('BTC', '').trim();
+          return `${formattedValue} ${this.symbol}`;
+        },
+      },
+    ],
+  },
+};
+
+const getCurrencyBaseUnit = (currency: string) => {
+  const currencyData = currencyDataMap[currency];
+  if (!currencyData) {
+    throw new Error(`Unsupported currency: ${currency}`);
+  }
+  const baseUnit = currencyData.units.find(
+    (x) => x.name === currencyData.baseUnit,
+  );
+  if (!baseUnit) {
+    throw new Error(`Misconfigured currency: ${currency}`);
+  }
+  return baseUnit;
 };
 
 type MoneyData = {
-  amount: Big;
+  /**
+   * Currency of the money
+   */
   currency: string;
-  decimals?: number;
-  roundingMode?: RoundingMode;
-  tags: Tags;
+  /**
+   * Amount of the money stored in the `unit` format
+   */
+  amount: Big;
+  /**
+   * Unit in which the `amount` is stored. It is always the minimal supported unit for the `currency` (e.g. millisatoshi
+   * for BTC)
+   */
+  amountUnit: CurrencyUnit;
+  /**
+   * Unit of the initial amount that was provided when creating the money
+   */
+  initialUnit: CurrencyUnit;
 };
-
-const DEFAULT_DECIMALS_PRICE = 10;
-
-const decimalsByCurrency: Record<string, number> = {
-  USD: 2,
-  BTC: 8,
-  EUR: 2,
-  USDT: 6,
-  USDC: 6,
-};
-
-const currencyToDecimals = (currency: string): number => {
-  const decimals = decimalsByCurrency[currency.toUpperCase()];
-  if (decimals === undefined) {
-    if (currency === 'UNKNOWN') {
-      return 2;
-    }
-    throw new Error(`Currency ${currency} is not supported`);
-  }
-  return decimals;
-};
-
-const escapeRegex = (str: string) =>
-  str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
 export class Money {
   private readonly _data: MoneyData;
 
-  constructor(data: MoneyInputData) {
-    if (data.amount === undefined) {
-      throw new Error(
-        'Amount is undefined. Needs to be number, string, or Big',
-      );
-    }
+  constructor(data: MoneyInput) {
+    const { baseUnit, minUnit, selectedUnit } =
+      Money.getCurrencyDataForInput(data);
+    const unit = selectedUnit ?? baseUnit;
 
-    const currency = data.currency;
-    const decimals = data.decimals ?? currencyToDecimals(currency);
-    const amount = new Big(data.amount);
+    const multiplier = unit.factor.div(minUnit.factor);
+    const amountInMinUnit = new Big(data.amount).mul(multiplier);
 
     this._data = {
-      amount: amount.round(decimals, data.roundingMode),
-      currency,
-      decimals: data.decimals,
-      roundingMode: data.roundingMode,
-      tags: {
-        isPrice: false,
-        ...data.tags,
-      },
+      amount: amountInMinUnit.round(minUnit.decimals, Big.roundDown),
+      currency: data.currency,
+      amountUnit: minUnit,
+      initialUnit: unit,
     };
 
     Object.freeze(this);
@@ -85,126 +186,21 @@ export class Money {
   }
 
   /**
-   * Create a money object.
-   *
-   * Amount can be any of number, string, or Big
-   * currency is the 3-character currency code (ISO 4217)
-   * currency can also be set to UNKNOWN, which gives a precision of 2 decimals.
-   *
-   * With options you can specify
-   * - decimals
-   * - roundingMode
-   * - tags
-   */
-  static of(
-    amount: NumberInput,
-    currency: string,
-    options?: AdditionalOptions,
-  ): Money {
-    return new Money({ amount, currency, ...options });
-  }
-
-  /**
-   * Instantiate from a string formatted in a certain locale.
-   *
-   * Examples:
-   * no-NB: 11 111,11
-   * en-GB: 11,111.11
-   * de-DE: 11.111,11
-   *
-   * Before parsing, non-numeric characters are removed, and the decimal sign is normalized.
-   *
-   * Locales with unicode numbers are NOT SUPPORTED
-   * Example of formats NOT SUPPORTED:
-   * ar: ١١٬١١١٫١١
-   */
-  static fromLocaleString(
-    str: string,
-    currency: string,
-    locale?: string,
-    options?: AdditionalOptions,
-  ): Money {
-    const parts = Intl.NumberFormat(locale).formatToParts(11111.11);
-    const decimalSign = parts.find((p) => p.type === 'decimal')?.value ?? '.';
-
-    return Money.of(
-      str
-        .replace(new RegExp(`[^-\\d${escapeRegex(decimalSign)}]`, 'g'), '')
-        .replace(decimalSign, '.'),
-      currency,
-      options,
-    );
-  }
-
-  /**
-   * Instantiate from a whole number of minor units of the currency (e.g. whole number of cents)
-   *
-   * Example:
-   * Money.fromFractionlessAmount(1000, 'NOK') => 10.00 NOK
-   * Money.fromFractionlessAmount(1000, 'NOK', { decimals: 2 }) => 10.00 NOK
-   * Money.fromFractionlessAmount(1000, 'NOK', { decimals: 3 }) => 1.000 NOK
-   */
-  static fromFractionlessAmount(
-    amount: number,
-    currency: string,
-    options?: AdditionalOptions,
-  ): Money {
-    const decimals = options?.decimals ?? currencyToDecimals(currency);
-    return Money.of(amount, currency, options).divide(10 ** decimals);
-  }
-
-  /**
-   * A price has arbitrary precision.
-   * This method creates a Money instance with 10 decimals of precision by default.
-   * Remember to call .resetDecimals() when you want to go back to a proper Money value.
-   */
-  static fromPrice(
-    price: NumberInput,
-    currency: string,
-    options?: AdditionalOptions,
-  ): Money {
-    return Money.of(price, currency, {
-      decimals: DEFAULT_DECIMALS_PRICE,
-      ...options,
-    });
-  }
-
-  /**
-   * Calculate total money according to a price and quantity.
-   * Default precision is 10 decimals.
-   */
-  static fromPriceAndQuantity(
-    price: NumberInput,
-    quantity: Factor,
-    currency: string,
-    options?: AdditionalOptions,
-  ): Money {
-    return Money.fromPrice(price, currency, options)
-      .multiply(quantity)
-      .resetDecimals();
-  }
-
-  /**
    * Sum an array of moneys.
    *
    * If the array is empty, a currency must be specified so that 0 can be returned in that currency.
    *
-   * The precision, rounding mode, etc, is based on the first item in the array.
-   * If the array is empty, the options object will be used instead.
+   * The precision, etc., is based on the first item in the array.
    */
-  static sum(
-    moneys: Money[],
-    currency?: string,
-    options?: AdditionalOptions,
-  ): Money {
+  static sum(moneys: Money[], currency?: string): Money {
     if (moneys.length === 0 && currency === undefined) {
       throw new Error(
         "Currency must be set when summing an empty list of money's",
       );
     }
 
-    if (moneys.length === 0) {
-      return Money.of(0, currency ?? moneys[0].currency(), options);
+    if (moneys.length === 0 && currency !== undefined) {
+      return new Money({ amount: 0, currency });
     }
 
     return moneys.slice(1).reduce((sum, money) => sum.add(money), moneys[0]);
@@ -245,309 +241,256 @@ export class Money {
     return money1.amount().cmp(money2.amount());
   }
 
-  merge = (data: Partial<MoneyInputData>): Money => {
-    return new Money({ ...this._data, ...data });
-  };
-
-  /**
-   * Tags allow you to communicate more about what the money represents.
-   * You can later assert on a tag to make sure you're using the right amount for the right purpose.
-   */
-  getTags = () => {
-    return this._data.tags;
-  };
-
-  getTag = (tagName: string, defaultValue?: TagValue): TagValue | undefined => {
-    return this._data.tags?.[tagName] ?? defaultValue;
-  };
-
-  // biome-ignore lint/suspicious/noExplicitAny: allow any
-  setTag = <Name extends keyof Tags>(tagName: Name, value: any): Money => {
-    return new Money({
-      ...this._data,
-      tags: { ...this._data.tags, [tagName]: value },
-    });
-  };
-
-  assertTag = (
-    tagName: string,
-    value: TagValue,
-    cmp = (actual: unknown, value: unknown) => actual === value,
-  ): Money => {
-    const actualValue = this.getTag(tagName, undefined);
-    if (!cmp(actualValue, value)) {
-      throw new Error(
-        `Tag assertion failed. ${tagName} should be ${value} but was ${actualValue}`,
-      );
-    }
-    return this;
-  };
-
-  assertSameCurrency = (money: Money): Money => {
-    if (money.currency() !== this.currency()) {
-      throw new Error('Currencies must be the same');
-    }
-    return this;
-  };
-
-  amount = (): Big => {
-    return this._data.amount;
-  };
-
-  currency = (): string => {
+  get currency(): string {
     return this._data.currency;
+  }
+
+  /**
+   * Returns the currency symbol for the requested unit
+   * @param unit Unit of currency. Default value is base unit (e.g. btc or usd)
+   */
+  getCurrencySymbol(unit?: string): string {
+    return this.getCurrencyUnit(unit).symbol;
+  }
+
+  /**
+   * Returns the money amount in the requested currency unit. If no unit is provided it uses the
+   * default/base unit (bitcoin, dollar, ...).
+   *
+   * If the requested unit does not have enough precision the number will be rounded down to the number of decimals of
+   * the requested unit. For example if the requested unit is 'btc' and the money instance has 4567 msat, the return
+   * value will be 0.00000004
+   *
+   * @param unit The unit of the currency to use for the amount. Default is base currency unit (bitcoin for BTC, dollar
+   * for USD, etc.)
+   */
+  amount = (unit?: string): Big => {
+    const unitToCalculate = this.getCurrencyUnit(unit);
+    const multiplier = this._data.amountUnit.factor.div(unitToCalculate.factor);
+    return this._data.amount
+      .mul(multiplier)
+      .round(unitToCalculate.decimals, Big.roundDown);
+  };
+
+  multiply = (factor: NumberInput): Money => {
+    const amount = this._data.amount.mul(factor);
+    return this.merge({ amount });
   };
 
   /**
-   * Converts the money amount into a whole number given in the minor unit of the currency.
-   * Honors the current precision in use.
+   * Divedes the money amount with the provided divisor.
+   *
+   * Note that dividing a monetary amount cannot be exact in all cases.
+   * E.g. 10 USD / 3 = 3.33 USD
+   *
+   * The division is performed with a precision of 20 decimals before
+   * rounding back to the monetary amount. (See https://mikemcl.github.io/big.js/#dp)
    */
-  toFractionlessAmount = (): number => {
-    const decimals = this.getDecimals() ?? currencyToDecimals(this.currency());
-    return this.multiply(10 ** decimals)
-      .round(0)
-      .toNumber();
+  divide = (divisor: NumberInput): Money => {
+    const amount = this._data.amount.div(divisor);
+    return this.merge({ amount });
+  };
+
+  add = (money: Money): Money => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this.merge({ amount: this._data.amount.plus(amountInMinUnit) });
+  };
+
+  subtract = (money: Money): Money => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this.merge({ amount: this._data.amount.minus(amountInMinUnit) });
+  };
+
+  abs = (): Money => {
+    return this.merge({ amount: this._data.amount.abs() });
+  };
+
+  equals = (money: Money): boolean => {
+    return (
+      this.currency === money.currency &&
+      this._data.amount.eq(money.amount(this._data.amountUnit.name))
+    );
+  };
+
+  greaterThan = (money: Money): boolean => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this._data.amount.gt(amountInMinUnit);
+  };
+
+  greaterThanOrEqual = (money: Money): boolean => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this._data.amount.gte(amountInMinUnit);
+  };
+
+  lessThan = (money: Money): boolean => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this._data.amount.lt(amountInMinUnit);
+  };
+
+  lessThanOrEqual = (money: Money): boolean => {
+    this.assertSameCurrency(money);
+    const amountInMinUnit = money.amount(this._data.amountUnit.name);
+    return this._data.amount.lte(amountInMinUnit);
+  };
+
+  isZero = (): boolean => {
+    return this._data.amount.eq(0);
+  };
+
+  isPositive = (): boolean => {
+    return this._data.amount.gt(0);
+  };
+
+  isNegative = (): boolean => {
+    return this._data.amount.lt(0);
   };
 
   /**
-   * Converts to a regular javascript number.
-   * Throws an error if it's not possible to do keep full precision.
+   * Converts money to a regular javascript number for the requested currency unit.
+   * If no unit is provided, base/default unit is used (bitcoin for BTC, dollar for USD, etc.)
+   * Throws an error if it's not possible to keep full precision.
    */
-  toNumber = (): number => {
+  toNumber = (unit?: string): number => {
     // Don't use big.js toNumber because it sometimes returns -0.
-    const str = this.toString();
+    const str = this.toString(unit);
     const num = Number(str);
 
-    if (str !== this.merge({ amount: num }).toString()) {
+    if (
+      str !==
+      this.merge({
+        amount: num,
+        unit: unit ?? this.currencyData.baseUnit,
+      }).toString(unit)
+    ) {
       throw new Error('Converting to number was imprecise');
     }
 
     return num;
   };
 
-  toString = (): string => {
-    return this._data.amount.toFixed(this.getDecimals());
-  };
-
-  toLocaleString = (locale?: string): string => {
-    const decimals = this.getDecimals();
-    return Intl.NumberFormat(locale, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(this.toNumber());
-  };
-
-  toJSON = (): number => {
-    return this.toNumber();
+  /**
+   * Returns the money value as a stringified number without a currency.
+   *
+   * If you want to include the currency as well use `toLocaleString` instead.
+   *
+   * @param unit Specifies the currency unit to return. If not provided the base/default unit is used (bitcoin for BTC,
+   * dollar for USD, etc.)
+   */
+  toString = (unit?: string): string => {
+    const currencyUnit = this.getCurrencyUnit(unit);
+    const amount = this.amount(currencyUnit.name);
+    return amount.toFixed(currencyUnit.decimals);
   };
 
   /**
-   * Gets the current precision in use.
+   * Returns the money value as a localized stringified number.
+   * @param locale Locale to use to format the number. If not provided the locale of the machine will be used.
+   * @param unit Specifies the currency unit to return. If not provided the base/default unit is used (bitcoin for BTC,
+   * dollar for USD, etc.)
+   * @param showCurrency Controls if the currency symbol should be included in the string. True by default
    */
-  getDecimals = (): number => {
-    return this._data.decimals ?? currencyToDecimals(this.currency());
+  toLocaleString = ({
+    locale,
+    unit,
+    showCurrency = true,
+  }: {
+    locale?: string;
+    unit?: string;
+    showCurrency?: boolean;
+  } = {}): string => {
+    const currencyUnit = this.getCurrencyUnit(unit);
+    const options: FormatOptions = { locale };
+    if (showCurrency) {
+      options.currency = this.currency;
+    }
+    return currencyUnit.format(this.toNumber(unit), options);
+  };
+
+  toJSON = () => {
+    return {
+      amount: this.toNumber(),
+      currency: this.currency,
+    };
   };
 
   /**
-   * Override the default precision of the currency.
-   * Useful if you're working with a price.
+   * Converts the money to the provided currency based on the provided exchange rate.
+   * @param currency Currency to convert the money to (target currency)
+   * @param exchangeRate Exchange rate to apply. The rate has to be in source/target currency format. E.g. if converting
+   * USD to BTC, the rate should be in USD/BTC format. If converting BTC to usd it should be in USD/BTC format.
    */
-  setDecimals = (decimals: number): Money => {
-    return this.merge({ decimals });
+  convert = (currency: string, exchangeRate: NumberInput): Money => {
+    const destinationCurrencyBaseUnit = getCurrencyBaseUnit(currency);
+    const amount = this.amount()
+      .mul(exchangeRate)
+      .round(destinationCurrencyBaseUnit.decimals, Big.roundHalfUp);
+    return new Money({ amount, currency });
   };
 
-  /**
-   * Reset precision back to that of the currency.
-   * Useful for converting from a price to the final monetary amount.
-   */
-  resetDecimals = (): Money => {
-    return this.merge({ decimals: undefined });
-  };
+  private get currencyData(): CurrencyData {
+    return currencyDataMap[this.currency];
+  }
 
-  /**
-   * Converts to a different currency using a currency rate.
-   * Sometimes (rarely) the rate is given multiplied by a certain unit amount which has to be divided away.
-   */
-  toCurrency = (
-    currency: string,
-    currencyRate: Factor = 1,
-    currencyUnit: Factor = 1,
-  ): Money => {
-    // Convert currency outside of Money to avoid wrong precision for the new currency.
-    const amount = this.amount().mul(currencyRate).div(currencyUnit);
-    return new Money({ ...this._data, amount, currency });
-  };
+  private static getCurrencyDataForInput(data: MoneyInput): {
+    baseUnit: CurrencyUnit;
+    minUnit: CurrencyUnit;
+    selectedUnit: CurrencyUnit | undefined;
+  } {
+    const currencyData = currencyDataMap[data.currency];
+    if (!currencyData) {
+      throw new Error(`Unsupported currency: ${data.currency}`);
+    }
 
-  round = (decimals: number, roundingMode?: RoundingMode): Money => {
-    const amount = this.amount().round(
-      decimals,
-      roundingMode ?? this._data.roundingMode,
+    const minUnit = currencyData.units.reduce((minItem, currentItem) => {
+      return currentItem.factor.lt(minItem.factor) ? currentItem : minItem;
+    });
+    const baseUnit = currencyData.units.find(
+      (x) => x.name === currencyData.baseUnit,
     );
-    return this.merge({ amount });
-  };
+    if (!minUnit || !baseUnit) {
+      throw new Error(`Misconfigured currency: ${data.currency}`);
+    }
 
-  multiply = (factor: Factor): Money => {
-    const amount = this.amount().mul(factor);
-    return this.merge({ amount });
-  };
+    const selectedUnit = data.unit
+      ? currencyData.units.find((x) => x.name === data.unit)
+      : undefined;
+    if (data.unit && !selectedUnit) {
+      throw new Error(
+        `Unsupported unit: ${data.unit} for currency ${data.currency}`,
+      );
+    }
 
-  /**
-   * Note that dividing a monetary amount cannot be exact in all cases.
-   * E.g. 10 NOK / 3 = 3.33 NOK
-   * Use `distribute` or `distributeBy` if you need an exact distribution.
-   *
-   * The division is performed with a precision of 20 decimals before
-   * rounding back to the monetary amount. (See https://mikemcl.github.io/big.js/#dp)
-   */
-  divide = (divisor: Factor): Money => {
-    return this.merge({ amount: this.amount().div(divisor) });
-  };
+    return { baseUnit, minUnit, selectedUnit };
+  }
 
-  add = (money: Money): Money => {
-    this.assertSameCurrency(money);
-    return this.merge({ amount: this.amount().plus(money.amount()) });
-  };
-
-  subtract = (money: Money): Money => {
-    this.assertSameCurrency(money);
-    return this.merge({ amount: this.amount().minus(money.amount()) });
-  };
-
-  abs = (): Money => {
-    return this.merge({ amount: this.amount().abs() });
-  };
-
-  equals = (money: Money): boolean => {
-    return (
-      this._data.currency === money._data.currency &&
-      this.amount().eq(money.amount())
+  private getCurrencyUnit = (
+    unitName: string = this.currencyData.baseUnit,
+  ): CurrencyUnit => {
+    const currencyUnit = this.currencyData.units.find(
+      (x) => x.name === unitName,
     );
-  };
-
-  greaterThan = (money: Money): boolean => {
-    this.assertSameCurrency(money);
-    return this.amount().gt(money.amount());
-  };
-
-  greaterThanOrEqual = (money: Money): boolean => {
-    this.assertSameCurrency(money);
-    return this.amount().gte(money.amount());
-  };
-
-  lessThan = (money: Money): boolean => {
-    this.assertSameCurrency(money);
-    return this.amount().lt(money.amount());
-  };
-
-  lessThanOrEqual = (money: Money): boolean => {
-    this.assertSameCurrency(money);
-    return this.amount().lte(money.amount());
-  };
-
-  isZero = (): boolean => {
-    return this.amount().eq(0);
-  };
-
-  /**
-   * Positive and not 0
-   */
-  isPositive = (): boolean => {
-    return this.amount().gt(0);
-  };
-
-  /**
-   * Negative and not 0
-   */
-  isNegative = (): boolean => {
-    return this.amount().lt(0);
-  };
-
-  /**
-   * Divides money into n parts.
-   *
-   * Example:
-   * Money.of(10, 'NOK').distribute(3) => [3.34, 3.33, 3.33]
-   * Money.of(11, 'NOK').distribute(3) => [3.36, 3.67, 3.67]
-   *
-   * Distributes any rest amount equally across the parts
-   */
-  distribute = (nParts: number): Money[] => {
-    if (nParts !== Math.round(nParts)) {
-      throw new Error('Number of parts must be a whole number');
+    if (!currencyUnit) {
+      throw new Error(
+        `Unsupported unit: ${unitName} for currency ${this.currency}`,
+      );
     }
-
-    return this.distributeBy(Array(nParts).fill(1));
+    return currencyUnit;
   };
 
-  /**
-   * Divides money into parts, each defined by a weight.
-   *
-   * Each weight must be >= 0
-   * Total of weights must be > 0
-   *
-   * Example:
-   * Money.of(10, 'NOK').distributeBy([1, 1, 1]) => [3.34, 3.33, 3.33]
-   *
-   * Distributes any rest amount equally across the parts
-   */
-  distributeBy = (inputWeights: Factor[]): Money[] => {
-    const weights = inputWeights.map((w) => Big(w));
-    if (weights.some((w) => w.lt(0))) {
-      throw new Error('Cannot distribute by negative weights');
+  private assertSameCurrency = (money: Money): Money => {
+    if (money.currency !== this.currency) {
+      throw new Error('Currencies must be the same');
     }
+    return this;
+  };
 
-    const totalWeight = weights.reduce((a, b) => a.add(b), new Big(0));
-    if (totalWeight.lte(0)) {
-      throw new Error('Total weight must be greater than 0');
-    }
-
-    const parts = weights.map((weight) =>
-      this.multiply(weight.div(totalWeight)),
-    );
-    let rest = this.subtract(Money.sum(parts, this.currency()));
-
-    const smallestUnit = this.merge({ amount: 1 })
-      .divide(10 ** this.getDecimals())
-      .multiply(rest.isPositive() ? 1 : -1);
-
-    let i = 0;
-    while (!rest.isZero()) {
-      if (!weights[i].eq(0)) {
-        parts[i] = parts[i].add(smallestUnit);
-        rest = rest.subtract(smallestUnit);
-      }
-      i = (i + 1) % weights.length;
-    }
-
-    /*
-     * Given that we add the smallest possible unit to parts each time,
-     * is it enough to go through the parts array just once?
-     * Some napkin math:
-     *
-     * Part = round(Amount / N, Decimals)
-     * Rest = Amount - Part * N
-     * SmallestUnit = +/- 1/(10^Decimals)
-     *
-     * The question can then be phrased:
-     * Rest <= N * SmallestUnit
-     *
-     * Let's expand:
-     *
-     * Amount - round(Amount / N, Decimals) * N <= +/- N / (10^Decimals)
-     *
-     * Express worst case error from rounding (even assuming ceil or floor):
-     * round(Amount / N, Decimals) => (Amount / N) +/- 1/(10^Decimals)
-     *
-     * Plug back in:
-     *
-     * Amount - ((Amount / N) +/- 1/(10^Decimals)) * N <= +/- N / (10^Decimals)
-     *
-     * Reduce:
-     * +/- N/(10^Decimals) <= +/- N/(10^Decimals)
-     *
-     * So we see that it will be enough we just one iteration through parts.
-     */
-
-    return parts;
+  private merge = (data: Partial<MoneyInput>): Money => {
+    const { amountUnit, ...rest } = this._data;
+    return new Money({ unit: amountUnit.name, ...rest, ...data });
   };
 }
