@@ -10,7 +10,8 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
-import type { ExchangeRates } from '~/lib/exchange-rate';
+import { currencyConverter } from '~/lib/exchange-rate';
+import type { Rates } from '~/lib/exchange-rate';
 import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 import { formatUnit } from '~/lib/formatting';
 import { LinkWithViewTransition } from '~/lib/transitions';
@@ -37,7 +38,7 @@ export default function Index() {
     // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
     // doing prefetching there. I asked a question here to see if there is a better way
     // https://github.com/TanStack/query/discussions/1331#discussioncomment-11607342
-    initialData: {} as ExchangeRates,
+    initialData: {} as Rates,
   });
 
   const {
@@ -70,14 +71,8 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-start gap-2">
-          <div>
-            {/* dollars per bitcoin */}
-            {formatUnit(rates['BTC-USD'], 'usd')}/BTC
-          </div>
-          <div>
-            {/* sats per dollar */}
-            {/*{formatUnit(convertToUnit(1, 'usd', 'sat', rates), 'sat')}/$*/}
-          </div>
+          {/* dollars per bitcoin */}
+          {formatUnit(rates['BTC-USD'], 'usd')}/BTC
         </div>
         <div className="flex items-center justify-end">
           <LinkWithViewTransition
@@ -89,6 +84,21 @@ export default function Index() {
           </LinkWithViewTransition>
         </div>
       </PageHeader>
+
+      <div>
+        SATS per USD:{' '}
+        {formatUnit(currencyConverter.convert(100, 'USD', 'SAT', rates), 'sat')}
+        <br />
+        $5 in SATS:{' '}
+        {formatUnit(currencyConverter.convert(500, 'USD', 'SAT', rates), 'sat')}
+        <br />
+        5k sats in USD:{' '}
+        {formatUnit(
+          currencyConverter.convert(5000, 'SAT', 'USD', rates),
+          'usd',
+        )}
+      </div>
+      <br />
 
       <h1>Welcome to Boardwalk!</h1>
       <LinkWithViewTransition
