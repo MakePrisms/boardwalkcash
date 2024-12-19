@@ -6,17 +6,17 @@ import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
 import { UserProvider } from '~/features/user/user-provider';
-import { fetchRates } from '~/lib/exchange-rate';
+import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 
 export const loader: LoaderFunction = async () => {
   const queryClient = new QueryClient();
 
-  console.log('Loader will fetch rates');
   await queryClient.prefetchQuery({
     queryKey: ['exchangeRate'],
-    queryFn: () => fetchRates('average'),
+    // queryFn: () => fetchRates('average'),
+    queryFn: ({ signal }) =>
+      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
   });
-  console.log('Loader has fetched the rates');
 
   return { dehydratedState: dehydrate(queryClient) };
 };
