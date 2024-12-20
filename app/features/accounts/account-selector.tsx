@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { LandmarkIcon } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -31,19 +31,15 @@ export type Account = {
 const CashuIcon = () => <LandmarkIcon className="h-4 w-4" />;
 const NWCIcon = () => <Zap className="h-4 w-4" />;
 
-const getAccountIcon = (type: AccountType) => {
-  switch (type) {
-    case 'cashu':
-      return <CashuIcon />;
-    case 'nwc':
-      return <NWCIcon />;
-  }
+const icons: Record<AccountType, ReactNode> = {
+  cashu: <CashuIcon />,
+  nwc: <NWCIcon />,
 };
 
 function AccountItem({ account }: { account: Account }) {
   return (
     <div className="flex items-center gap-4 px-3 py-4 ">
-      {getAccountIcon(account.type)}
+      {icons[account.type]}
       <div className="flex flex-col justify-between gap-2 text-start ">
         <span className="font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
