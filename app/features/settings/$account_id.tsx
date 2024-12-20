@@ -1,5 +1,5 @@
 import { PageContent } from '~/components/page';
-import { formatUnit } from '~/lib/formatting';
+import { Money } from '~/lib/money';
 import { SettingsViewHeader } from './components/settings-view-header';
 
 export default function SingleAccount({ accountId }: { accountId: string }) {
@@ -17,8 +17,18 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
         {accountId === '123' && (
           <div>
             <p>Stablenut</p>
-            <p>{formatUnit(10_000, 'cent')}</p>
-            <p>{formatUnit(10_000, 'sat')}</p>
+            <p>
+              {Money.create({ amount: 10_000, currency: 'USD' }).toLocaleString(
+                { subunit: true },
+              )}
+            </p>
+            <p>
+              {Money.create({
+                amount: 10_000,
+                currency: 'BTC',
+                subunit: 'satoshi',
+              }).toLocaleString({ subunit: true })}
+            </p>
           </div>
         )}
       </PageContent>

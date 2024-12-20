@@ -1,3 +1,2 @@
+export * from './exchange-rate-service';
 export * from './types';
-export * from './converters';
-export * from './rate-fetcher';

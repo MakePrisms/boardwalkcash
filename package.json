@@ -37,6 +37,7 @@
     "@tanstack/react-query": "5.62.8",
     "@vercel/analytics": "1.4.1",
     "@vercel/remix": "2.15.0",
+    "big.js": "6.2.2",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cross-env": "7.0.3",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@remix-run/dev": "2.15.0",
+    "@types/big.js": "6.2.2",
     "@types/express": "5.0.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",

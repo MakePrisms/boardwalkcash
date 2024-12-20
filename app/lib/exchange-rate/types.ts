@@ -1,18 +1,14 @@
-export type ExchangeRates = {
-  /**
-   * USD per BTC
-   */
-  BTCUSD: number;
-  /**
-   * Unix timestamp of when the rates were fetched
-   */
-  timestamp: number;
+export type GetRatesParams = {
+  tickers: string[];
+  signal: AbortSignal;
 };
 
-/**
- * The source of the exchange rates. 'average' averages the other sources.
- */
-export type RateSource = 'mempool' | 'coinbase' | 'coingecko' | 'average';
+export interface ExchangeRateProvider {
+  supportedTickers: string[];
+  getRates(params: GetRatesParams): Promise<Rates>;
+}
 
-// TODO: this should probably be moved
-export type Unit = 'usd' | 'cent' | 'sat' | 'btc';
+export type Rates = {
+  timestamp: number;
+  [ticker: string]: number;
+};

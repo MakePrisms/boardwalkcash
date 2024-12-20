@@ -4,7 +4,7 @@ import { Separator } from '~/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { SettingsNavButton } from '~/features/settings/components/settings-nav-button';
 import { SettingsViewHeader } from '~/features/settings/components/settings-view-header';
-import { formatUnit } from '~/lib/formatting';
+import { Money } from '~/lib/money';
 
 export default function AllAccounts() {
   const tabs = [
@@ -76,9 +76,20 @@ export default function AllAccounts() {
         {accounts.map((account) => (
           <SettingsNavButton key={account.name} to="/settings/accounts/123">
             <p>{account.name}</p>
-            <p>{formatUnit(account.usdBalance, 'cent')}</p>
+            <p>
+              {Money.create({
+                amount: account.usdBalance,
+                currency: 'USD',
+              }).toLocaleString({ subunit: true })}
+            </p>
             {account.satBalance && (
-              <p>{formatUnit(account.satBalance, 'sat')}</p>
+              <p>
+                {Money.create({
+                  amount: account.satBalance,
+                  currency: 'BTC',
+                  subunit: 'satoshi',
+                }).toLocaleString({ subunit: true })}
+              </p>
             )}
           </SettingsNavButton>
         ))}

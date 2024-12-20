@@ -10,9 +10,9 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
-import type { ExchangeRates } from '~/lib/exchange-rate';
-import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
-import { formatUnit } from '~/lib/formatting';
+import { convert } from '~/lib/currency-converter';
+import { type Rates, exchangeRateService } from '~/lib/exchange-rate';
+import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -37,7 +37,7 @@ export default function Index() {
     // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
     // doing prefetching there. I asked a question here to see if there is a better way
     // https://github.com/TanStack/query/discussions/1331#discussioncomment-11607342
-    initialData: {} as ExchangeRates,
+    initialData: {} as Rates,
   });
 
   const {
@@ -70,14 +70,12 @@ export default function Index() {
     <Page>
       <PageHeader>
         <div className="flex items-center justify-start gap-2">
-          <div>
-            {/* dollars per bitcoin */}
-            {formatUnit(rates['BTC-USD'], 'usd')}/BTC
-          </div>
-          <div>
-            {/* sats per dollar */}
-            {/*{formatUnit(convertToUnit(1, 'usd', 'sat', rates), 'sat')}/$*/}
-          </div>
+          {/* dollars per bitcoin */}
+          {Money.create({
+            amount: rates['BTC-USD'],
+            currency: 'USD',
+          }).toLocaleString({ subunit: true })}
+          /BTC
         </div>
         <div className="flex items-center justify-end">
           <LinkWithViewTransition
@@ -89,6 +87,30 @@ export default function Index() {
           </LinkWithViewTransition>
         </div>
       </PageHeader>
+
+      <div>
+        SATS per USD:{' '}
+        {convert(
+          Money.create({ amount: 1, currency: 'USD' }),
+          'BTC',
+          rates,
+        ).toLocaleString({ subunit: true })}
+        <br />
+        $5 in SATS:{' '}
+        {convert(
+          Money.create({ amount: 5, currency: 'USD' }),
+          'BTC',
+          rates,
+        ).toLocaleString({ subunit: true })}
+        <br />
+        5k sats in USD:{' '}
+        {convert(
+          Money.create({ amount: 5000, currency: 'BTC', subunit: 'satoshi' }),
+          'USD',
+          rates,
+        ).toLocaleString({ subunit: false })}
+      </div>
+      <br />
 
       <h1>Welcome to Boardwalk!</h1>
       <LinkWithViewTransition
