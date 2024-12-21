@@ -1,3 +1,3 @@
-export * from './types';
-export * from './converters';
-export * from './rate-fetcher';
+export * from './currency-converter';
+export * from './exchange-rate-service';
+export * from './providers/types';
