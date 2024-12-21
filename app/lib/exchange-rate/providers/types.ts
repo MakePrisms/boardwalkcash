@@ -1,14 +1,16 @@
+export type Ticker = `${string}-${string}`;
+
 export type GetRatesParams = {
-  tickers: string[];
+  tickers: Ticker[];
   signal: AbortSignal;
 };
 
 export interface ExchangeRateProvider {
-  supportedTickers: string[];
+  supportedTickers: Ticker[];
   getRates(params: GetRatesParams): Promise<Rates>;
 }
 
 export type Rates = {
   timestamp: number;
-  [ticker: string]: number;
+  [ticker: Ticker]: number;
 };

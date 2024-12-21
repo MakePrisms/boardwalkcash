@@ -1,5 +1,5 @@
 import { Big } from 'big.js';
-import { Money } from './money';
+import { Money } from '../money';
 
 const x = new Money({ amount: 1000, currency: 'USD' });
 

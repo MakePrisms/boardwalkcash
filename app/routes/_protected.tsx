@@ -13,7 +13,6 @@ export const loader: LoaderFunction = async () => {
 
   await queryClient.prefetchQuery({
     queryKey: ['exchangeRate'],
-    // queryFn: () => fetchRates('average'),
     queryFn: ({ signal }) =>
       exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
   });
