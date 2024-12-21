@@ -2,10 +2,11 @@ import type {
   ExchangeRateProvider,
   GetRatesParams,
   Rates,
+  Ticker,
 } from '~/lib/exchange-rate/providers/types';
 
 export class Coingecko implements ExchangeRateProvider {
-  supportedTickers: string[] = [
+  supportedTickers: Ticker[] = [
     'BTC-USD',
     'BTC-EUR',
     'BTC-GBP',

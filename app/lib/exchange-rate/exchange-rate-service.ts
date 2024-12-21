@@ -1,3 +1,4 @@
+import { Big } from 'big.js';
 import { Coinbase } from '~/lib/exchange-rate/providers/coinbase';
 import { Coingecko } from '~/lib/exchange-rate/providers/coingecko';
 import { MempoolSpace } from '~/lib/exchange-rate/providers/mempool-space';
@@ -5,6 +6,7 @@ import type {
   ExchangeRateProvider,
   GetRatesParams,
   Rates,
+  Ticker,
 } from '~/lib/exchange-rate/providers/types';
 
 class ExchangeRateService {
@@ -27,7 +29,19 @@ class ExchangeRateService {
 
     for (const provider of providersForTickers) {
       try {
-        return await provider.getRates({ tickers, signal });
+        const rates = await provider.getRates({ tickers, signal });
+
+        // Add inverse rates
+        for (const ticker of tickers) {
+          const [from, to] = ticker.split('-');
+          const rate = rates[ticker];
+          const inverseTicker = `${to}-${from}` as const;
+          if (!(inverseTicker in rates)) {
+            rates[inverseTicker] = new Big(1).div(rate).toNumber();
+          }
+        }
+
+        return rates;
       } catch (e) {
         console.warn(`Error fetching rates from provider ${provider}`, e);
         errors.push(e);
@@ -38,7 +52,7 @@ class ExchangeRateService {
     throw new Error('Failed to fetch rates');
   }
 
-  private getProvidersForTickers(tickers: string[]): ExchangeRateProvider[] {
+  private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {
     const matchingProviders: ExchangeRateProvider[] = [];
     for (const provider of this.providers) {
       // check if provider.supportedTickers contains all tickers

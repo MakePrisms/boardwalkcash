@@ -2,10 +2,11 @@ import type {
   ExchangeRateProvider,
   GetRatesParams,
   Rates,
+  Ticker,
 } from '~/lib/exchange-rate/providers/types';
 
 export class Coinbase implements ExchangeRateProvider {
-  supportedTickers: string[] = ['BTC-USD'];
+  supportedTickers: Ticker[] = ['BTC-USD'];
 
   async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
     if (!tickers.length) {
