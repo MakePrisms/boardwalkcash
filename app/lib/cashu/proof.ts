@@ -7,7 +7,7 @@ import { getP2PKPubkeyFromSecret } from './secret';
  * @returns The pubkey in the P2PK secrets
  * @throws Error if there are multiple pubkeys in the list or if the secret is not a P2PK secret.
  */
-export const getP2PKPubkeyFromProofs = (proofs: Proof[]) => {
+export const getP2PKPubkeyFromProofs = (proofs: Proof[]): string | null => {
   const pubkeys = [
     ...new Set(
       proofs.map((p) => getP2PKPubkeyFromSecret(p.secret)).filter(Boolean),
