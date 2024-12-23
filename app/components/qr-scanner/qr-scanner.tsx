@@ -1,3 +1,4 @@
+import '~/components/qr-scanner/qr-scanner.css';
 import Scanner from 'qr-scanner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAnimatedQRDecoder } from '~/lib/cashu/use-animated-qr-decoder';

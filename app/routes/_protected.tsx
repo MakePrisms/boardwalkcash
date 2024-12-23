@@ -1,15 +1,9 @@
-import type { LinksFunction } from '@remix-run/node';
 import { Outlet, useLocation } from '@remix-run/react';
-import appStyles from '~/app.css?url';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
 import { UserProvider } from '~/features/user/user-provider';
-
-export const links: LinksFunction = () => [
-  { rel: 'stylesheet', href: appStyles },
-];
 
 export default function ProtectedRoute() {
   const location = useLocation();
