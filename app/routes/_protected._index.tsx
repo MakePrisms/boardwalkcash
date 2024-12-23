@@ -1,7 +1,9 @@
 import { NavLink } from '@remix-run/react';
 import { Cog } from 'lucide-react';
+import { useState } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Page, PageHeader } from '~/components/page';
+import { QRScanner } from '~/components/qr-scanner';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -13,6 +15,7 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
+import AnimatedQRCode from '~/lib/cashu/animated-qr-code';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -55,6 +58,7 @@ export default function Index() {
   );
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
+  const [showScanner, setShowScanner] = useState(false);
 
   const {
     register,
@@ -117,6 +121,27 @@ export default function Index() {
       >
         <Button>Slide both views</Button>
       </LinkWithViewTransition>
+      <br />
+      <br />
+      <div>
+        <Button
+          onClick={() => {
+            setShowScanner(!showScanner);
+          }}
+        >
+          {showScanner ? 'Stop' : 'Scan'}
+        </Button>
+        {showScanner ? (
+          <QRScanner
+            onDecode={(decoded) => {
+              alert(`decoded ${decoded}`);
+              setShowScanner(false);
+            }}
+          />
+        ) : (
+          <AnimatedQRCode text={'x'.repeat(200)} />
+        )}
+      </div>
       {user.isGuest && <div>Guest account</div>}
       <div>id: {user.id}</div>
       <div>email: {!user.isGuest ? user.email : ''}</div>

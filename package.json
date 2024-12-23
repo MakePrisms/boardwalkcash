@@ -24,6 +24,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
+    "@gandlaf21/bc-ur": "1.1.12",
     "@opensecret/react": "0.3.0",
     "@radix-ui/react-dialog": "1.1.4",
     "@radix-ui/react-dropdown-menu": "2.1.2",
@@ -44,6 +45,8 @@
     "isbot": "4.4.0",
     "jwt-decode": "4.0.0",
     "lucide-react": "0.468.0",
+    "qr-scanner": "1.4.2",
+    "qrcode.react": "4.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "7.54.0",
