@@ -33,29 +33,6 @@ export const WELL_KNOWN_SECRET_KINDS = ['P2PK'] as const;
 export type WellKnownSecretKind = (typeof WELL_KNOWN_SECRET_KINDS)[number];
 
 /**
- * The data from a parsed stringified NUT-10 secret
- */
-export type NUT10SecretData = {
-  nonce: string;
-  data: string;
-  tags?: NUT10SecretTag[];
-};
-
-/**
- * The raw NUT-10 secret from parsing the proof secret that describes the spending conditions
- * of the proof.
- * @example
- * ```json
- * ["P2PK", {
- *   "nonce": "859d4935c4907062a6297cf4e663e2835d90d97ecdd510745d32f6816323a41f",
- *   "data": "0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7",
- *   "tags": [["sigflag", "SIG_INPUTS"]]
- * }]
- * ```
- */
-export type ParsedNUT10Secret = [WellKnownSecretKind, NUT10SecretData];
-
-/**
  * A NUT-10 secret in a proof is stored as a JSON string of a tuple:
  * [kind, {nonce, data, tags?}]
  *

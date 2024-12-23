@@ -1,31 +1,12 @@
 import { z } from 'zod';
+import { RawNUT10SecretSchema } from './schemas';
 import {
   type NUT10Secret,
-  type NUT10SecretData,
-  type NUT10SecretTag,
   type P2PKSecret,
-  type ParsedNUT10Secret,
   type PlainSecret,
   type ProofSecret,
   WELL_KNOWN_SECRET_KINDS,
 } from './types';
-
-const NUT10SecretTagSchema = z
-  .tuple([z.string(), z.string()])
-  .rest(z.string()) satisfies z.ZodType<NUT10SecretTag>;
-
-const NUT10SecretDataSchema = z.object({
-  nonce: z.string(),
-  data: z.string(),
-  tags: z.array(NUT10SecretTagSchema).optional(),
-}) satisfies z.ZodType<NUT10SecretData>;
-
-const WellKnownSecretKindSchema = z.enum(WELL_KNOWN_SECRET_KINDS);
-
-const NUT10SecretSchema = z.tuple([
-  WellKnownSecretKindSchema,
-  NUT10SecretDataSchema,
-]) satisfies z.ZodType<ParsedNUT10Secret>;
 
 /**
  * Type guard to check if asecret is a NUT-10 secret
@@ -69,7 +50,7 @@ export const parseSecret = (secret: string): ProofSecret => {
   }
 
   try {
-    const validatedSecret = NUT10SecretSchema.parse(parsed);
+    const validatedSecret = RawNUT10SecretSchema.parse(parsed);
     const [kind, data] = validatedSecret;
 
     return {
