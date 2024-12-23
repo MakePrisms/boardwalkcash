@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { safeJsonParse } from '../json';
 import { RawNUT10SecretSchema } from './schemas';
 import {
   type NUT10Secret,
@@ -40,29 +40,25 @@ export const isPlainSecret = (secret: ProofSecret): secret is PlainSecret => {
  * @throws Error if the secret is a NUT-10 secret with an invalid format
  */
 export const parseSecret = (secret: string): ProofSecret => {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(secret);
-  } catch {
-    // If JSON parsing fails, assume it's a plain string secret
+  const parsed = safeJsonParse(secret);
+  if (!parsed) {
+    // if parsing fails, assume it's a plain string secret
     // as defined in NUT-00
     return secret;
   }
 
-  try {
-    const validatedSecret = RawNUT10SecretSchema.parse(parsed);
-    const [kind, data] = validatedSecret;
-
-    return {
-      kind,
-      ...data,
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error('Invalid secret format');
-    }
-    throw error;
+  // if not a plain string, then,validate the parsed JSON is a valid NUT-10 secret
+  const validatedSecret = RawNUT10SecretSchema.safeParse(parsed);
+  if (!validatedSecret.success) {
+    throw new Error('Invalid secret format');
   }
+
+  const [kind, data] = validatedSecret.data;
+
+  return {
+    kind,
+    ...data,
+  };
 };
 
 /**

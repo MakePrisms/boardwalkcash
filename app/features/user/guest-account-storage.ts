@@ -1,3 +1,5 @@
+import { safeJsonParse } from '~/lib/json';
+
 const storageKey = 'guestAccount';
 
 type GuestAccountDetails = {
@@ -15,14 +17,6 @@ const assertGuestAccountDetails = (
     'password' in value &&
     typeof value.password === 'string'
   );
-};
-
-const safeJsonParse = (value: string): unknown | null => {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
 };
 
 const getGuestAccount = (): GuestAccountDetails | null => {
