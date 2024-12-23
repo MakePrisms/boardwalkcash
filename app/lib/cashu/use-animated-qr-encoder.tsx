@@ -15,8 +15,6 @@ export function useAnimatedQREncoder({ text, intervalMs = 200 }: Props) {
   const maxFragmentLength = 150;
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     // need to import here because the UREncoder requires a cbor library that only works in the browser
     import('@gandlaf21/bc-ur').then((bcUr) => {
       const { UR, UREncoder } = bcUr;

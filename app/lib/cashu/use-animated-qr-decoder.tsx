@@ -12,8 +12,6 @@ export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     // this lib is only available in the browser
     import('@gandlaf21/bc-ur').then((bcUr) => {
       if (!decoder.current) {
