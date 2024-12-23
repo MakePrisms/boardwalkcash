@@ -41,24 +41,20 @@ export const isPlainSecret = (secret: ProofSecret): secret is PlainSecret => {
  */
 export const parseSecret = (secret: string): ProofSecret => {
   const parsed = safeJsonParse(secret);
-  if (!parsed) {
+  if (!parsed.success) {
     // if parsing fails, assume it's a plain string secret
     // as defined in NUT-00
     return secret;
   }
 
   // if not a plain string, then,validate the parsed JSON is a valid NUT-10 secret
-  const validatedSecret = RawNUT10SecretSchema.safeParse(parsed);
+  const validatedSecret = RawNUT10SecretSchema.safeParse(parsed.data);
   if (!validatedSecret.success) {
     throw new Error('Invalid secret format');
   }
 
-  const [kind, data] = validatedSecret.data;
-
-  return {
-    kind,
-    ...data,
-  };
+  const [kind, { nonce, data, tags }] = validatedSecret.data;
+  return { kind, nonce, data, tags };
 };
 
 /**

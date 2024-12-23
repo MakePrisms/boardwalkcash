@@ -1,38 +1,35 @@
+import { z } from 'zod';
 import { safeJsonParse } from '~/lib/json';
 
 const storageKey = 'guestAccount';
 
-type GuestAccountDetails = {
-  id: string;
-  password: string;
-};
+const GuestAccountDetailsSchema = z.object({
+  id: z.string(),
+  password: z.string(),
+});
 
-const assertGuestAccountDetails = (
-  value: unknown,
-): value is GuestAccountDetails => {
-  return (
-    value instanceof Object &&
-    'id' in value &&
-    typeof value.id === 'string' &&
-    'password' in value &&
-    typeof value.password === 'string'
-  );
-};
+type GuestAccountDetails = z.infer<typeof GuestAccountDetailsSchema>;
 
 const getGuestAccount = (): GuestAccountDetails | null => {
   const dataString = localStorage.getItem(storageKey);
   if (!dataString) {
     return null;
   }
-  const dataObject = safeJsonParse(dataString);
-  if (!assertGuestAccountDetails(dataObject)) {
+  const parseResult = safeJsonParse(dataString);
+  if (!parseResult.success) {
+    return null;
+  }
+  const validationResult = GuestAccountDetailsSchema.safeParse(
+    parseResult.data,
+  );
+  if (!validationResult.success) {
     console.error(
       'Invalid guest account data found in the storage',
-      dataObject,
+      parseResult.data,
     );
     return null;
   }
-  return dataObject;
+  return validationResult.data;
 };
 
 const storeGuestAccount = (data: GuestAccountDetails) => {

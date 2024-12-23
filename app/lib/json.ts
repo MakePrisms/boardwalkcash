@@ -1,11 +1,13 @@
 /**
  * Safely parse a JSON string.
- * @returns The parsed JSON object or null if parsing fails
+ * @returns Success and data if parsing is successful, or failure if it is not.
  */
-export const safeJsonParse = (jsonString: string): unknown | null => {
+export const safeJsonParse = <T = unknown>(
+  jsonString: string,
+): { success: true; data: T } | { success: false } => {
   try {
-    return JSON.parse(jsonString);
+    return { success: true, data: JSON.parse(jsonString) };
   } catch {
-    return null;
+    return { success: false };
   }
 };
