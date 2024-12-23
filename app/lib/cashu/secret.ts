@@ -1,31 +1,12 @@
-import { z } from 'zod';
+import { safeJsonParse } from '../json';
+import { RawNUT10SecretSchema } from './types';
 import {
   type NUT10Secret,
-  type NUT10SecretData,
-  type NUT10SecretTag,
   type P2PKSecret,
-  type ParsedNUT10Secret,
   type PlainSecret,
   type ProofSecret,
   WELL_KNOWN_SECRET_KINDS,
 } from './types';
-
-const NUT10SecretTagSchema = z
-  .tuple([z.string(), z.string()])
-  .rest(z.string()) satisfies z.ZodType<NUT10SecretTag>;
-
-const NUT10SecretDataSchema = z.object({
-  nonce: z.string(),
-  data: z.string(),
-  tags: z.array(NUT10SecretTagSchema).optional(),
-}) satisfies z.ZodType<NUT10SecretData>;
-
-const WellKnownSecretKindSchema = z.enum(WELL_KNOWN_SECRET_KINDS);
-
-const NUT10SecretSchema = z.tuple([
-  WellKnownSecretKindSchema,
-  NUT10SecretDataSchema,
-]) satisfies z.ZodType<ParsedNUT10Secret>;
 
 /**
  * Type guard to check if asecret is a NUT-10 secret
@@ -59,29 +40,21 @@ export const isPlainSecret = (secret: ProofSecret): secret is PlainSecret => {
  * @throws Error if the secret is a NUT-10 secret with an invalid format
  */
 export const parseSecret = (secret: string): ProofSecret => {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(secret);
-  } catch {
-    // If JSON parsing fails, assume it's a plain string secret
+  const parsed = safeJsonParse(secret);
+  if (!parsed.success) {
+    // if parsing fails, assume it's a plain string secret
     // as defined in NUT-00
     return secret;
   }
 
-  try {
-    const validatedSecret = NUT10SecretSchema.parse(parsed);
-    const [kind, data] = validatedSecret;
-
-    return {
-      kind,
-      ...data,
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error('Invalid secret format');
-    }
-    throw error;
+  // if not a plain string, then,validate the parsed JSON is a valid NUT-10 secret
+  const validatedSecret = RawNUT10SecretSchema.safeParse(parsed.data);
+  if (!validatedSecret.success) {
+    throw new Error('Invalid secret format');
   }
+
+  const [kind, { nonce, data, tags }] = validatedSecret.data;
+  return { kind, nonce, data, tags };
 };
 
 /**
