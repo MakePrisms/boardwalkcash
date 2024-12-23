@@ -14,7 +14,15 @@ export const loader: LoaderFunction = async () => {
   await queryClient.prefetchQuery({
     queryKey: ['exchangeRate'],
     queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
+      exchangeRateService
+        .getRates({ tickers: ['BTC-USD'], signal })
+        .then((rates) => {
+          // const bigRates = Object.fromEntries(
+          //   Object.entries(rates).map(([key, value]) => [key, new Big(value)])
+          // );
+          console.log('rates in loader', rates);
+          return rates;
+        }),
   });
 
   return { dehydratedState: dehydrate(queryClient) };

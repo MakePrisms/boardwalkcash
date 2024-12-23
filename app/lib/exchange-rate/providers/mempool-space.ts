@@ -1,3 +1,4 @@
+import Big from 'big.js';
 import type {
   ExchangeRateProvider,
   GetRatesParams,
@@ -40,7 +41,7 @@ export class MempoolSpace implements ExchangeRateProvider {
 
     for (const ticker of tickers) {
       const toCurrency = ticker.split('-')[1];
-      rates[ticker] = data[toCurrency];
+      rates[ticker] = new Big(data[toCurrency]);
     }
 
     return rates;

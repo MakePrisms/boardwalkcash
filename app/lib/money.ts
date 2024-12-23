@@ -424,7 +424,7 @@ export class Money {
    * @param exchangeRate Exchange rate to apply. The rate has to be in source/target currency format. E.g. if converting
    * USD to BTC, the rate should be in USD/BTC format. If converting BTC to usd it should be in USD/BTC format.
    */
-  convert = (currency: string, exchangeRate: NumberInput): Money => {
+  convert = (currency: string, exchangeRate: Big): Money => {
     const destinationCurrencyBaseUnit = getCurrencyBaseUnit(currency);
     const amount = this.amount()
       .mul(exchangeRate)

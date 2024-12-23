@@ -67,7 +67,7 @@ console.log(
 );
 
 const usdAmount1 = new Money({ amount: 125000, currency: 'USD' });
-const btcToUsdRate = 96_826.07;
+const btcToUsdRate = new Big(96_826.07);
 const usdToBtcRate = new Big(1).div(btcToUsdRate);
 
 const btcAmount1 = usdAmount1.convert('BTC', usdToBtcRate);

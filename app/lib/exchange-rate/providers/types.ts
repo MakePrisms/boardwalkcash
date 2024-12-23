@@ -1,3 +1,5 @@
+import type { Big } from 'big.js';
+
 export type Ticker = `${string}-${string}`;
 
 export type GetRatesParams = {
@@ -12,5 +14,5 @@ export interface ExchangeRateProvider {
 
 export type Rates = {
   timestamp: number;
-  [ticker: Ticker]: number;
+  [ticker: Ticker]: Big;
 };
