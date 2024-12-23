@@ -1,5 +1,5 @@
 import { safeJsonParse } from '../json';
-import { RawNUT10SecretSchema } from './schemas';
+import { RawNUT10SecretSchema } from './types';
 import {
   type NUT10Secret,
   type P2PKSecret,

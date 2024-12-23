@@ -1,3 +1,23 @@
+import { z } from 'zod';
+
+/**
+ * CAUTION: If the mint does not support spending conditions or a specific kind
+ * of spending condition, proofs may be treated as a regular anyone-can-spend tokens.
+ * Applications need to make sure to check whether the mint supports a specific kind of
+ * spending condition by checking the mint's info endpoint.
+ */
+export const WELL_KNOWN_SECRET_KINDS = ['P2PK'] as const;
+
+/**
+ * the kind of the spending condition
+ */
+export type WellKnownSecretKind = (typeof WELL_KNOWN_SECRET_KINDS)[number];
+
+export const NUT10SecretTagSchema = z
+  .array(z.string())
+  .nonempty()
+  .refine((arr): arr is [string, ...string[]] => arr.length >= 1);
+
 /**
  * Tags are part of the data in a NUT-10 secret and hold additional data committed to
  * and can be used for feature extensions.
@@ -17,20 +37,7 @@ Supported tags are:
  * const tag: NUT10SecretTag = ["sigflag", "SIG_INPUTS"];
  * ```
  */
-export type NUT10SecretTag = [string, ...string[]];
-
-/**
- * CAUTION: If the mint does not support spending conditions or a specific kind
- * of spending condition, proofs may be treated as a regular anyone-can-spend tokens.
- * Applications need to make sure to check whether the mint supports a specific kind of
- * spending condition by checking the mint's info endpoint.
- */
-export const WELL_KNOWN_SECRET_KINDS = ['P2PK'] as const;
-
-/**
- * the kind of the spending condition
- */
-export type WellKnownSecretKind = (typeof WELL_KNOWN_SECRET_KINDS)[number];
+export type NUT10SecretTag = z.infer<typeof NUT10SecretTagSchema>;
 
 /**
  * A NUT-10 secret in a proof is stored as a JSON string of a tuple:
@@ -80,6 +87,32 @@ export type NUT10Secret = {
    */
   tags?: NUT10SecretTag[];
 };
+
+export const RawNUT10SecretSchema = z.tuple([
+  z.enum(WELL_KNOWN_SECRET_KINDS),
+  z.object({
+    nonce: z.string(),
+    data: z.string(),
+    tags: z.array(NUT10SecretTagSchema).optional(),
+  }),
+]) satisfies z.ZodType<[WellKnownSecretKind, Omit<NUT10Secret, 'kind'>]>;
+
+/**
+ * The raw data format of a NUT-10 secret as stored in a proof's secret field.
+ * JSON.parse(proof.secret) of a valid NUT-10 secret returns this type.
+ * @example
+ * ```json
+ * {
+ *   "secret": "[\"P2PK\", {nonce: \"...", data: "...", tags: [["sigflag", "SIG_INPUTS"]]}]
+ * }
+ * ```
+ *
+ * Gets parsed into:
+ * ```typescript
+ * const secret: RawNUT10Secret = ["P2PK", {nonce: "...", data: "...", tags: [["sigflag", "SIG_INPUTS"]]}]
+ * ```
+ */
+export type RawNUT10Secret = z.infer<typeof RawNUT10SecretSchema>;
 
 /**
  * A plain secret is a random string
