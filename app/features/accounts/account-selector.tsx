@@ -7,7 +7,6 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from '~/components/ui/drawer';
-import { formatUnit } from '~/lib/formatting';
 
 export type AccountType = 'cashu' | 'nwc';
 
@@ -43,7 +42,7 @@ function AccountItem({ account }: { account: Account }) {
       <div className="flex flex-col justify-between gap-2 text-start ">
         <span className="font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
-          {formatUnit(account.balance, account.unit)}
+          TODO: {account.balance}
         </span>
       </div>
     </div>
