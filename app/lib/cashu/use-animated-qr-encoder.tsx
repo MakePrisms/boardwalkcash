@@ -1,7 +1,7 @@
 import type { Buffer } from 'node:buffer';
 import type { UREncoder } from '@gandlaf21/bc-ur';
 import { useEffect, useState } from 'react';
-import { useInterval } from '~/lib/use-interval';
+import { useInterval } from 'usehooks-ts';
 
 type Props = {
   text: string;
