@@ -1,6 +1,6 @@
 import '~/components/qr-scanner/qr-scanner.css';
 import Scanner from 'qr-scanner';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAnimatedQRDecoder } from '~/lib/cashu/use-animated-qr-decoder';
 
 const AnimatedScanProgress = ({ progress }: { progress: number }) => {
@@ -42,33 +42,30 @@ export const QRScanner = ({ onDecode }: Props) => {
     },
   });
 
-  const handleResult = useCallback(
-    (result: Scanner.ScanResult): void => {
+  useEffect(() => {
+    const handleResult = (result: Scanner.ScanResult): void => {
       if (result.data.toLowerCase().startsWith('ur:')) {
         setCurrentFragment(result.data);
       } else {
         onDecode(result.data);
         scanner.current?.stop();
       }
-    },
-    [onDecode],
-  );
+    };
 
-  useEffect(() => {
-    if (videoRef.current) {
-      scanner.current = new Scanner(videoRef.current, handleResult, {
-        returnDetailedScanResult: true,
-        highlightScanRegion: true,
-        highlightCodeOutline: true,
-      });
+    if (!videoRef.current) return;
 
-      scanner.current.start();
-    }
+    scanner.current = new Scanner(videoRef.current, handleResult, {
+      returnDetailedScanResult: true,
+      highlightScanRegion: true,
+      highlightCodeOutline: true,
+    });
+
+    scanner.current.start();
 
     return () => {
       scanner.current?.stop();
     };
-  }, [handleResult]);
+  }, [onDecode]);
 
   return (
     <section className="h-full w-full md:aspect-square md:max-w-[400px]">
