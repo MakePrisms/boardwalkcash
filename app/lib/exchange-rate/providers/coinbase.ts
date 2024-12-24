@@ -27,7 +27,7 @@ export class Coinbase implements ExchangeRateProvider {
 
     const data = await response.json();
     return {
-      'BTC-USD': new Big(data.data.amount),
+      'BTC-USD': new Big(data.data.amount).toString(),
       timestamp: Date.now(),
     };
   }

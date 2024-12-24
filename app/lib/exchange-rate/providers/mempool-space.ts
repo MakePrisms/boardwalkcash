@@ -41,7 +41,7 @@ export class MempoolSpace implements ExchangeRateProvider {
 
     for (const ticker of tickers) {
       const toCurrency = ticker.split('-')[1];
-      rates[ticker] = new Big(data[toCurrency]);
+      rates[ticker] = new Big(data[toCurrency]).toString();
     }
 
     return rates;

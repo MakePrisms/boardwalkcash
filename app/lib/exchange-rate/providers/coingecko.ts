@@ -45,7 +45,7 @@ export class Coingecko implements ExchangeRateProvider {
 
     for (const ticker of tickers) {
       const toCurrency = ticker.split('-')[1].toLowerCase();
-      rates[ticker] = new Big(bitcoinRates[toCurrency]);
+      rates[ticker] = new Big(bitcoinRates[toCurrency]).toString();
     }
 
     return rates;
