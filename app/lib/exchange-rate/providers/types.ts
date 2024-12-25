@@ -12,5 +12,5 @@ export interface ExchangeRateProvider {
 
 export type Rates = {
   timestamp: number;
-  [ticker: Ticker]: number;
+  [ticker: Ticker]: string;
 };

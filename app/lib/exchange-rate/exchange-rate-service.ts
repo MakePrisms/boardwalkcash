@@ -37,7 +37,7 @@ class ExchangeRateService {
           const rate = rates[ticker];
           const inverseTicker = `${to}-${from}` as const;
           if (!(inverseTicker in rates)) {
-            rates[inverseTicker] = new Big(1).div(rate).toNumber();
+            rates[inverseTicker] = new Big(1).div(rate).toString();
           }
         }
 

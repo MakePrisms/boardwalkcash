@@ -14,8 +14,7 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
-import type { Rates } from '~/lib/exchange-rate';
-import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
+import type { Rates } from '~/lib/exchange-rate/providers/types';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
@@ -61,8 +60,6 @@ export default function Index() {
     useTheme();
   const { data: rates } = useQuery({
     queryKey: ['exchangeRate'],
-    queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
     // This is a workaround to make the type of the data not have | undefined.
     // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
     // doing prefetching there. I asked a question here to see if there is a better way
