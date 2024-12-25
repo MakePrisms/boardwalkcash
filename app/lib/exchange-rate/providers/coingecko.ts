@@ -1,4 +1,3 @@
-import Big from 'big.js';
 import type {
   ExchangeRateProvider,
   GetRatesParams,
@@ -45,7 +44,7 @@ export class Coingecko implements ExchangeRateProvider {
 
     for (const ticker of tickers) {
       const toCurrency = ticker.split('-')[1].toLowerCase();
-      rates[ticker] = new Big(bitcoinRates[toCurrency]).toString();
+      rates[ticker] = bitcoinRates[toCurrency];
     }
 
     return rates;

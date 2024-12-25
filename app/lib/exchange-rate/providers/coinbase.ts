@@ -1,4 +1,3 @@
-import { Big } from 'big.js';
 import type {
   ExchangeRateProvider,
   GetRatesParams,
@@ -27,7 +26,7 @@ export class Coinbase implements ExchangeRateProvider {
 
     const data = await response.json();
     return {
-      'BTC-USD': new Big(data.data.amount).toString(),
+      'BTC-USD': data.data.amount,
       timestamp: Date.now(),
     };
   }
