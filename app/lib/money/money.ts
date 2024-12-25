@@ -1,12 +1,15 @@
 import { Big } from 'big.js';
 import type {
   BaseFormatOptions,
+  Currency,
   CurrencyData,
+  CurrencyDataMap,
   CurrencyUnit,
   FormatOptions,
   MoneyData,
   MoneyInput,
   NumberInput,
+  UnitData,
 } from './types';
 
 function baseFormat(value: number, options: BaseFormatOptions) {
@@ -22,7 +25,7 @@ function baseFormat(value: number, options: BaseFormatOptions) {
   return Intl.NumberFormat(locale, formatOptions).format(value);
 }
 
-const currencyDataMap: Record<string, CurrencyData> = {
+const currencyDataMap: CurrencyDataMap = {
   USD: {
     baseUnit: 'usd',
     units: [
@@ -100,7 +103,7 @@ const currencyDataMap: Record<string, CurrencyData> = {
   },
 };
 
-const getCurrencyBaseUnit = (currency: string) => {
+const getCurrencyBaseUnit = <T extends Currency>(currency: T) => {
   const currencyData = currencyDataMap[currency];
   if (!currencyData) {
     throw new Error(`Unsupported currency: ${currency}`);
@@ -114,12 +117,12 @@ const getCurrencyBaseUnit = (currency: string) => {
   return baseUnit;
 };
 
-export class Money {
-  private readonly _data: MoneyData;
+export class Money<T extends Currency> {
+  private readonly _data: MoneyData<T>;
 
-  constructor(data: MoneyInput) {
+  constructor(data: MoneyInput<T>) {
     const { baseUnit, minUnit, selectedUnit } =
-      Money.getCurrencyDataForInput(data);
+      Money.getCurrencyDataForInput<T>(data);
     const unit = selectedUnit ?? baseUnit;
 
     const multiplier = unit.factor.div(minUnit.factor);
@@ -143,7 +146,7 @@ export class Money {
    *
    * The precision, etc., is based on the first item in the array.
    */
-  static sum(moneys: Money[], currency?: string): Money {
+  static sum<T extends Currency>(moneys: Money<T>[], currency?: T): Money<T> {
     if (moneys.length === 0 && currency === undefined) {
       throw new Error(
         "Currency must be set when summing an empty list of money's",
@@ -157,7 +160,7 @@ export class Money {
     return moneys.slice(1).reduce((sum, money) => sum.add(money), moneys[0]);
   }
 
-  static max(moneys: Money[]): Money {
+  static max<T extends Currency>(moneys: Money<T>[]): Money<T> {
     if (moneys.length === 0) {
       throw new Error('Need at least one money for comparison');
     }
@@ -167,7 +170,7 @@ export class Money {
     );
   }
 
-  static min(moneys: Money[]): Money {
+  static min<T extends Currency>(moneys: Money<T>[]): Money<T> {
     if (moneys.length === 0) {
       throw new Error('Need at least one money for comparison');
     }
@@ -187,12 +190,15 @@ export class Money {
    * This can be plugged directly into array.sort(),
    * and it will cause the array to be sorted in ascending order.
    */
-  static compare(money1: Money, money2: Money): number {
+  static compare<T extends Currency>(
+    money1: Money<T>,
+    money2: Money<T>,
+  ): number {
     money1.assertSameCurrency(money2);
     return money1.amount().cmp(money2.amount());
   }
 
-  get currency(): string {
+  get currency(): T {
     return this._data.currency;
   }
 
@@ -200,7 +206,7 @@ export class Money {
    * Returns the currency symbol for the requested unit
    * @param unit Unit of currency. Default value is base unit (e.g. btc or usd)
    */
-  getCurrencySymbol(unit?: string): string {
+  getCurrencySymbol(unit?: CurrencyUnit<T>): string {
     return this.getCurrencyUnit(unit).symbol;
   }
 
@@ -215,7 +221,7 @@ export class Money {
    * @param unit The unit of the currency to use for the amount. Default is base currency unit (bitcoin for BTC, dollar
    * for USD, etc.)
    */
-  amount = (unit?: string): Big => {
+  amount = (unit?: CurrencyUnit<T>): Big => {
     const unitToCalculate = this.getCurrencyUnit(unit);
     const multiplier = this._data.amountUnit.factor.div(unitToCalculate.factor);
     return this._data.amount
@@ -223,7 +229,7 @@ export class Money {
       .round(unitToCalculate.decimals, Big.roundDown);
   };
 
-  multiply = (factor: NumberInput): Money => {
+  multiply = (factor: NumberInput): Money<T> => {
     const amount = this._data.amount.mul(factor);
     return this.merge({ amount });
   };
@@ -237,53 +243,53 @@ export class Money {
    * The division is performed with a precision of 20 decimals before
    * rounding back to the monetary amount. (See https://mikemcl.github.io/big.js/#dp)
    */
-  divide = (divisor: NumberInput): Money => {
+  divide = (divisor: NumberInput): Money<T> => {
     const amount = this._data.amount.div(divisor);
     return this.merge({ amount });
   };
 
-  add = (money: Money): Money => {
+  add = (money: Money<T>): Money<T> => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this.merge({ amount: this._data.amount.plus(amountInMinUnit) });
   };
 
-  subtract = (money: Money): Money => {
+  subtract = (money: Money<T>): Money<T> => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this.merge({ amount: this._data.amount.minus(amountInMinUnit) });
   };
 
-  abs = (): Money => {
+  abs = (): Money<T> => {
     return this.merge({ amount: this._data.amount.abs() });
   };
 
-  equals = (money: Money): boolean => {
+  equals = (money: Money<T>): boolean => {
     return (
       this.currency === money.currency &&
       this._data.amount.eq(money.amount(this._data.amountUnit.name))
     );
   };
 
-  greaterThan = (money: Money): boolean => {
+  greaterThan = (money: Money<T>): boolean => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this._data.amount.gt(amountInMinUnit);
   };
 
-  greaterThanOrEqual = (money: Money): boolean => {
+  greaterThanOrEqual = (money: Money<T>): boolean => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this._data.amount.gte(amountInMinUnit);
   };
 
-  lessThan = (money: Money): boolean => {
+  lessThan = (money: Money<T>): boolean => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this._data.amount.lt(amountInMinUnit);
   };
 
-  lessThanOrEqual = (money: Money): boolean => {
+  lessThanOrEqual = (money: Money<T>): boolean => {
     this.assertSameCurrency(money);
     const amountInMinUnit = money.amount(this._data.amountUnit.name);
     return this._data.amount.lte(amountInMinUnit);
@@ -306,7 +312,7 @@ export class Money {
    * If no unit is provided, base/default unit is used (bitcoin for BTC, dollar for USD, etc.)
    * Throws an error if it's not possible to keep full precision.
    */
-  toNumber = (unit?: string): number => {
+  toNumber = (unit?: CurrencyUnit<T>): number => {
     // Don't use big.js toNumber because it sometimes returns -0.
     const str = this.toString(unit);
     const num = Number(str);
@@ -332,7 +338,7 @@ export class Money {
    * @param unit Specifies the currency unit to return. If not provided the base/default unit is used (bitcoin for BTC,
    * dollar for USD, etc.)
    */
-  toString = (unit?: string): string => {
+  toString = (unit?: CurrencyUnit<T>): string => {
     const currencyUnit = this.getCurrencyUnit(unit);
     const amount = this.amount(currencyUnit.name);
     return amount.toFixed(currencyUnit.decimals);
@@ -351,7 +357,7 @@ export class Money {
     showCurrency = true,
   }: {
     locale?: string;
-    unit?: string;
+    unit?: CurrencyUnit<T>;
     showCurrency?: boolean;
   } = {}): string => {
     const currencyUnit = this.getCurrencyUnit(unit);
@@ -375,7 +381,10 @@ export class Money {
    * @param exchangeRate Exchange rate to apply. The rate has to be in source/target currency format. E.g. if converting
    * USD to BTC, the rate should be in USD/BTC format. If converting BTC to usd it should be in USD/BTC format.
    */
-  convert = (currency: string, exchangeRate: NumberInput): Money => {
+  convert = <U extends Currency>(
+    currency: U,
+    exchangeRate: NumberInput,
+  ): Money<U> => {
     const destinationCurrencyBaseUnit = getCurrencyBaseUnit(currency);
     const amount = this.amount()
       .mul(exchangeRate)
@@ -383,14 +392,16 @@ export class Money {
     return new Money({ amount, currency });
   };
 
-  private get currencyData(): CurrencyData {
+  private get currencyData(): CurrencyData<T> {
     return currencyDataMap[this.currency];
   }
 
-  private static getCurrencyDataForInput(data: MoneyInput): {
-    baseUnit: CurrencyUnit;
-    minUnit: CurrencyUnit;
-    selectedUnit: CurrencyUnit | undefined;
+  private static getCurrencyDataForInput<T extends Currency>(
+    data: MoneyInput<T>,
+  ): {
+    baseUnit: UnitData<T>;
+    minUnit: UnitData<T>;
+    selectedUnit: UnitData<T> | undefined;
   } {
     const currencyData = currencyDataMap[data.currency];
     if (!currencyData) {
@@ -420,8 +431,8 @@ export class Money {
   }
 
   private getCurrencyUnit = (
-    unitName: string = this.currencyData.baseUnit,
-  ): CurrencyUnit => {
+    unitName: CurrencyUnit<T> = this.currencyData.baseUnit,
+  ): UnitData<T> => {
     const currencyUnit = this.currencyData.units.find(
       (x) => x.name === unitName,
     );
@@ -433,14 +444,14 @@ export class Money {
     return currencyUnit;
   };
 
-  private assertSameCurrency = (money: Money): Money => {
+  private assertSameCurrency = (money: Money<T>): Money<T> => {
     if (money.currency !== this.currency) {
       throw new Error('Currencies must be the same');
     }
     return this;
   };
 
-  private merge = (data: Partial<MoneyInput>): Money => {
+  private merge = (data: Partial<MoneyInput<T>>): Money<T> => {
     const { amountUnit, ...rest } = this._data;
     return new Money({ unit: amountUnit.name, ...rest, ...data });
   };

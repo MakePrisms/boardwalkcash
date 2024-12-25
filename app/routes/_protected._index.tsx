@@ -1,5 +1,6 @@
 import { NavLink } from '@remix-run/react';
 import { useQuery } from '@tanstack/react-query';
+import Big from 'big.js';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Page, PageHeader } from '~/components/page';
@@ -27,26 +28,26 @@ const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',
-    unit: 'sat',
+    currency: 'BTC',
     type: 'cashu',
     mintUrl: 'https://testnut.cashu.space',
-    balance: 54_000,
+    balance: new Big(0.00000054),
   },
   {
     id: '2',
     name: 'Start9',
-    unit: 'sat',
+    currency: 'BTC',
     type: 'nwc',
     nwcUrl: 'nwc connection string',
-    balance: 321,
+    balance: new Big(0.00000321),
   },
   {
     id: '3',
     name: 'Stablenut',
-    unit: 'usd',
+    currency: 'USD',
     type: 'cashu',
     mintUrl: 'https://stablenut.umint.cash.',
-    balance: 121,
+    balance: new Big(1.21),
   },
 ];
 
