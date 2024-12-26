@@ -1,34 +1,36 @@
-import type {
-  ExchangeRateProvider,
-  GetRatesParams,
-  Rates,
-  Ticker,
-} from '~/lib/exchange-rate/providers/types';
+import { ExchangeRateProvider } from './exchange-rate-provider';
+import type { GetRatesParams, Rates, Ticker } from './types';
 
-export class Coinbase implements ExchangeRateProvider {
-  supportedTickers: Ticker[] = ['BTC-USD'];
+export class Coinbase extends ExchangeRateProvider {
+  protected baseTickers: Ticker[] = [
+    'BTC-USD',
+    'BTC-EUR',
+    'BTC-GBP',
+    'BTC-CAD',
+    'BTC-CHF',
+    'BTC-AUD',
+    'BTC-JPY',
+  ];
 
-  async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
-    if (!tickers.length) {
-      throw new Error('No tickers provided');
-    }
-
-    tickers.forEach((ticker) => {
-      if (!this.supportedTickers.includes(ticker)) {
-        throw new Error(`Unsupported ticker: ${ticker}`);
-      }
-    });
-
+  protected async fetchRates({ signal }: GetRatesParams): Promise<Rates> {
     const response = await fetch(
-      'https://api.coinbase.com/v2/prices/BTC-USD/spot',
+      'https://api.coinbase.com/v2/exchange-rates?currency=BTC',
       { signal },
     );
 
     const data = await response.json();
-    return {
-      'BTC-USD': data.data.amount,
+    const btcRates = data.data.rates;
+
+    const rates: Rates = {
       timestamp: Date.now(),
     };
+
+    for (const ticker of this.baseTickers) {
+      const [, to] = ticker.split('-');
+      rates[ticker] = btcRates[to];
+    }
+
+    return rates;
   }
 
   toString(): string {
