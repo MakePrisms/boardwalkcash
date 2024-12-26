@@ -21,6 +21,7 @@ function baseFormat(value: number, options: BaseFormatOptions) {
   if (currency) {
     formatOptions.style = 'currency';
     formatOptions.currency = currency;
+    formatOptions.currencyDisplay = 'narrowSymbol';
   }
   return Intl.NumberFormat(locale, formatOptions).format(value);
 }
