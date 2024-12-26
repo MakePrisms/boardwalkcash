@@ -29,19 +29,19 @@ class ExchangeRateService {
 
     for (const provider of providersForTickers) {
       try {
-        const rates = await provider.getRates({ tickers, signal });
+        const rates = await provider.getRates({
+          tickers: tickers.filter((t) => t.split('-')[0] === 'BTC'),
+          signal,
+        });
+        const result: Rates = {
+          timestamp: rates.timestamp,
+        };
 
-        // Add inverse rates
         for (const ticker of tickers) {
-          const [from, to] = ticker.split('-');
-          const rate = rates[ticker];
-          const inverseTicker = `${to}-${from}` as const;
-          if (!(inverseTicker in rates)) {
-            rates[inverseTicker] = new Big(1).div(rate).toString();
-          }
+          result[ticker] = this.getRateForTicker(ticker, rates);
         }
 
-        return rates;
+        return result;
       } catch (e) {
         console.warn(`Error fetching rates from provider ${provider}`, e);
         errors.push(e);
@@ -55,14 +55,36 @@ class ExchangeRateService {
   private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {
     const matchingProviders: ExchangeRateProvider[] = [];
     for (const provider of this.providers) {
-      // check if provider.supportedTickers contains all tickers
+      // check if provider.supportedTickers contains all tickers or their inverses
       if (
-        tickers.every((ticker) => provider.supportedTickers.includes(ticker))
+        tickers.every((ticker) => {
+          const [from, to] = ticker.split('-');
+          const inverseTicker: Ticker = `${to}-${from}`;
+          return (
+            provider.supportedTickers.includes(ticker) ||
+            provider.supportedTickers.includes(inverseTicker)
+          );
+        })
       ) {
         matchingProviders.push(provider);
       }
     }
     return matchingProviders;
+  }
+
+  private getRateForTicker(ticker: Ticker, rates: Rates): string {
+    if (rates[ticker]) {
+      return rates[ticker];
+    }
+
+    const [from, to] = ticker.split('-');
+    const inverseTicker = `${to}-${from}` as Ticker;
+
+    if (rates[inverseTicker]) {
+      return new Big(1).div(rates[inverseTicker]).toString();
+    }
+
+    throw new Error(`No rate found for ticker ${ticker}`);
   }
 }
 
