@@ -35,7 +35,12 @@ const currencyDataMap: CurrencyDataMap = {
         symbol: '$',
         factor: new Big(1),
         format: function (value: number, options: FormatOptions = {}) {
-          return baseFormat(value, { ...options, decimals: this.decimals });
+          let formattedValue = baseFormat(value, {
+            ...options,
+            decimals: this.decimals,
+          });
+          formattedValue = formattedValue.replace('US', '').trim();
+          return formattedValue;
         },
       },
       {
@@ -48,7 +53,10 @@ const currencyDataMap: CurrencyDataMap = {
             ...options,
             decimals: this.decimals,
           });
-          formattedValue = formattedValue.replace('$', '').trim();
+          formattedValue = formattedValue
+            .replace('$', '')
+            .replace('US', '')
+            .trim();
           return `${formattedValue}${this.symbol}`;
         },
       },
