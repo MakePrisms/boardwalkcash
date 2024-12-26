@@ -1,5 +1,11 @@
+import ky from 'ky';
 import { ExchangeRateProvider } from './exchange-rate-provider';
 import type { GetRatesParams, Rates, Ticker } from './types';
+
+type MempoolSpaceRatesResponse = {
+  time: number;
+  [currency: string]: number;
+};
 
 export class MempoolSpace extends ExchangeRateProvider {
   protected baseTickers: Ticker[] = [
@@ -13,9 +19,10 @@ export class MempoolSpace extends ExchangeRateProvider {
   ];
 
   protected async fetchRates({ signal }: GetRatesParams): Promise<Rates> {
-    const response = await fetch('https://mempool.space/api/v1/prices', {
-      signal,
-    });
+    const response = await ky.get<MempoolSpaceRatesResponse>(
+      'https://mempool.space/api/v1/prices',
+      { signal, timeout: 1_000 },
+    );
 
     const data = await response.json();
 

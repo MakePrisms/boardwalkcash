@@ -1,5 +1,12 @@
+import ky from 'ky';
 import { ExchangeRateProvider } from './exchange-rate-provider';
 import type { GetRatesParams, Rates, Ticker } from './types';
+
+type CoinbaseRatesResponse = {
+  data: {
+    rates: Record<string, string>;
+  };
+};
 
 export class Coinbase extends ExchangeRateProvider {
   protected baseTickers: Ticker[] = [
@@ -13,9 +20,9 @@ export class Coinbase extends ExchangeRateProvider {
   ];
 
   protected async fetchRates({ signal }: GetRatesParams): Promise<Rates> {
-    const response = await fetch(
+    const response = await ky.get<CoinbaseRatesResponse>(
       'https://api.coinbase.com/v2/exchange-rates?currency=BTC',
-      { signal },
+      { signal, timeout: 1_000 },
     );
 
     const data = await response.json();

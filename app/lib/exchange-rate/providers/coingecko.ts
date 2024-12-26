@@ -1,5 +1,10 @@
+import ky from 'ky';
 import { ExchangeRateProvider } from './exchange-rate-provider';
 import type { GetRatesParams, Rates, Ticker } from './types';
+
+type CoingeckoRatesResponse = {
+  bitcoin: Record<string, string>;
+};
 
 export class Coingecko extends ExchangeRateProvider {
   protected baseTickers: Ticker[] = [
@@ -13,10 +18,11 @@ export class Coingecko extends ExchangeRateProvider {
   ];
 
   protected async fetchRates({ signal }: GetRatesParams): Promise<Rates> {
-    const response = await fetch(
+    const response = await ky.get<CoingeckoRatesResponse>(
       'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,gbp,cad,chf,aud,jpy',
       {
         signal,
+        timeout: 1_000,
       },
     );
 
