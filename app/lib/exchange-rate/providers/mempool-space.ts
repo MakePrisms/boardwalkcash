@@ -53,7 +53,7 @@ export class MempoolSpace implements ExchangeRateProvider {
     }
 
     const rates: Rates = {
-      timestamp: data.time * 1000,
+      timestamp: time * 1000,
     };
 
     for (const ticker of tickers) {
