@@ -1,9 +1,6 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 import { clearLongTimeout, setLongTimeout } from '~/lib/timeout';
-
-// If we ever add `usehooks-ts` lib, import this value from there instead
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Custom hook that handles long timeouts in React components using the `setLongTimeout API`.
