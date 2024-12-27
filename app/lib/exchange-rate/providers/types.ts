@@ -2,7 +2,7 @@ export type Ticker = `${string}-${string}`;
 
 export type GetRatesParams = {
   tickers: Ticker[];
-  signal: AbortSignal;
+  signal?: AbortSignal;
 };
 
 export interface ExchangeRateProvider {

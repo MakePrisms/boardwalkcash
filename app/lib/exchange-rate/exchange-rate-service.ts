@@ -1,4 +1,3 @@
-import { Big } from 'big.js';
 import { Coinbase } from '~/lib/exchange-rate/providers/coinbase';
 import { Coingecko } from '~/lib/exchange-rate/providers/coingecko';
 import { MempoolSpace } from '~/lib/exchange-rate/providers/mempool-space';
@@ -9,13 +8,17 @@ import type {
   Ticker,
 } from '~/lib/exchange-rate/providers/types';
 
-class ExchangeRateService {
-  // Keep order by priority
-  private providers: ExchangeRateProvider[] = [
-    new MempoolSpace(),
-    new Coingecko(),
-    new Coinbase(),
-  ];
+export class ExchangeRateService {
+  private providers: ExchangeRateProvider[];
+
+  constructor(providers?: ExchangeRateProvider[]) {
+    // Keep order by priority
+    this.providers = providers ?? [
+      new MempoolSpace(),
+      new Coingecko(),
+      new Coinbase(),
+    ];
+  }
 
   async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
     const providersForTickers = this.getProvidersForTickers(tickers);
@@ -29,19 +32,7 @@ class ExchangeRateService {
 
     for (const provider of providersForTickers) {
       try {
-        const rates = await provider.getRates({ tickers, signal });
-
-        // Add inverse rates
-        for (const ticker of tickers) {
-          const [from, to] = ticker.split('-');
-          const rate = rates[ticker];
-          const inverseTicker = `${to}-${from}` as const;
-          if (!(inverseTicker in rates)) {
-            rates[inverseTicker] = new Big(1).div(rate).toString();
-          }
-        }
-
-        return rates;
+        return await provider.getRates({ tickers, signal });
       } catch (e) {
         console.warn(`Error fetching rates from provider ${provider}`, e);
         errors.push(e);

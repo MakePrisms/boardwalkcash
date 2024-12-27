@@ -14,7 +14,7 @@ export const loader: LoaderFunction = async () => {
   await queryClient.prefetchQuery({
     queryKey: ['exchangeRate'],
     queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
+      exchangeRateService.getRates({ tickers: ['BTC-USD', 'USD-BTC'], signal }),
   });
 
   return { dehydratedState: dehydrate(queryClient) };
