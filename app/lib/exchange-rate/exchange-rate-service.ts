@@ -5,15 +5,20 @@ import type {
   ExchangeRateProvider,
   GetRatesParams,
   Rates,
+  Ticker,
 } from '~/lib/exchange-rate/providers/types';
 
-class ExchangeRateService {
-  // Keep order by priority
-  private providers: ExchangeRateProvider[] = [
-    new MempoolSpace(),
-    new Coingecko(),
-    new Coinbase(),
-  ];
+export class ExchangeRateService {
+  private providers: ExchangeRateProvider[];
+
+  constructor(providers?: ExchangeRateProvider[]) {
+    // Keep order by priority
+    this.providers = providers ?? [
+      new MempoolSpace(),
+      new Coingecko(),
+      new Coinbase(),
+    ];
+  }
 
   async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
     const providersForTickers = this.getProvidersForTickers(tickers);
@@ -38,7 +43,7 @@ class ExchangeRateService {
     throw new Error('Failed to fetch rates');
   }
 
-  private getProvidersForTickers(tickers: string[]): ExchangeRateProvider[] {
+  private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {
     const matchingProviders: ExchangeRateProvider[] = [];
     for (const provider of this.providers) {
       // check if provider.supportedTickers contains all tickers

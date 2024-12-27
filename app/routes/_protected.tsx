@@ -6,21 +6,19 @@ import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
 import { UserProvider } from '~/features/user/user-provider';
-import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
+import { exchangeRateService } from '~/lib/exchange-rate';
 
 export const loader: LoaderFunction = async () => {
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
     queryKey: ['exchangeRate'],
-    // queryFn: () => fetchRates('average'),
     queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
+      exchangeRateService.getRates({ tickers: ['BTC-USD', 'USD-BTC'], signal }),
   });
 
   return { dehydratedState: dehydrate(queryClient) };
 };
-
 // prevent loader from being revalidated
 export function shouldRevalidate() {
   return false;

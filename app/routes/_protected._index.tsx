@@ -1,5 +1,6 @@
 import { NavLink } from '@remix-run/react';
 import { useQuery } from '@tanstack/react-query';
+import Big from 'big.js';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Page, PageHeader } from '~/components/page';
@@ -14,10 +15,8 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
-import { currencyConverter } from '~/lib/exchange-rate';
-import type { Rates } from '~/lib/exchange-rate';
-import { exchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
-import { formatUnit } from '~/lib/formatting';
+import type { Rates } from '~/lib/exchange-rate/providers/types';
+import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -29,26 +28,26 @@ const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',
-    unit: 'sat',
+    currency: 'BTC',
     type: 'cashu',
     mintUrl: 'https://testnut.cashu.space',
-    balance: 54_000,
+    balance: new Big(0.00000054),
   },
   {
     id: '2',
     name: 'Start9',
-    unit: 'sat',
+    currency: 'BTC',
     type: 'nwc',
     nwcUrl: 'nwc connection string',
-    balance: 321,
+    balance: new Big(0.00000321),
   },
   {
     id: '3',
     name: 'Stablenut',
-    unit: 'usd',
+    currency: 'USD',
     type: 'cashu',
     mintUrl: 'https://stablenut.umint.cash.',
-    balance: 121,
+    balance: new Big(1.21),
   },
 ];
 
@@ -62,9 +61,6 @@ export default function Index() {
     useTheme();
   const { data: rates } = useQuery({
     queryKey: ['exchangeRate'],
-    // queryFn: () => fetchRates('average'),
-    queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD'], signal }),
     // This is a workaround to make the type of the data not have | undefined.
     // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
     // doing prefetching there. I asked a question here to see if there is a better way
@@ -103,7 +99,10 @@ export default function Index() {
       <PageHeader>
         <div className="flex items-center justify-start gap-2">
           {/* dollars per bitcoin */}
-          {formatUnit(rates['BTC-USD'], 'usd')}/BTC
+          {new Money({
+            amount: rates['BTC-USD'],
+            currency: 'USD',
+          }).toLocaleString({ unit: 'usd' })}
         </div>
         <div className="flex items-center justify-end">
           <LinkWithViewTransition
@@ -118,16 +117,19 @@ export default function Index() {
 
       <div>
         SATS per USD:{' '}
-        {formatUnit(currencyConverter.convert(100, 'USD', 'BTC', rates), 'sat')}
+        {new Money({ amount: 1, currency: 'USD' })
+          .convert('BTC', rates['USD-BTC'])
+          .toLocaleString({ unit: 'sat' })}
         <br />
         $5 in SATS:{' '}
-        {formatUnit(currencyConverter.convert(500, 'USD', 'BTC', rates), 'sat')}
+        {new Money({ amount: 5, currency: 'USD' })
+          .convert('BTC', rates['USD-BTC'])
+          .toLocaleString({ unit: 'sat' })}
         <br />
         5k sats in USD:{' '}
-        {formatUnit(
-          currencyConverter.convert(5000, 'BTC', 'USD', rates),
-          'cent',
-        )}
+        {new Money({ amount: 5000, currency: 'BTC', unit: 'sat' })
+          .convert('USD', rates['BTC-USD'])
+          .toLocaleString()}
       </div>
       <br />
 
