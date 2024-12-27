@@ -52,6 +52,10 @@ export default {
           '5': 'hsl(var(--chart-5))',
         },
       },
+      fontFamily: {
+        numeric: ['Teko', 'sans-serif'],
+        primary: ['Kode Mono', 'monospace'],
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],
