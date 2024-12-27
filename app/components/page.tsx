@@ -1,5 +1,5 @@
 import { ChevronLeft, X } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   LinkWithViewTransition,
   type ViewTransitionLinkProps,
@@ -11,28 +11,10 @@ interface PageProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Page({ children, className, ...props }: PageProps) {
-  // vh-100 includes the space behind the search bar on mobile browsers.
-  // This sets the vh to be only the visible view port height.
-  useEffect(() => {
-    const updateHeight = () => {
-      const vh = window.innerHeight;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    window.addEventListener('orientationchange', updateHeight);
-
-    return () => {
-      window.removeEventListener('resize', updateHeight);
-      window.removeEventListener('orientationchange', updateHeight);
-    };
-  }, []);
-
   return (
     <div
       className={cn(
-        'mx-auto flex h-[var(--vh)] w-full flex-col p-4 font-primary sm:px-6 lg:px-8',
+        'mx-auto flex h-dvh w-full flex-col p-4 font-primary sm:px-6 lg:px-8',
         className,
       )}
       {...props}
