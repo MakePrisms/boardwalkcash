@@ -39,14 +39,13 @@ export class MempoolSpace implements ExchangeRateProvider {
     );
 
     const data = await response.json();
+    const { time, ...currencies } = data;
 
     const ratesMap = new Map<Ticker, string>();
     // all rates are in BTC
     const btc = 'BTC';
 
-    for (const [currency, rate] of Object.entries(data)) {
-      if (currency === 'time') continue;
-
+    for (const [currency, rate] of Object.entries(currencies)) {
       const btcRate = rate.toString();
 
       ratesMap.set(`${btc}-${currency}`, btcRate);
