@@ -1,4 +1,5 @@
 import Big from 'big.js';
+import ky from 'ky';
 import type {
   ExchangeRateProvider,
   GetRatesParams,
@@ -6,17 +7,69 @@ import type {
   Ticker,
 } from './types';
 
+type MempoolSpaceRatesResponse = {
+  time: number;
+  [currency: string]: number;
+};
+
 export class MempoolSpace implements ExchangeRateProvider {
   readonly supportedTickers: Ticker[] = [
     'BTC-USD',
-    'BTC-EUR',
-    'BTC-GBP',
-    'BTC-CAD',
-    'BTC-CHF',
-    'BTC-AUD',
-    'BTC-JPY',
     'USD-BTC',
+    'BTC-EUR',
+    'EUR-BTC',
+    'BTC-GBP',
+    'GBP-BTC',
+    'BTC-CAD',
+    'CAD-BTC',
+    'BTC-CHF',
+    'CHF-BTC',
+    'BTC-AUD',
+    'AUD-BTC',
+    'BTC-JPY',
+    'JPY-BTC',
   ];
+
+  async getRates({ signal, tickers }: GetRatesParams): Promise<Rates> {
+    this.validateTickers(tickers);
+
+    const response = await ky.get<MempoolSpaceRatesResponse>(
+      'https://mempool.space/api/v1/prices',
+      { signal, timeout: 1_000 },
+    );
+
+    const data = await response.json();
+
+    const ratesMap = new Map<Ticker, string>();
+    // all rates are in BTC
+    const btc = 'BTC';
+
+    for (const [currency, rate] of Object.entries(data)) {
+      if (currency === 'time') continue;
+
+      const btcRate = rate.toString();
+
+      ratesMap.set(`${btc}-${currency}`, btcRate);
+      ratesMap.set(`${currency}-${btc}`, new Big(1).div(btcRate).toString());
+    }
+
+    const rates: Rates = {
+      timestamp: data.time * 1000,
+    };
+
+    for (const ticker of tickers) {
+      const rate = ratesMap.get(ticker);
+      if (rate) {
+        rates[ticker] = rate;
+      }
+    }
+
+    return rates;
+  }
+
+  toString(): string {
+    return this.constructor.name;
+  }
 
   private validateTickers(tickers: Ticker[]): void {
     if (!tickers.length) {
@@ -28,34 +81,5 @@ export class MempoolSpace implements ExchangeRateProvider {
         throw new Error(`Unsupported ticker: ${ticker}`);
       }
     });
-  }
-
-  async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
-    this.validateTickers(tickers);
-
-    const response = await fetch('https://mempool.space/api/v1/prices', {
-      signal,
-    });
-
-    const data = await response.json();
-
-    const rates: Rates = {
-      timestamp: data.time * 1000,
-    };
-
-    for (const ticker of tickers) {
-      if (ticker === 'USD-BTC') {
-        rates[ticker] = new Big(1).div(data.USD).toString();
-      } else {
-        const [, to] = ticker.split('-');
-        rates[ticker] = data[to].toString();
-      }
-    }
-
-    return rates;
-  }
-
-  toString(): string {
-    return this.constructor.name;
   }
 }
