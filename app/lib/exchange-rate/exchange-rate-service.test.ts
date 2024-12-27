@@ -1,17 +1,56 @@
 import { describe, expect, test } from 'bun:test';
-import { ExchangeRateService } from '../../app/lib/exchange-rate/exchange-rate-service';
-import { MockExchangeRateProvider, MockExchangeRateProviderEUR } from './mocks';
+import { ExchangeRateService } from './exchange-rate-service';
+
+import type {
+  ExchangeRateProvider,
+  GetRatesParams,
+  Rates,
+  Ticker,
+} from './providers/types';
+
+class MockExchangeRateProvider implements ExchangeRateProvider {
+  readonly supportedTickers: Ticker[] = ['BTC-USD', 'USD-BTC'];
+  private shouldFail = false;
+
+  constructor(shouldFail = false) {
+    this.shouldFail = shouldFail;
+  }
+
+  async getRates(_params: GetRatesParams): Promise<Rates> {
+    if (this.shouldFail) {
+      throw new Error('Failed to fetch rates');
+    }
+
+    return {
+      timestamp: Date.now(),
+      'BTC-USD': '100000',
+      'USD-BTC': '0.00001',
+    };
+  }
+}
+
+class MockExchangeRateProviderEUR implements ExchangeRateProvider {
+  readonly supportedTickers: Ticker[] = ['EUR-BTC'];
+
+  async getRates(params: GetRatesParams): Promise<Rates> {
+    return this.fetchRates(params);
+  }
+
+  protected async fetchRates(_params: GetRatesParams): Promise<Rates> {
+    return {
+      timestamp: Date.now(),
+      'EUR-BTC': '0.00002',
+    };
+  }
+}
 
 describe('ExchangeRateService', () => {
-  const createAbortController = () => new AbortController();
-
   test('uses provided exchange rate providers', async () => {
     const mockProvider = new MockExchangeRateProvider();
     const service = new ExchangeRateService([mockProvider]);
 
     const rates = await service.getRates({
       tickers: ['BTC-USD', 'USD-BTC'],
-      signal: createAbortController().signal,
     });
 
     expect(rates['BTC-USD']).toBe('100000');
@@ -25,7 +64,6 @@ describe('ExchangeRateService', () => {
 
     const rates = await service.getRates({
       tickers: ['BTC-USD'],
-      signal: createAbortController().signal,
     });
 
     expect(rates['BTC-USD']).toBe('100000');
@@ -38,7 +76,6 @@ describe('ExchangeRateService', () => {
     await expect(
       service.getRates({
         tickers: ['JPY-BTC'],
-        signal: createAbortController().signal,
       }),
     ).rejects.toThrow('No provider that supports all the specified tickers');
   });
@@ -50,7 +87,6 @@ describe('ExchangeRateService', () => {
 
     const rates = await service.getRates({
       tickers: ['EUR-BTC'],
-      signal: createAbortController().signal,
     });
 
     expect(rates['EUR-BTC']).toBe('0.00002');
@@ -67,7 +103,6 @@ describe('ExchangeRateService', () => {
     expect(
       service.getRates({
         tickers: ['BTC-USD'],
-        signal: createAbortController().signal,
       }),
     ).rejects.toThrow('Failed to fetch rates');
   });
