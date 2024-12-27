@@ -1,16 +1,19 @@
-import { ExchangeRateProvider } from '../../app/lib/exchange-rate/providers/exchange-rate-provider';
 import type {
+  ExchangeRateProvider,
   GetRatesParams,
   Rates,
+  Ticker,
 } from '../../app/lib/exchange-rate/providers/types';
 
-export class MockExchangeRateProvider extends ExchangeRateProvider {
-  constructor(private shouldFail = false) {
-    super();
-    this.baseTickers = ['BTC-USD'];
+export class MockExchangeRateProvider implements ExchangeRateProvider {
+  readonly supportedTickers: Ticker[] = ['BTC-USD', 'USD-BTC'];
+  private shouldFail = false;
+
+  constructor(shouldFail = false) {
+    this.shouldFail = shouldFail;
   }
 
-  protected async fetchRates(_params: GetRatesParams): Promise<Rates> {
+  async getRates(_params: GetRatesParams): Promise<Rates> {
     if (this.shouldFail) {
       throw new Error('Failed to fetch rates');
     }
@@ -18,35 +21,22 @@ export class MockExchangeRateProvider extends ExchangeRateProvider {
     return {
       timestamp: Date.now(),
       'BTC-USD': '100000',
+      'USD-BTC': '0.00001',
     };
   }
 }
 
-export class MockExchangeRateProviderEUR extends ExchangeRateProvider {
-  constructor() {
-    super();
-    this.baseTickers = ['EUR-BTC'];
+export class MockExchangeRateProviderEUR implements ExchangeRateProvider {
+  readonly supportedTickers: Ticker[] = ['EUR-BTC'];
+
+  async getRates(params: GetRatesParams): Promise<Rates> {
+    return this.fetchRates(params);
   }
 
   protected async fetchRates(_params: GetRatesParams): Promise<Rates> {
     return {
       timestamp: Date.now(),
       'EUR-BTC': '0.00002',
-    };
-  }
-}
-
-export class MockERProviderWithInverseTickers extends ExchangeRateProvider {
-  constructor() {
-    super();
-    this.baseTickers = ['BTC-USD'];
-  }
-
-  protected async fetchRates(_params: GetRatesParams): Promise<Rates> {
-    return {
-      timestamp: Date.now(),
-      'BTC-USD': '100000',
-      'USD-BTC': '0.00005', // Purposely not the correct inverse
     };
   }
 }

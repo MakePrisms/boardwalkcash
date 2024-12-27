@@ -1,8 +1,13 @@
-import { ExchangeRateProvider } from './exchange-rate-provider';
-import type { GetRatesParams, Rates, Ticker } from './types';
+import Big from 'big.js';
+import type {
+  ExchangeRateProvider,
+  GetRatesParams,
+  Rates,
+  Ticker,
+} from './types';
 
-export class Coingecko extends ExchangeRateProvider {
-  protected baseTickers: Ticker[] = [
+export class Coingecko implements ExchangeRateProvider {
+  readonly supportedTickers: Ticker[] = [
     'BTC-USD',
     'BTC-EUR',
     'BTC-GBP',
@@ -10,14 +15,27 @@ export class Coingecko extends ExchangeRateProvider {
     'BTC-CHF',
     'BTC-AUD',
     'BTC-JPY',
+    'USD-BTC',
   ];
 
-  protected async fetchRates({ signal }: GetRatesParams): Promise<Rates> {
+  private validateTickers(tickers: Ticker[]): void {
+    if (!tickers.length) {
+      throw new Error('No tickers provided');
+    }
+
+    tickers.forEach((ticker) => {
+      if (!this.supportedTickers.includes(ticker)) {
+        throw new Error(`Unsupported ticker: ${ticker}`);
+      }
+    });
+  }
+
+  async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
+    this.validateTickers(tickers);
+
     const response = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,gbp,cad,chf,aud,jpy',
-      {
-        signal,
-      },
+      { signal },
     );
 
     const data = await response.json();
@@ -27,9 +45,13 @@ export class Coingecko extends ExchangeRateProvider {
       timestamp: Date.now(),
     };
 
-    for (const ticker of this.baseTickers) {
-      const [, to] = ticker.split('-');
-      rates[ticker] = bitcoinRates[to.toLowerCase()].toString();
+    for (const ticker of tickers) {
+      if (ticker === 'USD-BTC') {
+        rates[ticker] = new Big(1).div(bitcoinRates.usd).toString();
+      } else {
+        const [, to] = ticker.split('-');
+        rates[ticker] = bitcoinRates[to.toLowerCase()].toString();
+      }
     }
 
     return rates;
