@@ -62,7 +62,7 @@ export function PasswordReset({ email, secret, onSuccess, onBack }: Props) {
           noValidate
         >
           <div className="grid gap-2">
-            <Label htmlFor="email">Reset Code</Label>
+            <Label htmlFor="resetCode">Reset Code</Label>
             <Input
               id="resetCode"
               type="text"
@@ -72,7 +72,12 @@ export function PasswordReset({ email, secret, onSuccess, onBack }: Props) {
               })}
             />
             {errors.resetCode && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="resetCodeError"
+                role="alert"
+                aria-labelledby="resetCodeError"
+                className="text-red-500 text-sm"
+              >
                 {errors.resetCode.message}
               </span>
             )}
@@ -93,13 +98,18 @@ export function PasswordReset({ email, secret, onSuccess, onBack }: Props) {
               })}
             />
             {errors.password && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="passwordError"
+                role="alert"
+                aria-labelledby="passwordError"
+                className="text-red-500 text-sm"
+              >
                 {errors.password.message}
               </span>
             )}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Confirm New Password</Label>
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -112,7 +122,12 @@ export function PasswordReset({ email, secret, onSuccess, onBack }: Props) {
               })}
             />
             {errors.confirmPassword && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="confirmPasswordError"
+                role="alert"
+                aria-labelledby="confirmPasswordError"
+                className="text-red-500 text-sm"
+              >
                 {errors.confirmPassword.message}
               </span>
             )}
