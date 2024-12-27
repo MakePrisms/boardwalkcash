@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Big } from 'big.js';
-import { Money } from '../app/lib/money';
+import { Money } from '.';
 
 describe('Money', () => {
   describe('USD', () => {
