@@ -1,3 +1,4 @@
+import type { Big } from 'big.js';
 import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { LandmarkIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
@@ -7,16 +8,16 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from '~/components/ui/drawer';
-import { formatUnit } from '~/lib/formatting';
+import { type Currency, Money } from '~/lib/money';
 
 export type AccountType = 'cashu' | 'nwc';
 
 export type Account = {
   id: string;
   name: string;
-  unit: 'usd' | 'sat'; // in this case usd is cents
+  currency: Currency;
   type: AccountType;
-  balance: number;
+  balance: Big;
 } & (
   | {
       type: 'cashu';
@@ -43,7 +44,12 @@ function AccountItem({ account }: { account: Account }) {
       <div className="flex flex-col justify-between gap-2 text-start ">
         <span className="font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
-          {formatUnit(account.balance, account.unit)}
+          {new Money({
+            amount: account.balance,
+            currency: account.currency,
+          }).toLocaleString({
+            unit: account.currency === 'BTC' ? 'sat' : undefined,
+          })}
         </span>
       </div>
     </div>

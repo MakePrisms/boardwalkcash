@@ -1,7 +1,7 @@
 import { Edit, Landmark, QrCode, Share, X } from 'lucide-react';
 import { PageContent, PageFooter, PageHeader } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
-import { formatUnit } from '~/lib/formatting';
+import { Money } from '~/lib/money';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { SettingsNavButton } from './components/settings-nav-button';
@@ -9,7 +9,7 @@ import { SettingsNavButton } from './components/settings-nav-button';
 const username = 'satoshi';
 const activeMintName = 'Coinos';
 const activeMintBalance = 10_000;
-const activeMintUnit = 'usd';
+const activeMintUnit = 'USD';
 
 export default function Settings() {
   const handleShare = async () => {
@@ -56,7 +56,10 @@ export default function Settings() {
         </SettingsNavButton>
         <SettingsNavButton to="/settings/accounts">
           <Landmark /> {activeMintName}{' '}
-          {formatUnit(activeMintBalance, activeMintUnit)}
+          {new Money({
+            amount: activeMintBalance,
+            currency: activeMintUnit,
+          }).toLocaleString()}
         </SettingsNavButton>
 
         <Separator />
