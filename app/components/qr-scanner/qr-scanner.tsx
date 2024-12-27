@@ -1,7 +1,7 @@
 import '~/components/qr-scanner/qr-scanner.css';
 import Scanner from 'qr-scanner';
 import { useEffect, useRef, useState } from 'react';
-import { useAnimatedQRDecoder } from '~/lib/cashu/use-animated-qr-decoder';
+import { useAnimatedQRDecoder } from '~/lib/cashu/animated-qr-code';
 
 const AnimatedScanProgress = ({ progress }: { progress: number }) => {
   if (progress === 0) return null;

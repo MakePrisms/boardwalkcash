@@ -22,7 +22,7 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
-import AnimatedQRCode from '~/lib/cashu/animated-qr-code';
+import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
