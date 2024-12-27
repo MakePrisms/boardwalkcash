@@ -7,10 +7,14 @@ import {
   Scripts,
   ScrollRestoration,
 } from '@remix-run/react';
+import {
+  HydrationBoundary,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
 import { useState } from 'react';
-import { Hydrate, QueryClient, QueryClientProvider } from 'react-query';
 import { useDehydratedState } from 'use-dehydrated-state';
 import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
@@ -29,7 +33,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400..700&family=Teko:wght@300..700&display=swap',
   },
 ];
 
@@ -93,11 +97,11 @@ export default function App() {
   // TODO: OpenSecretProvider apiUrl url to settings
   return (
     <QueryClientProvider client={queryClient}>
-      <Hydrate state={dehydratedState}>
+      <HydrationBoundary state={dehydratedState}>
         <OpenSecretProvider apiUrl="https://preview-enclave.opensecret.cloud">
           <Outlet />
         </OpenSecretProvider>
-      </Hydrate>
+      </HydrationBoundary>
     </QueryClientProvider>
   );
 }

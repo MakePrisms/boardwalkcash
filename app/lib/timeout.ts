@@ -3,7 +3,7 @@
 const maxSetTimeoutDelay = 2 ** 31 - 1;
 
 type LongTimeout = {
-  id: number | NodeJS.Timeout | null; // Tracks the latest timeout ID
+  id: ReturnType<typeof setTimeout> | null; // Tracks the latest timeout ID
 };
 
 /**

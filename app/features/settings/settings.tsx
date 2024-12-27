@@ -1,7 +1,12 @@
-import { Edit, Landmark, QrCode, Share, X } from 'lucide-react';
-import { PageContent, PageFooter, PageHeader } from '~/components/page';
+import { Edit, Landmark, QrCode, Share } from 'lucide-react';
+import {
+  ClosePageButton,
+  PageContent,
+  PageFooter,
+  PageHeader,
+} from '~/components/page';
 import { Separator } from '~/components/ui/separator';
-import { formatUnit } from '~/lib/formatting';
+import { Money } from '~/lib/money';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { SettingsNavButton } from './components/settings-nav-button';
@@ -9,7 +14,7 @@ import { SettingsNavButton } from './components/settings-nav-button';
 const username = 'satoshi';
 const activeMintName = 'Coinos';
 const activeMintBalance = 10_000;
-const activeMintUnit = 'usd';
+const activeMintUnit = 'USD';
 
 export default function Settings() {
   const handleShare = async () => {
@@ -23,29 +28,19 @@ export default function Settings() {
   return (
     <>
       <PageHeader>
-        <div className="flex items-center justify-between">
-          <LinkWithViewTransition
-            to="/"
-            transition="slideRight"
-            applyTo="oldView"
-          >
-            <X />
-          </LinkWithViewTransition>
-          <div className="flex items-center gap-2">
-            <LinkWithViewTransition
-              to="/settings/qr"
-              transition="slideUp"
-              applyTo="newView"
-            >
-              <QrCode />
-            </LinkWithViewTransition>
-            {canShare() && (
-              <button type="button" onClick={handleShare}>
-                <Share />
-              </button>
-            )}
-          </div>
-        </div>
+        <ClosePageButton to="/" transition="slideRight" applyTo="oldView" />
+        <LinkWithViewTransition
+          to="/settings/qr"
+          transition="slideUp"
+          applyTo="newView"
+        >
+          <QrCode />
+        </LinkWithViewTransition>
+        {canShare() && (
+          <button type="button" onClick={handleShare}>
+            <Share />
+          </button>
+        )}
       </PageHeader>
 
       <PageContent>
@@ -56,7 +51,10 @@ export default function Settings() {
         </SettingsNavButton>
         <SettingsNavButton to="/settings/accounts">
           <Landmark /> {activeMintName}{' '}
-          {formatUnit(activeMintBalance, activeMintUnit)}
+          {new Money({
+            amount: activeMintBalance,
+            currency: activeMintUnit,
+          }).toLocaleString()}
         </SettingsNavButton>
 
         <Separator />
