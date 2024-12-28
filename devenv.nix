@@ -1,6 +1,8 @@
 { pkgs, lib, config, inputs, ... }:
 
-{
+let
+  nixpkgs-master = import inputs.nixpkgs-master { system = pkgs.stdenv.system; };
+in {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
 
@@ -8,7 +10,7 @@
   packages = [ 
     pkgs.git
     pkgs.jq
-    pkgs.bun
+    nixpkgs-master.bun
     pkgs.fnm
     pkgs.nodePackages.vercel
   ];
