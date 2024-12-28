@@ -166,13 +166,13 @@ test('signup as guest performs login as guest if the guest account was already c
 
   await page.getByRole('button', { name: 'Log Out' }).click();
 
+  await expect(page.getByText('Sign Up')).toBeVisible();
+
   // On logout Open Secret clears the session storage too so we have to set up session again
   await page.evaluate((session) => {
     window.sessionStorage.setItem('sessionId', session.id);
     window.sessionStorage.setItem('sessionKey', session.key);
   }, session);
-
-  await expect(page.getByText('Sign Up')).toBeVisible();
 
   await page.getByRole('button', { name: 'Create wallet as Guest' }).click();
 
