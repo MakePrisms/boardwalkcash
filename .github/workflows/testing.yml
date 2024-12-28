@@ -1,68 +1,46 @@
 name: Bun Pipeline
 
 on:
-  push:
   pull_request:
 
 jobs:
-  setup:
+  code-checks:
+    name: "Format, Lint, and Types Check"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Setup Environment
+        uses: .github/actions/setup-environment
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.1.42
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-  check-all:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.1.42
-
-      - name: Run Formatting, Linting, and Type Checking
+      - name: Run Format, Lint, and Types Check
         run: bun run check-all
 
-  playwright-tests:
-    needs: setup
+  unit-tests:
+    name: "Unit Tests"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Setup Environment
+        uses: .github/actions/setup-environment
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.1.42
+      - name: Run Unit Tests
+        run: bun test
+
+  e2e-tests:
+    name: "E2E Tests"
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Environment
+        uses: .github/actions/setup-environment
 
       - name: Install Playwright Browsers
         run: bunx playwright install --with-deps
 
-      - name: Run Playwright Tests
+      - name: Run E2E Tests
         run: bun run test:e2e
 
-  unit-tests:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
-          bun-version: 1.1.42
-
-      - name: Run Unit Tests
-        run: bun test
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
