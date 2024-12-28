@@ -4,10 +4,17 @@ interface PasswordOptions {
   special?: boolean;
 }
 
-export function generateRandomPassword(
+export async function generateRandomPassword(
   length = 24,
   options: PasswordOptions = { letters: true, numbers: true, special: true },
-): string {
+): Promise<string> {
+  if (window.getMockPassword) {
+    const password = await window.getMockPassword();
+    if (password) {
+      return password;
+    }
+  }
+
   let charset = '';
 
   if (options.letters)

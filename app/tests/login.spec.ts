@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type { LoginResponse, UserResponse } from '@opensecret/react';
 import {
   createAccessToken,
@@ -17,6 +18,7 @@ test('login with email', async ({ page, openSecretApiMock }) => {
 
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/login',
+    expectedRequestData: { email: user.email, password },
     responseData: {
       id: user.id,
       email: user.email,
@@ -58,6 +60,7 @@ test('login with email validation works', async ({
 
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/login',
+    expectedRequestData: { email: user.email, password },
     responseData: {
       id: user.id,
       email: user.email,
@@ -111,8 +114,10 @@ test('login with email validation works', async ({
 test('signup as guest performs login as guest if the guest account was already created on the machine', async ({
   page,
   openSecretApiMock,
+  passwordGeneratorMock,
 }) => {
   const user = guestUser;
+  const password = 'X8nMXAV!5cwtHvECuNxxFPzqeuGD!^J8';
   const now = Date.now() / 1000;
   const accessToken = createAccessToken(now, user.id);
   const refreshToken = createRefreshToken(now, user.id);
@@ -122,8 +127,11 @@ test('signup as guest performs login as guest if the guest account was already c
     refresh_token: refreshToken,
   };
 
+  passwordGeneratorMock.setPassword(password);
+
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/register',
+    expectedRequestData: { password, inviteCode: '' },
     responseData: loginResponse,
     times: 1,
   });
@@ -136,12 +144,14 @@ test('signup as guest performs login as guest if the guest account was already c
 
   await openSecretApiMock.setupEncrypted<{ message: string }>({
     url: '/logout',
+    expectedRequestData: { refresh_token: refreshToken },
     responseData: { message: 'Logged out successfully' },
     times: 1,
   });
 
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/login',
+    expectedRequestData: { id: user.id, password },
     responseData: loginResponse,
     times: 1,
   });
@@ -181,9 +191,25 @@ test.describe('when already logged in', () => {
   });
 });
 
-test('forgot password flow', async ({ page, openSecretApiMock }) => {
+test('forgot password flow', async ({
+  page,
+  openSecretApiMock,
+  passwordGeneratorMock,
+}) => {
+  const email = 'cosmo@kramer.com';
+  const passwordResetSecret = 'tHxi3B$Lvalc9nn5mYC6';
+  const secretHash = crypto
+    .createHash('sha256')
+    .update(passwordResetSecret)
+    .digest('hex');
+  const passwordResetCode = 'GP0KDF33';
+  const newPassword = 'q1w2e3r4t5';
+
+  passwordGeneratorMock.setPassword(passwordResetSecret);
+
   await openSecretApiMock.setupEncrypted<{ message: string }>({
     url: '/password-reset/request',
+    expectedRequestData: { email, hashed_secret: secretHash },
     responseData: {
       message:
         'If an account with that email exists, we have sent a password reset link.',
@@ -192,6 +218,12 @@ test('forgot password flow', async ({ page, openSecretApiMock }) => {
 
   await openSecretApiMock.setupEncrypted<{ message: string }>({
     url: '/password-reset/confirm',
+    expectedRequestData: {
+      email,
+      alphanumeric_code: passwordResetCode,
+      plaintext_secret: passwordResetSecret,
+      new_password: newPassword,
+    },
     responseData: {
       message:
         'Password reset successful. You can now log in with your new password.',
@@ -221,7 +253,7 @@ test('forgot password flow', async ({ page, openSecretApiMock }) => {
     page.getByRole('alert', { name: 'Email is required' }),
   ).not.toBeVisible();
 
-  await page.getByRole('textbox', { name: 'Email' }).fill('cosmo@kramer.com');
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
 
   await expect(
     page.getByRole('alert', { name: 'Invalid email' }),
@@ -245,7 +277,9 @@ test('forgot password flow', async ({ page, openSecretApiMock }) => {
     page.getByRole('alert', { name: 'Password confirmation is required' }),
   ).toBeVisible();
 
-  await page.getByRole('textbox', { name: 'Reset Code' }).fill('GP0KDF33');
+  await page
+    .getByRole('textbox', { name: 'Reset Code' })
+    .fill(passwordResetCode);
   await expect(
     page.getByRole('alert', { name: 'Code is required' }),
   ).not.toBeVisible();
@@ -264,7 +298,7 @@ test('forgot password flow', async ({ page, openSecretApiMock }) => {
 
   await page
     .getByRole('textbox', { name: 'New Password', exact: true })
-    .fill('q1w2e3r4t5');
+    .fill(newPassword);
   await expect(
     page.getByRole('alert', {
       name: 'Password must have at least 8 characters',
@@ -281,7 +315,7 @@ test('forgot password flow', async ({ page, openSecretApiMock }) => {
 
   await page
     .getByRole('textbox', { name: 'Confirm New Password' })
-    .fill('q1w2e3r4t5');
+    .fill(newPassword);
   await expect(
     page.getByRole('alert', { name: 'Passwords do not match' }),
   ).not.toBeVisible();

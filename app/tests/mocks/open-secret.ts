@@ -34,7 +34,8 @@ export const createAccessToken = (
   userId: string,
 ): string => {
   const oneHourInSeconds = 60 * 60;
-  const expires = timestampInSeconds + oneHourInSeconds;
+  // Math trunc is used to lose the decimals if there are any
+  const expires = Math.trunc(timestampInSeconds) + oneHourInSeconds;
   return sign(
     {
       iat: timestampInSeconds,
@@ -44,7 +45,8 @@ export const createAccessToken = (
     },
     secret,
     {
-      // @ts-ignore
+      // @ts-ignore The types of the lib we are using don't support this alg, but we want that value to make sure it
+      // matches what we see in Open Secret JWTs
       alg: 'ES256K',
       typ: 'JWT',
     },
@@ -56,7 +58,8 @@ export const createRefreshToken = (
   userId: string,
 ): string => {
   const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-  const expires = timestampInSeconds + thirtyDaysInSeconds;
+  // Math trunc is used to lose the decimals if there are any
+  const expires = Math.trunc(timestampInSeconds) + thirtyDaysInSeconds;
   return sign(
     {
       iat: timestampInSeconds,
@@ -66,7 +69,8 @@ export const createRefreshToken = (
     },
     secret,
     {
-      // @ts-ignore
+      // @ts-ignore The types of the lib we are using don't support this alg, but we want that value to make sure it
+      // matches what we see in Open Secret JWTs
       alg: 'ES256K',
       typ: 'JWT',
     },

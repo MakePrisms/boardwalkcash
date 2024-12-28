@@ -230,7 +230,7 @@ export default function Index() {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"

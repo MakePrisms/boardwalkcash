@@ -3,13 +3,18 @@
 import { decode } from '@stablelib/base64';
 import { openSecretEncryption } from '~/tests/fixtures/open-secret/encryption';
 
-const osData = {
+// You can get this from the network tab
+const osResponseData = {
   encrypted:
-    'tHjXyTd7X4FY0XkhmN6mGrV3/+xvUSfY80UDYC1oFMXkSpcIE2RV3CcdkMGo2uRkSxoSW7w+YqvKhB/12Ra//Jr04t8Yu3+VQ/cJNVdKrBWCDDzfA5YymeYoOGcAMzYE+VpKBht7AiHxxzF9rsEe',
+    'n5ukcT64ueksM/wQUApCT4kV+EqVYixrpbQezI8HiDQvJxi6RB+3oiv/ANaO8knabDLUJPjkZRs8opaAPeELWSnUmc28XaXg1ShIdbxl3zw=',
 };
 
-const key = decode('DqBW99qlLbP9EOFBISCyjrImxQkwPRUd7fG2xZWe2ow=');
+// You can get this value from the session storage. It's stored under sessionKey
+const key = decode('p6lVKivBlX60YVzBfHV4pUxgGdhfmig2TupMdwN7Yx4=');
 
-const decrypted = openSecretEncryption.decryptMessage(key, osData.encrypted);
+const decrypted = openSecretEncryption.decryptMessage(
+  key,
+  osResponseData.encrypted,
+);
 
 console.log(JSON.parse(decrypted));

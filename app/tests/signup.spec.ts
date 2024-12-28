@@ -7,14 +7,25 @@ import {
   guestUser,
 } from '~/tests/mocks/open-secret';
 
-test('signup as guest', async ({ page, openSecretApiMock }) => {
+test('signup as guest', async ({
+  page,
+  openSecretApiMock,
+  passwordGeneratorMock,
+}) => {
   const user = guestUser;
+  const password = 'Ln$ozoHx*Pd85HFFfyfAM*6Y2Sk8R@uY';
   const now = Date.now() / 1000;
   const accessToken = createAccessToken(now, user.id);
   const refreshToken = createRefreshToken(now, user.id);
 
+  passwordGeneratorMock.setPassword(password);
+
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/register',
+    expectedRequestData: {
+      password,
+      inviteCode: '',
+    },
     responseData: {
       id: user.id,
       access_token: accessToken,
@@ -38,13 +49,8 @@ test('signup as guest', async ({ page, openSecretApiMock }) => {
 
 test('signup with email', async ({ page, openSecretApiMock }) => {
   const user = {
-    id: '960f8a38-62c3-4756-9937-6cc3a64c4907',
-    name: null,
-    email: 'cosmo@kramer.com',
+    ...fullUser,
     email_verified: false,
-    login_method: 'email',
-    created_at: '2024-12-26T12:07:17.170640Z',
-    updated_at: '2024-12-26T12:07:17.170640Z',
   } satisfies UserResponse['user'];
 
   const password = 'q1w2e3r4t5';
@@ -61,6 +67,11 @@ test('signup with email', async ({ page, openSecretApiMock }) => {
 
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/register',
+    expectedRequestData: {
+      email: user.email,
+      password,
+      inviteCode: '',
+    },
     responseData: loginResponse,
     times: 1,
   });
@@ -99,13 +110,8 @@ test('signup with email validation works', async ({
   openSecretApiMock,
 }) => {
   const user = {
-    id: '960f8a38-62c3-4756-9937-6cc3a64c4907',
-    name: null,
-    email: 'cosmo@kramer.com',
+    ...fullUser,
     email_verified: false,
-    login_method: 'email',
-    created_at: '2024-12-26T12:07:17.170640Z',
-    updated_at: '2024-12-26T12:07:17.170640Z',
   } satisfies UserResponse['user'];
 
   const password = 'q1w2e3r4t5';
@@ -122,6 +128,11 @@ test('signup with email validation works', async ({
 
   await openSecretApiMock.setupEncrypted<LoginResponse>({
     url: '/register',
+    expectedRequestData: {
+      email: user.email,
+      password,
+      inviteCode: '',
+    },
     responseData: loginResponse,
   });
 
