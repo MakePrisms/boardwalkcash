@@ -1,7 +1,7 @@
 // Util script for decrypting Open Secret responses
 // Run with `bun run <path>/decryption-util-script.ts`
 import { decode } from '@stablelib/base64';
-import { openSecretEncryption } from '~/tests/fixtures/open-secret/encryption';
+import { openSecretEncryption } from './encryption';
 
 // You can get this from the network tab
 const osResponseData = {

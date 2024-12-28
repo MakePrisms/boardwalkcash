@@ -1,13 +1,13 @@
 import crypto from 'node:crypto';
 import type { LoginResponse, UserResponse } from '@opensecret/react';
+import { expect, test } from './fixtures';
 import {
   createAccessToken,
   createRefreshToken,
   fullUser,
   guestUser,
   session,
-} from '~/tests/mocks/open-secret';
-import { expect, test } from './fixtures';
+} from './mocks/open-secret';
 
 test('login with email', async ({ page, openSecretApiMock }) => {
   const user = fullUser;

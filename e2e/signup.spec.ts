@@ -1,11 +1,11 @@
 import type { LoginResponse, UserResponse } from '@opensecret/react';
-import { expect, test } from '~/tests/fixtures';
+import { expect, test } from './fixtures';
 import {
   createAccessToken,
   createRefreshToken,
   fullUser,
   guestUser,
-} from '~/tests/mocks/open-secret';
+} from './mocks/open-secret';
 
 test('signup as guest', async ({
   page,

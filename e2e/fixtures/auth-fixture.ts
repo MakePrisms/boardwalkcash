@@ -1,10 +1,7 @@
 import type { UserResponse } from '@opensecret/react';
 import { test as base } from '@playwright/test';
-import type { OpenSecretFixture } from '~/tests/fixtures/open-secret/fixture';
-import {
-  createAccessToken,
-  createRefreshToken,
-} from '~/tests/mocks/open-secret';
+import { createAccessToken, createRefreshToken } from '../mocks/open-secret';
+import type { OpenSecretFixture } from './open-secret/fixture';
 
 type AuthFixture = {
   /**
