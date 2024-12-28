@@ -1,6 +1,5 @@
-import type { Buffer } from 'node:buffer';
 import type { UREncoder } from '@gandlaf21/bc-ur';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useInterval } from 'usehooks-ts';
 
 type Props = {
@@ -8,31 +7,36 @@ type Props = {
   intervalMs?: number;
 };
 
+const maxFragmentLength = 200;
+const firstSequenceNumber = 0;
+
+function bufferFromUtf8(text: string) {
+  return new Uint8Array(text.split('').map((c) => c.charCodeAt(0)));
+}
+
 export function useAnimatedQREncoder({ text, intervalMs = 200 }: Props) {
   const [fragment, setFragment] = useState<string>('');
-  const [encoder, setEncoder] = useState<UREncoder | null>(null);
-
-  const maxFragmentLength = 150;
-
-  useEffect(() => {
-    // need to import here because the UREncoder requires a cbor library that only works in the browser
-    import('@gandlaf21/bc-ur').then((bcUr) => {
-      const { UR, UREncoder } = bcUr;
-
-      const messageBuffer = new Uint8Array(
-        text.split('').map((c) => c.charCodeAt(0)),
-      );
-      const ur = UR.fromBuffer(messageBuffer as Buffer);
-
-      const firstSequenceNumber = 0;
-
-      const encoder = new UREncoder(ur, maxFragmentLength, firstSequenceNumber);
-      setEncoder(encoder);
-
-      // Initialize with the first fragment
-      setFragment(encoder.nextPart());
-    });
-  }, [text]);
+  const [encoder, setEncoder] = useState<UREncoder | null>(() => {
+    if (typeof window !== 'undefined') {
+      // bc-ur has cborg as a dependency which fails to import on the server
+      import('@gandlaf21/bc-ur').then(({ UR, UREncoder }) => {
+        const messageBuffer = bufferFromUtf8(text);
+        // @ts-expect-error - expects Buffer, but Uint8Array works
+        const ur = UR.fromBuffer(messageBuffer);
+        const instance = new UREncoder(
+          ur,
+          maxFragmentLength,
+          firstSequenceNumber,
+        );
+        setEncoder(instance);
+        // initialize with the first fragment
+        // otherwise the QR renders an empty string for the first frame
+        setFragment(instance.nextPart());
+      });
+    }
+    // returns null, then when the promise resolves, the encoder is set
+    return null;
+  });
 
   useInterval(
     () => {
@@ -45,6 +49,6 @@ export function useAnimatedQREncoder({ text, intervalMs = 200 }: Props) {
 
   return {
     fragment,
-    isReady: text.length <= 150 || Boolean(encoder),
+    isReady: text.length <= maxFragmentLength || Boolean(encoder),
   };
 }

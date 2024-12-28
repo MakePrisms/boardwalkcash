@@ -1,5 +1,5 @@
 import type { URDecoder } from '@gandlaf21/bc-ur';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Props = {
   fragment: string;
@@ -7,28 +7,28 @@ type Props = {
 };
 
 export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
-  const decoder = useRef<URDecoder | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
+  const [decoder, setDecoder] = useState<URDecoder | null>(() => {
+    // bc-ur has cborg as a dependency which fails to import on the server
+    if (typeof window !== 'undefined') {
+      import('@gandlaf21/bc-ur').then(({ URDecoder }) => {
+        setDecoder(new URDecoder());
+      });
+    }
+    // returns null, then when the promise resolves, the decoder is set
+    return null;
+  });
 
   useEffect(() => {
-    // this lib is only available in the browser
-    import('@gandlaf21/bc-ur').then((bcUr) => {
-      if (!decoder.current) {
-        decoder.current = new bcUr.URDecoder();
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!decoder.current || !fragment) return;
+    if (!decoder || fragment === '') return;
 
     try {
-      decoder.current.receivePart(fragment);
-      setProgress(decoder.current.estimatedPercentComplete() || 0);
+      decoder.receivePart(fragment);
+      setProgress(decoder.estimatedPercentComplete() || 0);
 
-      if (decoder.current.isComplete() && decoder.current.isSuccess()) {
-        const ur = decoder.current.resultUR();
+      if (decoder.isComplete() && decoder.isSuccess()) {
+        const ur = decoder.resultUR();
         const decoded = ur.decodeCBOR().toString();
         onDecode?.(decoded);
       }
@@ -38,7 +38,7 @@ export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
         e instanceof Error ? e : new Error('Failed to decode QR fragment'),
       );
     }
-  }, [fragment, onDecode]);
+  }, [fragment, onDecode, decoder]);
 
   return {
     progress,
