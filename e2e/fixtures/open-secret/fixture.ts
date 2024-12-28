@@ -3,8 +3,8 @@ import { type Page, type Route, test as base, expect } from '@playwright/test';
 import { decode } from '@stablelib/base64';
 import type { Serializable } from 'playwright-core/types/structs';
 import delay from '~/lib/delay';
-import { openSecretEncryption } from '~/tests/fixtures/open-secret/encryption';
-import { session } from '~/tests/mocks/open-secret';
+import { session } from '../../mocks/open-secret';
+import { openSecretEncryption } from './encryption';
 
 type OpenSecretApiMockOptions<
   TRes extends Serializable,

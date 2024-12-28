@@ -1,6 +1,6 @@
 import type { UserResponse } from '@opensecret/react';
-import { expect, test } from '~/tests/fixtures';
-import { openSecretBaseUrl } from '~/tests/fixtures/open-secret/fixture';
+import { expect, test } from './fixtures';
+import { openSecretBaseUrl } from './fixtures/open-secret/fixture';
 
 const user: UserResponse['user'] = {
   id: 'b15bcbfb-064c-4fd6-b10c-a05668e730d6',

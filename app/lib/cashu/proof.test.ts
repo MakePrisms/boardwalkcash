@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Proof } from '@cashu/cashu-ts';
-import { getP2PKPubkeyFromProofs } from '~/lib/cashu';
+import { getP2PKPubkeyFromProofs } from './proof';
 
 const proofWithP2PKSecret: Proof = {
   amount: 1,
