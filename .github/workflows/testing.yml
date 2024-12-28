@@ -25,11 +25,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-#
-#      - name: Install Bun
-#        run: |
-#          curl -fsSL https://bun.sh/install | bash
-#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.1.42
 
       - name: Run Formatting, Linting, and Type Checking
         run: bun run check-all
@@ -40,11 +40,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-#
-#      - name: Install Bun
-#        run: |
-#          curl -fsSL https://bun.sh/install | bash
-#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.1.42
 
       - name: Install Playwright Browsers
         run: bunx playwright install --with-deps
@@ -58,11 +58,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-#
-#      - name: Install Bun
-#        run: |
-#          curl -fsSL https://bun.sh/install | bash
-#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.1.42
 
       - name: Run Unit Tests
         run: bun test
