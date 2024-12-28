@@ -11,14 +11,21 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
     - name: Install bun
       uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: "package.json"
+
     - name: Install dependencies
       run: bun install
-#    - name: Install Playwright Browsers
-#      run: bunx playwright install --with-deps
+
+    - name: Install Playwright Browsers
+      run: bunx playwright install --with-deps
+
     - name: Run Playwright tests
       run: bun run test
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
