@@ -3,9 +3,6 @@ description: 'Sets up Boardwalk development environment'
 runs:
   using: composite
   steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
     - name: Install Bun
       uses: oven-sh/setup-bun@v2
       with:
