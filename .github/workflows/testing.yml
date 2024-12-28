@@ -1,0 +1,68 @@
+name: Bun Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.1.42
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+  check-all:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Install Bun
+#        run: |
+#          curl -fsSL https://bun.sh/install | bash
+#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Run Formatting, Linting, and Type Checking
+        run: bun run check-all
+
+  playwright-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Install Bun
+#        run: |
+#          curl -fsSL https://bun.sh/install | bash
+#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps
+
+      - name: Run Playwright Tests
+        run: bun run test:e2e
+
+  unit-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Install Bun
+#        run: |
+#          curl -fsSL https://bun.sh/install | bash
+#          export PATH="/home/runner/.bun/bin:$PATH"
+
+      - name: Run Unit Tests
+        run: bun test
