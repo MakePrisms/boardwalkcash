@@ -1,0 +1,5 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useAnimatedQREncoder should handle short text without encoder 1`] = `"ur:bytes/pkhsdycsjkhsehcsishseycsjlhseocsjphseecsjyhseccscxhsencsjyhsemcsihhsetcskshsescsjyceyadtde"`;
+
+exports[`useAnimatedQREncoder should initialize encoder for long text 1`] = `"ur:bytes/1-6/lpadamcfaagecytyvymnhphdrlrosohsdycskshsehcskshseycskshseocskshseecskshseccskshsencskshsemcskshsetcskshsescsksidehdycsksidehehcsksideheycsksideheocsksideheecsksideheccsksidehencsksidehemcsksidehetcsksidehescsksideydycsksideyehcsksideyeycsksideyeocsksideyeecsksideyeccsksideyencsksideyemcsksideyetcsksideyescsksideodycsksideoehcsksideoeycsksideoeocsksideoeecsksideoeccsksideoencsksideoemcsksidbnhkisdy"`;

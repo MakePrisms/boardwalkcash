@@ -24,8 +24,9 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@gandlaf21/bc-ur": "1.1.12",
     "@cashu/cashu-ts": "2.1.0",
+    "@gandlaf21/bc-ur": "1.1.12",
+    "@ngraveio/bc-ur": "1.1.13",
     "@opensecret/react": "0.3.0",
     "@radix-ui/react-dialog": "1.1.4",
     "@radix-ui/react-dropdown-menu": "2.1.2",
@@ -64,9 +65,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@happy-dom/global-registrator": "16.0.1",
     "@remix-run/dev": "2.15.0",
-    "@types/bun": "1.1.14",
+    "@testing-library/react-hooks": "8.0.1",
     "@types/big.js": "6.2.2",
+    "@types/bun": "1.1.14",
     "@types/express": "5.0.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",

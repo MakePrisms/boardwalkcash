@@ -1,5 +1,5 @@
-import type { URDecoder } from '@gandlaf21/bc-ur';
-import { useEffect, useState } from 'react';
+import { URDecoder } from '@ngraveio/bc-ur';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
   fragment: string;
@@ -9,27 +9,20 @@ type Props = {
 export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
-  const [decoder, setDecoder] = useState<URDecoder | null>(() => {
-    // bc-ur has cborg as a dependency which fails to import on the server
-    if (typeof window !== 'undefined') {
-      import('@gandlaf21/bc-ur').then(({ URDecoder }) => {
-        setDecoder(new URDecoder());
-      });
-    }
-    // returns null, then when the promise resolves, the decoder is set
-    return null;
-  });
+
+  const decoder = useRef<URDecoder | null>(null);
+  decoder.current = new URDecoder();
 
   useEffect(() => {
-    if (!decoder || fragment === '') return;
+    if (!decoder.current || fragment === '') return;
 
     try {
-      decoder.receivePart(fragment);
-      setProgress(decoder.estimatedPercentComplete() || 0);
+      decoder.current.receivePart(fragment);
+      setProgress(decoder.current.estimatedPercentComplete() || 0);
 
-      if (decoder.isComplete() && decoder.isSuccess()) {
-        const ur = decoder.resultUR();
-        const decoded = ur.decodeCBOR().toString();
+      if (decoder.current.isComplete() && decoder.current.isSuccess()) {
+        const ur = decoder.current.resultUR();
+        const decoded = ur.decodeCBOR().toString('utf-8');
         onDecode?.(decoded);
       }
     } catch (e) {
@@ -38,7 +31,7 @@ export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
         e instanceof Error ? e : new Error('Failed to decode QR fragment'),
       );
     }
-  }, [fragment, onDecode, decoder]);
+  }, [fragment, onDecode]);
 
   return {
     progress,
