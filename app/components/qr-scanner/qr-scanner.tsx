@@ -68,8 +68,8 @@ export const QRScanner = ({ onDecode }: Props) => {
   }, [onDecode]);
 
   return (
-    <section className="h-full w-full md:aspect-square md:max-w-[400px]">
-      <div className="relative h-full w-full md:aspect-square">
+    <section className="aspect-square h-full w-full max-w-[100vw] md:max-w-[400px]">
+      <div className="relative h-full w-full">
         <video
           ref={videoRef}
           aria-label="QR code scanner"
