@@ -19,7 +19,7 @@ export default async function delay(
 
     function abortHandler() {
       clearTimeout(timeoutId);
-      reject((signal.reason as Error) ?? new Error('Delay aborted'));
+      reject((signal?.reason as Error) ?? new Error('Delay aborted'));
     }
 
     const timeoutId = setTimeout(() => {
