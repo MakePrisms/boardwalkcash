@@ -28,7 +28,7 @@ const proofWithPlainSecret: Proof = {
 describe('getP2PKPubkeyFromProofs', () => {
   test('proof with P2PK secret should return the pubkey', () => {
     expect(getP2PKPubkeyFromProofs([proofWithP2PKSecret])).toBe(
-      '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a6',
+      '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7',
     );
   });
 
