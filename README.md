@@ -20,6 +20,14 @@ Run the dev server:
 bun run dev
 ```
 
+### Updating development environment
+
+To update devenv packages run `devenv update`. When updating `bun`, make sure to update the `engines` version in 
+`package.json` and version specified in `.github/actions/setup-environment/action.yml`. When updating `node`, update the
+`.nvmrc` file and `engines` version in `package.json`. Note that Vercel does not allow pinning to exact node version so
+in the `package.json` file we specify the max patch version while in the `.nvmrc` we specify the max version possible 
+for that range because that is what Vercel will be using when building too. 
+
 ## Deployment
 
 First, build your app for production:
@@ -40,6 +48,10 @@ are deploying a new live version. Currently, Vercel doesn't support running Remi
 is used only when running locally. We are still keeping the express server because the plan is to eventually move to
 self-hosting.
 
+## Dependencies
+
+Any dependency added should be pinned to exact version 
+
 ## Code style & formatting
 
 Type checking is separated from build and is performed using Typescript compiler. To run type check manually run 
@@ -56,6 +68,27 @@ Type checking is separated from build and is performed using Typescript compiler
 
 Types, formatting and code styles are enforced using pre-commit hook. For nicer development experience it is recommended 
 to enable auto linting and formatting on file save in IDE. Instructions for that can be found [here](https://biomejs.dev/guides/editors/first-party-extensions/).
-Pre-commit hook is configured using devenv (see `devenv.nix` file) and it runs `bun run fix:staged` command. 
+Pre-commit hook is configured using devenv (see `devenv.nix` file) and it runs `bun run fix:staged` command. To skip the
+pre-commit hook use `--no-verify` param with `git commit` command. This can be useful when committing temporary code but
+the CI will run the checks again and won't allow any non-conforming code to be commited to `master`.
 
 Lint & formatting configs are defined in `biome.jsonc` file.
+
+## Testing
+
+The idea is to cover key lower level reusable pieces with unit tests and main app flows with e2e Playwright tests. We 
+are not aiming for any specific coverage. Use your best judgement. 
+
+Bun is used to run unit tests. To run them use `bun test` or `bun run test`. Colocate the test file next to the piece it 
+tests and name the file `<name_of_the_unit_tested>.test.ts(x)`.
+
+E2e tests are written in [Playwright](https://playwright.dev/). In these tests we are mocking Open Secret API so tests
+can be run offline, and so we can simulate any desired Open Secret behavior. For some example on how to use the mocking
+see the existing tests. E2e tests can be found in top level `e2e` folder. To run them use `bun run test:e2e` (add `--ui`
+param to run them in Playwright UI).
+
+## CI
+
+Every pull request created will trigger GitHub Actions CI pipeline. The pipeline is running three jobs in parallel. One
+that checks code format, lint and types. Another that runs the unit tests and third one that runs e2e tests. If any of
+the jobs fail, merging to `master` will not be allowed.
