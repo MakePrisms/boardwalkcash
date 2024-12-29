@@ -20,6 +20,9 @@ Run the dev server:
 bun run dev
 ```
 
+`master` is the main branch. When working on a feature, branch of `master` and when ready make a PR back to `master`.
+Try to make feature branches short-lived and concise (avoid implementing multiple features in one PR).
+
 ### Updating development environment
 
 To update devenv packages run `devenv update`. When updating `bun`, make sure to update the `engines` version in 
@@ -42,7 +45,7 @@ Then run the app in production mode:
 bun start
 ```
 
-The app is deployed to Vercel. Every push to GitHub triggers a new Vercel deployment. Pushes to `main` branch
+The app is deployed to Vercel. Every push to GitHub triggers a new Vercel deployment. Pushes to `master` branch
 are deploying a new live version. Currently, Vercel doesn't support running Remix with custom server (see the docs 
 [here](https://vercel.com/docs/frameworks/remix#using-a-custom-server-file)). This means that our custom express server
 is used only when running locally. We are still keeping the express server because the plan is to eventually move to
@@ -50,7 +53,11 @@ self-hosting.
 
 ## Dependencies
 
-Any dependency added should be pinned to exact version 
+Dependency should be added only if the benefits are clear. Avoid adding it for trivial stuff. Any dependency added 
+should be inspected and pinned to exact version (`bun add <package_name>@<version> --exact`). For any dependency added
+to the client side, be mindful of the bundle size. [Bundlephobia](https://bundlephobia.com/) can be used to check the
+total size of the dependency (the actual impact on the app bundle size could be smaller if we are using only some 
+elements and the lib supports tree shaking).
 
 ## Code style & formatting
 
@@ -85,7 +92,8 @@ tests and name the file `<name_of_the_unit_tested>.test.ts(x)`.
 E2e tests are written in [Playwright](https://playwright.dev/). In these tests we are mocking Open Secret API so tests
 can be run offline, and so we can simulate any desired Open Secret behavior. For some example on how to use the mocking
 see the existing tests. E2e tests can be found in top level `e2e` folder. To run them use `bun run test:e2e` (add `--ui`
-param to run them in Playwright UI).
+param to run them in Playwright UI). New e2e test suits should be added to `e2e` folder and named 
+`<name_of_the_suite>.spec.ts`.
 
 ## CI
 
