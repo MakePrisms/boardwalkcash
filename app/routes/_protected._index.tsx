@@ -153,6 +153,14 @@ export default function Index() {
       <br />
       <br />
       <LinkWithViewTransition
+        to="/receive"
+        transition="slideUp"
+        applyTo="newView"
+      >
+        <Button variant="secondary">Receive</Button>
+      </LinkWithViewTransition>
+      <br />
+      <LinkWithViewTransition
         to="/settings"
         transition="slideLeft"
         applyTo="bothViews"
