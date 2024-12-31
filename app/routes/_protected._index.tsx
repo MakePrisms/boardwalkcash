@@ -4,6 +4,7 @@ import Big from 'big.js';
 import { Cog } from 'lucide-react';
 import { useState } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
+import MoneyDisplay from '~/components/money-display';
 import {
   Page,
   PageContent,
@@ -24,13 +25,76 @@ import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
-import { Money } from '~/lib/money';
+import { type Currency, Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
+
+const calculateDecimalPlacesEntered = (inputString: string) => {
+  if (inputString.includes('.')) {
+    return inputString.split('.')[1].length;
+  }
+  return undefined;
+};
+
+const testMoneys = {
+  '1,000 sats': {
+    money: new Money({ amount: '1000', currency: 'BTC', unit: 'sat' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1000'),
+  },
+  '1,432 small': {
+    money: new Money({ amount: '1432', currency: 'BTC', unit: 'sat' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1432'),
+    size: 'sm',
+  },
+  '$ 1': {
+    money: new Money({ amount: '1', currency: 'USD' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1'),
+  },
+
+  '$ 1.': {
+    money: new Money({ amount: '1.', currency: 'USD' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1.'),
+  },
+  '$ 1.2': {
+    money: new Money({ amount: '1.2', currency: 'USD' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1.2'),
+  },
+  '$ 1.23': {
+    money: new Money({ amount: '1.23', currency: 'USD' }),
+    decimalPlaces: calculateDecimalPlacesEntered('1.23'),
+  },
+  '$ 1 - simpleFormat': {
+    money: new Money({ amount: '1', currency: 'USD' }),
+    simpleFormat: true,
+  },
+  '$ 1.2 - simpleFormat': {
+    money: new Money({ amount: '1.2', currency: 'USD' }),
+    simpleFormat: true,
+  },
+  '$ 1.23 - simpleFormat': {
+    money: new Money({ amount: '1.23', currency: 'USD' }),
+    simpleFormat: true,
+  },
+  '$ 1 - simpleFormat - sm': {
+    money: new Money({ amount: '1', currency: 'USD' }),
+    simpleFormat: true,
+    size: 'sm',
+  },
+  '$ 1.2 - simpleFormat - sm': {
+    money: new Money({ amount: '1.2', currency: 'USD' }),
+    simpleFormat: true,
+    size: 'sm',
+  },
+  '$ 1.23 - simpleFormat - sm': {
+    money: new Money({ amount: '1.23', currency: 'USD' }),
+    simpleFormat: true,
+    size: 'sm',
+  },
+};
 
 const accounts: Account[] = [
   {
@@ -123,6 +187,35 @@ export default function Index() {
           </LinkWithViewTransition>
         </div>
       </PageHeader>
+
+      <br />
+      <br />
+
+      <div className="grid grid-cols-3 gap-4">
+        {Object.entries(testMoneys).map(([key, value]) => {
+          const typedValue = value as {
+            money: Money<Currency>;
+            size?: 'sm';
+            simpleFormat?: boolean;
+            decimalPlaces?: number;
+          };
+          return (
+            <div key={key}>
+              <h3 className="">{key}</h3>
+              {/* @ts-expect-error: doesn't like that simpleFormat can be true while decimalPlaces is defined */}
+              <MoneyDisplay
+                money={typedValue.money}
+                size={typedValue.size}
+                simpleFormat={typedValue.simpleFormat}
+                decimalPlaces={typedValue.decimalPlaces}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <br />
+      <br />
 
       <div>
         SATS per USD:{' '}
