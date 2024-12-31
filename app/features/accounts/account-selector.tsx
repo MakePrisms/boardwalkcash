@@ -8,14 +8,15 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from '~/components/ui/drawer';
-import { type Currency, Money } from '~/lib/money';
+import type { AppCurrency } from '~/hooks/use-exchange-rate';
+import { Money } from '~/lib/money';
 
 export type AccountType = 'cashu' | 'nwc';
 
 export type Account = {
   id: string;
   name: string;
-  currency: Currency;
+  currency: AppCurrency;
   type: AccountType;
   balance: Big;
 } & (

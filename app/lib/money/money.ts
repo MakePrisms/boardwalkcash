@@ -69,7 +69,9 @@ const currencyDataMap: CurrencyDataMap = {
             decimals: this.decimals,
           });
           formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${this.symbol}${formattedValue}`;
+          return options.currency
+            ? `${this.symbol}${formattedValue}`
+            : formattedValue;
         },
       },
       {
@@ -83,7 +85,9 @@ const currencyDataMap: CurrencyDataMap = {
             decimals: this.decimals,
           });
           formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${formattedValue}${this.symbol}`;
+          return options.currency
+            ? `${formattedValue}${this.symbol}`
+            : formattedValue;
         },
       },
       {
@@ -97,7 +101,9 @@ const currencyDataMap: CurrencyDataMap = {
             decimals: this.decimals,
           });
           formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${formattedValue} ${this.symbol}`;
+          return options.currency
+            ? `${formattedValue} ${this.symbol}`
+            : formattedValue;
         },
       },
     ],

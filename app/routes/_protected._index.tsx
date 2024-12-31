@@ -29,7 +29,7 @@ type FormValues = { email: string; password: string; confirmPassword: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
 
-const accounts: Account[] = [
+export const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',

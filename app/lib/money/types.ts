@@ -9,7 +9,7 @@ export type UsdUnit = 'usd' | 'cent';
 export type BtcUnit = 'btc' | 'sat' | 'msat';
 
 /** Unit to denominate the given currency */
-export type CurrencyUnit<T extends Currency> = T extends 'USD'
+export type CurrencyUnit<T extends Currency = Currency> = T extends 'USD'
   ? UsdUnit
   : T extends 'BTC'
     ? BtcUnit
