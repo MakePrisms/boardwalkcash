@@ -11,11 +11,9 @@ type Props = {
 export function AnimatedQRCode({ text, size = 275 }: Props) {
   const { fragment, isReady } = useAnimatedQREncoder({ text });
 
-  if (!isReady) {
-    return null;
+  if (isReady) {
+    return <QRCodeSVG value={fragment} size={size} />;
   }
-
-  return <QRCodeSVG value={fragment} size={size} />;
 }
 
 export default AnimatedQRCode;

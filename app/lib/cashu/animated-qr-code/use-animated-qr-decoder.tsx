@@ -1,12 +1,49 @@
 import { URDecoder } from '@jbojcic/bc-ur';
 import { useEffect, useState } from 'react';
 
-type Props = {
+type AnimatedQRDecoderProps = {
+  /**
+   * The current fragment from a bc-ur encoded animated QR code.
+   * @example
+   * "ur:bytes/1-9/lpadascfadaxcywenbpljkhdcahkadaemejtswhhylkepmykhhtsytsnoyoyaxaedsuttydmmhhpktpmsrjtdkgslpgh"
+   */
   fragment: string;
-  onDecode?: (decodedText: string) => void;
+  /**
+   * The callback function to be called when the fragment is decoded.
+   */
+  onDecode: (decodedText: string) => void;
 };
 
-export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
+type AnimatedQRDecoderReturn = {
+  /**
+   * The percentage of fragments that have been decoded, from 0 to 1.
+   */
+  progress: number;
+  /**
+   * Any error that occurred during decoding.
+   */
+  error: Error | null;
+};
+
+/**
+ * Decodes a sequence of [BC-UR](https://github.com/BlockchainCommons/UR) encoded fragments.
+ * @returns An object containing the progress and error.
+ *
+ * @example
+ * ```tsx
+ * const onDecode = (decodedText: string) => {
+ *   console.log(decodedText);
+ * };
+ *
+ * const fragment = scanQRCode();
+ *
+ * const { progress, error } = useAnimatedQRDecoder({ fragment, onDecode });
+ * ```
+ */
+export function useAnimatedQRDecoder({
+  fragment,
+  onDecode,
+}: AnimatedQRDecoderProps): AnimatedQRDecoderReturn {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
   const [decoder] = useState(() => new URDecoder());
@@ -21,7 +58,7 @@ export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
       if (decoder.isComplete() && decoder.isSuccess()) {
         const ur = decoder.resultUR();
         const decoded = ur.decodeCBOR().toString();
-        onDecode?.(decoded);
+        onDecode(decoded);
       }
     } catch (e) {
       console.error('Failed to decode QR fragment', e);

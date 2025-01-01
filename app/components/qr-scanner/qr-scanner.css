@@ -1,4 +1,3 @@
-/* override qr scanner styles */
 .scan-region-highlight-svg {
   stroke: white !important;
   animation: pulse 2s ease-in-out infinite alternate;
@@ -16,4 +15,3 @@
     transform: scale(1.01);
   }
 }
-/* end override qr scanner styles */

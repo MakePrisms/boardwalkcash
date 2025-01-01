@@ -1,6 +1,7 @@
 import '~/components/qr-scanner/qr-scanner.css';
 import Scanner from 'qr-scanner';
 import { useEffect, useRef, useState } from 'react';
+import { useToast } from '~/hooks/use-toast';
 import { useAnimatedQRDecoder } from '~/lib/cashu/animated-qr-code';
 
 const AnimatedScanProgress = ({ progress }: { progress: number }) => {
@@ -24,16 +25,28 @@ const AnimatedScanProgress = ({ progress }: { progress: number }) => {
   );
 };
 
-type Props = {
+type QRScannerProps = {
+  /**
+   * The callback function to be called when the QR code is decoded.
+   */
   onDecode: (decoded: string) => void;
 };
 
-export const QRScanner = ({ onDecode }: Props) => {
+/**
+ * Scanner component that uses the camera and renders a video element.
+ *
+ * The scanner can read static QR codes and
+ * [BC-UR](https://github.com/BlockchainCommons/UR) encoded animated QR codes.
+ *
+ * Calls `onDecode` with the text decoded from the QR code and toasts any errors
+ * that occur during decoding.
+ */
+export const QRScanner = ({ onDecode }: QRScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scanner = useRef<Scanner | null>(null);
   const [currentFragment, setCurrentFragment] = useState('');
 
-  const { progress } = useAnimatedQRDecoder({
+  const { progress, error } = useAnimatedQRDecoder({
     fragment: currentFragment,
     onDecode: (decoded) => {
       setCurrentFragment('');
@@ -41,6 +54,16 @@ export const QRScanner = ({ onDecode }: Props) => {
       scanner.current?.stop();
     },
   });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    error &&
+      toast({
+        title: 'Error decoding QR code',
+        description: error.message,
+        variant: 'destructive',
+      });
+  }, [error, toast]);
 
   useEffect(() => {
     const handleResult = (result: Scanner.ScanResult): void => {

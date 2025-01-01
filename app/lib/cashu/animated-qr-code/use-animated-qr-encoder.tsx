@@ -2,29 +2,62 @@ import { UR, UREncoder } from '@jbojcic/bc-ur';
 import { useEffect, useState } from 'react';
 import { useInterval } from 'usehooks-ts';
 
-type Props = {
+type AnimatedQREncoderProps = {
+  /**
+   * The text to encode.
+   */
   text: string;
+  /**
+   * Change the size of each fragment.
+   * For NGRAVE ZERO support please keep to a maximum fragment size of 200
+   * const maxFragmentLength = 200
+   */
+  maxFragmentLength?: number;
+  /**
+   * The index of the fragment that will be the first to be generated
+   * If it's more than the "maxFragmentLength", then all the subsequent fragments will only be
+   * fountain parts
+   */
+  firstSequenceNumber?: number;
+  /**
+   * The interval in milliseconds between each fragment.
+   */
   intervalMs?: number;
 };
 
-const maxFragmentLength = 200;
-const firstSequenceNumber = 0;
-
-function bufferFromUtf8(text: string) {
+function u8ArrayFromUtf8(text: string): Uint8Array {
   return new Uint8Array(text.split('').map((c) => c.charCodeAt(0)));
 }
 
-export function useAnimatedQREncoder({ text, intervalMs = 200 }: Props) {
+/**
+ * Encodes text into a sequence of [BC-UR](https://github.com/BlockchainCommons/UR) encoded fragments.
+ * @returns An object containing the current fragment and a boolean indicating if the text is ready.
+ *
+ * @example
+ * ```tsx
+ * const { fragment, isReady } = useAnimatedQREncoder({ text });
+ *
+ * if (isReady) {
+ *   return <QRCodeSVG value={fragment} />;
+ * }
+ * ```
+ */
+export function useAnimatedQREncoder({
+  text,
+  maxFragmentLength = 200,
+  firstSequenceNumber = 0,
+  intervalMs = 200,
+}: AnimatedQREncoderProps) {
   const [fragment, setFragment] = useState<string>('');
   const [encoder, setEncoder] = useState<UREncoder>();
 
   useEffect(() => {
-    const messageBuffer = bufferFromUtf8(text);
+    const messageBuffer = u8ArrayFromUtf8(text);
     // @ts-expect-error - expects Buffer, but Uint8Array works
     const ur = UR.fromBuffer(messageBuffer);
     const instance = new UREncoder(ur, maxFragmentLength, firstSequenceNumber);
     setEncoder(instance);
-  }, [text]);
+  }, [text, maxFragmentLength, firstSequenceNumber]);
 
   useInterval(
     () => {
@@ -37,6 +70,6 @@ export function useAnimatedQREncoder({ text, intervalMs = 200 }: Props) {
 
   return {
     fragment,
-    isReady: text.length <= maxFragmentLength,
+    isReady: Boolean(encoder) && fragment.length > 0,
   };
 }
