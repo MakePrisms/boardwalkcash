@@ -75,7 +75,9 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
       }
     };
 
-    if (!videoRef.current) return;
+    if (!videoRef.current) {
+      throw new Error('Expected video element to be present');
+    }
 
     scanner.current = new Scanner(videoRef.current, handleResult, {
       returnDetailedScanResult: true,
