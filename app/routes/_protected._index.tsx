@@ -2,6 +2,7 @@ import { NavLink } from '@remix-run/react';
 import { useQuery } from '@tanstack/react-query';
 import Big from 'big.js';
 import { Cog } from 'lucide-react';
+import { useState } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import {
   Page,
@@ -9,6 +10,7 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { QRScanner } from '~/components/qr-scanner';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -20,6 +22,7 @@ import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
+import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
@@ -64,6 +67,7 @@ export default function Index() {
   );
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
+  const [showScanner, setShowScanner] = useState(false);
   const { data: rates } = useQuery({
     queryKey: ['exchangeRate'],
     // This is a workaround to make the type of the data not have | undefined.
@@ -159,6 +163,27 @@ export default function Index() {
       >
         <Button>Slide both views</Button>
       </LinkWithViewTransition>
+      <br />
+      <br />
+      <div>
+        <Button
+          onClick={() => {
+            setShowScanner(!showScanner);
+          }}
+        >
+          {showScanner ? 'Stop' : 'Scan'}
+        </Button>
+        {showScanner ? (
+          <QRScanner
+            onDecode={(decoded) => {
+              alert(`decoded ${decoded}`);
+              setShowScanner(false);
+            }}
+          />
+        ) : (
+          <AnimatedQRCode text={'x'.repeat(200)} />
+        )}
+      </div>
       {user.isGuest && <div>Guest account</div>}
       <div>id: {user.id}</div>
       <div>email: {!user.isGuest ? user.email : ''}</div>
