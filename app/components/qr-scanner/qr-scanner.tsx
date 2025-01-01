@@ -52,7 +52,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
     onDecode: (decoded) => {
       setCurrentFragment('');
       decodeRef.current(decoded);
-      scanner.current?.stop();
+      scanner.current?.destroy();
     },
   });
   const { toast } = useToast();
@@ -72,7 +72,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
         setCurrentFragment(result.data);
       } else {
         decodeRef.current(result.data);
-        scanner.current?.stop();
+        scanner.current?.destroy();
       }
     };
 
@@ -89,7 +89,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
     scanner.current.start();
 
     return () => {
-      scanner.current?.stop();
+      scanner.current?.destroy();
     };
   }, []);
 
