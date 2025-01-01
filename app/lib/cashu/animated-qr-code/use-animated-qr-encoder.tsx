@@ -10,17 +10,20 @@ type AnimatedQREncoderProps = {
   /**
    * Set the size of each fragment.
    * For NGRAVE ZERO support please keep to a maximum fragment size of 200
-   * const maxFragmentLength = 200
+   * @defaultValue 200
    */
   maxFragmentLength?: number;
   /**
-   * The index of the fragment that will be the first to be generated
-   * If it's more than the "maxFragmentLength", then all the subsequent fragments will only be
-   * fountain parts
+   * The index of the fragment that will be the first to be generated.
+   * If it's more than the "maxFragmentLength", then all the subsequent
+   * fragments will only be fountain parts which repeat the same data by
+   * combining multiple fragments using the fountain coding algorithm.
+   * @defaultValue 0
    */
   firstSequenceNumber?: number;
   /**
    * The interval in milliseconds between each fragment.
+   * @defaultValue 200
    */
   intervalMs?: number;
 };
