@@ -24,8 +24,8 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@gandlaf21/bc-ur": "1.1.12",
     "@cashu/cashu-ts": "2.1.0",
+    "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
     "@opensecret/react": "0.3.0",
     "@radix-ui/react-dialog": "1.1.4",
     "@radix-ui/react-dropdown-menu": "2.1.2",

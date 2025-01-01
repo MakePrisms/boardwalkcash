@@ -1,4 +1,4 @@
-import type { URDecoder } from '@gandlaf21/bc-ur';
+import { URDecoder } from '@jbojcic/bc-ur';
 import { useEffect, useState } from 'react';
 
 type Props = {
@@ -9,19 +9,10 @@ type Props = {
 export function useAnimatedQRDecoder({ fragment, onDecode }: Props) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
-  const [decoder, setDecoder] = useState<URDecoder | null>(() => {
-    // bc-ur has cborg as a dependency which fails to import on the server
-    if (typeof window !== 'undefined') {
-      import('@gandlaf21/bc-ur').then(({ URDecoder }) => {
-        setDecoder(new URDecoder());
-      });
-    }
-    // returns null, then when the promise resolves, the decoder is set
-    return null;
-  });
+  const [decoder] = useState(() => new URDecoder());
 
   useEffect(() => {
-    if (!decoder || fragment === '') return;
+    if (fragment === '') return;
 
     try {
       decoder.receivePart(fragment);
