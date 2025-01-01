@@ -1,5 +1,5 @@
 import { URDecoder } from '@jbojcic/bc-ur';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type AnimatedQRDecoderProps = {
   /**
@@ -47,6 +47,7 @@ export function useAnimatedQRDecoder({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
   const [decoder] = useState(() => new URDecoder());
+  const decodeRef = useRef(onDecode);
 
   useEffect(() => {
     if (fragment === '') return;
@@ -58,7 +59,7 @@ export function useAnimatedQRDecoder({
       if (decoder.isComplete() && decoder.isSuccess()) {
         const ur = decoder.resultUR();
         const decoded = ur.decodeCBOR().toString();
-        onDecode(decoded);
+        decodeRef.current(decoded);
       }
     } catch (e) {
       console.error('Failed to decode QR fragment', e);
@@ -66,7 +67,7 @@ export function useAnimatedQRDecoder({
         e instanceof Error ? e : new Error('Failed to decode QR fragment'),
       );
     }
-  }, [fragment, onDecode, decoder]);
+  }, [fragment, decoder]);
 
   return {
     progress,

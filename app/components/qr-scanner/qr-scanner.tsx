@@ -45,12 +45,13 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scanner = useRef<Scanner | null>(null);
   const [currentFragment, setCurrentFragment] = useState('');
+  const decodeRef = useRef(onDecode);
 
   const { progress, error } = useAnimatedQRDecoder({
     fragment: currentFragment,
     onDecode: (decoded) => {
       setCurrentFragment('');
-      onDecode(decoded);
+      decodeRef.current(decoded);
       scanner.current?.stop();
     },
   });
@@ -70,7 +71,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
       if (result.data.toLowerCase().startsWith('ur:')) {
         setCurrentFragment(result.data);
       } else {
-        onDecode(result.data);
+        decodeRef.current(result.data);
         scanner.current?.stop();
       }
     };
@@ -90,7 +91,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
     return () => {
       scanner.current?.stop();
     };
-  }, [onDecode]);
+  }, []);
 
   return (
     <section className="aspect-square h-full w-full max-w-[100vw] md:max-w-[400px]">
