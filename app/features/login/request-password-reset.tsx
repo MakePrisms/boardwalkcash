@@ -70,13 +70,18 @@ export function RequestPasswordReset({ onRequested, onBack }: Props) {
               })}
             />
             {errors.email && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="emailError"
+                role="alert"
+                aria-labelledby="emailError"
+                className="text-red-500 text-sm"
+              >
                 {errors.email.message}
               </span>
             )}
           </div>
           <Button type="submit" className="w-full" loading={isSubmitting}>
-            Login
+            Request Password Reset
           </Button>
           <Button
             variant="ghost"

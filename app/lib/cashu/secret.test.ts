@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getP2PKPubkeyFromSecret, parseSecret } from '~/lib/cashu/secret';
+import { getP2PKPubkeyFromSecret, parseSecret } from './secret';
 
 describe('parseSecret', () => {
   test('should return the input value if input value is NUT00 plain secret', () => {

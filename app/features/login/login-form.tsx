@@ -69,7 +69,12 @@ export function LoginForm({ onBack }: Props) {
               })}
             />
             {errors.email && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="emailError"
+                role="alert"
+                aria-labelledby="emailError"
+                className="text-red-500 text-sm"
+              >
                 {errors.email.message}
               </span>
             )}
@@ -92,7 +97,12 @@ export function LoginForm({ onBack }: Props) {
               {...register('password', { required: 'Password is required' })}
             />
             {errors.password && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="passwordError"
+                role="alert"
+                aria-labelledby="passwordError"
+                className="text-red-500 text-sm"
+              >
                 {errors.password.message}
               </span>
             )}

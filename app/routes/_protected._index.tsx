@@ -207,41 +207,6 @@ export default function Index() {
         >
           {effectiveColorMode}
         </Button>
-        <br />
-        <br />
-        <LinkWithViewTransition
-          to="/settings"
-          transition="slideLeft"
-          applyTo="bothViews"
-        >
-          <Button>Slide both views</Button>
-        </LinkWithViewTransition>
-        {user.isGuest && <div>Guest account</div>}
-        <div>id: {user.id}</div>
-        <div>email: {!user.isGuest ? user.email : ''}</div>
-        <div>email verified: {user.emailVerified ? 'true' : 'false'}</div>
-        <div>login method: {user.loginMethod}</div>
-        <div>created at: {user.createdAt}</div>
-        <div>updated at: {user.updatedAt}</div>
-        <Button variant="default" onClick={signOut} className="mt-2">
-          Log out
-        </Button>
-        <div className="mt-2 flex flex-row gap-2">
-          <p>Theme:</p>
-          <Button onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}>
-            {theme}
-          </Button>
-        </div>
-        <div className="mt-2 flex flex-row gap-2">
-          <p>Color mode:</p>
-          <Button
-            onClick={() =>
-              setColorMode(colorMode === 'dark' ? 'light' : 'dark')
-            }
-          >
-            {effectiveColorMode}
-          </Button>
-        </div>
         {user.isGuest && (
           <div className="mt-4 max-w-md">
             <h2>Upgrade to full account:</h2>
@@ -290,7 +255,7 @@ export default function Index() {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"

@@ -150,7 +150,7 @@ export const useAuthActions = (): AuthActions => {
     }
 
     const createGuestAccount = async () => {
-      const password = generateRandomPassword(32);
+      const password = await generateRandomPassword(32);
       const guestAccount = await signUpGuestRef.current(password, '');
       guestAccountStorage.store({ id: guestAccount.id, password });
     };
@@ -159,7 +159,7 @@ export const useAuthActions = (): AuthActions => {
   }, []);
 
   const requestPasswordReset = useCallback(async (email: string) => {
-    const secret = generateRandomPassword(20);
+    const secret = await generateRandomPassword(20);
     const hash = await computeSHA256(secret);
     await requestPasswordResetRef.current(email, hash);
     return { email, secret };

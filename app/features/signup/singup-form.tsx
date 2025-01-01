@@ -77,7 +77,12 @@ export function SignupForm({ onBack }: Props) {
               })}
             />
             {errors.email && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="emailError"
+                role="alert"
+                aria-labelledby="emailError"
+                className="text-red-500 text-sm"
+              >
                 {errors.email.message}
               </span>
             )}
@@ -98,13 +103,18 @@ export function SignupForm({ onBack }: Props) {
               })}
             />
             {errors.password && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="passwordError"
+                role="alert"
+                aria-labelledby="passwordError"
+                className="text-red-500 text-sm"
+              >
                 {errors.password.message}
               </span>
             )}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -117,7 +127,12 @@ export function SignupForm({ onBack }: Props) {
               })}
             />
             {errors.confirmPassword && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="confirmPasswordError"
+                role="alert"
+                aria-labelledby="confirmPasswordError"
+                className="text-red-500 text-sm"
+              >
                 {errors.confirmPassword.message}
               </span>
             )}

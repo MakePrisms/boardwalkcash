@@ -75,7 +75,7 @@ export function VerifyEmailForm({ user, code }: Props) {
           noValidate
         >
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="verificationCode">Verification Code</Label>
             <Input
               id="verificationCode"
               type="text"
@@ -86,7 +86,12 @@ export function VerifyEmailForm({ user, code }: Props) {
               })}
             />
             {errors.code && (
-              <span role="alert" className="text-red-500 text-sm">
+              <span
+                id="verificationCodeError"
+                role="alert"
+                aria-labelledby="verificationCodeError"
+                className="text-red-500 text-sm"
+              >
                 {errors.code.message}
               </span>
             )}
