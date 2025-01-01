@@ -8,7 +8,7 @@ type AnimatedQREncoderProps = {
    */
   text: string;
   /**
-   * Change the size of each fragment.
+   * Set the size of each fragment.
    * For NGRAVE ZERO support please keep to a maximum fragment size of 200
    * const maxFragmentLength = 200
    */
