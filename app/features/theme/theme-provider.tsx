@@ -1,38 +1,16 @@
-import { useRouteLoaderData } from '@remix-run/react';
-import { createContext, useEffect, useState } from 'react';
-import type { getThemeCookies } from './theme-cookies.server';
-import {
-  COLOR_MODE_COOKIE_NAME,
-  SYSTEM_COLOR_MODE_COOKIE_NAME,
-  THEME_COOKIE_NAME,
-  defaultColorMode,
-  defaultSystemColorMode,
-  defaultTheme,
-  themes,
-} from './theme.constants';
+import { useFetcher, useRouteLoaderData } from '@remix-run/react';
+import { createContext, useEffect } from 'react';
+import { themes } from './constants';
 import type {
   ColorMode,
   Theme,
   ThemeContextType,
   ThemeCookieValues,
-} from './theme.types';
+} from './types';
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(
   undefined,
 );
-
-function saveCookies(
-  theme: Theme,
-  colorMode: ColorMode,
-  systemColorMode: ThemeCookieValues['systemColorMode'],
-) {
-  if (typeof window === 'object') {
-    const oneYear = 60 * 60 * 24 * 365;
-    document.cookie = `${THEME_COOKIE_NAME}=${theme}; samesite=lax; max-age=${oneYear}`;
-    document.cookie = `${COLOR_MODE_COOKIE_NAME}=${colorMode}; samesite=lax; max-age=${oneYear}`;
-    document.cookie = `${SYSTEM_COLOR_MODE_COOKIE_NAME}=${systemColorMode}; samesite=lax; max-age=${oneYear}`;
-  }
-}
 
 function updateDocumentClasses(
   theme: Theme,
@@ -52,46 +30,32 @@ function updateDocumentClasses(
   root.classList.remove('light', 'dark');
   root.classList.add(effectiveColorMode);
 }
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const rootData = useRouteLoaderData<{
-    cookieSettings: ReturnType<typeof getThemeCookies>;
-  }>('root');
-  const cookieSettings = rootData?.cookieSettings;
+  const rootData =
+    useRouteLoaderData<{
+      themeSettings: ThemeCookieValues;
+    }>('root') || ({} as { themeSettings: ThemeCookieValues });
+  const themeSettings = rootData.themeSettings;
+  const fetcher = useFetcher();
 
-  const [theme, setThemeState] = useState<Theme>(
-    cookieSettings?.theme || defaultTheme,
-  );
+  const theme = themeSettings.theme;
+  const colorMode = themeSettings.colorMode;
 
-  const [colorMode, setColorModeState] = useState<ColorMode>(
-    cookieSettings?.colorMode || defaultColorMode,
-  );
-
-  const [systemColorMode, setSystemColorMode] = useState<
-    ThemeCookieValues['systemColorMode']
-  >(() => {
+  const systemColorMode = (() => {
     if (typeof window !== 'object') {
       // Server-side, always use cookie settings if available
-      if (cookieSettings?.systemColorMode !== undefined) {
-        return cookieSettings.systemColorMode;
-      }
-      return defaultSystemColorMode;
+      return themeSettings.systemColorMode;
     }
 
     // Client-side, check system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches
       ? 'dark'
       : 'light';
-  });
+  })();
 
   const effectiveColorMode =
     colorMode === 'system' ? (systemColorMode ? 'dark' : 'light') : colorMode;
-
-  // Save cookies on first load if they don't exist
-  useEffect(() => {
-    if (!cookieSettings) {
-      saveCookies(theme, colorMode, systemColorMode);
-    }
-  }, [systemColorMode, colorMode, theme, cookieSettings]);
 
   // Update color mode when system color mode changes
   useEffect(() => {
@@ -99,29 +63,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = () => {
         const newSystemColorMode = mediaQuery.matches ? 'dark' : 'light';
-        setSystemColorMode(newSystemColorMode);
-        saveCookies(theme, colorMode, newSystemColorMode);
+        fetcher.submit(
+          {
+            colorMode: newSystemColorMode,
+            systemColorMode: newSystemColorMode,
+          },
+          { method: 'post' },
+        );
       };
       mediaQuery.addEventListener('change', handler);
       return () => mediaQuery.removeEventListener('change', handler);
     }
-  }, [colorMode, theme]);
+  }, [colorMode, fetcher.submit]);
 
   // Update document classes when theme or color mode changes
   useEffect(() => {
     updateDocumentClasses(theme, effectiveColorMode);
   }, [theme, effectiveColorMode]);
 
-  // Set theme and save cookies
   const setTheme = (newTheme: Theme) => {
-    saveCookies(newTheme, colorMode, systemColorMode);
-    setThemeState(newTheme);
+    fetcher.submit({ theme: newTheme }, { method: 'post' });
   };
 
-  // Set color mode and save cookies
   const setColorMode = (newMode: ColorMode) => {
-    saveCookies(theme, newMode, systemColorMode);
-    setColorModeState(newMode);
+    fetcher.submit({ colorMode: newMode }, { method: 'post' });
   };
 
   return (
