@@ -27,6 +27,10 @@ export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: transitionStyles },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
+    rel: 'manifest',
+    href: '/manifest.webmanifest',
+  },
+  {
     rel: 'preconnect',
     href: 'https://fonts.gstatic.com',
     crossOrigin: 'anonymous',
@@ -68,13 +72,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { themeClassName } = useTheme();
+  const { themeClassName, theme } = useTheme();
 
   return (
     <html lang="en" className={themeClassName}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content={theme === 'usd' ? 'green' : 'blue'} />
         <Meta />
         <Links />
       </head>
