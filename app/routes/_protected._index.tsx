@@ -3,7 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import Big from 'big.js';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import MoneyDisplay from '~/components/money-display';
+import {
+  MoneyInputDisplay,
+  type MoneyInputDisplayProps,
+} from '~/components/money-display';
 import {
   Page,
   PageContent,
@@ -22,7 +25,7 @@ import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
-import { type Currency, Money } from '~/lib/money';
+import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -30,66 +33,48 @@ type FormValues = { email: string; password: string; confirmPassword: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
 
-const calculateDecimalPlacesEntered = (inputString: string) => {
-  if (inputString.includes('.')) {
-    return inputString.split('.')[1].length;
-  }
-  return undefined;
-};
-
-const testMoneys = {
+const testMoneys: Record<string, MoneyInputDisplayProps> = {
   '1,000 sats': {
-    money: new Money({ amount: '1000', currency: 'BTC', unit: 'sat' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1000'),
+    inputValue: '1000',
+    currency: 'BTC',
+    unit: 'sat',
   },
-  '1,432 small': {
-    money: new Money({ amount: '1432', currency: 'BTC', unit: 'sat' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1432'),
+  '1,432 small btc unit': {
+    inputValue: '1432',
+    currency: 'BTC',
+    unit: 'btc',
     size: 'sm',
   },
+  '1,432.35 btc unit': {
+    inputValue: '1432.35',
+    currency: 'BTC',
+    unit: 'btc',
+  },
   '$ 1': {
-    money: new Money({ amount: '1', currency: 'USD' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1'),
+    inputValue: '1',
+    currency: 'USD',
+    unit: 'usd',
   },
 
   '$ 1.': {
-    money: new Money({ amount: '1.', currency: 'USD' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1.'),
+    inputValue: '1.',
+    currency: 'USD',
+    unit: 'usd',
   },
   '$ 1.2': {
-    money: new Money({ amount: '1.2', currency: 'USD' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1.2'),
+    inputValue: '1.2',
+    currency: 'USD',
+    unit: 'usd',
   },
   '$ 1.23': {
-    money: new Money({ amount: '1.23', currency: 'USD' }),
-    decimalPlaces: calculateDecimalPlacesEntered('1.23'),
+    inputValue: '1.23',
+    currency: 'USD',
+    unit: 'usd',
   },
-  '$ 1 - simpleFormat': {
-    money: new Money({ amount: '1', currency: 'USD' }),
-    simpleFormat: true,
-  },
-  '$ 1.2 - simpleFormat': {
-    money: new Money({ amount: '1.2', currency: 'USD' }),
-    simpleFormat: true,
-  },
-  '$ 1.23 - simpleFormat': {
-    money: new Money({ amount: '1.23', currency: 'USD' }),
-    simpleFormat: true,
-  },
-  '$ 1 - simpleFormat - sm': {
-    money: new Money({ amount: '1', currency: 'USD' }),
-    simpleFormat: true,
-    size: 'sm',
-  },
-  '$ 1.2 - simpleFormat - sm': {
-    money: new Money({ amount: '1.2', currency: 'USD' }),
-    simpleFormat: true,
-    size: 'sm',
-  },
-  '$ 1.23 - simpleFormat - sm': {
-    money: new Money({ amount: '1.23', currency: 'USD' }),
-    simpleFormat: true,
-    size: 'sm',
+  '$ 1,001.2': {
+    inputValue: '1001.2',
+    currency: 'USD',
+    unit: 'usd',
   },
 };
 
@@ -189,22 +174,10 @@ export default function Index() {
 
       <div className="grid grid-cols-3 gap-4">
         {Object.entries(testMoneys).map(([key, value]) => {
-          const typedValue = value as {
-            money: Money<Currency>;
-            size?: 'sm';
-            simpleFormat?: boolean;
-            decimalPlaces?: number;
-          };
           return (
             <div key={key}>
               <h3 className="">{key}</h3>
-              {/* @ts-expect-error: doesn't like that simpleFormat can be true while decimalPlaces is defined */}
-              <MoneyDisplay
-                money={typedValue.money}
-                size={typedValue.size}
-                simpleFormat={typedValue.simpleFormat}
-                decimalPlaces={typedValue.decimalPlaces}
-              />
+              <MoneyInputDisplay {...value} />
             </div>
           );
         })}
