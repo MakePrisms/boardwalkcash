@@ -6,8 +6,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
-import { colorModes } from './theme.constants';
-import type { ColorMode } from './theme.types';
+import { colorModes } from './constants';
+import type { ColorMode } from './types';
 import { useTheme } from './use-theme';
 
 export function ColorModeToggle() {

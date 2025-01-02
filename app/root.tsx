@@ -1,11 +1,12 @@
 import { OpenSecretProvider } from '@opensecret/react';
-import type { LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  type ShouldRevalidateFunctionArgs,
 } from '@remix-run/react';
 import {
   HydrationBoundary,
@@ -18,8 +19,12 @@ import { useState } from 'react';
 import { useDehydratedState } from 'use-dehydrated-state';
 import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
-import { getThemeCookies } from '~/features/theme/theme-cookies.server';
+import {
+  getThemeLoader,
+  updateThemeAction,
+} from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { safeJsonParse } from './lib/json';
 import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
@@ -37,21 +42,28 @@ export const links: LinksFunction = () => [
   },
 ];
 
-type RootLoaderData = {
-  cookieSettings: ReturnType<typeof getThemeCookies>;
-};
-
-export async function loader({
-  request,
-}: LoaderFunctionArgs): Promise<RootLoaderData> {
-  /** Returns user settings from cookies */
-  const cookieSettings = getThemeCookies(request);
-  return { cookieSettings: cookieSettings || null };
+export async function loader({ request }: LoaderFunctionArgs) {
+  const themeSettings = await getThemeLoader(request);
+  return { themeSettings };
 }
 
-// prevent loader from being revalidated
-export function shouldRevalidate() {
-  return false;
+// Prevent loader from being revalidated unless necessary
+// If this function were to always return true, then the loader would be revalidated on every request
+// which means there would be a network request every time the page changes, creating a delay
+export function shouldRevalidate({
+  actionResult,
+}: ShouldRevalidateFunctionArgs) {
+  const parsedActionResult = safeJsonParse<{ success: boolean }>(actionResult);
+  const successfulAction =
+    parsedActionResult.success && parsedActionResult.data?.success;
+  return successfulAction;
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const result = await updateThemeAction(request);
+  return new Response(JSON.stringify({ success: result.success }), {
+    headers: { 'Set-Cookie': result.setCookieHeader },
+  });
 }
 
 const vercelAnalyticsMode =
