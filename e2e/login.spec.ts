@@ -164,6 +164,10 @@ test('signup as guest performs login as guest if the guest account was already c
 
   await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
 
+  // Sometimes Playwright has issues on some browsers if you perform action which triggers a redirect while the
+  // current page load has not been completely done yet. See https://github.com/microsoft/playwright/issues/20749
+  await page.waitForLoadState('networkidle');
+
   await page.getByRole('button', { name: 'Log Out' }).click();
 
   await expect(page.getByText('Sign Up')).toBeVisible();
@@ -184,6 +188,10 @@ test.describe('when already logged in', () => {
 
   test('cannot access login page', async ({ page }) => {
     await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+
+    // Sometimes Playwright has issues on some browsers if you perform action which triggers a redirect while the
+    // current page load has not been completely done yet. See https://github.com/microsoft/playwright/issues/20749
+    await page.waitForLoadState('networkidle');
 
     await page.goto('/login');
 
