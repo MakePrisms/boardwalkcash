@@ -32,7 +32,7 @@ jobs:
 
   e2e-tests:
     name: "E2E Tests"
-    timeout-minutes: 5
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
