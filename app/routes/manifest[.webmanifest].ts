@@ -161,7 +161,21 @@ export const loader = ({ request }: LoaderFunctionArgs) => {
     theme_color: theme === 'usd' ? 'green' : '#004d4a',
     icons: [
       {
-        src: '/apple-touch-icon.png',
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+      {
+        src: '/icon-512-maskable.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
       },
     ],
   };
