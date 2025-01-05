@@ -29,6 +29,7 @@ export const links: LinksFunction = () => [
   {
     rel: 'manifest',
     href: '/manifest.webmanifest',
+    type: 'application/manifest+json',
   },
   {
     rel: 'preconnect',
