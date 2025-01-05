@@ -1,5 +1,6 @@
 import { URDecoder } from '@jbojcic/bc-ur';
 import { useEffect, useRef, useState } from 'react';
+import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 
 type AnimatedQRDecoderProps = {
   /**
@@ -48,6 +49,10 @@ export function useAnimatedQRDecoder({
   const [error, setError] = useState<Error | null>(null);
   const [decoder] = useState(() => new URDecoder());
   const decodeRef = useRef(onDecode);
+
+  useIsomorphicLayoutEffect(() => {
+    decodeRef.current = onDecode;
+  }, [onDecode]);
 
   useEffect(() => {
     if (fragment === '') return;
