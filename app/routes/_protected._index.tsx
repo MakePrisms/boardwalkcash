@@ -4,6 +4,7 @@ import Big from 'big.js';
 import { Cog } from 'lucide-react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import {
+  MoneyDisplay,
   MoneyInputDisplay,
   type MoneyInputDisplayProps,
 } from '~/components/money-display';
@@ -25,7 +26,7 @@ import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
-import { Money } from '~/lib/money';
+import { type Currency, Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -43,7 +44,6 @@ const testMoneys: Record<string, MoneyInputDisplayProps> = {
     inputValue: '1432',
     currency: 'BTC',
     unit: 'btc',
-    size: 'sm',
   },
   '1,432.35 btc unit': {
     inputValue: '1432.35',
@@ -188,6 +188,13 @@ export default function Index() {
             </div>
           );
         })}
+      </div>
+      <br />
+      <div>
+        Basic money display:
+        <MoneyDisplay
+          money={new Money({ amount: 1, currency: 'USD' }) as Money<Currency>}
+        />
       </div>
 
       <br />
