@@ -2,24 +2,11 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 
-const sizes = {
-  sm: {
-    symbol: 'text-[1.2rem]',
-    value: 'text-2xl pt-1',
-  },
-  default: {
-    symbol: 'text-[3.45rem]',
-    value: 'text-6xl pt-2',
-  },
-} as const;
-
 export interface MoneyInputDisplayProps {
   /** Raw input value from user (e.g., "1", "1.", "1.0") */
   inputValue: string;
   currency: Currency;
   unit: CurrencyUnit<Currency>;
-  className?: string;
-  size?: 'sm' | 'default';
   locale?: string;
 }
 
@@ -28,8 +15,6 @@ export function MoneyInputDisplay({
   currency,
   unit,
   locale,
-  size = 'default',
-  className,
 }: MoneyInputDisplayProps) {
   const money = new Money({ amount: inputValue, currency, unit });
   const {
@@ -59,16 +44,12 @@ export function MoneyInputDisplay({
     ? '0'.repeat(numberOfDecimals - inputDecimals.length)
     : '';
 
-  const symbol = (
-    <span className={cn('font-bold', sizes[size].symbol)}>
-      {currencySymbol}
-    </span>
-  );
+  const symbol = <span className="text-[3.45rem]">{currencySymbol}</span>;
 
   return (
-    <div className={cn('inline-flex w-fit items-center', className)}>
+    <span className="font-bold">
       {currencySymbolPosition === 'prefix' && symbol}
-      <span className={cn('font-bold font-numeric', sizes[size].value)}>
+      <span className="pt-2 font-numeric text-6xl">
         {integer}
         {(inputDecimals || needsPaddedZeros) && (
           <>
@@ -81,6 +62,55 @@ export function MoneyInputDisplay({
         )}
       </span>
       {currencySymbolPosition === 'suffix' && symbol}
-    </div>
+    </span>
+  );
+}
+
+type MoneyDisplayProps = {
+  money: Money<Currency>;
+  locale?: string;
+  unit?: CurrencyUnit<Currency>;
+  size?: 'sm' | 'default';
+  className?: string;
+};
+
+const sizes = {
+  sm: {
+    symbol: 'text-[1.2rem]',
+    value: 'text-2xl pt-1',
+  },
+  default: {
+    symbol: 'text-[3.45rem]',
+    value: 'text-6xl pt-2',
+  },
+} as const;
+
+export function MoneyDisplay({
+  money,
+  locale,
+  unit,
+  size = 'default',
+  className,
+}: MoneyDisplayProps) {
+  const {
+    currencySymbol,
+    currencySymbolPosition,
+    integer,
+    decimalSeparator,
+    fraction,
+  } = money.toLocalizedStringParts({ locale, unit });
+
+  const value = `${integer}${decimalSeparator}${fraction}`;
+
+  const symbol = (
+    <span className={cn(sizes[size].symbol)}>{currencySymbol}</span>
+  );
+
+  return (
+    <span className={cn('font-bold', className)}>
+      {currencySymbolPosition === 'prefix' && symbol}
+      <span className={cn('font-numeric', sizes[size].value)}>{value}</span>
+      {currencySymbolPosition === 'suffix' && symbol}
+    </span>
   );
 }
