@@ -29,7 +29,7 @@ import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
-import { type Currency, Money } from '~/lib/money';
+import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -43,7 +43,7 @@ const testMoneys: Record<string, MoneyInputDisplayProps> = {
     currency: 'BTC',
     unit: 'sat',
   },
-  '1,432 small btc unit': {
+  '1,432 btc unit': {
     inputValue: '1432',
     currency: 'BTC',
     unit: 'btc',
@@ -196,9 +196,7 @@ export default function Index() {
       <br />
       <div>
         Basic money display:
-        <MoneyDisplay
-          money={new Money({ amount: 1, currency: 'USD' }) as Money<Currency>}
-        />
+        <MoneyDisplay money={new Money({ amount: 1, currency: 'USD' })} />
       </div>
 
       <br />

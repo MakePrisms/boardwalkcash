@@ -2,20 +2,20 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 
-export interface MoneyInputDisplayProps {
+export interface MoneyInputDisplayProps<C extends Currency = Currency> {
   /** Raw input value from user (e.g., "1", "1.", "1.0") */
   inputValue: string;
-  currency: Currency;
-  unit: CurrencyUnit<Currency>;
+  currency: C;
+  unit: CurrencyUnit<C>;
   locale?: string;
 }
 
-export function MoneyInputDisplay({
+export function MoneyInputDisplay<C extends Currency>({
   inputValue,
   currency,
   unit,
   locale,
-}: MoneyInputDisplayProps) {
+}: MoneyInputDisplayProps<C>) {
   const money = new Money({ amount: inputValue, currency, unit });
   const {
     currencySymbol,
@@ -66,10 +66,10 @@ export function MoneyInputDisplay({
   );
 }
 
-type MoneyDisplayProps = {
-  money: Money<Currency>;
+type MoneyDisplayProps<C extends Currency = Currency> = {
+  money: Money<C>;
   locale?: string;
-  unit?: CurrencyUnit<Currency>;
+  unit?: CurrencyUnit<C>;
   size?: 'sm' | 'default';
   className?: string;
 };
@@ -85,13 +85,13 @@ const sizes = {
   },
 } as const;
 
-export function MoneyDisplay({
+export function MoneyDisplay<C extends Currency>({
   money,
   locale,
   unit,
   size = 'default',
   className,
-}: MoneyDisplayProps) {
+}: MoneyDisplayProps<C>) {
   const {
     currencySymbol,
     currencySymbolPosition,
