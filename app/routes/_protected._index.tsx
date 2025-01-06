@@ -5,6 +5,11 @@ import { Cog } from 'lucide-react';
 import { useState } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import {
+  MoneyDisplay,
+  MoneyInputDisplay,
+  type MoneyInputDisplayProps,
+} from '~/components/money-display';
+import {
   Page,
   PageContent,
   PageHeader,
@@ -31,6 +36,50 @@ import { buildEmailValidator } from '~/lib/validation';
 type FormValues = { email: string; password: string; confirmPassword: string };
 
 const validateEmail = buildEmailValidator('Invalid email');
+
+const testMoneys: Record<string, MoneyInputDisplayProps> = {
+  '1,000 sats': {
+    inputValue: '1000',
+    currency: 'BTC',
+    unit: 'sat',
+  },
+  '1,432 btc unit': {
+    inputValue: '1432',
+    currency: 'BTC',
+    unit: 'btc',
+  },
+  '1,432.35 btc unit': {
+    inputValue: '1432.35',
+    currency: 'BTC',
+    unit: 'btc',
+  },
+  '$ 1': {
+    inputValue: '1',
+    currency: 'USD',
+    unit: 'usd',
+  },
+
+  '$ 1.': {
+    inputValue: '1.',
+    currency: 'USD',
+    unit: 'usd',
+  },
+  '$ 1.2': {
+    inputValue: '1.2',
+    currency: 'USD',
+    unit: 'usd',
+  },
+  '$ 1.23': {
+    inputValue: '1.23',
+    currency: 'USD',
+    unit: 'usd',
+  },
+  '$ 1,001.2': {
+    inputValue: '1001.2',
+    currency: 'USD',
+    unit: 'usd',
+  },
+};
 
 const accounts: Account[] = [
   {
@@ -124,6 +173,35 @@ export default function Index() {
         </div>
       </PageHeader>
 
+      <br />
+      <br />
+
+      <Button variant="default" onClick={signOut} className="mt-2 w-fit">
+        Log out
+      </Button>
+
+      <br />
+      <br />
+
+      <div className="grid grid-cols-3 gap-4">
+        {Object.entries(testMoneys).map(([key, value]) => {
+          return (
+            <div key={key}>
+              <h3 className="">{key}</h3>
+              <MoneyInputDisplay {...value} />
+            </div>
+          );
+        })}
+      </div>
+      <br />
+      <div>
+        Basic money display:
+        <MoneyDisplay money={new Money({ amount: 1, currency: 'USD' })} />
+      </div>
+
+      <br />
+      <br />
+
       <div>
         SATS per USD:{' '}
         {new Money({ amount: 1, currency: 'USD' })
@@ -191,9 +269,6 @@ export default function Index() {
       <div>login method: {user.loginMethod}</div>
       <div>created at: {user.createdAt}</div>
       <div>updated at: {user.updatedAt}</div>
-      <Button variant="default" onClick={signOut} className="mt-2">
-        Log out
-      </Button>
       <div className="mt-2 flex flex-row gap-2">
         <p>Theme:</p>
         <Button onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}>
@@ -203,6 +278,7 @@ export default function Index() {
       <PageContent>
         <p>Color mode:</p>
         <Button
+          className="w-fit"
           onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
         >
           {effectiveColorMode}

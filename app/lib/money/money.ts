@@ -6,25 +6,52 @@ import type {
   CurrencyDataMap,
   CurrencyUnit,
   FormatOptions,
+  LocalizedStringParts,
   MoneyData,
   MoneyInput,
   NumberInput,
   UnitData,
 } from './types';
 
-function baseFormat(value: number, options: BaseFormatOptions) {
-  const { locale, decimals, currency } = options;
+function getCurrencyFormatter(options: BaseFormatOptions) {
+  const { locale, minimumFractionDigits, maximumFractionDigits, currency } =
+    options;
   const formatOptions: Parameters<typeof Intl.NumberFormat>[1] = {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits:
+      minimumFractionDigits === 'max'
+        ? maximumFractionDigits
+        : minimumFractionDigits,
+    maximumFractionDigits,
   };
   if (currency) {
     formatOptions.style = 'currency';
     formatOptions.currency = currency;
     formatOptions.currencyDisplay = 'narrowSymbol';
   }
-  return Intl.NumberFormat(locale, formatOptions).format(value);
+  return Intl.NumberFormat(locale, formatOptions);
 }
+
+const trimWhitespaceFromEnds = (
+  parts: Intl.NumberFormatPart[],
+): Intl.NumberFormatPart[] => {
+  if (parts.length === 0) {
+    return [];
+  }
+
+  let result = parts;
+
+  const firstPart = parts[0];
+  if (firstPart.type === 'literal' && firstPart.value.trim() === '') {
+    result = parts.slice(1);
+  }
+
+  const lastPart = parts[result.length - 1];
+  if (lastPart.type === 'literal' && lastPart.value.trim() === '') {
+    result = result.slice(0, -1);
+  }
+
+  return result;
+};
 
 const currencyDataMap: CurrencyDataMap = {
   USD: {
@@ -35,8 +62,19 @@ const currencyDataMap: CurrencyDataMap = {
         decimals: 2,
         symbol: '$',
         factor: new Big(1),
+        formatToParts: function (value: number, options: FormatOptions = {}) {
+          const formatter = getCurrencyFormatter({
+            ...options,
+            maximumFractionDigits: this.decimals,
+          });
+          return formatter.formatToParts(value);
+        },
         format: function (value: number, options: FormatOptions = {}) {
-          return baseFormat(value, { ...options, decimals: this.decimals });
+          const formatter = getCurrencyFormatter({
+            ...options,
+            maximumFractionDigits: this.decimals,
+          });
+          return formatter.format(value);
         },
       },
       {
@@ -44,13 +82,29 @@ const currencyDataMap: CurrencyDataMap = {
         decimals: 0,
         symbol: '¢',
         factor: new Big(10 ** -2),
-        format: function (value: number, options: FormatOptions = {}) {
-          let formattedValue = baseFormat(value, {
+        formatToParts: function (value: number, options: FormatOptions = {}) {
+          const formatter = getCurrencyFormatter({
             ...options,
-            decimals: this.decimals,
+            maximumFractionDigits: this.decimals,
           });
-          formattedValue = formattedValue.replace('$', '').trim();
-          return `${formattedValue}${this.symbol}`;
+
+          const parts = formatter.formatToParts(value);
+          const partsWithoutSymbol = parts.filter(
+            ({ type }) => type !== 'currency',
+          );
+          const trimmedPartsWithoutSymbol =
+            trimWhitespaceFromEnds(partsWithoutSymbol);
+          const partsWithNewSymbolAppended = [
+            ...trimmedPartsWithoutSymbol,
+            { type: 'currency' as const, value: this.symbol },
+          ];
+
+          return partsWithNewSymbolAppended;
+        },
+        format: function (value: number, options: FormatOptions = {}) {
+          return this.formatToParts(value, options)
+            .map(({ value }) => value)
+            .join('');
         },
       },
     ],
@@ -63,13 +117,29 @@ const currencyDataMap: CurrencyDataMap = {
         decimals: 8,
         symbol: '₿',
         factor: new Big(1),
-        format: function (value: number, options: FormatOptions = {}) {
-          let formattedValue = baseFormat(value, {
+        formatToParts: function (value: number, options: FormatOptions = {}) {
+          const formatter = getCurrencyFormatter({
             ...options,
-            decimals: this.decimals,
+            maximumFractionDigits: this.decimals,
           });
-          formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${this.symbol}${formattedValue}`;
+
+          const parts = formatter.formatToParts(value);
+          const partsWithoutSymbol = parts.filter(
+            ({ type }) => type !== 'currency',
+          );
+          const trimmedPartsWithoutSymbol =
+            trimWhitespaceFromEnds(partsWithoutSymbol);
+          const partsWithNewSymbolPrepended = [
+            { type: 'currency' as const, value: this.symbol },
+            ...trimmedPartsWithoutSymbol,
+          ];
+
+          return partsWithNewSymbolPrepended;
+        },
+        format: function (value: number, options: FormatOptions = {}) {
+          return this.formatToParts(value, options)
+            .map(({ value }) => value)
+            .join('');
         },
       },
       {
@@ -77,13 +147,29 @@ const currencyDataMap: CurrencyDataMap = {
         decimals: 0,
         symbol: '₿',
         factor: new Big(10 ** -8),
-        format: function (value: number, options: FormatOptions = {}) {
-          let formattedValue = baseFormat(value, {
+        formatToParts: function (value: number, options: FormatOptions = {}) {
+          const formatter = getCurrencyFormatter({
             ...options,
-            decimals: this.decimals,
+            maximumFractionDigits: this.decimals,
           });
-          formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${formattedValue}${this.symbol}`;
+
+          const parts = formatter.formatToParts(value);
+          const partsWithoutSymbol = parts.filter(
+            ({ type }) => type !== 'currency',
+          );
+          const trimmedPartsWithoutSymbol =
+            trimWhitespaceFromEnds(partsWithoutSymbol);
+          const partsWithNewSymbolAppended = [
+            ...trimmedPartsWithoutSymbol,
+            { type: 'currency' as const, value: this.symbol },
+          ];
+
+          return partsWithNewSymbolAppended;
+        },
+        format: function (value: number, options: FormatOptions = {}) {
+          return this.formatToParts(value, options)
+            .map(({ value }) => value)
+            .join('');
         },
       },
       {
@@ -91,13 +177,30 @@ const currencyDataMap: CurrencyDataMap = {
         decimals: 0,
         symbol: 'msat',
         factor: new Big(10 ** -11),
-        format: function (value: number, options: FormatOptions = {}) {
-          let formattedValue = baseFormat(value, {
+        formatToParts: function (value: number, options: FormatOptions = {}) {
+          const formatter = getCurrencyFormatter({
             ...options,
-            decimals: this.decimals,
+            maximumFractionDigits: this.decimals,
           });
-          formattedValue = formattedValue.replace('BTC', '').trim();
-          return `${formattedValue} ${this.symbol}`;
+
+          const parts = formatter.formatToParts(value);
+          const partsWithoutSymbol = parts.filter(
+            ({ type }) => type !== 'currency',
+          );
+          const trimmedPartsWithoutSymbol =
+            trimWhitespaceFromEnds(partsWithoutSymbol);
+          const partsWithNewSymbolAppended = [
+            ...trimmedPartsWithoutSymbol,
+            { type: 'literal' as const, value: ' ' },
+            { type: 'currency' as const, value: this.symbol },
+          ];
+
+          return partsWithNewSymbolAppended;
+        },
+        format: function (value: number, options: FormatOptions = {}) {
+          return this.formatToParts(value, options)
+            .map(({ value }) => value)
+            .join('');
         },
       },
     ],
@@ -236,7 +339,7 @@ export class Money<T extends Currency> {
   };
 
   /**
-   * Divedes the money amount with the provided divisor.
+   * Divides the money amount with the provided divisor.
    *
    * Note that dividing a monetary amount cannot be exact in all cases.
    * E.g. 10 USD / 3 = 3.33 USD
@@ -350,23 +453,81 @@ export class Money<T extends Currency> {
    * @param locale Locale to use to format the number. If not provided the locale of the machine will be used.
    * @param unit Specifies the currency unit to return. If not provided the base/default unit is used (bitcoin for BTC,
    * dollar for USD, etc.)
+   * @param minimumFractionDigits Minimum number of fraction digits to show. Set to 'max' to show all possible decimals for the currency unit.
    * @param showCurrency Controls if the currency symbol should be included in the string. True by default
    */
   toLocaleString = ({
     locale,
     unit,
+    minimumFractionDigits,
     showCurrency = true,
   }: {
     locale?: string;
     unit?: CurrencyUnit<T>;
+    minimumFractionDigits?: number | 'max';
     showCurrency?: boolean;
   } = {}): string => {
     const currencyUnit = this.getCurrencyUnit(unit);
-    const options: FormatOptions = { locale };
+    const options: FormatOptions = { locale, minimumFractionDigits };
     if (showCurrency) {
       options.currency = this.currency;
     }
     return currencyUnit.format(this.toNumber(unit), options);
+  };
+
+  /**
+   * Returns the parts of the localized stringified number.
+   * @param locale Locale to use to format the number. If not provided the locale of the machine will be used.
+   * @param unit Specifies the currency unit to use. If not provided the base/default unit is used (bitcoin for BTC,
+   * dollar for USD, etc.)
+   * @param minimumFractionDigits Minimum number of fraction digits to show. Set to 'max' to show all possible decimals for the currency unit.
+   * @returns {LocalizedStringParts} The parsed parts of the formatted string
+   */
+  toLocalizedStringParts = ({
+    locale,
+    unit,
+    minimumFractionDigits,
+  }: {
+    locale?: string;
+    unit?: CurrencyUnit<T>;
+    minimumFractionDigits?: number | 'max';
+  } = {}): LocalizedStringParts => {
+    const currencyUnit = this.getCurrencyUnit(unit);
+    const options: FormatOptions = {
+      locale,
+      currency: this.currency,
+      minimumFractionDigits,
+    };
+    const formattedParts = currencyUnit.formatToParts(
+      this.toNumber(unit),
+      options,
+    );
+    const fullValue = formattedParts.map(({ value }) => value).join('');
+    const integer = formattedParts
+      .filter(({ type }) => type === 'integer' || type === 'group')
+      .map(({ value }) => value)
+      .join('');
+    const groupSeparator =
+      formattedParts.find(({ type }) => type === 'group')?.value ?? '';
+    const decimalSeparator =
+      formattedParts.find(({ type }) => type === 'decimal')?.value ?? '';
+    const fraction =
+      formattedParts.find(({ type }) => type === 'fraction')?.value ?? '';
+    const currencySymbol =
+      formattedParts.find(({ type }) => type === 'currency')?.value ?? '';
+    const currencySymbolPosition =
+      formattedParts[0].type === 'currency' ? 'prefix' : 'suffix';
+
+    return {
+      fullValue,
+      integer,
+      groupSeparator,
+      fraction,
+      numberOfDecimals: fraction.length,
+      decimalSeparator,
+      currencySymbol,
+      currencySymbolPosition,
+    };
   };
 
   toJSON = () => {
