@@ -85,16 +85,25 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
       throw new Error('Expected video element to be present');
     }
 
-    scanner.current = new Scanner(videoRef.current, handleResult, {
+    const scannerInstance = new Scanner(videoRef.current, handleResult, {
       returnDetailedScanResult: true,
       highlightScanRegion: true,
       highlightCodeOutline: true,
     });
+    scanner.current = scannerInstance;
 
-    scanner.current.start();
+    const startedPromise = scannerInstance.start();
 
     return () => {
-      scanner.current?.destroy();
+      startedPromise
+        .catch((e) => {
+          // Catch is there not to show this error in console https://developer.chrome.com/blog/play-request-was-interrupted.
+          // This happens when useEffect is triggered twice in short amount of time. E.g. when strict mode is on.
+          console.debug(e);
+        })
+        .finally(() => {
+          scannerInstance.destroy();
+        });
     };
   }, []);
 
