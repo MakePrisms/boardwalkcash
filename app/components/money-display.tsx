@@ -7,7 +7,6 @@ export interface MoneyInputDisplayProps {
   inputValue: string;
   currency: Currency;
   unit: CurrencyUnit<Currency>;
-  className?: string;
   locale?: string;
 }
 
@@ -16,7 +15,6 @@ export function MoneyInputDisplay({
   currency,
   unit,
   locale,
-  className,
 }: MoneyInputDisplayProps) {
   const money = new Money({ amount: inputValue, currency, unit });
   const {
@@ -46,14 +44,12 @@ export function MoneyInputDisplay({
     ? '0'.repeat(numberOfDecimals - inputDecimals.length)
     : '';
 
-  const symbol = (
-    <span className="font-bold text-[3.45rem]">{currencySymbol}</span>
-  );
+  const symbol = <span className="text-[3.45rem]">{currencySymbol}</span>;
 
   return (
-    <div className={cn('inline-flex w-fit items-center', className)}>
+    <span className="font-bold">
       {currencySymbolPosition === 'prefix' && symbol}
-      <span className="pt-2 font-bold font-numeric text-6xl">
+      <span className="pt-2 font-numeric text-6xl">
         {integer}
         {(inputDecimals || needsPaddedZeros) && (
           <>
@@ -66,7 +62,7 @@ export function MoneyInputDisplay({
         )}
       </span>
       {currencySymbolPosition === 'suffix' && symbol}
-    </div>
+    </span>
   );
 }
 
@@ -75,6 +71,7 @@ type MoneyDisplayProps = {
   locale?: string;
   unit?: CurrencyUnit<Currency>;
   size?: 'sm' | 'default';
+  className?: string;
 };
 
 const sizes = {
@@ -93,6 +90,7 @@ export function MoneyDisplay({
   locale,
   unit,
   size = 'default',
+  className,
 }: MoneyDisplayProps) {
   const {
     currencySymbol,
@@ -102,25 +100,17 @@ export function MoneyDisplay({
     fraction,
   } = money.toLocalizedStringParts({ locale, unit });
 
+  const value = `${integer}${decimalSeparator}${fraction}`;
+
   const symbol = (
-    <span className={cn('font-bold', sizes[size].symbol)}>
-      {currencySymbol}
-    </span>
+    <span className={cn(sizes[size].symbol)}>{currencySymbol}</span>
   );
 
   return (
-    <div className={cn('inline-flex w-fit items-center')}>
+    <span className={cn('font-bold', className)}>
       {currencySymbolPosition === 'prefix' && symbol}
-      <span className={cn('font-bold font-numeric', sizes[size].value)}>
-        {integer}
-        {fraction && (
-          <>
-            <span>{decimalSeparator}</span>
-            <span>{fraction}</span>
-          </>
-        )}
-      </span>
+      <span className={cn('font-numeric', sizes[size].value)}>{value}</span>
       {currencySymbolPosition === 'suffix' && symbol}
-    </div>
+    </span>
   );
 }
