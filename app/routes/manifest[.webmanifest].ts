@@ -2,7 +2,13 @@ import type { LoaderFunctionArgs } from '@remix-run/node';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 
 interface WebAppManifest {
-  /**, LoaderFunctionArgs
+  /**
+   * The id property lets you explicitly define the identifier used for your application. Adding the id property to the manifest
+   * removes the dependency on the start_url or the location of the manifest, and makes it possible to update them in the future.
+   * For more information, see https://developer.chrome.com/blog/pwa-manifest-id
+   */
+  id: string;
+  /**
    * The name member is a string that represents the name of the web application as it is usually
    * displayed to the user (e.g., amongst a list of other applications, or as a label for an icon).
    */
@@ -104,6 +110,7 @@ interface WebAppManifest {
     type?: string;
     platform?: string;
     label?: string;
+    form_factor?: 'wide' | 'narrow';
   }>;
   shortcuts?: Array<{
     name?: string;
@@ -153,15 +160,47 @@ export const loader = ({ request }: LoaderFunctionArgs) => {
   const theme = cookies?.theme;
 
   const manifest: WebAppManifest = {
+    id: '/',
     short_name: 'Boardwalk',
     name: 'Boardwalk',
     description: 'The easiest way to send and receive ecash.',
     start_url: '/',
+    scope: '/',
+    orientation: 'portrait',
     display: 'standalone',
     theme_color: theme === 'usd' ? 'green' : '#004d4a',
+    background_color: theme === 'usd' ? 'green' : '#004d4a',
     icons: [
       {
-        src: '/apple-touch-icon.png',
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+    ],
+    screenshots: [
+      {
+        src: '/images/app-screenshot.png',
+        sizes: '720x1302',
+        type: 'image/png',
+        form_factor: 'wide',
+      },
+      {
+        src: '/images/app-screenshot.png',
+        sizes: '720x1302',
+        type: 'image/png',
       },
     ],
   };
