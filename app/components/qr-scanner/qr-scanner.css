@@ -1,0 +1,17 @@
+.scan-region-highlight-svg {
+  stroke: white !important;
+  animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.code-outline-highlight {
+  stroke: white !important;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(0.98);
+  }
+  to {
+    transform: scale(1.01);
+  }
+}
