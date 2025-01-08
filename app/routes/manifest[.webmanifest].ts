@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from '@remix-run/node';
+import { getBgColorsForTheme } from '~/features/theme/colors';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 
 interface WebAppManifest {
@@ -157,49 +158,33 @@ export const loader = ({ request }: LoaderFunctionArgs) => {
   const cookies = getThemeCookies(request);
   console.log('cookies from manifest', cookies);
 
-  const theme = cookies?.theme;
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  const theme = cookies?.theme!;
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  const colorMode = cookies?.colorMode!;
+
+  const { background } = getBgColorsForTheme(theme, colorMode);
 
   const manifest: WebAppManifest = {
     id: '/',
     short_name: 'Boardwalk',
     name: 'Boardwalk',
-    description: 'The easiest way to send and receive ecash.',
+    description: 'The easiest way to send and receive bitcoin.',
     start_url: '/',
     scope: '/',
     orientation: 'portrait',
     display: 'standalone',
-    theme_color: theme === 'usd' ? 'green' : '#004d4a',
-    background_color: theme === 'usd' ? 'green' : '#004d4a',
+    theme_color: background,
+    background_color: background,
     icons: [
       {
-        src: '/icon-512.png',
+        src: '/icon-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/icon-512x512.png',
         sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-    ],
-    screenshots: [
-      {
-        src: '/images/app-screenshot.png',
-        sizes: '720x1302',
-        type: 'image/png',
-        form_factor: 'wide',
-      },
-      {
-        src: '/images/app-screenshot.png',
-        sizes: '720x1302',
         type: 'image/png',
       },
     ],
