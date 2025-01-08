@@ -1,6 +1,10 @@
 import type { LoaderFunctionArgs } from '@remix-run/node';
-import { getBgColorsForTheme } from '~/features/theme/colors';
+import { getBgColorForTheme } from '~/features/theme/colors';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
+import {
+  defaultColorMode,
+  defaultTheme,
+} from '~/features/theme/theme.constants';
 
 interface WebAppManifest {
   /**
@@ -158,12 +162,10 @@ export const loader = ({ request }: LoaderFunctionArgs) => {
   const cookies = getThemeCookies(request);
   console.log('cookies from manifest', cookies);
 
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  const theme = cookies?.theme!;
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  const colorMode = cookies?.colorMode!;
+  const theme = cookies?.theme || defaultTheme;
+  const colorMode = cookies?.colorMode || defaultColorMode;
 
-  const { background } = getBgColorsForTheme(theme, colorMode);
+  const background = getBgColorForTheme(theme, colorMode);
 
   const manifest: WebAppManifest = {
     id: '/',
