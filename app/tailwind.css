@@ -6,7 +6,7 @@
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 0 0% 9%;
@@ -67,6 +67,7 @@
     --muted: 178 100% 25%;
     --border: 178 100% 21%;
     --muted-foreground: 178 30% 81%;
+    --card: 178 100% 14%;
   }
 
   /* SAT theme - light mode */
@@ -80,6 +81,7 @@
     --border: 217 70% 45%;
     /* placeholder */
     --muted-foreground: 217 30% 85%;
+    --card: 217 100% 35%;
   }
 }
 @layer base {
