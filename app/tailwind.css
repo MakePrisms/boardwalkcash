@@ -64,6 +64,8 @@
     --foreground: 178 30% 90%;
     --primary: 178 100% 25%;
     --primary-foreground: 178 30% 90%;
+    --muted: 178 100% 25%;
+    --border: 178 100% 25%;
   }
 
   /* SAT theme - light mode */
@@ -73,6 +75,8 @@
     --foreground: 217 30% 90%;
     --primary: 217 100% 45%;
     --primary-foreground: 217 30% 90%;
+    --muted: 217 100% 45%;
+    --border: 217 100% 45%;
   }
 }
 @layer base {
