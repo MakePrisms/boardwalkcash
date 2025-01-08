@@ -34,6 +34,7 @@ export type MoneyInput<T extends Currency = Currency> = {
 export type FormatOptions = {
   locale?: string;
   currency?: Currency;
+  minimumFractionDigits?: number | 'max';
 };
 
 export type UnitData<T extends Currency> = {
@@ -41,6 +42,10 @@ export type UnitData<T extends Currency> = {
   decimals: number;
   symbol: string;
   factor: Big;
+  formatToParts: (
+    value: number,
+    options?: FormatOptions,
+  ) => Intl.NumberFormatPart[];
   format: (value: number, options?: FormatOptions) => string;
 };
 
@@ -49,7 +54,10 @@ export type CurrencyData<T extends Currency> = {
   units: Array<UnitData<T>>;
 };
 
-export type BaseFormatOptions = FormatOptions & { decimals: number };
+export type BaseFormatOptions = FormatOptions & {
+  minimumFractionDigits?: number | 'max';
+  maximumFractionDigits: number;
+};
 
 export type MoneyData<T extends Currency> = {
   /**
@@ -74,3 +82,28 @@ export type MoneyData<T extends Currency> = {
 export type CurrencyDataMap = {
   [K in Currency]: CurrencyData<K>;
 };
+
+export interface LocalizedStringParts {
+  /** The complete formatted string including currency symbol */
+  fullValue: string;
+  /** The integer portion of the value. Includes the group separator. For example, '1,234' in $1,234.56 */
+  integer: string;
+  /**
+   * The group separator. For example, ',' in $1,234.56
+   * Will be empty string if the formatted value does not have a group separator.
+   */
+  groupSeparator: string;
+  /** The fractional portion of the value. For example, '56' in $1,234.56 */
+  fraction: string;
+  /** The number of decimal places */
+  numberOfDecimals: number;
+  /**
+   * The decimal separator. For example, '.' in $1,234.56
+   * Will be empty string if the formatted value does not have a decimal separator.
+   */
+  decimalSeparator: string;
+  /** The currency symbol */
+  currencySymbol: string;
+  /** Whether the currency symbol appears at the start or end */
+  currencySymbolPosition: 'prefix' | 'suffix';
+}
