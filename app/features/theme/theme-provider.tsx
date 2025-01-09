@@ -34,64 +34,13 @@ function saveCookies(
     document.cookie = `${SYSTEM_COLOR_MODE_COOKIE_NAME}=${systemColorMode}; samesite=lax; max-age=${oneYear}`;
   }
 }
+
 const changeStatusBarColor = (color: string) => {
-  // This seems like all that we need. I commented out the rest of the stuff that I just copied
-  // from V0, I need to make sure theyr're not important. From what I can tell, `theme-color` takes
-  // precendence over `apple-mobile-web-app-status-bar-style`
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) {
     metaThemeColor.setAttribute('content', color);
   }
-
-  // For iOS
-  // const metaAppleStatusBar = document.querySelector(
-  //    'meta[name="apple-mobile-web-app-status-bar-style"]',
-  // );
-  // if (metaAppleStatusBar) {
-  //    metaAppleStatusBar.setAttribute('content', color);
-  // }
-
-  // Create or update a style tag for iOS status bar
-  //   let style = document.getElementById('ios-status-bar-style');
-  //   if (!style) {
-  //      style = document.createElement('style');
-  //      style.id = 'ios-status-bar-style';
-  //      document.head.appendChild(style);
-  //   }
-  //   style.innerHTML = `
-  //    @supports (-webkit-touch-callout: none) {
-  //      body::after {
-  //        content: '';
-  //        position: fixed;
-  //        top: 0;
-  //        left: 0;
-  //        right: 0;
-  //        height: env(safe-area-inset-top);
-  //        background-color: ${color};
-  //        z-index: 10000;
-  //      }
-  //    }
-  //  `;
 };
-
-// This is something I was try to make it so we only use the manifest for status bar color
-// but it doesn't seem like it workds to revalidate the manifest at runtime.
-// I searched around a bit and couldn't find a way to do it.
-
-// const refreshManifest = async () => {
-//   const existingLink = document.querySelector('link[rel="manifest"]');
-//   if (existingLink) {
-//     console.log('existingLink', existingLink);
-//     existingLink.remove();
-//   }
-
-//   // Create new manifest link with timestamp
-//   const newLink = document.createElement('link');
-//   newLink.rel = 'manifest';
-//   newLink.href = `/manifest.webmanifest?v=${Date.now()}`;
-//   document.head.appendChild(newLink);
-//   console.log('newLink', newLink);
-// };
 
 function updateDocumentClasses(
   theme: Theme,
