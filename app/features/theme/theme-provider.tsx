@@ -119,7 +119,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Update document classes when theme or color mode changes
   useEffect(() => {
     updateDocumentClasses(theme, effectiveColorMode);
-    // refreshManifest();
     changeStatusBarColor(getBgColorForTheme(theme, effectiveColorMode));
   }, [theme, effectiveColorMode]);
 
