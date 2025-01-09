@@ -81,7 +81,7 @@ const testMoneys: Record<string, MoneyInputDisplayProps> = {
   },
 };
 
-const accounts: Account[] = [
+export const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',
@@ -233,6 +233,14 @@ export default function Index() {
       <br />
       <AccountSelector accounts={accounts} onSelect={() => console.log} />
       <br />
+      <br />
+      <LinkWithViewTransition
+        to="/receive"
+        transition="slideUp"
+        applyTo="newView"
+      >
+        <Button variant="secondary">Receive</Button>
+      </LinkWithViewTransition>
       <br />
       <LinkWithViewTransition
         to="/settings"

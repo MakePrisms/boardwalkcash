@@ -30,7 +30,6 @@ function getCurrencyFormatter(options: BaseFormatOptions) {
   }
   return Intl.NumberFormat(locale, formatOptions);
 }
-
 const trimWhitespaceFromEnds = (
   parts: Intl.NumberFormatPart[],
 ): Intl.NumberFormatPart[] => {
@@ -40,12 +39,12 @@ const trimWhitespaceFromEnds = (
 
   let result = parts;
 
-  const firstPart = parts[0];
+  const firstPart = result[0];
   if (firstPart.type === 'literal' && firstPart.value.trim() === '') {
-    result = parts.slice(1);
+    result = result.slice(1);
   }
 
-  const lastPart = parts[result.length - 1];
+  const lastPart = result[result.length - 1];
   if (lastPart.type === 'literal' && lastPart.value.trim() === '') {
     result = result.slice(0, -1);
   }
@@ -302,8 +301,20 @@ export class Money<T extends Currency> {
     return money1.amount().cmp(money2.amount());
   }
 
+  static zero(currency: Currency): Money<Currency> {
+    return new Money({ amount: 0, currency });
+  }
+
   get currency(): T {
     return this._data.currency;
+  }
+
+  /**
+   * Returns the maximum number of decimals for the requested unit.
+   * If no unit is provided, the maximum number of decimals for the base unit is returned.
+   */
+  getMaxDecimals(unit?: CurrencyUnit<T>): number {
+    return this.getCurrencyUnit(unit).decimals;
   }
 
   /**
