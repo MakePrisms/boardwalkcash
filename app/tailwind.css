@@ -31,6 +31,7 @@
   }
   .dark,
   :root[class~="dark"] {
+    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
@@ -60,6 +61,7 @@
   /* USD theme - light mode */
   .usd:not(.dark),
   :root[class~="usd"]:not([class~="dark"]) {
+    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
     --background: 178 100% 15%;
     --foreground: 178 30% 90%;
     --primary: 178 100% 25%;
@@ -70,9 +72,10 @@
     --card: 178 100% 14%;
   }
 
-  /* SAT theme - light mode */
+  /* BTC theme - light mode */
   .btc:not(.dark),
   :root[class~="btc"]:not([class~="dark"]) {
+    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
     --background: 217 68% 35%;
     --foreground: 217 30% 90%;
     --primary: 217 100% 45%;

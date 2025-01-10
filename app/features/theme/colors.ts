@@ -1,5 +1,6 @@
 import type { ColorMode, Theme } from './theme.types';
 
+// These colors are duplicated in app/tailwind.css. When changing make sure to keep them in sync!
 export const bgColors = {
   light: {
     usd: 'hsl(178 100% 15%)',
