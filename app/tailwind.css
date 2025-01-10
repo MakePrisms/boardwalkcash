@@ -29,6 +29,35 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
+  /* USD theme - light mode */
+  .usd,
+  :root[class~="usd"] {
+    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
+    --background: 178 100% 15%;
+    --foreground: 178 30% 90%;
+    --primary: 178 100% 25%;
+    --primary-foreground: 178 30% 90%;
+    --muted: 178 100% 25%;
+    --border: 178 100% 21%;
+    --muted-foreground: 178 30% 81%;
+    --card: 178 100% 14%;
+  }
+
+  /* BTC theme - light mode */
+  .btc,
+  :root[class~="btc"] {
+    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
+    --background: 217 68% 35%;
+    --foreground: 217 30% 90%;
+    --primary: 217 100% 45%;
+    --primary-foreground: 217 30% 90%;
+    --muted: 217 100% 45%;
+    --border: 217 70% 45%;
+    --muted-foreground: 217 30% 85%;
+    --card: 217 100% 35%;
+  }
+
   .dark,
   :root[class~="dark"] {
     /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
@@ -56,35 +85,6 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-  }
-
-  /* USD theme - light mode */
-  .usd:not(.dark),
-  :root[class~="usd"]:not([class~="dark"]) {
-    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
-    --background: 178 100% 15%;
-    --foreground: 178 30% 90%;
-    --primary: 178 100% 25%;
-    --primary-foreground: 178 30% 90%;
-    --muted: 178 100% 25%;
-    --border: 178 100% 21%;
-    --muted-foreground: 178 30% 81%;
-    --card: 178 100% 14%;
-  }
-
-  /* BTC theme - light mode */
-  .btc:not(.dark),
-  :root[class~="btc"]:not([class~="dark"]) {
-    /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
-    --background: 217 68% 35%;
-    --foreground: 217 30% 90%;
-    --primary: 217 100% 45%;
-    --primary-foreground: 217 30% 90%;
-    --muted: 217 100% 45%;
-    --border: 217 70% 45%;
-    /* placeholder */
-    --muted-foreground: 217 30% 85%;
-    --card: 217 100% 35%;
   }
 }
 @layer base {
