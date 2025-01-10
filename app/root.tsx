@@ -20,12 +20,17 @@ import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import stylesheet from '~/tailwind.css?url';
+import { getBgColorForTheme } from './features/theme/colors';
 import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
   { rel: 'stylesheet', href: transitionStyles },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+  {
+    rel: 'manifest',
+    href: '/manifest.webmanifest',
+  },
   {
     rel: 'preconnect',
     href: 'https://fonts.gstatic.com',
@@ -68,13 +73,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { themeClassName } = useTheme();
+  const { themeClassName, theme, effectiveColorMode } = useTheme();
 
   return (
     <html lang="en" className={themeClassName}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="theme-color"
+          content={getBgColorForTheme(theme, effectiveColorMode)}
+        />
         <Meta />
         <Links />
       </head>

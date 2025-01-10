@@ -1,5 +1,6 @@
 import { useRouteLoaderData } from '@remix-run/react';
 import { createContext, useEffect, useState } from 'react';
+import { getBgColorForTheme } from './colors';
 import type { getThemeCookies } from './theme-cookies.server';
 import {
   COLOR_MODE_COOKIE_NAME,
@@ -34,6 +35,13 @@ function saveCookies(
   }
 }
 
+const changeStatusBarColor = (color: string) => {
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', color);
+  }
+};
+
 function updateDocumentClasses(
   theme: Theme,
   effectiveColorMode: 'light' | 'dark',
@@ -52,6 +60,7 @@ function updateDocumentClasses(
   root.classList.remove('light', 'dark');
   root.classList.add(effectiveColorMode);
 }
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const rootData = useRouteLoaderData<{
     cookieSettings: ReturnType<typeof getThemeCookies>;
@@ -110,6 +119,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Update document classes when theme or color mode changes
   useEffect(() => {
     updateDocumentClasses(theme, effectiveColorMode);
+    changeStatusBarColor(getBgColorForTheme(theme, effectiveColorMode));
   }, [theme, effectiveColorMode]);
 
   // Set theme and save cookies
