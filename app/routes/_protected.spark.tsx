@@ -10,20 +10,16 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Money } from '~/lib/money';
+import { useOpenSecret } from '@opensecret/react';
 
 const network: 'MAINNET' | 'REGTEST' = 'MAINNET';
 
-const getMnemonic = (): string => {
-  const existingMnemonic = localStorage.getItem('mnemonic');
-  if (existingMnemonic) {
-    return existingMnemonic;
-  }
-  const mnemonic = new WalletSDK(network).generateMnemonic();
-  localStorage.setItem('mnemonic', mnemonic);
-  return mnemonic;
-};
+// TODO: research derivation paths and pick one that makes sense
+// maybe spark has already defined one?
+const sparkDerivationPath = "m/75'/0'/0'/0/0";
 
 export default function Index() {
+  const { getPrivateKeyBytes } = useOpenSecret();
   const [wallet, setWallet] = useState<WalletSDK | null>(null);
   const [balance, setBalance] = useState<Money<'BTC'> | null>(null);
   const [lnInvoiceData, setLnInvoiceData] = useState<{
@@ -55,14 +51,15 @@ export default function Index() {
     const setupWallet = async () => {
       try {
         const wallet = new WalletSDK(network);
-        await wallet.createSparkWallet(getMnemonic());
+        const { private_key } = await getPrivateKeyBytes(sparkDerivationPath);
+        await wallet.createSparkWalletWithSeedKey(private_key);
         setWallet(wallet);
       } catch (e) {
         console.error('Failed to setup Spark wallet', e);
       }
     };
     setupWallet();
-  }, []);
+  }, [getPrivateKeyBytes]);
 
   useInterval(
     () => {
