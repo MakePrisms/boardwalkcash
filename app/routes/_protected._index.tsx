@@ -28,7 +28,7 @@ import { useAuthActions } from '~/features/user/auth';
 import { useUserStore } from '~/features/user/user-provider';
 import { toast } from '~/hooks/use-toast';
 import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
-import type { Rates } from '~/lib/exchange-rate/providers/types';
+import { exchangeRateService } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { buildEmailValidator } from '~/lib/validation';
@@ -81,7 +81,7 @@ const testMoneys: Record<string, MoneyInputDisplayProps> = {
   },
 };
 
-const accounts: Account[] = [
+export const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',
@@ -119,11 +119,12 @@ export default function Index() {
   const [showScanner, setShowScanner] = useState(false);
   const { data: rates } = useQuery({
     queryKey: ['exchangeRate'],
-    // This is a workaround to make the type of the data not have | undefined.
-    // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
-    // doing prefetching there. I asked a question here to see if there is a better way
-    // https://github.com/TanStack/query/discussions/1331#discussioncomment-11607342
-    initialData: {} as Rates,
+    queryFn: async ({ signal }) => {
+      return exchangeRateService.getRates({
+        tickers: ['BTC-USD', 'USD-BTC'],
+        signal,
+      });
+    },
   });
 
   const {
@@ -157,10 +158,11 @@ export default function Index() {
       <PageHeader>
         <PageHeaderTitle>
           {/* dollars per bitcoin */}
-          {new Money({
-            amount: rates['BTC-USD'],
-            currency: 'USD',
-          }).toLocaleString({ unit: 'usd' })}
+          {rates &&
+            new Money({
+              amount: rates['BTC-USD'],
+              currency: 'USD',
+            }).toLocaleString({ unit: 'usd' })}
         </PageHeaderTitle>
         <div className="flex items-center justify-end">
           <LinkWithViewTransition
@@ -202,22 +204,24 @@ export default function Index() {
       <br />
       <br />
 
-      <div>
-        SATS per USD:{' '}
-        {new Money({ amount: 1, currency: 'USD' })
-          .convert('BTC', rates['USD-BTC'])
-          .toLocaleString({ unit: 'sat' })}
-        <br />
-        $5 in SATS:{' '}
-        {new Money({ amount: 5, currency: 'USD' })
-          .convert('BTC', rates['USD-BTC'])
-          .toLocaleString({ unit: 'sat' })}
-        <br />
-        5k sats in USD:{' '}
-        {new Money({ amount: 5000, currency: 'BTC', unit: 'sat' })
-          .convert('USD', rates['BTC-USD'])
-          .toLocaleString()}
-      </div>
+      {rates && (
+        <div>
+          SATS per USD:{' '}
+          {new Money({ amount: 1, currency: 'USD' })
+            .convert('BTC', rates['USD-BTC'])
+            .toLocaleString({ unit: 'sat' })}
+          <br />
+          $5 in SATS:{' '}
+          {new Money({ amount: 5, currency: 'USD' })
+            .convert('BTC', rates['USD-BTC'])
+            .toLocaleString({ unit: 'sat' })}
+          <br />
+          5k sats in USD:{' '}
+          {new Money({ amount: 5000, currency: 'BTC', unit: 'sat' })
+            .convert('USD', rates['BTC-USD'])
+            .toLocaleString()}
+        </div>
+      )}
       <br />
 
       <h1>Welcome to Boardwalk!</h1>
@@ -231,8 +235,20 @@ export default function Index() {
       </LinkWithViewTransition>
       <br />
       <br />
-      <AccountSelector accounts={accounts} onSelect={() => console.log} />
+      <AccountSelector
+        accounts={accounts}
+        onSelect={() => console.log}
+        selectedAccount={accounts[0]}
+      />
       <br />
+      <br />
+      <LinkWithViewTransition
+        to="/receive"
+        transition="slideUp"
+        applyTo="newView"
+      >
+        <Button variant="secondary">Receive</Button>
+      </LinkWithViewTransition>
       <br />
       <LinkWithViewTransition
         to="/settings"
