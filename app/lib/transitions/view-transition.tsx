@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigation } from '@remix-run/react';
+import { Link, NavLink, useNavigate, useNavigation } from '@remix-run/react';
 import { type ComponentProps, useEffect } from 'react';
 
 const transitions = [
@@ -197,4 +197,12 @@ export function LinkWithViewTransition<
   }
 
   return <Link {...(commonProps as ComponentProps<typeof Link>)} />;
+}
+
+export function useNavigateWithViewTransition() {
+  const navigate = useNavigate();
+
+  return (to: string, options: ViewTransitionState) => {
+    navigate(to, { state: options, viewTransition: true });
+  };
 }
