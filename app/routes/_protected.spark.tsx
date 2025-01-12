@@ -165,7 +165,7 @@ export default function Index() {
                   <div>Invoice to share: {lnInvoiceData.encoded_invoice}</div>
                   <QRCodeSVG
                     className="mt-4"
-                    value={lnInvoiceData.encoded_invoice}
+                    value={`lightning:${lnInvoiceData.encoded_invoice}`}
                     size={250}
                   />
                 </div>
