@@ -2,6 +2,7 @@ import type { OpenSecretContextType } from '@opensecret/react';
 import { create } from 'zustand';
 import { guestAccountStorage } from '~/features/user/guest-account-storage';
 import type { User } from '~/features/user/user';
+import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 
 type Props = {
   user: User;
@@ -19,6 +20,10 @@ export interface UserState {
   verifyEmail: Props['verifyEmail'];
 }
 
+const setSupabaseSessionJwtPayload = (payload: { sub: string }) => {
+  supabaseSessionStore.getState().setJwtPayload(payload);
+};
+
 export const createUserStore = ({
   user,
   convertGuestToUserAccount,
@@ -26,9 +31,12 @@ export const createUserStore = ({
   verifyEmail,
   refetchUser,
 }: Props) => {
-  return create<UserState>((set, get) => ({
+  const store = create<UserState>((set, get) => ({
     user,
-    setUser: (user) => set({ user }),
+    setUser: (user) => {
+      setSupabaseSessionJwtPayload({ sub: user.id });
+      return set({ user });
+    },
     upgradeGuestToFullAccount: async (email: string, password: string) => {
       const user = get().user;
       if (!user.isGuest) {
@@ -59,6 +67,10 @@ export const createUserStore = ({
       await refetchUser();
     },
   }));
+
+  setSupabaseSessionJwtPayload({ sub: user.id });
+
+  return store;
 };
 
 export type UserStore = ReturnType<typeof createUserStore>;
