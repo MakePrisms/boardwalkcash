@@ -160,7 +160,6 @@ interface WebAppManifest {
 
 export const loader = ({ request }: LoaderFunctionArgs) => {
   const cookies = getThemeCookies(request);
-  console.log('cookies from manifest', cookies);
 
   const theme = cookies?.theme || defaultTheme;
   const colorMode = cookies?.colorMode || defaultColorMode;
