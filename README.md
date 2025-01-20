@@ -1,6 +1,10 @@
 # Boardwalkcash
 
-This app is using [Remix](https://remix.run/docs) framework, but it is hosted on a custom [express](https://expressjs.com/) server.
+This app is using [Remix](https://remix.run/docs) framework, but it is hosted on a custom [Express](https://expressjs.com/) server. However, currently Express
+server is only used when running locally. When deployed to Vercel, Express server is not used.
+
+For auth and storing sensitive data the app is using Open Secret platform. The rest of the data is stored to Postgres
+database hosted on Supabase. 
 
 ## Getting started
 
@@ -14,7 +18,21 @@ We use [Nix](https://nixos.org/) and [devenv](https://devenv.sh/) to set up the 
 
 ## Development
 
-Run the dev server:
+1. Create `.env` file:
+
+```sh
+mv .env.example .env
+```
+
+If needed, update the `.env` file with alternative values. This file is git ignored and used only for local development.
+
+2. Start Supabase local stack:
+
+```sh
+bun run supabase start
+```
+
+3. Run the dev server:
 
 ```sh
 bun run dev
@@ -51,6 +69,15 @@ are deploying a new live version. Currently, Vercel doesn't support running Remi
 is used only when running locally. We are still keeping the express server because the plan is to eventually move to
 self-hosting.
 
+The database and realtime service are hosted on Supabase platform. Supabase [branching](https://supabase.com/docs/guides/deployment/branching) is used which creates a new
+environment for every new feature branch. Additionally, there is a production environment which corresponds to `master`
+branch. Every pull request open in GitHub results in a new Supabase environment being created with database migrations
+being applied automatically. Every additional push to GitHub applies new migrations (if any) to the Supabase 
+environment. Supabase-Vercel integration sets the corresponding env variables in Vercel so that each Vercel preview 
+deploy can use this dedicated Supabase environment. When the feature branch is merged, corresponding Supabase
+environment is deleted. Merging to `master` branch updates the production environment and applies new db migrations to
+the live database if any.
+
 ## Dependencies
 
 Dependency should be added only if the benefits are clear. Avoid adding it for trivial stuff. Any dependency added 
@@ -58,6 +85,36 @@ should be inspected and pinned to exact version (`bun add <package_name>@<versio
 to the client side, be mindful of the bundle size. [Bundlephobia](https://bundlephobia.com/) can be used to check the
 total size of the dependency (the actual impact on the app bundle size could be smaller if we are using only some 
 elements and the lib supports tree shaking).
+
+## Database
+
+Sensitive data is stored in Open Secret platform. The rest of the data is stored to Postgres database hosted on Supabase.
+While developing locally local Supabase stack is used. To start it run `bun run supabase start` command. To stop it run
+`bun run supabase stop` command. Start command will start the database and realtime service plus other services useful
+for development like Supabase Studio. You can use Supabase Studio to inspect the database and run queries. Supabase is
+configured in `supabase/config.toml` file.
+
+### Database migrations
+
+Schema changes to the Postgres database should be done using migrations. Migrations are stored in `supabase/migrations`
+folder. Always try to make the schema changes in a backwards compatible way.
+
+Database migrations can be done in two ways:
+1. Using Supabase Studio. With this approach you can make db changes directly to your local database in the Studio UI
+   and then run `bun supabase db diff --file <MIGRATION_NAME>` to create a migration file for the changes.
+2. Using `bun supabase migration new <MIGRATION_NAME>`. This command will create a new empty migration file in the 
+   `supabase/migrations` folder where you can then write the SQL commands to make the changes. To apply the migration to
+   the local database run `bun supabase db push`.
+
+To keep the db typescript types in sync with the database schema run `bun run db:generate-types` command. If you forget
+to run this command after making changes to the database, the types will be updated by the pre-commit hook. To skip the
+pre-commit hook use `--no-verify` param with `git commit` command. This can be useful when committing temporary code but
+the CI will check if the types are up to date and if not will not allow merging to `master`.
+
+To reset local database run `bun supabase db reset`. Note that this will delete any existing local data and run all
+migrations on clean db.
+
+Migrations are applied to hosted envs automatically by the Supabase platform.
 
 ## Code style & formatting
 
@@ -92,8 +149,8 @@ tests and name the file `<name_of_the_unit_tested>.test.ts(x)`.
 E2e tests are written in [Playwright](https://playwright.dev/). In these tests we are mocking Open Secret API so tests
 can be run offline, and so we can simulate any desired Open Secret behavior. For some example on how to use the mocking
 see the existing tests. E2e tests can be found in top level `e2e` folder. To run them use `bun run test:e2e` (add `--ui`
-param to run them in Playwright UI). New e2e test suits should be added to `e2e` folder and named 
-`<name_of_the_suite>.spec.ts`.
+param to run them in Playwright UI). The tests will also start a local Supabase stack, if it is not already running.
+New e2e test suits should be added to `e2e` folder and named `<name_of_the_suite>.spec.ts`.
 
 ## CI
 

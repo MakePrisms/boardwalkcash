@@ -1,12 +1,17 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+import dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -73,8 +78,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.CI ? 'bun run build && bun run start' : 'bun run dev',
+    command: process.env.CI
+      ? 'bun run build && bun supabase start --exclude gotrue,storage-api,imgproxy,inbucket,studio,edge-runtime,logflare,vector,supavisor && bun run start'
+      : 'bun supabase start && bun run dev',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
+    // Long timeout because Supabase sometimes needs to pull docker images.
+    timeout: 5 * 60 * 1000,
   },
 });
