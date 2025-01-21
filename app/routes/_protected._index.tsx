@@ -1,87 +1,24 @@
-import { NavLink } from '@remix-run/react';
 import { useQuery } from '@tanstack/react-query';
 import Big from 'big.js';
-import { Cog } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
 import { useState } from 'react';
-import { type SubmitHandler, useForm } from 'react-hook-form';
-import {
-  MoneyDisplay,
-  MoneyInputDisplay,
-  type MoneyInputDisplayProps,
-} from '~/components/money-display';
+import { MoneyDisplay } from '~/components/money-display';
 import {
   Page,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
-import { QRScanner } from '~/components/qr-scanner';
 import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
-import { Label } from '~/components/ui/label';
-import {
-  type Account,
-  AccountSelector,
-} from '~/features/accounts/account-selector';
+import type { Account } from '~/features/accounts/account-selector';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
-import { useUserStore } from '~/features/user/user-provider';
-import { toast } from '~/hooks/use-toast';
-import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Rates } from '~/lib/exchange-rate/providers/types';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import { buildEmailValidator } from '~/lib/validation';
 
-type FormValues = { email: string; password: string; confirmPassword: string };
-
-const validateEmail = buildEmailValidator('Invalid email');
-
-const testMoneys: Record<string, MoneyInputDisplayProps> = {
-  '1,000 sats': {
-    inputValue: '1000',
-    currency: 'BTC',
-    unit: 'sat',
-  },
-  '1,432 btc unit': {
-    inputValue: '1432',
-    currency: 'BTC',
-    unit: 'btc',
-  },
-  '1,432.35 btc unit': {
-    inputValue: '1432.35',
-    currency: 'BTC',
-    unit: 'btc',
-  },
-  '$ 1': {
-    inputValue: '1',
-    currency: 'USD',
-    unit: 'usd',
-  },
-
-  '$ 1.': {
-    inputValue: '1.',
-    currency: 'USD',
-    unit: 'usd',
-  },
-  '$ 1.2': {
-    inputValue: '1.2',
-    currency: 'USD',
-    unit: 'usd',
-  },
-  '$ 1.23': {
-    inputValue: '1.23',
-    currency: 'USD',
-    unit: 'usd',
-  },
-  '$ 1,001.2': {
-    inputValue: '1001.2',
-    currency: 'USD',
-    unit: 'usd',
-  },
-};
-
-const accounts: Account[] = [
+export const accounts: Account[] = [
   {
     id: '1',
     name: 'Testnut',
@@ -110,13 +47,9 @@ const accounts: Account[] = [
 
 export default function Index() {
   const { signOut } = useAuthActions();
-  const user = useUserStore((s) => s.user);
-  const upgradeGuestToFullAccount = useUserStore(
-    (s) => s.upgradeGuestToFullAccount,
-  );
+  const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
-  const [showScanner, setShowScanner] = useState(false);
   const { data: rates } = useQuery({
     queryKey: ['exchangeRate'],
     // This is a workaround to make the type of the data not have | undefined.
@@ -126,236 +59,86 @@ export default function Index() {
     initialData: {} as Rates,
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>();
-
-  const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    try {
-      await upgradeGuestToFullAccount(data.email, data.password);
-    } catch (e) {
-      if (e instanceof Error && e.message === 'Email already registered') {
-        toast({
-          title: 'Email already taken',
-          description:
-            'Please try again with different email or login to your existing account',
+  const balanceBTC: Money<'BTC'> = accounts.reduce(
+    (acc, account) => {
+      let accountBalance: Money<'BTC'>;
+      if (account.currency === 'BTC') {
+        accountBalance = new Money({
+          amount: account.balance,
+          currency: 'BTC',
         });
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error! Failed to convert account',
-          description: 'Please try again later or contact support',
-        });
+        accountBalance = new Money({
+          amount: account.balance,
+          currency: account.currency,
+        }).convert('BTC', rates[`${account.currency}-BTC`]);
       }
-    }
-  };
+      return acc.add(accountBalance);
+    },
+    new Money({ amount: 0, currency: 'BTC' }),
+  );
+
+  const balanceUSD: Money<'USD'> = balanceBTC.convert('USD', rates['BTC-USD']);
 
   return (
     <Page>
       <PageHeader>
         <PageHeaderTitle>
-          {/* dollars per bitcoin */}
-          {new Money({
-            amount: rates['BTC-USD'],
-            currency: 'USD',
-          }).toLocaleString({ unit: 'usd' })}
-        </PageHeaderTitle>
-        <div className="flex items-center justify-end">
-          <LinkWithViewTransition
-            to="/settings"
-            transition="slideLeft"
-            applyTo="newView"
+          <button
+            type="button"
+            onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
           >
-            <Cog />
-          </LinkWithViewTransition>
-        </div>
+            {showSatsPerDollar
+              ? new Money({ amount: 1, currency: 'USD' })
+                  .convert('BTC', rates['USD-BTC'])
+                  .toLocaleString({ unit: 'sat' })
+              : new Money({
+                  amount: rates['BTC-USD'],
+                  currency: 'USD',
+                }).toLocaleString({ unit: 'usd' })}
+          </button>
+        </PageHeaderTitle>
+        <LinkWithViewTransition
+          to="/settings"
+          transition="slideLeft"
+          applyTo="newView"
+        >
+          <Cog />
+        </LinkWithViewTransition>
       </PageHeader>
 
-      <br />
-      <br />
+      <p className="text-center text-lg">Welcome to Boardwalk!</p>
 
-      <Button variant="default" onClick={signOut} className="mt-2 w-fit">
-        Log out
-      </Button>
-
-      <br />
-      <br />
-
-      <div className="grid grid-cols-3 gap-4">
-        {Object.entries(testMoneys).map(([key, value]) => {
-          return (
-            <div key={key}>
-              <h3 className="">{key}</h3>
-              <MoneyInputDisplay {...value} />
-            </div>
-          );
-        })}
-      </div>
-      <br />
-      <div>
-        Basic money display:
-        <MoneyDisplay money={new Money({ amount: 1, currency: 'USD' })} />
-      </div>
-
-      <br />
-      <br />
-
-      <div>
-        SATS per USD:{' '}
-        {new Money({ amount: 1, currency: 'USD' })
-          .convert('BTC', rates['USD-BTC'])
-          .toLocaleString({ unit: 'sat' })}
-        <br />
-        $5 in SATS:{' '}
-        {new Money({ amount: 5, currency: 'USD' })
-          .convert('BTC', rates['USD-BTC'])
-          .toLocaleString({ unit: 'sat' })}
-        <br />
-        5k sats in USD:{' '}
-        {new Money({ amount: 5000, currency: 'BTC', unit: 'sat' })
-          .convert('USD', rates['BTC-USD'])
-          .toLocaleString()}
-      </div>
-      <br />
-
-      <h1>Welcome to Boardwalk!</h1>
-      <LinkWithViewTransition
-        as={NavLink}
-        to="/settings"
-        transition="slideLeft"
-        applyTo="newView"
-      >
-        <Button>As NavLink</Button>
-      </LinkWithViewTransition>
-      <br />
-      <br />
-      <AccountSelector accounts={accounts} onSelect={() => console.log} />
-      <br />
-      <br />
-      <LinkWithViewTransition
-        to="/settings"
-        transition="slideLeft"
-        applyTo="bothViews"
-      >
-        <Button>Slide both views</Button>
-      </LinkWithViewTransition>
-      <br />
-      <br />
-      <div>
-        <Button
-          onClick={() => {
-            setShowScanner(!showScanner);
-          }}
-        >
-          {showScanner ? 'Stop' : 'Scan'}
-        </Button>
-        {showScanner ? (
-          <QRScanner
-            onDecode={(decoded) => {
-              alert(`decoded ${decoded}`);
-              setShowScanner(false);
-            }}
-          />
+      <PageContent className="items-center justify-around">
+        {theme === 'usd' ? (
+          <MoneyDisplay money={balanceUSD} unit="usd" />
         ) : (
-          <AnimatedQRCode text={'x'.repeat(200)} />
+          <MoneyDisplay money={balanceBTC} unit="sat" />
         )}
-      </div>
-      {user.isGuest && <div>Guest account</div>}
-      <div>id: {user.id}</div>
-      <div>email: {!user.isGuest ? user.email : ''}</div>
-      <div>email verified: {user.emailVerified ? 'true' : 'false'}</div>
-      <div>login method: {user.loginMethod}</div>
-      <div>created at: {user.createdAt}</div>
-      <div>updated at: {user.updatedAt}</div>
-      <div className="mt-2 flex flex-row gap-2">
-        <p>Theme:</p>
-        <Button onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}>
-          {theme}
-        </Button>
-      </div>
-      <PageContent>
-        <p>Color mode:</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Button className="text-lg">
+            Receive <ArrowDownRight />
+          </Button>
+          <Button className="text-lg">
+            Send <ArrowUpRight />
+          </Button>
+        </div>
+      </PageContent>
+      <PageFooter className="flex flex-row justify-around">
         <Button
           className="w-fit"
           onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
         >
           {effectiveColorMode}
         </Button>
-        {user.isGuest && (
-          <div className="mt-4 max-w-md">
-            <h2>Upgrade to full account:</h2>
-            <form
-              className="mt-2 grid gap-4"
-              onSubmit={handleSubmit(onSubmit)}
-              noValidate
-            >
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="satoshi@nakamoto.com"
-                  aria-invalid={errors.email ? 'true' : 'false'}
-                  {...register('email', {
-                    required: 'Email is required',
-                    validate: validateEmail,
-                  })}
-                />
-                {errors.email && (
-                  <span role="alert" className="text-red-500 text-sm">
-                    {errors.email.message}
-                  </span>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  aria-invalid={errors.password ? 'true' : 'false'}
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 8,
-                      message: 'Password must have at least 8 characters',
-                    },
-                  })}
-                />
-                {errors.password && (
-                  <span role="alert" className="text-red-500 text-sm">
-                    {errors.password.message}
-                  </span>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  aria-invalid={errors.confirmPassword ? 'true' : 'false'}
-                  {...register('confirmPassword', {
-                    required: 'Password confirmation is required',
-                    validate: (value, values) =>
-                      value === values.password || 'Passwords do not match',
-                  })}
-                />
-                {errors.confirmPassword && (
-                  <span role="alert" className="text-red-500 text-sm">
-                    {errors.confirmPassword.message}
-                  </span>
-                )}
-              </div>
-              <Button type="submit" className="w-full" loading={isSubmitting}>
-                Upgrade to full account
-              </Button>
-            </form>
-          </div>
-        )}
-      </PageContent>
+        <Button onClick={signOut}>Log Out</Button>
+        <Button
+          className="w-fit"
+          onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}
+        >
+          {theme}
+        </Button>
+      </PageFooter>
     </Page>
   );
 }
