@@ -52,7 +52,7 @@ export function UpgradeGuestForm() {
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
-        <CardTitle>Upgrade to full account</CardTitle>
+        <CardTitle>Upgrade</CardTitle>
         <CardDescription>
           Enter your email and password to backup your account using Open
           Secret.

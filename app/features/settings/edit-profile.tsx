@@ -4,6 +4,8 @@ import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { SettingsViewHeader } from '~/features/settings/components/settings-view-header';
+import { UpgradeGuestForm } from '../signup/upgrade-guest-form';
+import { useUserStore } from '../user/user-provider';
 
 type ProfileForm = {
   username: string;
@@ -11,6 +13,8 @@ type ProfileForm = {
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const user = useUserStore((s) => s.user);
+
   const { register, handleSubmit } = useForm<ProfileForm>({
     defaultValues: {
       username: 'satoshi', // This should come from actual user data
@@ -36,7 +40,7 @@ export default function EditProfile() {
           applyTo: 'oldView',
         }}
       />
-      <PageContent>
+      <PageContent className="gap-4">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="username" className="font-medium text-sm">
@@ -52,6 +56,7 @@ export default function EditProfile() {
             Save Changes
           </Button>
         </form>
+        {user.isGuest && <UpgradeGuestForm />}
       </PageContent>
     </>
   );

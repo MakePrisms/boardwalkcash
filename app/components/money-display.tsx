@@ -44,7 +44,9 @@ export function MoneyInputDisplay<C extends Currency>({
     ? '0'.repeat(numberOfDecimals - inputDecimals.length)
     : '';
 
-  const symbol = <span className="text-[3.45rem]">{currencySymbol}</span>;
+  const symbol = (
+    <span className="text-[3.45rem] text-currencySymbol">{currencySymbol}</span>
+  );
 
   return (
     <span className="font-bold">
@@ -103,7 +105,9 @@ export function MoneyDisplay<C extends Currency>({
   const value = `${integer}${decimalSeparator}${fraction}`;
 
   const symbol = (
-    <span className={cn(sizes[size].symbol)}>{currencySymbol}</span>
+    <span className={cn(sizes[size].symbol, 'text-currencySymbol')}>
+      {currencySymbol}
+    </span>
   );
 
   return (
