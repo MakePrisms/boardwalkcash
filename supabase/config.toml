@@ -287,18 +287,18 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 [remotes.master]
 project_id = "eepvxhmgmtasvfzwlrbh"
 
-#[remotes.master.api]
-## Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
-## endpoints. `public` and `graphql_public` schemas are included by default.
-#schemas = ["wallet"]
-## Extra schemas to add to the search_path of every request.
-#extra_search_path = ["public", "extensions"]
-#
-#[remotes.master.auth]
-#enabled = false
-## Allow/disallow new user signups to your project.
-#enable_signup = false
-#
-#[remotes.master.auth.email]
-## Allow/disallow new user signups via email to your project.
-#enable_signup = false
+[remotes.master.api]
+# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
+# endpoints. `public` and `graphql_public` schemas are included by default.
+schemas = ["wallet"]
+# Extra schemas to add to the search_path of every request.
+extra_search_path = ["public", "extensions"]
+
+[remotes.master.auth]
+enabled = false
+# Allow/disallow new user signups to your project.
+enable_signup = false
+
+[remotes.master.auth.email]
+# Allow/disallow new user signups via email to your project.
+enable_signup = false
