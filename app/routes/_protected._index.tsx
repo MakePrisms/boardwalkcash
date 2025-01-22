@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import Big from 'big.js';
-import { ArrowDownRight, ArrowUpRight, Bell, Cog } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowDownRight, ArrowUpRight, Bell, Clock, Cog } from 'lucide-react';
 import { MoneyDisplay } from '~/components/money-display';
 import { Page, PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
@@ -41,7 +40,7 @@ export const accounts: Account[] = [
 
 export default function Index() {
   const { signOut } = useAuthActions();
-  const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
+  // const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
   const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
     useTheme();
   const { data: rates } = useQuery({
@@ -84,7 +83,7 @@ export default function Index() {
         >
           <Bell />
         </LinkWithViewTransition>
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
@@ -98,18 +97,26 @@ export default function Index() {
                   currency: 'USD',
                 }).toLocaleString({ unit: 'usd' })}
           </button>
+        </div> */}
+        <div className="flex items-center justify-between gap-4">
+          <LinkWithViewTransition
+            to="/transactions"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Clock />
+          </LinkWithViewTransition>
+          <LinkWithViewTransition
+            to="/settings"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Cog />
+          </LinkWithViewTransition>
         </div>
-
-        <LinkWithViewTransition
-          to="/settings"
-          transition="slideLeft"
-          applyTo="newView"
-        >
-          <Cog />
-        </LinkWithViewTransition>
       </header>
 
-      <p className="text-center text-lg">Welcome to Boardwalk!</p>
+      {/* <p className="text-center text-lg">Welcome to Boardwalk!</p> */}
 
       <PageContent className="items-center justify-around">
         {theme === 'usd' ? (

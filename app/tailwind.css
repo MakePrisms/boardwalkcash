@@ -40,7 +40,7 @@
     --primary-foreground: 178 30% 90%;
     --muted: 178 100% 25%;
     --border: 178 100% 21%;
-    --muted-foreground: 178 30% 81%;
+    --muted-foreground: 0 0% 55.1%;
     --card: 178 100% 14%;
     --currency-symbol: 177 42% 31%;
   }
@@ -55,7 +55,7 @@
     --primary-foreground: 217 30% 90%;
     --muted: 217 100% 45%;
     --border: 217 70% 45%;
-    --muted-foreground: 217 30% 85%;
+    --muted-foreground: 0 0% 55.1%;
     --card: 217 68% 38%;
     --currency-symbol: 217 44% 55%;
   }
