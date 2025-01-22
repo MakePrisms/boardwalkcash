@@ -10,9 +10,7 @@ import { Separator } from '~/components/ui/separator';
 import { Money } from '~/lib/money';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import { UpgradeGuestForm } from '../signup/upgrade-guest-form';
 import { useAuthActions } from '../user/auth';
-import { useUserStore } from '../user/user-provider';
 import { SettingsNavButton } from './components/settings-nav-button';
 
 const username = 'satoshi';
@@ -22,7 +20,6 @@ const activeMintUnit = 'USD';
 
 export default function Settings() {
   const { signOut } = useAuthActions();
-  const user = useUserStore((s) => s.user);
 
   const handleShare = async () => {
     const data = {
@@ -75,7 +72,6 @@ export default function Settings() {
           Advanced
         </SettingsNavButton>
         <Button onClick={signOut}>Sign Out</Button>
-        {user.isGuest && <UpgradeGuestForm />}
       </PageContent>
 
       <PageFooter>

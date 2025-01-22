@@ -103,7 +103,9 @@ export function MoneyDisplay<C extends Currency>({
   const value = `${integer}${decimalSeparator}${fraction}`;
 
   const symbol = (
-    <span className={cn(sizes[size].symbol)}>{currencySymbol}</span>
+    <span className={cn(sizes[size].symbol, 'text-currencySymbol')}>
+      {currencySymbol}
+    </span>
   );
 
   return (
