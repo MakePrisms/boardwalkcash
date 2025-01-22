@@ -1,15 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import Big from 'big.js';
-import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Bell, Cog } from 'lucide-react';
 import { useState } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
-import {
-  Page,
-  PageContent,
-  PageFooter,
-  PageHeader,
-  PageHeaderTitle,
-} from '~/components/page';
+import { Page, PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import type { Account } from '~/features/accounts/account-selector';
 import { useTheme } from '~/features/theme';
@@ -82,8 +76,15 @@ export default function Index() {
 
   return (
     <Page>
-      <PageHeader>
-        <PageHeaderTitle>
+      <header className="flex items-center justify-between">
+        <LinkWithViewTransition
+          to="/notifications"
+          transition="slideRight"
+          applyTo="newView"
+        >
+          <Bell />
+        </LinkWithViewTransition>
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
@@ -97,7 +98,8 @@ export default function Index() {
                   currency: 'USD',
                 }).toLocaleString({ unit: 'usd' })}
           </button>
-        </PageHeaderTitle>
+        </div>
+
         <LinkWithViewTransition
           to="/settings"
           transition="slideLeft"
@@ -105,7 +107,7 @@ export default function Index() {
         >
           <Cog />
         </LinkWithViewTransition>
-      </PageHeader>
+      </header>
 
       <p className="text-center text-lg">Welcome to Boardwalk!</p>
 
