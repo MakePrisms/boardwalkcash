@@ -4,8 +4,8 @@ import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { SettingsViewHeader } from '~/features/settings/components/settings-view-header';
-import { UpgradeGuestForm } from '../signup/upgrade-guest-form';
 import { useUserStore } from '../user/user-provider';
+import { UpgradeGuestForm } from './components/upgrade-guest-form';
 
 type ProfileForm = {
   username: string;
