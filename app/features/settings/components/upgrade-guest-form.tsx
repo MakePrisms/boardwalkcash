@@ -54,8 +54,8 @@ export function UpgradeGuestForm() {
       <CardHeader>
         <CardTitle>Upgrade</CardTitle>
         <CardDescription>
-          Enter your email and password to backup your account using Open
-          Secret.
+          Enter your email and password to backup your account and sync across
+          devices.
         </CardDescription>
       </CardHeader>
       <CardContent>
