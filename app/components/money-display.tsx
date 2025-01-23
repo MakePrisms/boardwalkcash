@@ -72,18 +72,20 @@ type MoneyDisplayProps<C extends Currency = Currency> = {
   money: Money<C>;
   locale?: string;
   unit?: CurrencyUnit<C>;
-  size?: 'sm' | 'default';
+  variant?: 'default' | 'secondary';
   className?: string;
 };
 
-const sizes = {
-  sm: {
-    symbol: 'text-[1.2rem]',
-    value: 'text-2xl pt-1',
-  },
+const variants = {
   default: {
-    symbol: 'text-[3.45rem]',
+    symbol: 'text-[3.45rem] text-currencySymbol',
     value: 'text-6xl pt-2',
+    wrapper: 'font-bold',
+  },
+  secondary: {
+    symbol: 'text-[1.33rem] text-foreground',
+    value: 'text-2xl pt-1 text-foreground',
+    wrapper: 'font-semibold',
   },
 } as const;
 
@@ -91,7 +93,7 @@ export function MoneyDisplay<C extends Currency>({
   money,
   locale,
   unit,
-  size = 'default',
+  variant = 'default',
   className,
 }: MoneyDisplayProps<C>) {
   const {
@@ -105,15 +107,15 @@ export function MoneyDisplay<C extends Currency>({
   const value = `${integer}${decimalSeparator}${fraction}`;
 
   const symbol = (
-    <span className={cn(sizes[size].symbol, 'text-currencySymbol')}>
-      {currencySymbol}
-    </span>
+    <span className={variants[variant].symbol}>{currencySymbol}</span>
   );
 
   return (
-    <span className={cn('font-bold', className)}>
+    <span className={cn(variants[variant].wrapper, className)}>
       {currencySymbolPosition === 'prefix' && symbol}
-      <span className={cn('font-numeric', sizes[size].value)}>{value}</span>
+      <span className={cn('font-numeric', variants[variant].value)}>
+        {value}
+      </span>
       {currencySymbolPosition === 'suffix' && symbol}
     </span>
   );
