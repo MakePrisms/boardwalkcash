@@ -144,6 +144,7 @@ const useMintlessMode = () => {
 
          const res = await nwc.payInvoice({ invoice });
 
+         // @ts-ignore
          const amountSats = getAmountFromInvoice(invoice);
 
          dispatch(setSuccess(`Sent ${formatSats(amountSats)}!`));

@@ -13,7 +13,7 @@ const NWCSidebarItem = () => {
    const { addToast } = useToast();
    const { setNWCAsMain, nwcIsMain } = useCashuContext();
    const { getNwcBalance } = useMintlessMode();
-   const [balance, setBalance] = useState<number | null>(null);
+   const [balance, setBalance] = useState<number | undefined>(undefined);
 
    useEffect(() => {
       getNwcBalance().then(setBalance);
@@ -33,7 +33,7 @@ const NWCSidebarItem = () => {
    };
 
    const handleRefreshBalance = async () => {
-      setBalance(null);
+      setBalance(undefined);
       const balance = await getNwcBalance();
       setBalance(balance);
    };
