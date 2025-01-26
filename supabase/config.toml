@@ -46,8 +46,8 @@ max_client_conn = 100
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
-# Supports glob patterns relative to supabase directory: './seeds/*.sql'
-sql_paths = ['./seed.sql']
+# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
+sql_paths = ["./seed.sql"]
 
 [realtime]
 enabled = true
@@ -94,7 +94,7 @@ file_size_limit = "50MiB"
 # objects_path = "./images"
 
 [auth]
-enabled = false
+enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 site_url = "http://127.0.0.1:3000"
@@ -295,7 +295,6 @@ schemas = ["wallet"]
 extra_search_path = ["public", "extensions"]
 
 [remotes.master.auth]
-enabled = false
 # Allow/disallow new user signups to your project.
 enable_signup = false
 
