@@ -58,15 +58,18 @@ function AccountItem({ account }: { account: Account }) {
 
 type AccountSelectorProps = {
   accounts: Account[];
+  selectedAccount: Account;
   onSelect: (account: Account) => void;
 };
 
-export function AccountSelector({ accounts, onSelect }: AccountSelectorProps) {
+export function AccountSelector({
+  accounts,
+  onSelect,
+  selectedAccount,
+}: AccountSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<Account>(accounts[0]);
 
   const handleAccountSelect = (account: Account) => {
-    setSelectedAccount(account);
     setOpen(false);
     onSelect(account);
   };

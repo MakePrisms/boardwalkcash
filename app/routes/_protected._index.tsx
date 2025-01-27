@@ -116,9 +116,15 @@ export default function Index() {
           <MoneyDisplay money={balanceBTC} unit="sat" />
         )}
         <div className="grid grid-cols-2 gap-4">
-          <Button className="text-lg">
-            Receive <ArrowDownRight />
-          </Button>
+          <LinkWithViewTransition
+            to="/receive"
+            transition="slideUp"
+            applyTo="newView"
+          >
+            <Button className="text-lg">
+              Receive <ArrowDownRight />
+            </Button>
+          </LinkWithViewTransition>
           <Button className="text-lg">
             Send <ArrowUpRight />
           </Button>

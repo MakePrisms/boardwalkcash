@@ -19,12 +19,27 @@ export class ExchangeRateService {
       new Coinbase(),
     ];
   }
-
   async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
-    const providersForTickers = this.getProvidersForTickers(tickers);
+    const rates: Rates = { timestamp: Date.now() };
+    const remainingTickers: Ticker[] = [];
+
+    for (const ticker of tickers) {
+      const [to, from] = ticker.split('-');
+      if (to === from) {
+        rates[ticker] = '1';
+      } else {
+        remainingTickers.push(ticker);
+      }
+    }
+
+    if (remainingTickers.length === 0) {
+      return rates;
+    }
+
+    const providersForTickers = this.getProvidersForTickers(remainingTickers);
     if (!providersForTickers.length) {
       throw new Error(
-        `No provider that supports all the specified tickers: ${tickers}`,
+        `No provider that supports all the specified tickers: ${remainingTickers}`,
       );
     }
 
@@ -32,7 +47,11 @@ export class ExchangeRateService {
 
     for (const provider of providersForTickers) {
       try {
-        return await provider.getRates({ tickers, signal });
+        const providerRates = await provider.getRates({
+          tickers: remainingTickers,
+          signal,
+        });
+        return { ...rates, ...providerRates };
       } catch (e) {
         console.warn(`Error fetching rates from provider ${provider}`, e);
         errors.push(e);
