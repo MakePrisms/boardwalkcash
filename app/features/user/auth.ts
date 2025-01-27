@@ -1,31 +1,39 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
 import { jwtDecode } from 'jwt-decode';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { guestAccountStorage } from '~/features/user/guest-account-storage';
 import type { User } from '~/features/user/user';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
+import { type BoardwalDbkUser, boardwalkDb } from '../boardwalk-db/database';
+import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
+import { UserRepository } from './user-repository';
 
-const fromOpenSecretUser = (user: UserResponse['user']): User => {
-  if (user.email) {
+type OpenSecretUser = UserResponse['user'];
+
+const mergeUserData = (
+  openSecretUserData: OpenSecretUser,
+  boardwalkUserData: BoardwalDbkUser,
+): User => {
+  if (openSecretUserData.email) {
     return {
-      id: user.id,
-      email: user.email,
-      emailVerified: user.email_verified,
-      loginMethod: user.login_method,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
+      id: openSecretUserData.id,
+      email: openSecretUserData.email,
+      emailVerified: openSecretUserData.email_verified,
+      loginMethod: openSecretUserData.login_method,
+      createdAt: boardwalkUserData.created_at,
+      updatedAt: boardwalkUserData.updated_at,
       isGuest: false,
     };
   }
 
   return {
-    id: user.id,
-    emailVerified: user.email_verified,
-    loginMethod: user.login_method,
-    createdAt: user.created_at,
-    updatedAt: user.updated_at,
+    id: openSecretUserData.id,
+    emailVerified: openSecretUserData.email_verified,
+    loginMethod: openSecretUserData.login_method,
+    createdAt: boardwalkUserData.created_at,
+    updatedAt: boardwalkUserData.updated_at,
     isGuest: true,
   };
 };
@@ -43,14 +51,67 @@ type AuthState = {
     }
 );
 
+const userRepository = new UserRepository(boardwalkDb);
+
+const useUpsertBoardwalkUser = (openSecretUserData?: OpenSecretUser | null) => {
+  const [error, setError] = useState<unknown | null>(null);
+  const [boardwalkUserData, setBoardwalkUserData] = useState<{
+    loading: boolean;
+    user: BoardwalDbkUser | null;
+  }>({ loading: !!openSecretUserData, user: null });
+
+  useEffect(() => {
+    const upsertBoardwalkUser = async () => {
+      if (!openSecretUserData) {
+        return;
+      }
+
+      try {
+        const boardwalkUser = await userRepository.upsert(openSecretUserData);
+        setBoardwalkUserData({ loading: false, user: boardwalkUser });
+      } catch (e) {
+        setError(e);
+      }
+    };
+    upsertBoardwalkUser();
+  }, [openSecretUserData]);
+
+  if (error) {
+    throw error;
+  }
+
+  return boardwalkUserData;
+};
+
+const useSetSupabseSession = (openSecretUserData?: OpenSecretUser | null) => {
+  useEffect(() => {
+    if (!openSecretUserData) {
+      return;
+    }
+    supabaseSessionStore
+      .getState()
+      .setJwtPayload({ sub: openSecretUserData.id });
+  }, [openSecretUserData]);
+};
+
 export const useAuthState = (): AuthState => {
   const {
-    auth: { user: userResponse, loading },
+    auth: { loading: loadingOpenSecretUser, user: openSecretUserResponse },
   } = useOpenSecret();
-  const userData = userResponse?.user;
+  const openSecretUserData = openSecretUserResponse?.user;
+
+  useSetSupabseSession(openSecretUserData);
+
+  const { loading: loadingBoardwalkUser, user: boardwalkUserData } =
+    useUpsertBoardwalkUser(openSecretUserData);
+
+  const loading = loadingOpenSecretUser || loadingBoardwalkUser;
+
   const user = useMemo(() => {
-    return userData ? fromOpenSecretUser(userData) : null;
-  }, [userData]);
+    return openSecretUserData && boardwalkUserData
+      ? mergeUserData(openSecretUserData, boardwalkUserData)
+      : null;
+  }, [openSecretUserData, boardwalkUserData]);
 
   if (!user) {
     return {
@@ -60,7 +121,7 @@ export const useAuthState = (): AuthState => {
   }
 
   return {
-    loading: loading,
+    loading,
     isLoggedIn: true,
     user,
   };
@@ -165,11 +226,16 @@ export const useAuthActions = (): AuthActions => {
     return { email, secret };
   }, []);
 
+  const signOut = useCallback(async () => {
+    await signOutRef.current();
+    supabaseSessionStore.getState().clear();
+  }, []);
+
   return {
     signUp: signUpRef.current,
     signUpGuest,
     signIn: signInRef.current,
-    signOut: signOutRef.current,
+    signOut,
     requestPasswordReset,
     confirmPasswordReset: confirmPasswordResetRef.current,
   };

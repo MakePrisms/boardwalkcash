@@ -6,6 +6,7 @@ type SupabaseSession = {
   jwt: string | null;
   setJwtPayload: (payload: { sub: string }) => void;
   getJwtWithRefresh: () => Promise<string | null>;
+  clear: () => void;
 };
 
 const signJwt = async (payload: {
@@ -61,5 +62,8 @@ export const supabaseSessionStore = create<SupabaseSession>((set, get) => ({
     set({ payload, jwt });
 
     return jwt;
+  },
+  clear: () => {
+    set({ payload: null, jwt: null });
   },
 }));

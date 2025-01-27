@@ -6,6 +6,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
+  useRouteError,
 } from '@remix-run/react';
 import {
   HydrationBoundary,
@@ -16,12 +18,21 @@ import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
 import { useState } from 'react';
 import { useDehydratedState } from 'use-dehydrated-state';
+import { Button } from '~/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card';
 import { Toaster } from '~/components/ui/toaster';
 import { ThemeProvider, useTheme } from '~/features/theme';
+import { getBgColorForTheme } from '~/features/theme/colors';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
+import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
-import { getBgColorForTheme } from './features/theme/colors';
-import { transitionStyles, useViewTransitionEffect } from './lib/transitions';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -112,5 +123,58 @@ export default function App() {
         </OpenSecretProvider>
       </HydrationBoundary>
     </QueryClientProvider>
+  );
+}
+
+const getErrorDetails = (error: unknown) => {
+  if (isRouteErrorResponse(error)) {
+    return {
+      message: `${error.status} - ${error.statusText || 'Error'}`,
+      additionalInfo: error.data ? (
+        <pre className="overflow-auto rounded-lg bg-muted p-4">
+          {JSON.stringify(error.data, null, 2)}
+        </pre>
+      ) : null,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: 'An unexpected error occurred. Please try again later.',
+      additionalInfo: (
+        <p className="overflow-auto rounded-lg bg-muted p-4">{error.message}</p>
+      ),
+    };
+  }
+
+  return {
+    message: 'An unexpected error occurred. Please try again later.',
+  };
+};
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  const handleReload = () => {
+    window.location.reload();
+  };
+
+  const errorDetails = getErrorDetails(error);
+
+  return (
+    <Card className="m-4">
+      <CardHeader>
+        <CardTitle>Oops, something went wrong</CardTitle>
+        <CardDescription>{errorDetails.message}</CardDescription>
+      </CardHeader>
+      {errorDetails.additionalInfo && (
+        <CardContent>{errorDetails.additionalInfo}</CardContent>
+      )}
+      <CardFooter>
+        <Button variant="default" type="button" onClick={handleReload}>
+          Reload Page
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
