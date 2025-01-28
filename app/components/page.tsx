@@ -14,7 +14,7 @@ export function Page({ children, className, ...props }: PageProps) {
   return (
     <div
       className={cn(
-        'mx-auto flex h-dvh w-full flex-col p-4 font-primary sm:px-6 lg:px-8',
+        'mx-auto flex h-dvh w-full flex-col p-4 font-primary sm:items-center sm:px-6 lg:px-8',
         className,
       )}
       {...props}
@@ -128,7 +128,10 @@ export function PageContent({
 }: PageContentProps) {
   return (
     <main
-      className={cn('flex flex-grow flex-col gap-2 p-2', className)}
+      className={cn(
+        'flex flex-grow flex-col gap-2 p-2 sm:w-full sm:max-w-sm',
+        className,
+      )}
       {...props}
     >
       {children}
@@ -142,7 +145,13 @@ interface PageFooterProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function PageFooter({ children, className, ...props }: PageFooterProps) {
   return (
-    <footer className={cn('flex flex-col gap-2 p-2', className)} {...props}>
+    <footer
+      className={cn(
+        'flex w-full flex-col items-center gap-2 p-2 sm:max-w-sm',
+        className,
+      )}
+      {...props}
+    >
       {children}
     </footer>
   );

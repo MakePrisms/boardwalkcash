@@ -36,12 +36,13 @@
     /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
     --background: 178 100% 15%;
     --foreground: 178 30% 90%;
-    --primary: 178 100% 25%;
+    --primary: 177 42% 26%;
     --primary-foreground: 178 30% 90%;
-    --muted: 178 100% 25%;
+    --muted: 178 100% 14%;
     --border: 178 100% 21%;
     --muted-foreground: 178 30% 81%;
     --card: 178 100% 14%;
+    --currency-symbol: 177 42% 31%;
   }
 
   /* BTC theme - light mode */
@@ -50,12 +51,13 @@
     /* This value is duplicated in app/tailwind.css. When changing make sure to keep them in sync! */
     --background: 217 68% 35%;
     --foreground: 217 30% 90%;
-    --primary: 217 100% 45%;
+    --primary: 219 44% 45%;
     --primary-foreground: 217 30% 90%;
-    --muted: 217 100% 45%;
+    --muted: 217 68% 38%;
     --border: 217 70% 45%;
     --muted-foreground: 217 30% 85%;
-    --card: 217 100% 35%;
+    --card: 217 68% 38%;
+    --currency-symbol: 217 44% 55%;
   }
 
   .dark,
@@ -67,11 +69,11 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 13.9%;
+    --primary: 202 13% 13%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 0 0% 3.9%;
     --muted-foreground: 0 0% 63.9%;
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
@@ -85,6 +87,7 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --currency-symbol: 202 13% 30%;
   }
 }
 @layer base {

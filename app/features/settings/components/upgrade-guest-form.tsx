@@ -11,7 +11,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
-import { useUserStore } from '../user/user-provider';
+import { useUserStore } from '../../user/user-provider';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
 
@@ -52,10 +52,10 @@ export function UpgradeGuestForm() {
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
-        <CardTitle>Upgrade to full account</CardTitle>
+        <CardTitle>Upgrade</CardTitle>
         <CardDescription>
-          Enter your email and password to backup your account using Open
-          Secret.
+          Enter your email and password to backup your account and sync across
+          devices.
         </CardDescription>
       </CardHeader>
       <CardContent>

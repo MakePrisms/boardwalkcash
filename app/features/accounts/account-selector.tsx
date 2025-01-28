@@ -76,7 +76,7 @@ export function AccountSelector({ accounts, onSelect }: AccountSelectorProps) {
       <DrawerTrigger asChild>
         <button
           type="button"
-          className="flex w-full items-center rounded-lg border bg-background"
+          className="flex w-full items-center rounded-lg border border-primary bg-background pr-4"
         >
           <AccountItem account={selectedAccount} />
           {open ? (
@@ -86,24 +86,26 @@ export function AccountSelector({ accounts, onSelect }: AccountSelectorProps) {
           )}
         </button>
       </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader>Select account</DrawerHeader>
-        <div className="flex flex-col gap-2 p-4">
-          {[
-            selectedAccount,
-            ...accounts.filter((a) => a.id !== selectedAccount.id),
-          ].map((account) => (
-            <button
-              type="button"
-              key={account.id}
-              onClick={() => handleAccountSelect(account)}
-              className={`rounded-lg hover:bg-muted ${
-                selectedAccount.id === account.id ? 'bg-muted' : ''
-              }`}
-            >
-              <AccountItem account={account} />
-            </button>
-          ))}
+      <DrawerContent className="font-primary">
+        <div className="mx-auto w-full max-w-sm">
+          <DrawerHeader>Select account</DrawerHeader>
+          <div className="flex flex-col gap-2 p-4">
+            {[
+              selectedAccount,
+              ...accounts.filter((a) => a.id !== selectedAccount.id),
+            ].map((account) => (
+              <button
+                type="button"
+                key={account.id}
+                onClick={() => handleAccountSelect(account)}
+                className={`rounded-lg hover:bg-muted ${
+                  selectedAccount.id === account.id ? 'bg-muted' : ''
+                }`}
+              >
+                <AccountItem account={account} />
+              </button>
+            ))}
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
