@@ -133,7 +133,7 @@ export default function ReceiveToken({ token }: Props) {
                 <MoneyDisplay
                   money={tokenMoney.convert(defaultFiatCurrency, exchangeRate)}
                   unit={'usd'}
-                  size="sm"
+                  variant="secondary"
                   className="text-muted-foreground"
                 />
               )}

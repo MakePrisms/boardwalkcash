@@ -52,7 +52,11 @@ export default function Settings() {
           <span>Edit profile</span>
         </SettingsNavButton>
 
-        <AccountSelector accounts={accounts} onSelect={console.log} />
+        <AccountSelector
+          accounts={accounts}
+          onSelect={console.log}
+          selectedAccount={accounts[0]}
+        />
 
         <Separator />
 

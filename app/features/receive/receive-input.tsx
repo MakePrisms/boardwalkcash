@@ -51,7 +51,7 @@ const ConvertedMoneyToggle = ({
       <MoneyDisplay
         money={moneyToConvert.convert(convertToCurrency, exchangeRate)}
         unit={currencyToDefaultUnit[convertToCurrency]}
-        size="sm"
+        variant="secondary"
       />
       <ArrowUpDown className="mb-1" />
     </button>
