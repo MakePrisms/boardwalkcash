@@ -44,7 +44,7 @@ export function VerifyEmailForm({ user, code }: Props) {
   });
 
   if (step === 'auto-verification') {
-    return 'Verifying email...';
+    return <div className="text-center">Verifying email...</div>;
   }
 
   const onSubmit = async (data: FormValues) => {

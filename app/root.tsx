@@ -14,6 +14,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
 import { useState } from 'react';
@@ -121,6 +122,7 @@ export default function App() {
         <OpenSecretProvider apiUrl="https://preview-enclave.opensecret.cloud">
           <Outlet />
         </OpenSecretProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
       </HydrationBoundary>
     </QueryClientProvider>
   );

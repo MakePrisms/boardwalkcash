@@ -1,6 +1,13 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
+import { useMutation } from '@tanstack/react-query';
 import { jwtDecode } from 'jwt-decode';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { guestAccountStorage } from '~/features/user/guest-account-storage';
 import type { User } from '~/features/user/user';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
@@ -53,34 +60,34 @@ type AuthState = {
 
 const userRepository = new UserRepository(boardwalkDb);
 
-const useUpsertBoardwalkUser = (openSecretUserData?: OpenSecretUser | null) => {
-  const [error, setError] = useState<unknown | null>(null);
-  const [boardwalkUserData, setBoardwalkUserData] = useState<{
-    loading: boolean;
-    user: BoardwalDbkUser | null;
-  }>({ loading: !!openSecretUserData, user: null });
+const useUpsertBoardwalkUser = (
+  loadingOpenSecretUserData: boolean,
+  openSecretUserData?: OpenSecretUser | null,
+) => {
+  const { mutate, data, isIdle, isPending } = useMutation({
+    mutationKey: ['user-upsert'],
+    mutationFn: (user: OpenSecretUser) => userRepository.upsert(user),
+    scope: {
+      id: 'user-upsert',
+    },
+    throwOnError: true,
+  });
 
-  useEffect(() => {
-    const upsertBoardwalkUser = async () => {
-      if (!openSecretUserData) {
-        return;
-      }
+  useLayoutEffect(() => {
+    if (openSecretUserData) {
+      mutate(openSecretUserData);
+    }
+  }, [openSecretUserData, mutate]);
 
-      try {
-        const boardwalkUser = await userRepository.upsert(openSecretUserData);
-        setBoardwalkUserData({ loading: false, user: boardwalkUser });
-      } catch (e) {
-        setError(e);
-      }
-    };
-    upsertBoardwalkUser();
-  }, [openSecretUserData]);
+  const openSecretUserDataLoadedAndExists =
+    !loadingOpenSecretUserData && !!openSecretUserData;
 
-  if (error) {
-    throw error;
-  }
-
-  return boardwalkUserData;
+  return {
+    // We have to check if the mutation is idle or pending because mutation is triggered by useEffect which runs after render,
+    // so the mutation will be triggered only after the render with non null openSecretUserData is completed.
+    loading: openSecretUserDataLoadedAndExists && (isIdle || isPending),
+    user: data ?? null,
+  };
 };
 
 const useSetSupabseSession = (openSecretUserData?: OpenSecretUser | null) => {
@@ -103,7 +110,7 @@ export const useAuthState = (): AuthState => {
   useSetSupabseSession(openSecretUserData);
 
   const { loading: loadingBoardwalkUser, user: boardwalkUserData } =
-    useUpsertBoardwalkUser(openSecretUserData);
+    useUpsertBoardwalkUser(loadingOpenSecretUser, openSecretUserData);
 
   const loading = loadingOpenSecretUser || loadingBoardwalkUser;
 
