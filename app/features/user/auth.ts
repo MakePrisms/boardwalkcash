@@ -1,56 +1,20 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
-import { useMutation } from '@tanstack/react-query';
 import { jwtDecode } from 'jwt-decode';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from 'react';
-import { guestAccountStorage } from '~/features/user/guest-account-storage';
-import type { User } from '~/features/user/user';
+import { useCallback, useRef } from 'react';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
-import { type BoardwalDbkUser, boardwalkDb } from '../boardwalk-db/database';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
-import { UserRepository } from './user-repository';
+import { guestAccountStorage } from './guest-account-storage';
 
-type OpenSecretUser = UserResponse['user'];
+export type AuthUser = UserResponse['user'];
 
-const mergeUserData = (
-  openSecretUserData: OpenSecretUser,
-  boardwalkUserData: BoardwalDbkUser,
-): User => {
-  if (openSecretUserData.email) {
-    return {
-      id: openSecretUserData.id,
-      email: openSecretUserData.email,
-      emailVerified: openSecretUserData.email_verified,
-      loginMethod: openSecretUserData.login_method,
-      createdAt: boardwalkUserData.created_at,
-      updatedAt: boardwalkUserData.updated_at,
-      isGuest: false,
-    };
-  }
-
-  return {
-    id: openSecretUserData.id,
-    emailVerified: openSecretUserData.email_verified,
-    loginMethod: openSecretUserData.login_method,
-    createdAt: boardwalkUserData.created_at,
-    updatedAt: boardwalkUserData.updated_at,
-    isGuest: true,
-  };
-};
-
-type AuthState = {
+export type AuthState = {
   loading: boolean;
 } & (
   | {
       isLoggedIn: true;
-      user: User;
+      user: AuthUser;
     }
   | {
       isLoggedIn: false;
@@ -58,67 +22,11 @@ type AuthState = {
     }
 );
 
-const userRepository = new UserRepository(boardwalkDb);
-
-const useUpsertBoardwalkUser = (
-  loadingOpenSecretUserData: boolean,
-  openSecretUserData?: OpenSecretUser | null,
-) => {
-  const { mutate, data, isIdle, isPending } = useMutation({
-    mutationKey: ['user-upsert'],
-    mutationFn: (user: OpenSecretUser) => userRepository.upsert(user),
-    scope: {
-      id: 'user-upsert',
-    },
-    throwOnError: true,
-  });
-
-  useLayoutEffect(() => {
-    if (openSecretUserData) {
-      mutate(openSecretUserData);
-    }
-  }, [openSecretUserData, mutate]);
-
-  const openSecretUserDataLoadedAndExists =
-    !loadingOpenSecretUserData && !!openSecretUserData;
-
-  return {
-    // We have to check if the mutation is idle or pending because mutation is triggered by useEffect which runs after render,
-    // so the mutation will be triggered only after the render with non null openSecretUserData is completed.
-    loading: openSecretUserDataLoadedAndExists && (isIdle || isPending),
-    user: data ?? null,
-  };
-};
-
-const useSetSupabseSession = (openSecretUserData?: OpenSecretUser | null) => {
-  useEffect(() => {
-    if (!openSecretUserData) {
-      return;
-    }
-    supabaseSessionStore
-      .getState()
-      .setJwtPayload({ sub: openSecretUserData.id });
-  }, [openSecretUserData]);
-};
-
 export const useAuthState = (): AuthState => {
   const {
-    auth: { loading: loadingOpenSecretUser, user: openSecretUserResponse },
+    auth: { loading, user: openSecretResponse },
   } = useOpenSecret();
-  const openSecretUserData = openSecretUserResponse?.user;
-
-  useSetSupabseSession(openSecretUserData);
-
-  const { loading: loadingBoardwalkUser, user: boardwalkUserData } =
-    useUpsertBoardwalkUser(loadingOpenSecretUser, openSecretUserData);
-
-  const loading = loadingOpenSecretUser || loadingBoardwalkUser;
-
-  const user = useMemo(() => {
-    return openSecretUserData && boardwalkUserData
-      ? mergeUserData(openSecretUserData, boardwalkUserData)
-      : null;
-  }, [openSecretUserData, boardwalkUserData]);
+  const user = openSecretResponse?.user;
 
   if (!user) {
     return {
