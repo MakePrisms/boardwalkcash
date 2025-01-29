@@ -3,9 +3,9 @@ import { useForm } from 'react-hook-form';
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
-import { SettingsViewHeader } from '~/features/settings/components/settings-view-header';
-import { useUserStore } from '../user/user-provider';
-import { UpgradeGuestForm } from './components/upgrade-guest-form';
+import { UpgradeGuestForm } from '~/features/settings/profile/upgrade-guest-form';
+import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
+import { useUserStore } from '~/features/user/user-provider';
 
 type ProfileForm = {
   username: string;

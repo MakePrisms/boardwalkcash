@@ -1,6 +1,6 @@
 import { PageContent } from '~/components/page';
+import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { Money } from '~/lib/money';
-import { SettingsViewHeader } from './components/settings-view-header';
 
 export default function SingleAccount({ accountId }: { accountId: string }) {
   return (

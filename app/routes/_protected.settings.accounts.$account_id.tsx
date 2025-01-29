@@ -1,6 +1,6 @@
 import { useParams } from '@remix-run/react';
 import { Page } from '~/components/page';
-import SingleAccount from '~/features/settings/$account_id';
+import SingleAccount from '~/features/settings/accounts/$account_id';
 
 export default function SingleAccountPage() {
   const { account_id } = useParams();

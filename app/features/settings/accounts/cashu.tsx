@@ -1,6 +1,6 @@
 import { PageContent } from '~/components/page';
-import { AddMintForm } from '~/features/settings/components/add-mint-form';
-import { SettingsViewHeader } from '../components/settings-view-header';
+import { AddMintForm } from '~/features/settings/accounts/add-mint-form';
+import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 
 export default function AddCashuAccountView() {
   return (
