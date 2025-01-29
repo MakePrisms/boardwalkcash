@@ -1,5 +1,6 @@
-import { Link, NavLink, useNavigation } from '@remix-run/react';
+import { Link, NavLink, useNavigate, useNavigation } from '@remix-run/react';
 import { type ComponentProps, useEffect } from 'react';
+import type { NavigateOptions, To } from 'react-router-dom';
 
 const transitions = [
   'slideLeft',
@@ -197,4 +198,14 @@ export function LinkWithViewTransition<
   }
 
   return <Link {...(commonProps as ComponentProps<typeof Link>)} />;
+}
+
+type NavigateWithViewTransitionOptions = NavigateOptions & ViewTransitionState;
+
+export function useNavigateWithViewTransition() {
+  const navigate = useNavigate();
+
+  return (to: To, options: NavigateWithViewTransitionOptions) => {
+    navigate(to, { ...options, viewTransition: true });
+  };
 }
