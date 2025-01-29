@@ -2,20 +2,28 @@ import type { UserResponse } from '@opensecret/react';
 import { expect, test } from './fixtures';
 import { openSecretBaseUrl } from './fixtures/open-secret/fixture';
 
-const user: UserResponse['user'] = {
-  id: 'b15bcbfb-064c-4fd6-b10c-a05668e730d6',
-  name: null,
-  email: 'cosmo@kramer.com',
-  email_verified: false,
-  login_method: 'email',
-  created_at: '2024-12-26T12:07:17.170640Z',
-  updated_at: '2024-12-26T12:07:17.170640Z',
+const getUser = (): UserResponse['user'] => {
+  const id = crypto.randomUUID();
+  return {
+    id,
+    name: null,
+    email: `cosmo+${id}@kramer.com`,
+    email_verified: false,
+    login_method: 'email',
+    created_at: '2024-12-26T12:07:17.170640Z',
+    updated_at: '2024-12-26T12:07:17.170640Z',
+  };
 };
 
-// We are disabling initial navigation to home page in these tests so we can pick the initial page in each individual test
-test.use({ user, performInitialNavigation: false });
+test('verify email by typing the code', async ({
+  page,
+  setupAuth,
+  openSecretApiMock,
+}) => {
+  const user = getUser();
+  // We are disabling initial navigation to home page in these tests so we can pick the initial page in each individual test
+  await setupAuth(user, { performInitialNavigation: false });
 
-test('verify email by typing the code', async ({ page, openSecretApiMock }) => {
   const verificationCode = '03f1c2d1-0fb4-469b-93a9-c792ce6a0c61';
 
   await openSecretApiMock.setupEncrypted({
@@ -75,15 +83,20 @@ test('verify email by typing the code', async ({ page, openSecretApiMock }) => {
 
 test('verify email by opening the link', async ({
   page,
+  setupAuth,
   openSecretApiMock,
 }) => {
+  const user = getUser();
+  // We are disabling initial navigation to home page in these tests so we can pick the initial page in each individual test
+  await setupAuth(user, { performInitialNavigation: false });
+
   const verificationCode = '6a5938cb-bd46-4773-8f8b-312409b80b62';
 
   await openSecretApiMock.setupEncrypted({
     url: `/verify-email/${verificationCode}`,
-    // Delay is added to make sure we can verify that 'Verifying email...' text is shown. Otherwise, things happen to
+    // Delay is added to make sure we can verify that 'Verifying email...' text is shown. Otherwise, things happen too
     // quickly.
-    delayMs: 100,
+    delayMs: 500,
     responseData: {
       message: 'Email verified successfully',
     },

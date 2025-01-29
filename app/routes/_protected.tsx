@@ -3,10 +3,14 @@ import { Outlet, useLocation } from '@remix-run/react';
 import { QueryClient, dehydrate } from '@tanstack/react-query';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
-import { useAuthState } from '~/features/user/auth';
-import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
+import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { UserProvider } from '~/features/user/user-provider';
 import { exchangeRateService } from '~/lib/exchange-rate';
+
+const shouldUserVerifyEmail = (user: AuthUser) => {
+  const isGuest = !user.email;
+  return !isGuest && !user.email_verified;
+};
 
 export const loader: LoaderFunction = async () => {
   const queryClient = new QueryClient();
@@ -19,10 +23,12 @@ export const loader: LoaderFunction = async () => {
 
   return { dehydratedState: dehydrate(queryClient) };
 };
+
 // prevent loader from being revalidated
 export function shouldRevalidate() {
   return false;
 }
+
 export default function ProtectedRoute() {
   const location = useLocation();
   const { loading, isLoggedIn, user } = useAuthState();
@@ -69,7 +75,7 @@ export default function ProtectedRoute() {
   }
 
   return (
-    <UserProvider user={user}>
+    <UserProvider authUser={user}>
       <Outlet />
     </UserProvider>
   );

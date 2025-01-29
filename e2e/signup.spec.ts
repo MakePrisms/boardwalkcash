@@ -225,14 +225,15 @@ test('signup with email validation works', async ({
   });
 });
 
-test.describe('when logged in', () => {
-  test.use({ user: fullUser });
+test('cannot access signup page if already logged in', async ({
+  page,
+  setupAuth,
+}) => {
+  await setupAuth(fullUser);
 
-  test('cannot access signup page', async ({ page }) => {
-    await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
 
-    await page.goto('/signup');
+  await page.goto('/signup');
 
-    await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
-  });
+  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
 });

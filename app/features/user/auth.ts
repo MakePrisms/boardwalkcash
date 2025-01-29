@@ -1,41 +1,20 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
 import { jwtDecode } from 'jwt-decode';
-import { useCallback, useMemo, useRef } from 'react';
-import { guestAccountStorage } from '~/features/user/guest-account-storage';
-import type { User } from '~/features/user/user';
+import { useCallback, useRef } from 'react';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
+import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
+import { guestAccountStorage } from './guest-account-storage';
 
-const fromOpenSecretUser = (user: UserResponse['user']): User => {
-  if (user.email) {
-    return {
-      id: user.id,
-      email: user.email,
-      emailVerified: user.email_verified,
-      loginMethod: user.login_method,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      isGuest: false,
-    };
-  }
+export type AuthUser = UserResponse['user'];
 
-  return {
-    id: user.id,
-    emailVerified: user.email_verified,
-    loginMethod: user.login_method,
-    createdAt: user.created_at,
-    updatedAt: user.updated_at,
-    isGuest: true,
-  };
-};
-
-type AuthState = {
+export type AuthState = {
   loading: boolean;
 } & (
   | {
       isLoggedIn: true;
-      user: User;
+      user: AuthUser;
     }
   | {
       isLoggedIn: false;
@@ -45,12 +24,9 @@ type AuthState = {
 
 export const useAuthState = (): AuthState => {
   const {
-    auth: { user: userResponse, loading },
+    auth: { loading, user: openSecretResponse },
   } = useOpenSecret();
-  const userData = userResponse?.user;
-  const user = useMemo(() => {
-    return userData ? fromOpenSecretUser(userData) : null;
-  }, [userData]);
+  const user = openSecretResponse?.user;
 
   if (!user) {
     return {
@@ -60,7 +36,7 @@ export const useAuthState = (): AuthState => {
   }
 
   return {
-    loading: loading,
+    loading,
     isLoggedIn: true,
     user,
   };
@@ -165,11 +141,16 @@ export const useAuthActions = (): AuthActions => {
     return { email, secret };
   }, []);
 
+  const signOut = useCallback(async () => {
+    await signOutRef.current();
+    supabaseSessionStore.getState().clear();
+  }, []);
+
   return {
     signUp: signUpRef.current,
     signUpGuest,
     signIn: signInRef.current,
-    signOut: signOutRef.current,
+    signOut,
     requestPasswordReset,
     confirmPasswordReset: confirmPasswordResetRef.current,
   };
