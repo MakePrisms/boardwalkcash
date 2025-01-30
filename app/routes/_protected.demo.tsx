@@ -3,6 +3,8 @@ import type {
   RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
+import { QRCodeWithLoadingState } from '~/components/qr-code';
+import { Button } from '~/components/ui/button';
 import { boardwalkDb } from '~/features/boardwalk-db/database';
 import { useUserStore } from '~/features/user/user-provider';
 
@@ -14,6 +16,7 @@ export default function Demo() {
   const user = useUserStore((x) => x.user);
   const [accounts, setAccounts] = useState<Accounts>([]);
   const [error, setError] = useState<string | null>(null);
+  const [qrCodeValue, setQrCodeValue] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const getAccounts = async () => {
@@ -65,7 +68,7 @@ export default function Demo() {
   }, []);
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <h1>This is Demo page</h1>
       {error ? (
         <div className="mt-4">{error}</div>
@@ -78,6 +81,20 @@ export default function Demo() {
           ))}
         </div>
       )}
+
+      <div className="flex flex-col items-center gap-4">
+        <h2 className="font-semibold text-lg">QR Code Demo.</h2>
+        <QRCodeWithLoadingState value={qrCodeValue} size={200} />
+        <Button
+          variant="outline"
+          className="w-fit"
+          onClick={() =>
+            setQrCodeValue(qrCodeValue ? undefined : 'https://boardwalk.xyz')
+          }
+        >
+          Toggle Loading State
+        </Button>
+      </div>
     </div>
   );
 }
