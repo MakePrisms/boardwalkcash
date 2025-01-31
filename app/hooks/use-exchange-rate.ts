@@ -14,6 +14,7 @@ export const useExchangeRate = (ticker: Ticker) => {
         signal,
       });
     },
+    refetchInterval: 15_000,
     // This is a workaround to make the type of the data not have | undefined.
     // In our case the initial data will be what was prefetched on the server but react query doesn't know that we are
     // doing prefetching there. I asked a question here to see if there is a better way

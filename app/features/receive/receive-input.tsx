@@ -1,6 +1,5 @@
 import { getDecodedToken } from '@cashu/cashu-ts';
 import { ArrowUpDown, Clipboard, QrCode, Scan } from 'lucide-react';
-import { useState } from 'react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
 import {
@@ -11,46 +10,37 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '~/features/accounts/account-selector';
-import { useExchangeRate } from '~/hooks/use-exchange-rate';
+import useAnimation from '~/hooks/use-animation';
+import { useNumberInput } from '~/hooks/use-number-input';
 import { useToast } from '~/hooks/use-toast';
-import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
+import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
 import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
 import { accounts } from '~/routes/_protected._index';
+import { getUnit } from '~/utils';
 import { useReceiveStore } from './receive-provider';
 
-const currencyToDefaultUnit: Record<Currency, CurrencyUnit<Currency>> = {
-  BTC: 'sat',
-  USD: 'usd',
-};
-
-const defaultFiatCurrency: Exclude<Currency, 'BTC'> = 'USD';
-
 type ConvertedMoneyToggleProps = {
-  onToggleInputCurrency: () => void;
-  moneyToConvert: Money;
-  convertToCurrency: Currency;
-  exchangeRate: string;
+  onSwitchInputCurrency: () => void;
+  money: Money;
 };
 
 const ConvertedMoneyToggle = ({
-  onToggleInputCurrency,
-  moneyToConvert,
-  convertToCurrency,
-  exchangeRate,
+  onSwitchInputCurrency,
+  money,
 }: ConvertedMoneyToggleProps) => {
   return (
     <button
       type="button"
-      className="flex items-center gap-1 text-muted-foreground"
-      onClick={onToggleInputCurrency}
+      className="flex items-center gap-1"
+      onClick={onSwitchInputCurrency}
     >
       <MoneyDisplay
-        money={moneyToConvert.convert(convertToCurrency, exchangeRate)}
-        unit={currencyToDefaultUnit[convertToCurrency]}
+        money={money}
+        unit={getUnit(money.currency)}
         variant="secondary"
       />
       <ArrowUpDown className="mb-1" />
@@ -58,55 +48,42 @@ const ConvertedMoneyToggle = ({
   );
 };
 
-type InputState = {
-  value: string;
-  currency: Currency;
-  unit: CurrencyUnit<Currency>;
-  convertTo: Currency;
-};
-
-const defaultInputState = (currency: Currency) => ({
-  value: '0',
-  currency,
-  unit: currencyToDefaultUnit[currency],
-  convertTo: currency === 'BTC' ? defaultFiatCurrency : ('BTC' as Currency),
-});
-
 export default function ReceiveInput() {
   const navigate = useNavigateWithViewTransition();
   const { toast } = useToast();
-  // shakes the money input when the input is invalid
-  const [shake, setShake] = useState(false);
+  const { animationClass: shakeAnimationClass, start: startShakeAnimation } =
+    useAnimation({ name: 'shake' });
 
   const receiveAccount = useReceiveStore((s) => s.account);
   const receiveAmount = useReceiveStore((s) => s.amount);
   const setReceiveAccount = useReceiveStore((s) => s.setAccount);
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
 
-  const [inputState, setInputState] = useState<InputState>({
-    ...defaultInputState(receiveAccount.currency),
-    value:
-      receiveAmount?.toString(currencyToDefaultUnit[receiveAccount.currency]) ??
-      '0',
+  const {
+    inputCurrency,
+    inputValue,
+    inputMoney,
+    otherMoney,
+    handleNumberInput,
+    switchInputCurrency,
+  } = useNumberInput({
+    active: {
+      value: receiveAmount?.toString(getUnit(receiveAccount.currency)) || '0',
+      currency: receiveAccount.currency,
+    },
+    other: {
+      value: '0',
+      currency: receiveAccount.currency,
+    },
   });
-  const inputMoney = new Money({
-    amount: inputState.value,
-    currency: inputState.currency,
-    unit: inputState.unit,
-  });
-
-  const exchangeRate = useExchangeRate(
-    `${inputState.currency}-${inputState.convertTo}`,
-  );
 
   const handleContinue = async () => {
-    if (inputState.currency === receiveAccount.currency) {
+    if (inputCurrency === receiveAccount.currency) {
       setReceiveAmount(inputMoney);
     } else {
-      setReceiveAmount(
-        inputMoney.convert(receiveAccount.currency, exchangeRate),
-      );
+      setReceiveAmount(otherMoney);
     }
+
     if (receiveAccount.type === 'cashu') {
       navigate('/receive/cashu', {
         transition: 'slideLeft',
@@ -143,6 +120,8 @@ export default function ReceiveInput() {
     }
   };
 
+  const maxDecimals = inputMoney.getMaxDecimals(getUnit(inputCurrency));
+
   return (
     <>
       <PageHeader>
@@ -152,40 +131,17 @@ export default function ReceiveInput() {
 
       <PageContent className="mx-auto flex flex-col items-center justify-between sm:justify-around">
         <div className="flex flex-col items-center gap-2">
-          <div className={`${shake ? 'animate-shake' : ''}`}>
+          <div className={shakeAnimationClass}>
             <MoneyInputDisplay
-              inputValue={inputState.value}
-              currency={inputState.currency}
-              unit={inputState.unit}
+              inputValue={inputValue}
+              currency={inputCurrency}
+              unit={getUnit(inputCurrency)}
             />
           </div>
 
           <ConvertedMoneyToggle
-            onToggleInputCurrency={() => {
-              // NOTE: still figuring out how to do this better. There is also an issue with the precision
-              // of the conversion I need to fix.
-              setInputState((prev) => {
-                const newCurrency =
-                  prev.currency === inputState.currency
-                    ? inputState.convertTo
-                    : prev.currency;
-                const newUnit = currencyToDefaultUnit[newCurrency];
-                const newValue = inputMoney
-                  .convert(newCurrency, exchangeRate)
-                  .toString(newUnit);
-                const newConvertTo = newCurrency === 'BTC' ? 'USD' : 'BTC';
-
-                return {
-                  currency: newCurrency,
-                  unit: newUnit,
-                  value: newValue,
-                  convertTo: newConvertTo,
-                };
-              });
-            }}
-            moneyToConvert={inputMoney}
-            convertToCurrency={inputState.convertTo}
-            exchangeRate={exchangeRate}
+            onSwitchInputCurrency={switchInputCurrency}
+            money={otherMoney}
           />
         </div>
 
@@ -195,7 +151,9 @@ export default function ReceiveInput() {
             selectedAccount={receiveAccount}
             onSelect={(account) => {
               setReceiveAccount(account);
-              setInputState(defaultInputState(account.currency));
+              if (account.currency !== inputCurrency) {
+                switchInputCurrency();
+              }
             }}
           />
         </div>
@@ -224,61 +182,15 @@ export default function ReceiveInput() {
               </LinkWithViewTransition>
             </div>
             <div /> {/* spacer */}
-            <Button
-              onClick={handleContinue}
-              disabled={Number.parseFloat(inputState.value) === 0}
-            >
+            <Button onClick={handleContinue} disabled={inputMoney.isZero()}>
               Continue
             </Button>
           </div>
 
           <Numpad
-            showDecimal={inputMoney.getMaxDecimals(inputState.unit) > 0}
+            showDecimal={maxDecimals > 0}
             onButtonClick={(button) => {
-              // NOTE: still figuring out how to put this somewhere like a store or a hook
-              const { value, unit } = inputState;
-              const onInvalidInput = () => {
-                setShake(true);
-                setTimeout(() => setShake(false), 200);
-              };
-              const onValueChange = (newValue: string) => {
-                setInputState((prev) => ({ ...prev, value: newValue }));
-              };
-              const maxDecimals = inputMoney.getMaxDecimals(unit);
-
-              if (button === 'Backspace') {
-                if (inputState.value === '0') {
-                  return onInvalidInput();
-                }
-
-                const newValue = value.length === 1 ? '0' : value.slice(0, -1);
-                return onValueChange(newValue);
-              }
-
-              const valueHasDecimal = value.includes('.');
-
-              if (button === '.') {
-                // Only add decimal if one doesn't exist yet
-                return valueHasDecimal
-                  ? onInvalidInput()
-                  : onValueChange(`${value}.`);
-              }
-
-              const hasMaxDecimals =
-                valueHasDecimal &&
-                value.length - value.indexOf('.') > maxDecimals;
-              if (hasMaxDecimals) {
-                return onInvalidInput();
-              }
-
-              if (button === '0' && value === '0') {
-                return onInvalidInput();
-              }
-
-              // replace 0 value with button value
-              const newValue = value === '0' ? button : value + button;
-
-              onValueChange(newValue);
+              handleNumberInput(button, maxDecimals, startShakeAnimation);
             }}
           />
         </div>
