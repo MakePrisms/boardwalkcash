@@ -15,6 +15,9 @@ export type CurrencyUnit<T extends Currency = Currency> = T extends 'USD'
     ? BtcUnit
     : never;
 
+/** Context for money operations */
+export type MoneyContext = 'app' | 'cashu';
+
 export type MoneyInput<T extends Currency = Currency> = {
   /**
    * Money amount
@@ -29,6 +32,10 @@ export type MoneyInput<T extends Currency = Currency> = {
    * If not provided the default/base unit is used (bitcoin for BTC, dollar for USD, etc.)
    */
   unit?: CurrencyUnit<T>;
+  /**
+   * Context for money operations. Different contexts may have different default units.
+   */
+  context?: MoneyContext;
 };
 
 export type FormatOptions = {
@@ -51,6 +58,9 @@ export type UnitData<T extends Currency> = {
 
 export type CurrencyData<T extends Currency> = {
   baseUnit: CurrencyUnit<T>;
+  defaultUnits: {
+    [K in MoneyContext]: CurrencyUnit<T>;
+  };
   units: Array<UnitData<T>>;
 };
 
@@ -77,6 +87,10 @@ export type MoneyData<T extends Currency> = {
    * Unit of the initial amount that was provided when creating the money
    */
   initialUnit: UnitData<T>;
+  /**
+   * The context may change default units when doing money operations.. Defaults to 'app'
+   */
+  context: MoneyContext;
 };
 
 export type CurrencyDataMap = {

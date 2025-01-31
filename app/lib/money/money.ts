@@ -55,6 +55,10 @@ const trimWhitespaceFromEnds = (
 const currencyDataMap: CurrencyDataMap = {
   USD: {
     baseUnit: 'usd',
+    defaultUnits: {
+      app: 'usd',
+      cashu: 'cent',
+    },
     units: [
       {
         name: 'usd',
@@ -110,6 +114,10 @@ const currencyDataMap: CurrencyDataMap = {
   },
   BTC: {
     baseUnit: 'btc',
+    defaultUnits: {
+      app: 'sat',
+      cashu: 'sat',
+    },
     units: [
       {
         name: 'btc',
@@ -236,6 +244,7 @@ export class Money<T extends Currency = Currency> {
       currency: data.currency,
       amountUnit: minUnit,
       initialUnit: unit,
+      context: data.context ?? 'app',
     };
 
     Object.freeze(this);
@@ -307,6 +316,12 @@ export class Money<T extends Currency = Currency> {
 
   get currency(): T {
     return this._data.currency;
+  }
+
+  get defaultUnit(): CurrencyUnit<T> {
+    return this._data.context
+      ? this.currencyData.defaultUnits[this._data.context]
+      : this.currencyData.baseUnit;
   }
 
   /**
@@ -584,9 +599,14 @@ export class Money<T extends Currency = Currency> {
     const minUnit = currencyData.units.reduce((minItem, currentItem) => {
       return currentItem.factor.lt(minItem.factor) ? currentItem : minItem;
     });
-    const baseUnit = currencyData.units.find(
-      (x) => x.name === currencyData.baseUnit,
-    );
+
+    // Get the default unit based on context, falling back to baseUnit if no context
+    const defaultUnit = data.context
+      ? currencyData.defaultUnits[data.context]
+      : currencyData.baseUnit;
+
+    const baseUnit = currencyData.units.find((x) => x.name === defaultUnit);
+
     if (!minUnit || !baseUnit) {
       throw new Error(`Misconfigured currency: ${data.currency}`);
     }

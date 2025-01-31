@@ -20,7 +20,6 @@ import {
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
 import { accounts } from '~/routes/_protected._index';
-import { getUnit } from '~/utils';
 import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {
@@ -40,13 +39,14 @@ const ConvertedMoneyToggle = ({
     >
       <MoneyDisplay
         money={money}
-        unit={getUnit(money.currency)}
         variant="secondary"
       />
       <ArrowUpDown className="mb-1" />
     </button>
   );
 };
+
+const defaultFiatCurrency = 'USD';
 
 export default function ReceiveInput() {
   const navigate = useNavigateWithViewTransition();
@@ -69,12 +69,12 @@ export default function ReceiveInput() {
     switchInputCurrency,
   } = useNumberInput({
     active: {
-      value: receiveAmount?.toString(getUnit(receiveAccount.currency)) || '0',
+      value: receiveAmount?.toString() || '0',
       currency: receiveAccount.currency,
     },
     other: {
       value: '0',
-      currency: receiveAccount.currency,
+      currency: receiveAccount.currency === 'BTC' ? defaultFiatCurrency : 'BTC',
     },
   });
 
@@ -134,7 +134,7 @@ export default function ReceiveInput() {
             <MoneyInputDisplay
               inputValue={inputValue}
               currency={inputCurrency}
-              unit={getUnit(inputCurrency)}
+              // unit={inputMoney.defaultUnit}
             />
           </div>
 
