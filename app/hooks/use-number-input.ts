@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { NumpadButton } from '~/components/numpad';
 import type { Currency } from '~/lib/money';
-import { Money } from '~/lib/money';
+import { Money, getLocaleDecimalSeparator } from '~/lib/money';
 import { getUnit } from '~/utils';
 import { useExchangeRate } from './use-exchange-rate';
 
@@ -62,6 +62,7 @@ export function useNumberInput(initialState: InputState) {
     onInvalidInput: () => void,
   ) => {
     const currentValue = inputState.active.value;
+    const decimalSeparator = getLocaleDecimalSeparator();
 
     if (input === 'Backspace') {
       if (currentValue === '0') {
@@ -75,16 +76,17 @@ export function useNumberInput(initialState: InputState) {
 
     const valueHasDecimal = currentValue.includes('.');
 
-    if (input === '.') {
+    if (input === decimalSeparator) {
       // Only add decimal if one doesn't exist yet
       return valueHasDecimal
         ? onInvalidInput()
-        : handleSetValue(`${currentValue}.`);
+        : handleSetValue(`${currentValue}${decimalSeparator}`);
     }
 
     const hasMaxDecimals =
       valueHasDecimal &&
-      currentValue.length - currentValue.indexOf('.') > maxInputDecimals;
+      currentValue.length - currentValue.indexOf(decimalSeparator) >
+        maxInputDecimals;
     if (hasMaxDecimals) {
       return onInvalidInput();
     }

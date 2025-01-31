@@ -1,5 +1,6 @@
 import { Delete } from 'lucide-react';
 import { useEffect } from 'react';
+import { getLocaleDecimalSeparator } from '~/lib/money';
 
 const buttons = [
   '1',
@@ -11,7 +12,7 @@ const buttons = [
   '7',
   '8',
   '9',
-  '.',
+  getLocaleDecimalSeparator(),
   '0',
   'Backspace',
 ] as const;
