@@ -21,6 +21,22 @@ type InputState = {
 export function useNumberInput(initialState: InputState) {
   const [inputState, setInputState] = useState<InputState>(initialState);
 
+  const inputMoney = new Money({
+    amount: inputState.active.value,
+    currency: inputState.active.currency,
+    unit: getUnit(inputState.active.currency),
+  });
+
+  const otherMoney = new Money({
+    amount: inputState.other.value,
+    currency: inputState.other.currency,
+    unit: getUnit(inputState.other.currency),
+  });
+
+  const maxInputDecimals = inputMoney.getMaxDecimals(
+    getUnit(inputState.active.currency),
+  );
+
   const exchangeRate = useExchangeRate(
     `${inputState.active.currency}-${inputState.other.currency}`,
   );
@@ -43,7 +59,6 @@ export function useNumberInput(initialState: InputState) {
   /** Updates the input value or calls onInvalidInput if the input is invalid */
   const handleNumberInput = (
     input: NumpadButton,
-    maxDecimals: number,
     onInvalidInput: () => void,
   ) => {
     const currentValue = inputState.active.value;
@@ -69,7 +84,7 @@ export function useNumberInput(initialState: InputState) {
 
     const hasMaxDecimals =
       valueHasDecimal &&
-      currentValue.length - currentValue.indexOf('.') > maxDecimals;
+      currentValue.length - currentValue.indexOf('.') > maxInputDecimals;
     if (hasMaxDecimals) {
       return onInvalidInput();
     }
@@ -97,24 +112,13 @@ export function useNumberInput(initialState: InputState) {
     }));
   };
 
-  const inputMoney = new Money({
-    amount: inputState.active.value,
-    currency: inputState.active.currency,
-    unit: getUnit(inputState.active.currency),
-  });
-
-  const otherMoney = new Money({
-    amount: inputState.other.value,
-    currency: inputState.other.currency,
-    unit: getUnit(inputState.other.currency),
-  });
-
   return {
     inputValue: inputState.active.value,
     inputCurrency: inputState.other.currency,
-    handleNumberInput,
-    switchInputCurrency,
+    maxInputDecimals,
     inputMoney,
     otherMoney,
+    handleNumberInput,
+    switchInputCurrency,
   };
 }

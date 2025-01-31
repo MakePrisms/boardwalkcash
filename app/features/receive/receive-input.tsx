@@ -64,6 +64,7 @@ export default function ReceiveInput() {
     inputValue,
     inputMoney,
     otherMoney,
+    maxInputDecimals,
     handleNumberInput,
     switchInputCurrency,
   } = useNumberInput({
@@ -119,8 +120,6 @@ export default function ReceiveInput() {
       });
     }
   };
-
-  const maxDecimals = inputMoney.getMaxDecimals(getUnit(inputCurrency));
 
   return (
     <>
@@ -188,9 +187,9 @@ export default function ReceiveInput() {
           </div>
 
           <Numpad
-            showDecimal={maxDecimals > 0}
+            showDecimal={maxInputDecimals > 0}
             onButtonClick={(button) => {
-              handleNumberInput(button, maxDecimals, startShakeAnimation);
+              handleNumberInput(button, startShakeAnimation);
             }}
           />
         </div>
