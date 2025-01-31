@@ -4,11 +4,17 @@
  * @returns The decimal separator for the current locale.
  */
 export function getLocaleDecimalSeparator(locale?: string) {
-  const formattedNumber = new Intl.NumberFormat(locale, {
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: 1,
-  }).format(1.1);
+  });
 
-  // Remove all digits so that we're left with the decimal separator
-  return formattedNumber.replace(/\d/g, '')[0] as '.' | ',';
+  const parts = formatter.formatToParts(1.1);
+  const decimalPart = parts.find((part) => part.type === 'decimal');
+
+  if (!decimalPart) {
+    throw new Error('Could not determine decimal separator');
+  }
+
+  return decimalPart.value as '.' | ',';
 }
