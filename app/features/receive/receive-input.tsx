@@ -11,6 +11,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
+import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useNumberInput } from '~/hooks/use-number-input';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
@@ -60,6 +61,16 @@ export default function ReceiveInput() {
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
 
   const {
+    rate,
+    isLoading: isExchangeRateLoading,
+    error: exchangeRateError,
+  } = useExchangeRate(
+    `${receiveAccount.currency}-${
+      receiveAccount.currency === 'BTC' ? 'USD' : 'BTC'
+    }`,
+  );
+
+  const {
     inputCurrency,
     inputValue,
     inputMoney,
@@ -73,8 +84,13 @@ export default function ReceiveInput() {
       currency: receiveAccount.currency,
     },
     other: {
-      value: '0',
-      currency: receiveAccount.currency,
+      value:
+        (rate &&
+          receiveAmount
+            ?.convert(receiveAccount.currency === 'BTC' ? 'USD' : 'BTC', rate)
+            .toString(getUnit(receiveAccount.currency))) ||
+        '0',
+      currency: receiveAccount.currency === 'BTC' ? 'USD' : 'BTC',
     },
   });
 
@@ -138,10 +154,14 @@ export default function ReceiveInput() {
             />
           </div>
 
-          <ConvertedMoneyToggle
-            onSwitchInputCurrency={switchInputCurrency}
-            money={otherMoney}
-          />
+          {isExchangeRateLoading ? (
+            <div className="h-6 w-24 animate-pulse rounded bg-muted" />
+          ) : exchangeRateError ? null : (
+            <ConvertedMoneyToggle
+              onSwitchInputCurrency={switchInputCurrency}
+              money={otherMoney}
+            />
+          )}
         </div>
 
         <div className="w-full max-w-sm sm:max-w-none">

@@ -36,9 +36,11 @@ type Props = {
 
 export default function ReceiveToken({ token }: Props) {
   const tokenMoney = tokenToMoney(token);
-  const exchangeRate = useExchangeRate(
-    `${tokenMoney.currency}-${defaultFiatCurrency}`,
-  );
+  const {
+    rate,
+    isLoading: isExchangeRateLoading,
+    error: exchangeRateError,
+  } = useExchangeRate(`${tokenMoney.currency}-${defaultFiatCurrency}`);
   const user = {
     pubkey: '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   };
@@ -130,12 +132,17 @@ export default function ReceiveToken({ token }: Props) {
                 unit={tokenMoney.currency === 'BTC' ? 'sat' : 'usd'}
               />
               {shouldShowConvertedAmount && (
-                <MoneyDisplay
-                  money={tokenMoney.convert(defaultFiatCurrency, exchangeRate)}
-                  unit={'usd'}
-                  variant="secondary"
-                  className="text-muted-foreground"
-                />
+                <div className="flex flex-col items-center gap-2">
+                  {isExchangeRateLoading ? (
+                    <div className="h-6 w-24 animate-pulse rounded bg-muted" />
+                  ) : exchangeRateError ? null : rate ? (
+                    <MoneyDisplay
+                      money={tokenMoney.convert(defaultFiatCurrency, rate)}
+                      unit={'usd'}
+                      variant="secondary"
+                    />
+                  ) : null}
+                </div>
               )}
             </div>
 

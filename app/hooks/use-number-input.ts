@@ -21,6 +21,14 @@ type InputState = {
 export function useNumberInput(initialState: InputState) {
   const [inputState, setInputState] = useState<InputState>(initialState);
 
+  const {
+    rate,
+    isLoading: isExchangeRateLoading,
+    error: exchangeRateError,
+  } = useExchangeRate(
+    `${inputState.active.currency}-${inputState.other.currency}`,
+  );
+
   const inputMoney = new Money({
     amount: inputState.active.value,
     currency: inputState.active.currency,
@@ -37,17 +45,21 @@ export function useNumberInput(initialState: InputState) {
     getUnit(inputState.active.currency),
   );
 
-  const exchangeRate = useExchangeRate(
-    `${inputState.active.currency}-${inputState.other.currency}`,
-  );
-
   const handleSetValue = (newValue: string) => {
+    if (!rate) {
+      setInputState((prev) => ({
+        active: { ...prev.active, value: newValue },
+        other: { ...prev.other, value: '0' },
+      }));
+      return;
+    }
+
     const convertedValue = new Money({
       amount: newValue,
       currency: inputState.active.currency,
       unit: getUnit(inputState.active.currency),
     })
-      .convert(inputState.other.currency, exchangeRate)
+      .convert(inputState.other.currency, rate)
       .toString(getUnit(inputState.other.currency));
 
     setInputState((prev) => ({
@@ -116,11 +128,13 @@ export function useNumberInput(initialState: InputState) {
 
   return {
     inputValue: inputState.active.value,
-    inputCurrency: inputState.other.currency,
+    inputCurrency: inputState.active.currency,
     maxInputDecimals,
     inputMoney,
     otherMoney,
     handleNumberInput,
     switchInputCurrency,
+    isExchangeRateLoading,
+    exchangeRateError,
   };
 }
