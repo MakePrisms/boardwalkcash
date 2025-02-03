@@ -135,13 +135,13 @@ export default function ReceiveToken({ token }: Props) {
                 <div className="flex flex-col items-center gap-2">
                   {isExchangeRateLoading ? (
                     <div className="h-6 w-24 animate-pulse rounded bg-muted" />
-                  ) : exchangeRateError ? null : rate ? (
+                  ) : exchangeRateError ? null : (
                     <MoneyDisplay
                       money={tokenMoney.convert(defaultFiatCurrency, rate)}
                       unit={'usd'}
                       variant="secondary"
                     />
-                  ) : null}
+                  )}
                 </div>
               )}
             </div>
