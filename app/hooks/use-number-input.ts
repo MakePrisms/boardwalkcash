@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NumpadButton } from '~/components/numpad';
 import type { Currency } from '~/lib/money';
 import { Money, getLocaleDecimalSeparator } from '~/lib/money';
@@ -18,8 +18,15 @@ type InputState = {
   };
 };
 
-export function useNumberInput(initialState: InputState) {
-  const [inputState, setInputState] = useState<InputState>(initialState);
+export function useNumberInput(
+  initialValue: string,
+  initialCurrency: Currency,
+  initialOtherCurrency: Currency,
+) {
+  const [inputState, setInputState] = useState<InputState>({
+    active: { value: initialValue, currency: initialCurrency },
+    other: { value: '0', currency: initialOtherCurrency },
+  });
 
   const {
     rate,
@@ -40,6 +47,29 @@ export function useNumberInput(initialState: InputState) {
     currency: inputState.other.currency,
     unit: getUnit(inputState.other.currency),
   });
+
+  // Update the converted value when the exchange rate changes
+  useEffect(() => {
+    if (rate) {
+      const convertedValue = new Money({
+        amount: inputState.active.value,
+        currency: inputState.active.currency,
+        unit: getUnit(inputState.active.currency),
+      })
+        .convert(inputState.other.currency, rate)
+        .toString(getUnit(inputState.other.currency));
+
+      setInputState((prev) => ({
+        ...prev,
+        other: { ...prev.other, value: convertedValue },
+      }));
+    }
+  }, [
+    rate,
+    inputState.active.value,
+    inputState.active.currency,
+    inputState.other.currency,
+  ]);
 
   const maxInputDecimals = inputMoney.getMaxDecimals(
     getUnit(inputState.active.currency),

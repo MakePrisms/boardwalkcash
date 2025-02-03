@@ -11,7 +11,6 @@ import {
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
-import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useNumberInput } from '~/hooks/use-number-input';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
@@ -61,16 +60,6 @@ export default function ReceiveInput() {
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
 
   const {
-    rate,
-    isLoading: isExchangeRateLoading,
-    error: exchangeRateError,
-  } = useExchangeRate(
-    `${receiveAccount.currency}-${
-      receiveAccount.currency === 'BTC' ? 'USD' : 'BTC'
-    }`,
-  );
-
-  const {
     inputCurrency,
     inputValue,
     inputMoney,
@@ -78,21 +67,13 @@ export default function ReceiveInput() {
     maxInputDecimals,
     handleNumberInput,
     switchInputCurrency,
-  } = useNumberInput({
-    active: {
-      value: receiveAmount?.toString(getUnit(receiveAccount.currency)) || '0',
-      currency: receiveAccount.currency,
-    },
-    other: {
-      value:
-        (rate &&
-          receiveAmount
-            ?.convert(receiveAccount.currency === 'BTC' ? 'USD' : 'BTC', rate)
-            .toString(getUnit(receiveAccount.currency))) ||
-        '0',
-      currency: receiveAccount.currency === 'BTC' ? 'USD' : 'BTC',
-    },
-  });
+    isExchangeRateLoading,
+    exchangeRateError,
+  } = useNumberInput(
+    receiveAmount?.toString(getUnit(receiveAccount.currency)) || '0',
+    receiveAccount.currency,
+    receiveAccount.currency === 'BTC' ? 'USD' : 'BTC',
+  );
 
   const handleContinue = async () => {
     if (inputCurrency === receiveAccount.currency) {
