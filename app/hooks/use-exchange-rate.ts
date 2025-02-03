@@ -24,10 +24,10 @@ export const useExchangeRate = (ticker: Ticker): ExchangeRateResult => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['exchangeRate', ticker],
+    queryKey: ['exchangeRate'],
     queryFn: async ({ signal }) => {
       return exchangeRateService.getRates({
-        tickers: [ticker],
+        tickers: ['BTC-USD', 'USD-BTC', 'USD-USD', 'BTC-BTC'],
         signal,
       });
     },
