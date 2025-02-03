@@ -1,5 +1,5 @@
 import { PageContent } from '~/components/page';
-import { SettingsViewHeader } from './components/settings-view-header';
+import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 
 export default function Contacts() {
   return (

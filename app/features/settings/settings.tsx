@@ -7,12 +7,12 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
+import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { accounts } from '~/routes/_protected._index';
 import { AccountSelector } from '../accounts/account-selector';
 import { useAuthActions } from '../user/auth';
-import { SettingsNavButton } from './components/settings-nav-button';
 
 const username = 'satoshi';
 

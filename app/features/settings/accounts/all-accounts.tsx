@@ -2,8 +2,8 @@ import { Plus } from 'lucide-react';
 import { PageContent } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { SettingsNavButton } from '~/features/settings/components/settings-nav-button';
-import { SettingsViewHeader } from '~/features/settings/components/settings-view-header';
+import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
+import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { Money } from '~/lib/money';
 
 export default function AllAccounts() {
