@@ -11,7 +11,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
-import { useNumberInput } from '~/hooks/use-number-input';
+import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
@@ -25,13 +25,17 @@ import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {
   onSwitchInputCurrency: () => void;
-  money: Money;
+  money?: Money;
 };
 
 const ConvertedMoneyToggle = ({
   onSwitchInputCurrency,
   money,
 }: ConvertedMoneyToggleProps) => {
+  if (!money) {
+    return <div className="h-6 w-24 animate-pulse rounded bg-muted" />;
+  }
+
   return (
     <button
       type="button"
@@ -56,30 +60,33 @@ export default function ReceiveInput() {
 
   const receiveAccount = useReceiveStore((s) => s.account);
   const receiveAmount = useReceiveStore((s) => s.amount);
+  const receiveCurrencyUnit = getUnit(receiveAccount.currency);
   const setReceiveAccount = useReceiveStore((s) => s.setAccount);
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
 
   const {
-    inputCurrency,
-    inputValue,
-    inputMoney,
-    otherMoney,
+    rawInputValue,
     maxInputDecimals,
+    inputValue,
+    convertedValue,
+    exchangeRateError,
     handleNumberInput,
     switchInputCurrency,
-    isExchangeRateLoading,
-    exchangeRateError,
-  } = useNumberInput(
-    receiveAmount?.toString(getUnit(receiveAccount.currency)) || '0',
-    receiveAccount.currency,
-    receiveAccount.currency === 'BTC' ? 'USD' : 'BTC',
-  );
+  } = useMoneyInput({
+    initialRawInputValue: receiveAmount?.toString(receiveCurrencyUnit) || '0',
+    initialInputCurrency: receiveAccount.currency,
+    initialOtherCurrency: receiveAccount.currency === 'BTC' ? 'USD' : 'BTC',
+  });
 
   const handleContinue = async () => {
-    if (inputCurrency === receiveAccount.currency) {
-      setReceiveAmount(inputMoney);
+    if (inputValue.currency === receiveAccount.currency) {
+      setReceiveAmount(inputValue);
     } else {
-      setReceiveAmount(otherMoney);
+      if (!convertedValue) {
+        // Can't happen because when there is no converted value, the toggle will not be shown so input currency and receive currency must be the same
+        return;
+      }
+      setReceiveAmount(convertedValue);
     }
 
     if (receiveAccount.type === 'cashu') {
@@ -129,18 +136,16 @@ export default function ReceiveInput() {
         <div className="flex flex-col items-center gap-2">
           <div className={shakeAnimationClass}>
             <MoneyInputDisplay
-              inputValue={inputValue}
-              currency={inputCurrency}
-              unit={getUnit(inputCurrency)}
+              inputValue={rawInputValue}
+              currency={inputValue.currency}
+              unit={getUnit(inputValue.currency)}
             />
           </div>
 
-          {isExchangeRateLoading ? (
-            <div className="h-6 w-24 animate-pulse rounded bg-muted" />
-          ) : exchangeRateError ? null : (
+          {!exchangeRateError && (
             <ConvertedMoneyToggle
               onSwitchInputCurrency={switchInputCurrency}
-              money={otherMoney}
+              money={convertedValue}
             />
           )}
         </div>
@@ -151,7 +156,7 @@ export default function ReceiveInput() {
             selectedAccount={receiveAccount}
             onSelect={(account) => {
               setReceiveAccount(account);
-              if (account.currency !== inputCurrency) {
+              if (account.currency !== inputValue.currency) {
                 switchInputCurrency();
               }
             }}
@@ -182,15 +187,15 @@ export default function ReceiveInput() {
               </LinkWithViewTransition>
             </div>
             <div /> {/* spacer */}
-            <Button onClick={handleContinue} disabled={inputMoney.isZero()}>
+            <Button onClick={handleContinue} disabled={inputValue.isZero()}>
               Continue
             </Button>
           </div>
 
           <Numpad
             showDecimal={maxInputDecimals > 0}
-            onButtonClick={(button) => {
-              handleNumberInput(button, startShakeAnimation);
+            onButtonClick={(value) => {
+              handleNumberInput(value, startShakeAnimation);
             }}
           />
         </div>
