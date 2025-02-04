@@ -1,4 +1,4 @@
-import { type Token, getDecodedToken, getEncodedToken } from '@cashu/cashu-ts';
+import { type Token, getDecodedToken } from '@cashu/cashu-ts';
 import { useQuery } from '@tanstack/react-query';
 import { MoneyDisplay } from '~/components/money-display';
 import {
@@ -14,6 +14,8 @@ import { toast } from '~/hooks/use-toast';
 import { getP2PKPubkeyFromProofs } from '~/lib/cashu';
 import { checkTokenForSpentProofs } from '~/lib/cashu/token';
 import { accounts } from '~/routes/_protected._index';
+import { getUnit } from '~/utils';
+import { AccountSelector } from '../accounts/account-selector';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { isTestMint, tokenToMoney } from './util';
 
@@ -40,7 +42,9 @@ export default function ReceiveToken({ token }: Props) {
     rate,
     isLoading: isExchangeRateLoading,
     error: exchangeRateError,
-  } = useExchangeRate(`${tokenMoney.currency}-${defaultFiatCurrency}`);
+  } = useExchangeRate(
+    `${tokenMoney.currency}-${tokenMoney.currency === 'BTC' ? 'USD' : 'BTC'}`,
+  );
   const user = {
     pubkey: '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   };
@@ -85,14 +89,20 @@ export default function ReceiveToken({ token }: Props) {
 
   // TODO: should chceck mint against user's accounts
   // will be undefined if the user is not initialized (ie. clicked a token link, but not logged in)
-  const isMintTrusted: boolean | undefined = true;
+  // a known mint is a mint that the user has added to their accounts
+  const isMintKnown: boolean | undefined = true;
 
   // claim to source mint claims the token to the mint that issued the token
   // should show claim to source mint if
   // 1. the token is not spent
   // 2. canClaim is true
   // 3. default account is not the source mint
-  const shouldShowClaimToSourceMint = !isSpent && canClaim;
+  const shouldShowClaimToSourceMint =
+    !isSpent &&
+    canClaim &&
+    isMintKnown &&
+    defaultAccount.type === 'cashu' &&
+    defaultAccount.mintUrl !== token.mint;
 
   // disable claim to default account if:
   // 1. cannot claim
@@ -111,6 +121,15 @@ export default function ReceiveToken({ token }: Props) {
     console.log('claim to source mint');
   };
 
+  if (isSpentLoading) {
+    return <LoadingScreen />;
+  }
+
+  // Token scenarios:
+  // 1. Token is from the user's default account
+  // 2. Token is from a known mint that is different from the user's default account
+  // 3. Token is from an unknown mint
+
   return (
     <Page>
       <PageHeader>
@@ -121,62 +140,78 @@ export default function ReceiveToken({ token }: Props) {
         />
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
-      <PageContent className="flex flex-col items-center">
-        {isSpentLoading ? (
-          <LoadingScreen />
-        ) : (
-          <>
-            <div className="flex flex-col items-center">
-              <MoneyDisplay
-                money={tokenMoney}
-                unit={tokenMoney.currency === 'BTC' ? 'sat' : 'usd'}
-              />
-              {shouldShowConvertedAmount && (
-                <div className="flex flex-col items-center gap-2">
-                  {isExchangeRateLoading ? (
-                    <div className="h-6 w-24 animate-pulse rounded bg-muted" />
-                  ) : exchangeRateError ? null : (
-                    <MoneyDisplay
-                      money={tokenMoney.convert(defaultFiatCurrency, rate)}
-                      unit={'usd'}
-                      variant="secondary"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              {token.mint}{' '}
-              {isMintTrusted !== undefined ? (isMintTrusted ? '✅' : '❌') : ''}
-            </div>
-
-            {isSpent && (
-              <div>
-                <p className="text-destructive">Token is spent</p>
+      <PageContent className="flex flex-col items-center justify-between gap-8">
+        <div>
+          <div className="flex h-[124px] flex-col items-center gap-2">
+            <MoneyDisplay
+              money={tokenMoney}
+              unit={getUnit(tokenMoney.currency)}
+            />
+            {shouldShowConvertedAmount && (
+              <div className="flex flex-col items-center gap-2">
+                {isExchangeRateLoading ? (
+                  <div className="h-6 w-24 animate-pulse rounded bg-muted" />
+                ) : exchangeRateError ? null : (
+                  <MoneyDisplay
+                    money={tokenMoney.convert(
+                      tokenMoney.currency === 'BTC'
+                        ? defaultFiatCurrency
+                        : 'BTC',
+                      rate,
+                    )}
+                    unit={getUnit(
+                      tokenMoney.currency === 'BTC'
+                        ? defaultFiatCurrency
+                        : 'BTC',
+                    )}
+                    variant="secondary"
+                  />
+                )}
               </div>
             )}
+          </div>
+        </div>
+        <div className="w-full">
+          {/* 
+              This will show accounts with badges on them for added information
+              - currenctly selected account should be first
+              - If source mint is different than selected account, then that should be the second item
+                and have a badge that says "Token Mint"      
+                  - if source mint is unknown, include a badge that says "unknown"     
+          */}
+          <AccountSelector
+            accounts={accounts}
+            selectedAccount={defaultAccount}
+            onSelect={console.log}
+          />
+        </div>
 
-            {canClaim && (
-              <Button
-                disabled={disableClaimToDefault}
-                onClick={handleClaimToDefaultAccount}
-              >
-                Claim
-              </Button>
-            )}
-
-            {shouldShowClaimToSourceMint && (
-              <Button onClick={handleClaimToSourceMint}>
-                Claim to source mint
-              </Button>
-            )}
-
-            <div className="break-all text-gray-500 text-xs">
-              {getEncodedToken(token)}
-            </div>
-          </>
+        {isSpent && (
+          <div className="rounded-md bg-destructive/10 px-4 py-3">
+            <p className="text-destructive text-sm">
+              This token has already been spent
+            </p>
+          </div>
         )}
+
+        <div className="flex flex-col gap-4">
+          {canClaim && (
+            <Button
+              disabled={disableClaimToDefault}
+              onClick={handleClaimToDefaultAccount}
+              className="min-w-[200px]"
+            >
+              {/*
+                if selected account is the source mint:
+                  - known: Claim
+                  - unknown: Add Mint and Claim
+
+                otherwise just claim to selected account
+              */}
+              Claim
+            </Button>
+          )}
+        </div>
       </PageContent>
     </Page>
   );
