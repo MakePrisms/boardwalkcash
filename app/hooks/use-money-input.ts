@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import type { NumpadButton } from '~/components/numpad';
 import { getDefaultUnit } from '~/features/shared/currencies';
 import type { Ticker } from '~/lib/exchange-rate';
+import { getLocaleDecimalSeparator } from '~/lib/locale';
 import type { Currency } from '~/lib/money';
-import { Money, getLocaleDecimalSeparator } from '~/lib/money';
+import { Money } from '~/lib/money';
 import { useExchangeRates } from './use-exchange-rate';
 
 type State = {

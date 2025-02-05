@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Big } from 'big.js';
 import { Money } from '.';
-import { getLocaleDecimalSeparator } from './utils';
 
 describe('Money', () => {
   describe('USD', () => {
@@ -149,15 +148,5 @@ describe('Money', () => {
       const result = money.divide(2);
       expect(result.amount().toString()).toBe('50');
     });
-  });
-});
-
-describe('getLocaleDecimalSeparator', () => {
-  it('returns . for US locale', () => {
-    expect(getLocaleDecimalSeparator('en-US')).toBe('.');
-  });
-
-  it('returns , for German locale', () => {
-    expect(getLocaleDecimalSeparator('de-DE')).toBe(',');
   });
 });

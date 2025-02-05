@@ -1,6 +1,6 @@
 import { Delete } from 'lucide-react';
 import { useEffect } from 'react';
-import { getLocaleDecimalSeparator } from '~/lib/money';
+import { getLocaleDecimalSeparator } from '~/lib/locale';
 
 const buttons = [
   '1',

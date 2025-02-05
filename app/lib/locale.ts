@@ -3,7 +3,7 @@
  * @param locale Locale to use to format the number. If not provided the locale of the machine will be used.
  * @returns The decimal separator for the current locale.
  */
-export function getLocaleDecimalSeparator(locale?: string) {
+export function getLocaleDecimalSeparator(locale?: string): string {
   const formatter = new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: 1,
@@ -16,5 +16,5 @@ export function getLocaleDecimalSeparator(locale?: string) {
     throw new Error('Could not determine decimal separator');
   }
 
-  return decimalPart.value as '.' | ',';
+  return decimalPart.value;
 }
