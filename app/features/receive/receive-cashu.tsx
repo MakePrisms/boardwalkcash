@@ -24,69 +24,56 @@ import type { Account } from '../accounts/account-selector';
 import { getCashuRequest } from './reusable-payment-request';
 import { useMintQuote } from './use-mint-quote';
 
-type QRCodeValue = {
+type QRCarouselItemProps = {
   value?: string;
   description: string;
   error?: string;
   isLoading?: boolean;
 };
 
-/**
- * A component to display a QR code with a loading state or an error message.
- *
- * @param value - The value to display in the QR code.
- * @param error - The error message to display.
- * @param isLoading - Whether the QR code value is loading.
- */
-function QRDisplay({
-  value,
-  error,
-  isLoading,
-}: { value?: string; error?: string; isLoading?: boolean }) {
-  const baseClasses =
-    'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
-
-  if (isLoading) {
-    return <Skeleton className={baseClasses} />;
-  }
-
-  if (value) {
-    return (
-      <div className={cn(baseClasses, 'bg-foreground')}>
-        <QRCodeSVG
-          value={value}
-          size={256}
-          marginSize={3}
-          className="rounded-lg bg-foreground"
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={cn(baseClasses, 'border bg-card')}>
-        <div className="flex flex-col items-center justify-center gap-2 p-4">
-          <AlertCircle className="h-8 w-8 text-foreground" />
-          <p className="text-center text-muted-foreground text-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
-}
-
 function QRCarouselItem({
   value,
   description,
-}: { value: QRCodeValue; description: string }) {
+  error,
+  isLoading,
+}: QRCarouselItemProps) {
+  const baseClasses =
+    'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
+
+  const qrContent = (() => {
+    if (isLoading) {
+      return <Skeleton className={baseClasses} />;
+    }
+
+    if (value) {
+      return (
+        <div className={cn(baseClasses, 'bg-foreground')}>
+          <QRCodeSVG
+            value={value}
+            size={256}
+            marginSize={3}
+            className="rounded-lg bg-foreground"
+          />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className={cn(baseClasses, 'border bg-card')}>
+          <div className="flex flex-col items-center justify-center gap-2 p-4">
+            <AlertCircle className="h-8 w-8 text-foreground" />
+            <p className="text-center text-muted-foreground text-sm">{error}</p>
+          </div>
+        </div>
+      );
+    }
+  })();
+
   return (
     <CarouselItem>
       <div className="flex flex-col items-center justify-center gap-8">
-        <QRDisplay
-          value={value.value}
-          error={value.error}
-          isLoading={value.isLoading}
-        />
+        {qrContent}
         <div className="w-[256px]">
           <p className="flex h-[32px] items-center justify-center text-center font-medium text-muted-foreground text-xs">
             {description}
@@ -94,6 +81,66 @@ function QRCarouselItem({
         </div>
       </div>
     </CarouselItem>
+  );
+}
+
+type CashuRequestQRProps = {
+  account: Account & { type: 'cashu' };
+  amount: Money;
+};
+
+function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
+  const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
+  // TODO: this should come from some hook that does a similar thing to the mint quote hook
+  const cashuRequest = getCashuRequest(account, {
+    amount,
+    unit: cashuUnit,
+    singleUse: true,
+  }).toEncodedRequest();
+
+  return (
+    <QRCarouselItem
+      value={cashuRequest}
+      description="Scan with any wallet that supports Cashu payment requests."
+    />
+  );
+}
+
+type MintQuoteProps = {
+  account: Account & { type: 'cashu' };
+  amount: Money;
+  isVisible: boolean;
+};
+
+function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
+  const { mintQuote, createQuoteIfNeeded, fetchError, checkError, isLoading } =
+    useMintQuote({
+      account,
+      amount,
+    });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (checkError) {
+      toast({
+        title: 'Error',
+        description: checkError,
+        variant: 'destructive',
+      });
+    }
+  }, [checkError, toast]);
+
+  useEffect(() => {
+    createQuoteIfNeeded(isVisible);
+  }, [isVisible, createQuoteIfNeeded]);
+
+  return (
+    <QRCarouselItem
+      value={mintQuote?.request}
+      description="Scan with any Lightning wallet."
+      error={fetchError || checkError}
+      isLoading={isLoading}
+    />
   );
 }
 
@@ -112,29 +159,6 @@ function useCarousel() {
   };
 
   return { current, scrollToIndex, setApi };
-}
-
-/**  A carousel to display a list of QR codes. */
-function QRCarousel({
-  values,
-  onApiChange,
-}: {
-  values: QRCodeValue[];
-  onApiChange: (api: CarouselApi) => void;
-}) {
-  return (
-    <Carousel setApi={onApiChange} opts={{ align: 'center', loop: true }}>
-      <CarouselContent>
-        {values.map((value) => (
-          <QRCarouselItem
-            key={value.description}
-            value={value}
-            description={value.description}
-          />
-        ))}
-      </CarouselContent>
-    </Carousel>
-  );
 }
 
 /** Two buttons to flip back and forth between the two QR codes. */
@@ -177,55 +201,10 @@ type Props = {
 };
 
 export default function ReceiveCashu({ amount, account }: Props) {
-  const { toast } = useToast();
-  const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
   const { current, scrollToIndex, setApi } = useCarousel();
   const { data: rate, error: exchangeRateError } = useExchangeRate(
     `${amount.currency}-${amount.currency === 'BTC' ? 'USD' : 'BTC'}`,
   );
-
-  const { mintQuote, startFetching, fetchError, checkError, isLoading } =
-    useMintQuote({
-      account,
-      amount,
-    });
-
-  useEffect(() => {
-    if (checkError) {
-      toast({
-        title: 'Error',
-        description: checkError,
-        variant: 'destructive',
-      });
-    }
-  }, [checkError, toast]);
-
-  useEffect(() => {
-    if (current === 1) {
-      // only start fetching after the user goes to the bolt11 carousel item
-      // this is to prevent spamming the mint with unneeded requests
-      startFetching();
-    }
-  }, [startFetching, current]);
-
-  const cashuRequest = getCashuRequest(account, {
-    amount,
-    unit: cashuUnit,
-    singleUse: true,
-  }).toEncodedRequest();
-
-  const qrCodeValues: QRCodeValue[] = [
-    {
-      value: cashuRequest,
-      description: 'Scan with any wallet that supports Cashu payment requests.',
-    },
-    {
-      value: mintQuote?.request,
-      description: 'Scan with any Lighting wallet.',
-      error: fetchError || checkError,
-      isLoading: isLoading,
-    },
-  ];
 
   return (
     <>
@@ -240,7 +219,7 @@ export default function ReceiveCashu({ amount, account }: Props) {
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
         <div className="flex min-h-[116px] flex-col items-center">
           <MoneyDisplay money={amount} unit={getDefaultUnit(amount.currency)} />
-          {!exchangeRateError && rate ? (
+          {!exchangeRateError && rate && (
             <MoneyDisplay
               money={amount.convert(
                 amount.currency === 'BTC' ? 'USD' : 'BTC',
@@ -249,13 +228,20 @@ export default function ReceiveCashu({ amount, account }: Props) {
               unit={getDefaultUnit(amount.currency === 'BTC' ? 'USD' : 'BTC')}
               variant="secondary"
             />
-          ) : (
-            <Skeleton className="h-6 w-24" />
           )}
         </div>
 
         <div className="flex w-full flex-col items-center justify-center px-8 py-8">
-          <QRCarousel values={qrCodeValues} onApiChange={setApi} />
+          <Carousel setApi={setApi} opts={{ align: 'center', loop: true }}>
+            <CarouselContent>
+              <CashuRequestQRItem account={account} amount={amount} />
+              <MintQuoteItem
+                account={account}
+                amount={amount}
+                isVisible={current === 1}
+              />
+            </CarouselContent>
+          </Carousel>
           <CarouselControls current={current} onSelect={scrollToIndex} />
         </div>
       </PageContent>

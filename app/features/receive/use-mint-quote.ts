@@ -1,60 +1,73 @@
 import { CashuMint, CashuWallet, MintQuoteState } from '@cashu/cashu-ts';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useCallback, useRef } from 'react';
 import type { Money } from '~/lib/money';
 import type { Account } from '../accounts/account-selector';
 
 type UseMintQuoteProps = {
+  /** The Cashu account to create a mint quote for. */
   account: Account & { type: 'cashu' };
+  /**
+   * The amount to create a mint quote for.
+   * The amount's currency must match the account's currency.
+   */
   amount: Money;
 };
 
+/**
+ * A hook to create a mint quote for a Cashu account and then poll the
+ * status of the quote
+ */
 export function useMintQuote({ account, amount }: UseMintQuoteProps) {
-  const [isPaid, setIsPaid] = useState(false);
-  const [shouldFetch, setShouldFetch] = useState(false);
   const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
   const moneyUnit = cashuUnit === 'usd' ? 'cent' : 'sat';
   const wallet = new CashuWallet(new CashuMint(account.mintUrl), {
     unit: cashuUnit,
   });
+  const hasCreatedQuote = useRef(false);
+
+  if (amount.currency !== account.currency) {
+    throw new Error('Amount currency must match account currency');
+  }
 
   const {
-    isLoading,
+    status,
     error,
     data: mintQuote,
-  } = useQuery({
-    queryKey: ['receive-cashu', account.id, amount.toNumber(moneyUnit)],
-    queryFn: async () => {
-      const mintQuote = await wallet.createMintQuote(
-        amount.toNumber(moneyUnit),
-      );
-      return mintQuote;
-    },
-    enabled: shouldFetch,
+    mutate,
+  } = useMutation({
+    mutationKey: ['receive-cashu', account.id, amount.toNumber(moneyUnit)],
+    mutationFn: () => wallet.createMintQuote(amount.toNumber(moneyUnit)),
     retry: 1,
   });
 
-  const { error: checkError } = useQuery({
+  const { data, error: checkError } = useQuery({
     queryKey: ['receive-cashu-status', mintQuote?.quote],
-    queryFn: async () => {
-      if (!mintQuote?.quote) return null;
-      const checked = await wallet.checkMintQuote(mintQuote.quote);
-      if (checked.state === MintQuoteState.PAID) {
-        setIsPaid(true);
-      }
-      return checked;
+    queryFn: () => wallet.checkMintQuote(mintQuote?.quote ?? ''),
+    enabled: !!mintQuote,
+    refetchInterval: ({ state: { data } }) => {
+      return data?.state === MintQuoteState.PAID ? false : 1500;
     },
-    enabled: !!mintQuote && !isPaid,
-    refetchInterval: 1500,
+    refetchIntervalInBackground: true,
     retry: 1,
   });
+
+  const createQuoteIfNeeded = useCallback(
+    (shouldCreate: boolean) => {
+      if (shouldCreate && !hasCreatedQuote.current) {
+        mutate();
+        hasCreatedQuote.current = true;
+      }
+    },
+    [mutate],
+  );
 
   return {
-    isLoading,
+    isLoading: status === 'pending',
     fetchError: error?.message,
     checkError: checkError?.message,
-    isPaid,
+    isPaid: data?.state === MintQuoteState.PAID,
     mintQuote,
-    startFetching: () => setShouldFetch(true),
+    createQuoteIfNeeded,
   };
 }
