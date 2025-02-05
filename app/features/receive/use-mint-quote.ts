@@ -24,10 +24,6 @@ export function useMintQuote({ account, amount }: UseMintQuoteProps) {
     unit: cashuUnit,
   });
 
-  if (amount.currency !== account.currency) {
-    throw new Error('Amount currency must match account currency');
-  }
-
   const {
     status,
     error,
