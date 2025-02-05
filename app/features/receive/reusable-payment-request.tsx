@@ -9,15 +9,15 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
-import type { Money } from '~/lib/money';
+import type { Currency, CurrencyUnit, Money } from '~/lib/money';
 import type { Account } from '../accounts/account-selector';
 
-export const getCashuRequest = (
-  account: Account & { type: 'cashu' },
+export const getCashuRequest = <C extends Currency>(
+  account: Account<C> & { type: 'cashu' },
   opts?: {
-    amount?: Money;
+    amount?: Money<C>;
     description?: string;
-    unit?: 'sat' | 'usd';
+    unit?: Extract<CurrencyUnit<C>, 'sat' | 'usd'>;
     singleUse?: boolean;
   },
 ): PaymentRequest => {

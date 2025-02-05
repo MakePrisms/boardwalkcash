@@ -12,10 +12,10 @@ import { type Currency, Money } from '~/lib/money';
 
 export type AccountType = 'cashu' | 'nwc';
 
-export type Account = {
+export type Account<C extends Currency = Currency> = {
   id: string;
   name: string;
-  currency: Currency;
+  currency: C;
   type: AccountType;
   balance: Big;
 } & (

@@ -18,7 +18,7 @@ import { Skeleton } from '~/components/ui/skeleton';
 import { getDefaultUnit } from '~/features/shared/currencies';
 import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
-import type { Money } from '~/lib/money';
+import type { Currency, CurrencyUnit, Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 import type { Account } from '../accounts/account-selector';
 import { getCashuRequest } from './reusable-payment-request';
@@ -84,13 +84,19 @@ function QRCarouselItem({
   );
 }
 
-type CashuRequestQRProps = {
-  account: Account & { type: 'cashu' };
-  amount: Money;
+type CashuRequestQRProps<C extends Currency> = {
+  account: Account<C> & { type: 'cashu' };
+  amount: Money<C>;
 };
 
-function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
-  const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
+function CashuRequestQRItem<C extends Currency>({
+  account,
+  amount,
+}: CashuRequestQRProps<C>) {
+  const cashuUnit = (account.currency === 'USD' ? 'usd' : 'sat') as Extract<
+    CurrencyUnit<C>,
+    'usd' | 'sat'
+  >;
   // TODO: this should come from some hook that does a similar thing to the mint quote hook
   const cashuRequest = getCashuRequest(account, {
     amount,
@@ -106,13 +112,17 @@ function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
   );
 }
 
-type MintQuoteProps = {
-  account: Account & { type: 'cashu' };
-  amount: Money;
+type MintQuoteProps<C extends Currency> = {
+  account: Account<C> & { type: 'cashu' };
+  amount: Money<C>;
   isVisible: boolean;
 };
 
-function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
+function MintQuoteItem<C extends Currency>({
+  account,
+  amount,
+  isVisible,
+}: MintQuoteProps<C>) {
   const { mintQuote, createQuote, fetchError, checkError, isLoading } =
     useMintQuote({
       account,
@@ -203,12 +213,15 @@ function CarouselControls({
   );
 }
 
-type Props = {
-  amount: Money;
-  account: Account & { type: 'cashu' };
+type Props<C extends Currency> = {
+  amount: Money<C>;
+  account: Account<C> & { type: 'cashu' };
 };
 
-export default function ReceiveCashu({ amount, account }: Props) {
+export default function ReceiveCashu<C extends Currency>({
+  amount,
+  account,
+}: Props<C>) {
   const { current, scrollToIndex, setApi } = useCarousel();
   const { data: rate, error: exchangeRateError } = useExchangeRate(
     `${amount.currency}-${amount.currency === 'BTC' ? 'USD' : 'BTC'}`,

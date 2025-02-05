@@ -1,32 +1,33 @@
 import { CashuMint, CashuWallet, MintQuoteState } from '@cashu/cashu-ts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { Money } from '~/lib/money';
+import type { Currency, CurrencyUnit, Money } from '~/lib/money';
 import type { Account } from '../accounts/account-selector';
 
-type UseMintQuoteProps = {
+type UseMintQuoteProps<C extends Currency> = {
   /** The Cashu account to create a mint quote for. */
-  account: Account & { type: 'cashu' };
+  account: Account<C> & { type: 'cashu' };
   /**
    * The amount to create a mint quote for.
    * The amount's currency must match the account's currency.
    */
-  amount: Money;
+  amount: Money<C>;
 };
 
 /**
  * A hook to create a mint quote for a Cashu account and then poll the
  * status of the quote
  */
-export function useMintQuote({ account, amount }: UseMintQuoteProps) {
-  const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
-  const moneyUnit = cashuUnit === 'usd' ? 'cent' : 'sat';
+export function useMintQuote<C extends Currency>({
+  account,
+  amount,
+}: UseMintQuoteProps<C>) {
+  const cashuUnit = (
+    account.currency === 'USD' ? 'usd' : 'sat'
+  ) as CurrencyUnit<C>;
+  const moneyUnit = (cashuUnit === 'usd' ? 'cent' : 'sat') as CurrencyUnit<C>;
   const wallet = new CashuWallet(new CashuMint(account.mintUrl), {
     unit: cashuUnit,
   });
-
-  if (amount.currency !== account.currency) {
-    throw new Error('Amount currency must match account currency');
-  }
 
   const {
     status,

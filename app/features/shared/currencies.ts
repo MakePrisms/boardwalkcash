@@ -7,6 +7,6 @@ const currencyToDefaultUnit: {
   USD: 'usd',
 };
 
-export const getDefaultUnit = (currency: Currency) => {
+export const getDefaultUnit = <C extends Currency>(currency: C) => {
   return currencyToDefaultUnit[currency];
 };
