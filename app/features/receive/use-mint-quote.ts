@@ -1,6 +1,5 @@
 import { CashuMint, CashuWallet, MintQuoteState } from '@cashu/cashu-ts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useCallback, useRef } from 'react';
 import type { Money } from '~/lib/money';
 import type { Account } from '../accounts/account-selector';
 
@@ -24,7 +23,6 @@ export function useMintQuote({ account, amount }: UseMintQuoteProps) {
   const wallet = new CashuWallet(new CashuMint(account.mintUrl), {
     unit: cashuUnit,
   });
-  const hasCreatedQuote = useRef(false);
 
   if (amount.currency !== account.currency) {
     throw new Error('Amount currency must match account currency');
@@ -52,22 +50,12 @@ export function useMintQuote({ account, amount }: UseMintQuoteProps) {
     retry: 1,
   });
 
-  const createQuoteIfNeeded = useCallback(
-    (shouldCreate: boolean) => {
-      if (shouldCreate && !hasCreatedQuote.current) {
-        mutate();
-        hasCreatedQuote.current = true;
-      }
-    },
-    [mutate],
-  );
-
   return {
     isLoading: status === 'pending',
     fetchError: error?.message,
     checkError: checkError?.message,
     isPaid: data?.state === MintQuoteState.PAID,
     mintQuote,
-    createQuoteIfNeeded,
+    createQuote: mutate,
   };
 }
