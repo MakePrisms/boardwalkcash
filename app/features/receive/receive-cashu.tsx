@@ -1,6 +1,6 @@
 import { AlertCircle, Banknote, Zap } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
 import {
   PageBackButton,
@@ -119,7 +119,6 @@ function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
       amount,
     });
   const { toast } = useToast();
-  const hasCreatedQuote = useRef(false);
 
   useEffect(() => {
     if (checkError) {
@@ -132,15 +131,10 @@ function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
   }, [checkError, toast]);
 
   useEffect(() => {
-    if (isVisible && !hasCreatedQuote.current) {
+    if (isVisible && !mintQuote) {
       createQuote();
-      hasCreatedQuote.current = true;
     }
-
-    return () => {
-      hasCreatedQuote.current = false;
-    };
-  }, [isVisible, createQuote]);
+  }, [isVisible, createQuote, mintQuote]);
 
   return (
     <QRCarouselItem
