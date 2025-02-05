@@ -14,6 +14,7 @@ import {
   CarouselContent,
   CarouselItem,
 } from '~/components/ui/carousel';
+import { Skeleton } from '~/components/ui/skeleton';
 import { getDefaultUnit } from '~/features/shared/currencies';
 import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
@@ -46,7 +47,7 @@ function QRDisplay({
     'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
 
   if (isLoading) {
-    return <div className={cn(baseClasses, 'animate-pulse bg-primary/70')} />;
+    return <Skeleton className={baseClasses} />;
   }
 
   if (value) {
@@ -249,7 +250,7 @@ export default function ReceiveCashu({ amount, account }: Props) {
               variant="secondary"
             />
           ) : (
-            <div className="h-6 w-24 animate-pulse rounded bg-primary/70" />
+            <Skeleton className="h-6 w-24" />
           )}
         </div>
 

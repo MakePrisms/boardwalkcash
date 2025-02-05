@@ -9,6 +9,7 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { Skeleton } from '~/components/ui/skeleton';
 import { AccountSelector } from '~/features/accounts/account-selector';
 import { getDefaultUnit } from '~/features/shared/currencies';
 import useAnimation from '~/hooks/use-animation';
@@ -33,7 +34,7 @@ const ConvertedMoneyToggle = ({
   money,
 }: ConvertedMoneyToggleProps) => {
   if (!money) {
-    return <div className="h-6 w-24 animate-pulse rounded bg-primary/70" />;
+    return <Skeleton className="h-6 w-24" />;
   }
 
   return (
