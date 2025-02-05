@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type Currency, Money } from '~/lib/money';
+import type { Currency, Money } from '~/lib/money';
 import type { Account } from '../accounts/account-selector';
 
 export type ReceiveState<T extends Currency = Currency> = {
@@ -20,12 +20,19 @@ export const createReceiveStore = ({
   initialAccount: Account;
   initialAmount: Money | null;
 }) => {
-  return create<ReceiveState>((set) => ({
+  return create<ReceiveState>((set, get) => ({
     account: initialAccount,
     amount: initialAmount,
-    setAccount: (account) =>
-      set({ account, amount: Money.zero(account.currency) }),
-    setAmount: (amount) => set({ amount }),
+    setAccount: (account) => set({ account, amount: null }),
+    setAmount: (amount) => {
+      const { account } = get();
+      if (amount.currency !== account.currency) {
+        throw new Error(
+          `Amount currency (${amount.currency}) must match account currency (${account.currency})`,
+        );
+      }
+      set({ amount });
+    },
   }));
 };
 
