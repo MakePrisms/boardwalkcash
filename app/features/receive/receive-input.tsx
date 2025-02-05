@@ -10,6 +10,7 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '~/features/accounts/account-selector';
+import { getDefaultUnit } from '~/features/shared/currencies';
 import useAnimation from '~/hooks/use-animation';
 import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
@@ -20,7 +21,6 @@ import {
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
 import { accounts } from '~/routes/_protected._index';
-import { getUnit } from '~/utils';
 import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {
@@ -44,7 +44,7 @@ const ConvertedMoneyToggle = ({
     >
       <MoneyDisplay
         money={money}
-        unit={getUnit(money.currency)}
+        unit={getDefaultUnit(money.currency)}
         variant="secondary"
       />
       <ArrowUpDown className="mb-1" />
@@ -60,7 +60,7 @@ export default function ReceiveInput() {
 
   const receiveAccount = useReceiveStore((s) => s.account);
   const receiveAmount = useReceiveStore((s) => s.amount);
-  const receiveCurrencyUnit = getUnit(receiveAccount.currency);
+  const receiveCurrencyUnit = getDefaultUnit(receiveAccount.currency);
   const setReceiveAccount = useReceiveStore((s) => s.setAccount);
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
 
@@ -143,7 +143,7 @@ export default function ReceiveInput() {
             <MoneyInputDisplay
               inputValue={rawInputValue}
               currency={inputValue.currency}
-              unit={getUnit(inputValue.currency)}
+              unit={getDefaultUnit(inputValue.currency)}
             />
           </div>
 

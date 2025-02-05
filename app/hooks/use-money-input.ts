@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { NumpadButton } from '~/components/numpad';
+import { getDefaultUnit } from '~/features/shared/currencies';
 import type { Ticker } from '~/lib/exchange-rate';
 import type { Currency } from '~/lib/money';
 import { Money, getLocaleDecimalSeparator } from '~/lib/money';
-import { getUnit } from '~/utils';
 import { useExchangeRates } from './use-exchange-rate';
 
 type State = {
@@ -40,7 +40,7 @@ const toMoney = ({
   return new Money({
     amount: value,
     currency,
-    unit: getUnit(currency),
+    unit: getDefaultUnit(currency),
   });
 };
 
@@ -107,7 +107,7 @@ export function useMoneyInput({
 
         const newConvertedValue = toMoney(current.input)
           .convert(current.converted.currency, rate)
-          .toString(getUnit(current.converted.currency));
+          .toString(getDefaultUnit(current.converted.currency));
 
         return {
           ...current,
@@ -121,7 +121,7 @@ export function useMoneyInput({
   }, [rates]);
 
   const maxInputDecimals = inputMoney.getMaxDecimals(
-    getUnit(state.input.currency),
+    getDefaultUnit(state.input.currency),
   );
 
   const decimalSeparator = getLocaleDecimalSeparator();
@@ -134,7 +134,7 @@ export function useMoneyInput({
     const newConvertedValue = rate
       ? toMoney({ value: newValue, currency: state.input.currency })
           .convert(state.converted.currency, rate)
-          .toString(getUnit(state.converted.currency))
+          .toString(getDefaultUnit(state.converted.currency))
       : undefined;
 
     setState((current) => ({

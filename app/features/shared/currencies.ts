@@ -1,4 +1,4 @@
-import type { Currency, CurrencyUnit } from './lib/money';
+import type { Currency, CurrencyUnit } from '~/lib/money';
 
 const currencyToDefaultUnit: {
   [K in Currency]: CurrencyUnit<K>;
@@ -7,6 +7,6 @@ const currencyToDefaultUnit: {
   USD: 'usd',
 };
 
-export const getUnit = (currency: Currency) => {
+export const getDefaultUnit = (currency: Currency) => {
   return currencyToDefaultUnit[currency];
 };

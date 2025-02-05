@@ -14,11 +14,11 @@ import {
   CarouselContent,
   CarouselItem,
 } from '~/components/ui/carousel';
+import { getDefaultUnit } from '~/features/shared/currencies';
 import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
-import { getUnit } from '~/utils';
 import type { Account } from '../accounts/account-selector';
 import { getCashuRequest } from './reusable-payment-request';
 import { useMintQuote } from './use-mint-quote';
@@ -238,14 +238,14 @@ export default function ReceiveCashu({ amount, account }: Props) {
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
         <div className="flex flex-col items-center">
-          <MoneyDisplay money={amount} unit={getUnit(amount.currency)} />
+          <MoneyDisplay money={amount} unit={getDefaultUnit(amount.currency)} />
           {!exchangeRateError && rate ? (
             <MoneyDisplay
               money={amount.convert(
                 amount.currency === 'BTC' ? 'USD' : 'BTC',
                 rate,
               )}
-              unit={getUnit(amount.currency === 'BTC' ? 'USD' : 'BTC')}
+              unit={getDefaultUnit(amount.currency === 'BTC' ? 'USD' : 'BTC')}
               variant="secondary"
             />
           ) : (
