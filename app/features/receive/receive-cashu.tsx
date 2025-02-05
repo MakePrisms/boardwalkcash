@@ -23,7 +23,6 @@ import { cn } from '~/lib/utils';
 import type { Account } from '../accounts/account-selector';
 import { getCashuRequest } from './reusable-payment-request';
 import { useMintQuote } from './use-mint-quote';
-
 type QRCarouselItemProps = {
   value?: string;
   description: string;
@@ -40,40 +39,32 @@ function QRCarouselItem({
   const baseClasses =
     'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
 
-  const qrContent = (() => {
-    if (isLoading) {
-      return <Skeleton className={baseClasses} />;
-    }
-
-    if (value) {
-      return (
-        <div className={cn(baseClasses, 'bg-foreground')}>
-          <QRCodeSVG
-            value={value}
-            size={256}
-            marginSize={3}
-            className="rounded-lg bg-foreground"
-          />
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className={cn(baseClasses, 'border bg-card')}>
-          <div className="flex flex-col items-center justify-center gap-2 p-4">
-            <AlertCircle className="h-8 w-8 text-foreground" />
-            <p className="text-center text-muted-foreground text-sm">{error}</p>
-          </div>
-        </div>
-      );
-    }
-  })();
-
   return (
     <CarouselItem>
       <div className="flex flex-col items-center justify-center gap-8">
-        {qrContent}
+        {isLoading ? (
+          <Skeleton className={baseClasses} />
+        ) : value ? (
+          <div className={cn(baseClasses, 'bg-foreground')}>
+            <QRCodeSVG
+              value={value}
+              size={256}
+              marginSize={3}
+              className="rounded-lg bg-foreground"
+            />
+          </div>
+        ) : (
+          error && (
+            <div className={cn(baseClasses, 'border bg-card')}>
+              <div className="flex flex-col items-center justify-center gap-2 p-4">
+                <AlertCircle className="h-8 w-8 text-foreground" />
+                <p className="text-center text-muted-foreground text-sm">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )
+        )}
         <div className="w-[256px]">
           <p className="flex h-[32px] items-center justify-center text-center font-medium text-muted-foreground text-xs">
             {description}
