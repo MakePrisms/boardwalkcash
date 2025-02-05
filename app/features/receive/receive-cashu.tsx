@@ -237,7 +237,7 @@ export default function ReceiveCashu({ amount, account }: Props) {
         <PageHeaderTitle>Receive Ecash</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
-        <div className="flex flex-col items-center">
+        <div className="flex min-h-[116px] flex-col items-center">
           <MoneyDisplay money={amount} unit={getDefaultUnit(amount.currency)} />
           {!exchangeRateError && rate ? (
             <MoneyDisplay
