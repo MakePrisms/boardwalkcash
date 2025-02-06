@@ -106,9 +106,8 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
         });
     };
   }, []);
-
   return (
-    <section className="aspect-square h-full w-full max-w-[100vw] md:max-w-[400px]">
+    <section className="fixed inset-0 h-screen w-screen sm:relative sm:aspect-square sm:h-[400px] sm:w-[400px]">
       <div className="relative h-full w-full">
         <video
           ref={videoRef}

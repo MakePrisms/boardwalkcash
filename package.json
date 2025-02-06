@@ -50,6 +50,7 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cross-env": "7.0.3",
+    "embla-carousel-react": "8.5.2",
     "express": "4.21.1",
     "isbot": "4.4.0",
     "jwt-decode": "4.0.0",

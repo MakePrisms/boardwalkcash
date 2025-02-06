@@ -1,27 +1,12 @@
-import type { LoaderFunction } from '@remix-run/node';
 import { Outlet, useLocation } from '@remix-run/react';
-import { QueryClient, dehydrate } from '@tanstack/react-query';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { UserProvider } from '~/features/user/user-provider';
-import { exchangeRateService } from '~/lib/exchange-rate';
 
 const shouldUserVerifyEmail = (user: AuthUser) => {
   const isGuest = !user.email;
   return !isGuest && !user.email_verified;
-};
-
-export const loader: LoaderFunction = async () => {
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ['exchangeRate'],
-    queryFn: ({ signal }) =>
-      exchangeRateService.getRates({ tickers: ['BTC-USD', 'USD-BTC'], signal }),
-  });
-
-  return { dehydratedState: dehydrate(queryClient) };
 };
 
 // prevent loader from being revalidated
