@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Proof } from '@cashu/cashu-ts';
-import { getP2PKPubkeyFromProofs } from './proof';
+import { getP2PKPubkeyFromProofs, sumProofsToAmount } from './proof';
 
 const proofWithP2PKSecret: Proof = {
   amount: 1,
@@ -46,5 +46,28 @@ describe('getP2PKPubkeyFromProofs', () => {
     expect(() =>
       getP2PKPubkeyFromProofs([proofWithP2PKSecret, proofWithPlainSecret]),
     ).toThrow('Secret is not a P2PK secret');
+  });
+});
+
+describe('sumProofsToAmounts', () => {
+  test('should sum the amounts of a list of proofs', () => {
+    expect(
+      sumProofsToAmount([
+        {
+          amount: 1,
+          secret:
+            '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7',
+          C: '02698c4e2b5f9534cd0687d87513c759790cf829aa5739184a3e3735471fbda904',
+          id: '009a1f293253e41e',
+        },
+        {
+          amount: 1,
+          secret:
+            '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a8',
+          C: '02698c4e2b5f9534cd0687d87513c759790cf829aa5739184a3e3735471fbda904',
+          id: '009a1f293253e41e',
+        },
+      ]),
+    ).toBe(2);
   });
 });

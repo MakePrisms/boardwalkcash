@@ -1,4 +1,4 @@
-import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, type GetInfoResponse } from '@cashu/cashu-ts';
 import { decodeBolt11 } from '~/lib/bolt11';
 
 const knownTestMints = [
@@ -27,4 +27,10 @@ export const isTestMint = async (mintUrl: string): Promise<boolean> => {
   const { request: bolt11 } = await wallet.createMintQuote(1);
   const { network } = decodeBolt11(bolt11);
   return network !== 'bitcoin';
+};
+
+export const getMintInfo = async (
+  mintUrl: string,
+): Promise<GetInfoResponse> => {
+  return new CashuMint(mintUrl).getInfo();
 };

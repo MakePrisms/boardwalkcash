@@ -60,12 +60,14 @@ type AccountSelectorProps = {
   accounts: Account[];
   selectedAccount: Account;
   onSelect: (account: Account) => void;
+  disabled?: boolean;
 };
 
 export function AccountSelector({
   accounts,
   onSelect,
   selectedAccount,
+  disabled,
 }: AccountSelectorProps) {
   const [open, setOpen] = useState(false);
 
@@ -76,17 +78,18 @@ export function AccountSelector({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
+      <DrawerTrigger disabled={disabled} asChild>
         <button
           type="button"
           className="flex w-full items-center rounded-lg border border-primary bg-background pr-4"
         >
           <AccountItem account={selectedAccount} />
-          {open ? (
-            <ChevronUp className="ml-auto h-4 w-4" />
-          ) : (
-            <ChevronDown className="ml-auto h-4 w-4" />
-          )}
+          {!disabled &&
+            (open ? (
+              <ChevronUp className="ml-auto h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-auto h-4 w-4" />
+            ))}
         </button>
       </DrawerTrigger>
       <DrawerContent className="font-primary">

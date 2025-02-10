@@ -112,15 +112,10 @@ export default function ReceiveInput() {
     try {
       // This will throw if the token is invalid
       getDecodedToken(clipboardContent);
-      toast({
-        title: 'Not implemented',
-        description: 'This feature is not implemented yet',
-        variant: 'destructive',
+      navigate(`/receive/cashu-token#${clipboardContent}`, {
+        transition: 'slideLeft',
+        applyTo: 'newView',
       });
-      // navigate(`/receive/cashu-token#${clipboardContent}`, {
-      //   transition: 'slideLeft',
-      //   applyTo: 'newView',
-      // });
     } catch (error) {
       toast({
         title: 'Invalid token',
