@@ -26,6 +26,7 @@ export const accounts: Account[] = [
     type: 'cashu',
     mintUrl: 'https://testnut.cashu.space',
     balance: new Big(0.00000054),
+    isTestMint: true,
   },
   {
     id: '2',
@@ -42,6 +43,7 @@ export const accounts: Account[] = [
     type: 'cashu',
     mintUrl: 'https://stablenut.umint.cash.',
     balance: new Big(1.21),
+    isTestMint: false,
   },
 ];
 

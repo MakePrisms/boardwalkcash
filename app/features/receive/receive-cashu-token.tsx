@@ -26,19 +26,10 @@ type Props = {
 };
 
 export default function ReceiveToken({ token }: Props) {
+  const { toast } = useToast();
   const {
-    money,
-    canClaim,
-    isLoading,
+    data: tokenData,
     isClaiming,
-    isMintKnown,
-    fromTestMint,
-    receiveAccount,
-    cannotClaimReason,
-    selectableAccounts,
-    disableCrossMintSwap,
-    selectedAccountIsSource,
-    shouldShowConvertedAmount,
     handleClaim,
     setReceiveAccount,
   } = useReceiveCashuToken({
@@ -47,14 +38,25 @@ export default function ReceiveToken({ token }: Props) {
       '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   });
 
-  const { toast } = useToast();
   const { data: rate, error: exchangeRateError } = useExchangeRate(
-    `${money.currency}-${money.currency === 'BTC' ? 'USD' : 'BTC'}`,
+    `${tokenData?.money.currency}-${tokenData?.money.currency === 'BTC' ? 'USD' : 'BTC'}`,
   );
 
-  if (isLoading) {
+  if (!tokenData) {
     return <LoadingScreen />;
   }
+
+  const {
+    canClaim,
+    receiveAccount,
+    selectableAccounts,
+    disableCrossMintSwap,
+    selectedAccountIsSource,
+    cannotClaimReason,
+    money,
+    shouldShowConvertedAmount,
+    isMintKnown,
+  } = tokenData;
 
   return (
     <Page>
@@ -121,7 +123,7 @@ export default function ReceiveToken({ token }: Props) {
                 {receiveAccount.id === defaultAccount.id && (
                   <Badge className="text-xs">Default Mint</Badge>
                 )}
-                {fromTestMint && selectedAccountIsSource && (
+                {receiveAccount.isTestMint && selectedAccountIsSource && (
                   <Badge className="text-xs">Test Mint</Badge>
                 )}
               </div>

@@ -21,6 +21,7 @@ export type Account = {
 } & (
   | {
       type: 'cashu';
+      isTestMint: boolean;
       mintUrl: string;
     }
   | {
