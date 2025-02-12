@@ -20,7 +20,7 @@ import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
-import type { Account } from '../accounts/account-selector';
+import type { Account } from '../accounts/account';
 import { getCashuRequest } from './reusable-payment-request';
 import { useMintQuote } from './use-mint-quote';
 type QRCarouselItemProps = {

@@ -21,7 +21,7 @@ import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
-import { accounts } from '~/routes/_protected._index';
+import { useAccounts } from '../accounts/use-accounts';
 import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {
@@ -64,6 +64,7 @@ export default function ReceiveInput() {
   const receiveCurrencyUnit = getDefaultUnit(receiveAccount.currency);
   const setReceiveAccount = useReceiveStore((s) => s.setAccount);
   const setReceiveAmount = useReceiveStore((s) => s.setAmount);
+  const { data: accounts } = useAccounts();
 
   const {
     rawInputValue,

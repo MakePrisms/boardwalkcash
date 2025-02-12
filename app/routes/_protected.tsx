@@ -1,8 +1,10 @@
 import { Outlet, useLocation } from '@remix-run/react';
+import { Suspense } from 'react';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { UserProvider } from '~/features/user/user-provider';
+import { Wallet } from '~/features/wallet/wallet';
 
 const shouldUserVerifyEmail = (user: AuthUser) => {
   const isGuest = !user.email;
@@ -60,8 +62,12 @@ export default function ProtectedRoute() {
   }
 
   return (
-    <UserProvider authUser={user}>
-      <Outlet />
-    </UserProvider>
+    <Suspense fallback={<LoadingScreen />}>
+      <UserProvider authUser={user}>
+        <Wallet>
+          <Outlet />
+        </Wallet>
+      </UserProvider>
+    </Suspense>
   );
 }

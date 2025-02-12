@@ -10,7 +10,7 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import type { Money } from '~/lib/money';
-import type { Account } from '../accounts/account-selector';
+import type { Account } from '../accounts/account';
 
 export const getCashuRequest = (
   account: Account & { type: 'cashu' },

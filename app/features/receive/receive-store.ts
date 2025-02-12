@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Currency, Money } from '~/lib/money';
-import type { Account } from '../accounts/account-selector';
+import type { Account } from '../accounts/account';
 
 export type ReceiveState<T extends Currency = Currency> = {
   /** The account to receive funds in */

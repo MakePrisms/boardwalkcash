@@ -10,14 +10,16 @@ import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import { accounts } from '~/routes/_protected._index';
 import { AccountSelector } from '../accounts/account-selector';
+import { useAccounts } from '../accounts/use-accounts';
 import { useAuthActions } from '../user/auth';
 
 const username = 'satoshi';
 
 export default function Settings() {
   const { signOut } = useAuthActions();
+
+  const { data: accounts } = useAccounts();
 
   const handleShare = async () => {
     const data = {
