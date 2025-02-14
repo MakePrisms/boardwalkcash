@@ -9,6 +9,7 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
@@ -19,8 +20,7 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 export default function Index() {
   const { signOut } = useAuthActions();
   const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
-  const { theme, effectiveColorMode, colorMode, setTheme, setColorMode } =
-    useTheme();
+  const { theme, effectiveColorMode, colorMode, setColorMode } = useTheme();
   const { data: rates } = useExchangeRates(
     (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
   );
@@ -64,6 +64,7 @@ export default function Index() {
         ) : (
           <MoneyDisplay money={balanceBTC} unit="sat" />
         )}
+        <DefaultCurrencySwitcher />
         <div className="grid grid-cols-2 gap-4">
           <LinkWithViewTransition
             to="/receive"
@@ -87,12 +88,6 @@ export default function Index() {
           {effectiveColorMode}
         </Button>
         <Button onClick={signOut}>Log Out</Button>
-        <Button
-          className="w-fit"
-          onClick={() => setTheme(theme === 'usd' ? 'btc' : 'usd')}
-        >
-          {theme}
-        </Button>
       </PageFooter>
     </Page>
   );
