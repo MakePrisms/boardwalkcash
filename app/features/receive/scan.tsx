@@ -7,9 +7,11 @@ import {
 } from '~/components/page';
 import { QRScanner } from '~/components/qr-scanner';
 import { useToast } from '~/hooks/use-toast';
+import { useNavigateWithViewTransition } from '~/lib/transitions';
 
 export default function Scan() {
   const { toast } = useToast();
+  const navigate = useNavigateWithViewTransition();
 
   return (
     <>
@@ -27,9 +29,9 @@ export default function Scan() {
             console.log('token', token);
             try {
               getDecodedToken(token);
-              toast({
-                title: 'Token decoded, navigation not implemented yet',
-                description: `Token: ${token}`,
+              navigate(`/receive/cashu-token#${token}`, {
+                applyTo: 'oldView',
+                transition: 'slideDown',
               });
             } catch {
               toast({

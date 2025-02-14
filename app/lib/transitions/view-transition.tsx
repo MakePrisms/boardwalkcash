@@ -209,3 +209,7 @@ export function useNavigateWithViewTransition() {
     navigate(to, { ...options, viewTransition: true });
   };
 }
+
+export type NavigateWithViewTransitionFunction = ReturnType<
+  typeof useNavigateWithViewTransition
+>;

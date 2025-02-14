@@ -124,24 +124,40 @@ export function useMoneyInput({
   const maxInputDecimals = inputMoney.getMaxDecimals(
     getDefaultUnit(state.input.currency),
   );
-
   const decimalSeparator = getLocaleDecimalSeparator();
+  const handleSetValue = (newValue: string, newCurrency?: Currency) => {
+    const inputCurrency = newCurrency ?? state.input.currency;
+    const convertedCurrency =
+      newCurrency === state.converted.currency
+        ? state.input.currency
+        : state.converted.currency;
 
-  const handleSetValue = (newValue: string) => {
     const rate = rates
-      ? rates[`${state.input.currency}-${state.converted.currency}`]
+      ? rates[`${inputCurrency}-${convertedCurrency}`]
       : undefined;
 
     const newConvertedValue = rate
-      ? toMoney({ value: newValue, currency: state.input.currency })
-          .convert(state.converted.currency, rate)
-          .toString(getDefaultUnit(state.converted.currency))
+      ? toMoney({ value: newValue, currency: inputCurrency })
+          .convert(convertedCurrency, rate)
+          .toString(getDefaultUnit(convertedCurrency))
       : undefined;
 
-    setState((current) => ({
-      input: { ...current.input, value: newValue },
-      converted: { ...current.converted, value: newConvertedValue },
-    }));
+    setState({
+      input: { value: newValue, currency: inputCurrency },
+      converted: { value: newConvertedValue, currency: convertedCurrency },
+    });
+
+    return {
+      input: { value: newValue, currency: inputCurrency },
+      converted: { value: newConvertedValue, currency: convertedCurrency },
+    };
+  };
+
+  const setInputValueAndCurrency = (
+    newValue: string,
+    newCurrency: Currency,
+  ) => {
+    return handleSetValue(newValue, newCurrency);
   };
 
   /** Updates the input value or calls onInvalidInput if the input is invalid */
@@ -188,16 +204,24 @@ export function useMoneyInput({
     handleSetValue(newValue);
   };
 
-  const switchInputCurrency = () => {
+  const switchInputCurrency = (currency?: Currency) => {
+    if (currency === state.input.currency) {
+      return;
+    }
     setState((current) => {
+      const newInputCurrency = currency ?? current.converted.currency;
+      const newConvertedCurrency =
+        newInputCurrency === current.input.currency
+          ? current.converted.currency
+          : current.input.currency;
       return {
         input: {
           value: trimInputValue(current.converted.value, decimalSeparator),
-          currency: current.converted.currency,
+          currency: newInputCurrency,
         },
         converted: {
           value: current.input.value,
-          currency: current.input.currency,
+          currency: newConvertedCurrency,
         },
       };
     });
@@ -211,5 +235,6 @@ export function useMoneyInput({
     handleNumberInput,
     switchInputCurrency,
     exchangeRateError,
+    setInputValueAndCurrency,
   };
 }
