@@ -1,4 +1,3 @@
-import Big from 'big.js';
 import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
 import { useState } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
@@ -10,40 +9,12 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import type { Account } from '~/features/accounts/account-selector';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
 import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
-
-export const accounts: Account[] = [
-  {
-    id: '1',
-    name: 'Testnut',
-    currency: 'BTC',
-    type: 'cashu',
-    mintUrl: 'https://testnut.cashu.space',
-    balance: new Big(0.00000054),
-  },
-  {
-    id: '2',
-    name: 'Start9',
-    currency: 'BTC',
-    type: 'nwc',
-    nwcUrl: 'nwc connection string',
-    balance: new Big(0.00000321),
-  },
-  {
-    id: '3',
-    name: 'Stablenut',
-    currency: 'USD',
-    type: 'cashu',
-    mintUrl: 'https://stablenut.umint.cash.',
-    balance: new Big(1.21),
-  },
-];
 
 export default function Index() {
   const { signOut } = useAuthActions();
@@ -54,31 +25,8 @@ export default function Index() {
     (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
   );
 
-  const balanceBTC: Money<'BTC'> = rates
-    ? accounts.reduce(
-        (acc, account) => {
-          let accountBalance: Money<'BTC'>;
-          if (account.currency === 'BTC') {
-            accountBalance = new Money({
-              amount: account.balance,
-              currency: 'BTC',
-            });
-          } else {
-            accountBalance = new Money({
-              amount: account.balance,
-              currency: account.currency,
-            }).convert('BTC', rates[`${account.currency}-BTC`]);
-          }
-          return acc.add(accountBalance);
-        },
-        new Money({ amount: 0, currency: 'BTC' }),
-      )
-    : new Money({ amount: 0, currency: 'BTC' });
-
-  const balanceUSD: Money<'USD'> =
-    balanceBTC && rates
-      ? balanceBTC.convert('USD', rates['BTC-USD'])
-      : new Money({ amount: 0, currency: 'USD' });
+  const balanceBTC = new Money({ amount: 0, currency: 'BTC' });
+  const balanceUSD = new Money({ amount: 0, currency: 'USD' });
 
   return (
     <Page>

@@ -1,4 +1,4 @@
-import type { BoardwalDbkUser, BoardwalkDb } from '../boardwalk-db/database';
+import type { BoardwalkDb, BoardwalkDbUser } from '../boardwalk-db/database';
 
 export class UserRepository {
   constructor(private readonly db: BoardwalkDb) {}
@@ -9,13 +9,13 @@ export class UserRepository {
    * @returns The upserted user.
    */
   async upsert(
-    user: Omit<BoardwalDbkUser, 'email' | 'created_at' | 'updated_at'> & {
+    user: Omit<BoardwalkDbUser, 'email' | 'created_at' | 'updated_at'> & {
       email?: string | null | undefined;
     },
     options: {
       abortSignal?: AbortSignal;
     } = {},
-  ): Promise<BoardwalDbkUser> {
+  ): Promise<BoardwalkDbUser> {
     const query = this.db
       .from('users')
       .upsert({

@@ -1,11 +1,13 @@
 import { useParams } from '@remix-run/react';
 import { Page } from '~/components/page';
 import { Redirect } from '~/components/redirect';
+import { useAccounts } from '~/features/accounts/use-accounts';
 import ReusablePaymentRequest from '~/features/receive/reusable-payment-request';
-import { accounts } from './_protected._index';
 
 export default function ReceiveRequest() {
   const { account_id } = useParams();
+  const { data: accounts } = useAccounts();
+
   if (!account_id) {
     return <Redirect to="/receive" logMessage="No account id provided" />;
   }

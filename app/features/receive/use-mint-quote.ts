@@ -1,7 +1,7 @@
 import { CashuMint, CashuWallet, MintQuoteState } from '@cashu/cashu-ts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Money } from '~/lib/money';
-import type { Account } from '../accounts/account-selector';
+import type { Account } from '../accounts/account';
 
 type UseMintQuoteProps = {
   /** The Cashu account to create a mint quote for. */

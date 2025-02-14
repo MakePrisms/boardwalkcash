@@ -1,10 +1,11 @@
 import { Outlet } from '@remix-run/react';
+import { useAccounts } from '~/features/accounts/use-accounts';
 import { ReceiveProvider } from '~/features/receive';
-import { accounts } from './_protected._index';
-
-const defaultAccount = accounts[0];
 
 export default function ReceiveLayout() {
+  const { data: accounts } = useAccounts();
+  const defaultAccount = accounts[0];
+
   return (
     <ReceiveProvider initialAccount={defaultAccount}>
       <Outlet />

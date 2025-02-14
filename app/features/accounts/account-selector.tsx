@@ -1,4 +1,3 @@
-import type { Big } from 'big.js';
 import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { LandmarkIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
@@ -8,26 +7,8 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from '~/components/ui/drawer';
-import { type Currency, Money } from '~/lib/money';
-
-export type AccountType = 'cashu' | 'nwc';
-
-export type Account = {
-  id: string;
-  name: string;
-  currency: Currency;
-  type: AccountType;
-  balance: Big;
-} & (
-  | {
-      type: 'cashu';
-      mintUrl: string;
-    }
-  | {
-      type: 'nwc';
-      nwcUrl: string;
-    }
-);
+import { Money } from '~/lib/money';
+import type { Account, AccountType } from './account';
 
 const CashuIcon = () => <LandmarkIcon className="h-4 w-4" />;
 const NWCIcon = () => <Zap className="h-4 w-4" />;
@@ -45,7 +26,7 @@ function AccountItem({ account }: { account: Account }) {
         <span className="font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
           {new Money({
-            amount: account.balance,
+            amount: 0, // TODO: see how we will do this
             currency: account.currency,
           }).toLocaleString({
             unit: account.currency === 'BTC' ? 'sat' : undefined,

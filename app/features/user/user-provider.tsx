@@ -12,7 +12,7 @@ import {
 import { useStore } from 'zustand';
 import { type AuthUser, useHandleSessionExpiry } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
-import { type BoardwalDbkUser, boardwalkDb } from '../boardwalk-db/database';
+import { type BoardwalkDbUser, boardwalkDb } from '../boardwalk-db/database';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import type { User } from './user';
@@ -54,7 +54,7 @@ const useUpsertBoardwalkUser = (openSecretUserData: AuthUser) => {
 
 const mergeUserData = (
   authUserData: AuthUser,
-  boardwalkUserData: BoardwalDbkUser,
+  boardwalkUserData: BoardwalkDbUser,
 ): User => {
   if (authUserData.email) {
     return {

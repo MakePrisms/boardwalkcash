@@ -29,4 +29,6 @@ export const boardwalkDb = createClient<Database>(
 
 export type BoardwalkDb = typeof boardwalkDb;
 
-export type BoardwalDbkUser = Database['wallet']['Tables']['users']['Row'];
+export type BoardwalkDbUser = Database['wallet']['Tables']['users']['Row'];
+export type BoardwalkDbAccount =
+  Database['wallet']['Tables']['accounts']['Row'];
