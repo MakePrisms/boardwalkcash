@@ -8,12 +8,14 @@ const defaultAccounts = [
     currency: 'USD',
     name: 'Default USD Account',
     mintUrl: 'https://mint.lnvoltz.com/',
+    isTestMint: false,
   },
   {
     type: 'cashu',
     currency: 'BTC',
     name: 'Default BTC Account',
     mintUrl: 'https://mint.lnvoltz.com/',
+    isTestMint: false,
   },
 ] as const;
 

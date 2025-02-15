@@ -102,7 +102,7 @@ export class AccountRepository {
       currency: account.currency,
       details:
         account.type === 'cashu'
-          ? { mint_url: account.mintUrl }
+          ? { mint_url: account.mintUrl, is_test_mint: account.isTestMint }
           : { nwc_url: account.nwcUrl },
       user_id: account.userId,
     }));
@@ -134,11 +134,15 @@ export class AccountRepository {
     };
 
     if (data.type === 'cashu') {
-      const details = data.details as { mint_url: string };
+      const details = data.details as {
+        mint_url: string;
+        is_test_mint: boolean;
+      };
       return {
         ...commonData,
         type: 'cashu',
         mintUrl: details.mint_url,
+        isTestMint: details.is_test_mint,
       };
     }
 
