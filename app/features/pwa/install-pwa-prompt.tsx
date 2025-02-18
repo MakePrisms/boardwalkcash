@@ -1,3 +1,4 @@
+import type { LinksFunction } from '@remix-run/node';
 import {
   House,
   Menu,
@@ -10,8 +11,12 @@ import { useState } from 'react';
 import type { Browser } from '../../hooks/use-user-agent';
 import InstallPwaBanner from './install-pwa-banner';
 import type { InstallInstruction } from './install-pwa-instructions-dialog';
-import InstallPwaInstructionsDialog from './install-pwa-instructions-dialog';
+import InstallPwaInstructionsDialog, {
+  links as dialogLinks,
+} from './install-pwa-instructions-dialog';
 import useShouldShowPwaPrompt from './use-should-show-pwa-prompt';
+
+export const links: LinksFunction = () => [...dialogLinks()];
 
 const browserInstructions: Record<Browser, InstallInstruction[]> = {
   Safari: [

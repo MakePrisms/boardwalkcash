@@ -1,3 +1,4 @@
+import type { LinksFunction } from '@remix-run/node';
 import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
 import { useState } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
@@ -11,12 +12,15 @@ import {
 import { Button } from '~/components/ui/button';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
+import { links as pwaLinks } from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
 import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
+
+export const links: LinksFunction = () => [...pwaLinks()];
 
 export default function Index() {
   const { signOut } = useAuthActions();

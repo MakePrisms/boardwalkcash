@@ -1,4 +1,6 @@
+import type { LinksFunction } from '@remix-run/node';
 import type { LucideIcon } from 'lucide-react';
+import icon from '~/assets/icon-192x192.png';
 import { Button } from '~/components/ui/button';
 import {
   Dialog,
@@ -8,6 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
+
+export const links: LinksFunction = () => [
+  { rel: 'preload', href: icon, as: 'image' },
+];
 
 export type InstallInstruction = {
   icon: LucideIcon;
@@ -33,7 +39,7 @@ export default function InstallPwaInstructionsDialog({
         <DialogHeader>
           <div className="flex items-start gap-4">
             <img
-              src="/icon-192x192.png"
+              src={icon}
               alt="Boardwalk icon"
               className="h-16 w-16 rounded-lg"
             />
