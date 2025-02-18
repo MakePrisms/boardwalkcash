@@ -1,4 +1,11 @@
-import { MoreVertical, Plus, Share, SquarePlus } from 'lucide-react';
+import {
+  House,
+  Menu,
+  MoreVertical,
+  Plus,
+  Share,
+  SquarePlus,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { Browser } from '../../hooks/use-user-agent';
 import InstallPwaBanner from './install-pwa-banner';
@@ -8,35 +15,34 @@ import useShouldShowPwaPrompt from './use-should-show-pwa-prompt';
 
 const browserInstructions: Record<Browser, InstallInstruction[]> = {
   Safari: [
-    { icon: Share, text: 'Press Share in Navigation Bar' },
+    { icon: Share, text: 'Click the Share button in navigation bar' },
     { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
   ],
   Chrome: [
     { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Install Boardwalk"' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
   ],
   ChromeiOS: [
-    { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Install Boardwalk"' },
+    { icon: Share, text: 'Click the Share button in search bar' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
   ],
   Firefox: [
     { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Install"' },
+    { icon: Plus, text: 'Click "Install"' },
   ],
   FirefoxiOS: [
-    { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Add page to"' },
-    { icon: Plus, text: 'Select "Home screen"' },
+    { icon: Menu, text: 'Click the menu button' },
+    { icon: Share, text: 'Click "Share"' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
   ],
   SamsungBrowser: [
-    { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Add page to"' },
-    { icon: Plus, text: 'Select "Home screen"' },
+    { icon: Menu, text: 'Click the menu button' },
+    { icon: Plus, text: 'Click "Add page to"' },
+    { icon: House, text: 'Click "Home screen"' },
   ],
   unknown: [
     { icon: MoreVertical, text: 'Click the menu button' },
-    { icon: Plus, text: 'Select "Add page to"' },
-    { icon: Plus, text: 'Select "Home screen"' },
+    { icon: Plus, text: 'Look for "Add to Home Screen" option' },
   ],
 };
 
