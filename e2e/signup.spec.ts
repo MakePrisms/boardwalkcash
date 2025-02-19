@@ -1,5 +1,6 @@
 import type { LoginResponse, UserResponse } from '@opensecret/react';
 import { expect, test } from './fixtures';
+import { expectHomePage } from './helpers';
 import {
   createAccessToken,
   createRefreshToken,
@@ -44,7 +45,7 @@ test('signup as guest', async ({
 
   await page.getByRole('button', { name: 'Create wallet as Guest' }).click();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('signup with email', async ({ page, openSecretApiMock }) => {
@@ -231,9 +232,9 @@ test('cannot access signup page if already logged in', async ({
 }) => {
   await setupAuth(fullUser);
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 
   await page.goto('/signup');
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
