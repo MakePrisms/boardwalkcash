@@ -12,6 +12,7 @@ import {
 import { useStore } from 'zustand';
 import { type AuthUser, useHandleSessionExpiry } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
+import type { Account } from '../accounts/account';
 import { type BoardwalkDbUser, boardwalkDb } from '../boardwalk-db/database';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
@@ -27,6 +28,21 @@ type Props = PropsWithChildren<{
 
 const userRepository = new UserRepository(boardwalkDb);
 
+const defaultAccounts = [
+  {
+    type: 'cashu',
+    currency: 'USD',
+    name: 'Default USD Account',
+    mintUrl: 'https://mint.lnvoltz.com/',
+  },
+  {
+    type: 'cashu',
+    currency: 'BTC',
+    name: 'Default BTC Account',
+    mintUrl: 'https://mint.lnvoltz.com/',
+  },
+] as const;
+
 /**
  * Makes sure that the user is created in the Boardwalk DB for every new Open Secret user.
  * If the user already exists, it will be updated to sync the shared data.
@@ -36,7 +52,8 @@ const userRepository = new UserRepository(boardwalkDb);
 const useUpsertBoardwalkUser = (openSecretUserData: AuthUser) => {
   const { mutate, data } = useMutation({
     mutationKey: ['user-upsert'],
-    mutationFn: (user: AuthUser) => userRepository.upsert(user),
+    mutationFn: (user: AuthUser) =>
+      userRepository.upsert({ ...user, accounts: [...defaultAccounts] }),
     scope: {
       id: 'user-upsert',
     },
@@ -54,7 +71,7 @@ const useUpsertBoardwalkUser = (openSecretUserData: AuthUser) => {
 
 const mergeUserData = (
   authUserData: AuthUser,
-  boardwalkUserData: BoardwalkDbUser,
+  boardwalkUserData: BoardwalkDbUser & { accounts: Account[] },
 ): User => {
   if (authUserData.email) {
     return {
@@ -64,6 +81,10 @@ const mergeUserData = (
       loginMethod: authUserData.login_method,
       createdAt: boardwalkUserData.created_at,
       updatedAt: boardwalkUserData.updated_at,
+      defaultBtcAccountId: boardwalkUserData.default_btc_account_id ?? '',
+      defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
+      defaultCurrency: boardwalkUserData.default_currency,
+      accounts: boardwalkUserData.accounts,
       isGuest: false,
     };
   }
@@ -74,6 +95,10 @@ const mergeUserData = (
     loginMethod: authUserData.login_method,
     createdAt: boardwalkUserData.created_at,
     updatedAt: boardwalkUserData.updated_at,
+    defaultBtcAccountId: boardwalkUserData.default_btc_account_id ?? '',
+    defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
+    defaultCurrency: boardwalkUserData.default_currency,
+    accounts: boardwalkUserData.accounts,
     isGuest: true,
   };
 };

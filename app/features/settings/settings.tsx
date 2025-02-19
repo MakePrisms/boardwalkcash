@@ -10,16 +10,15 @@ import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import { AccountSelector } from '../accounts/account-selector';
-import { useAccounts } from '../accounts/use-accounts';
+import { getAccountIcon } from '../accounts/account-icons';
+import { useDefaultAccount } from '../accounts/use-accounts';
 import { useAuthActions } from '../user/auth';
 
 const username = 'satoshi';
 
 export default function Settings() {
   const { signOut } = useAuthActions();
-
-  const { data: accounts } = useAccounts();
+  const defaultAccount = useDefaultAccount();
 
   const handleShare = async () => {
     const data = {
@@ -54,15 +53,20 @@ export default function Settings() {
           <span>Edit profile</span>
         </SettingsNavButton>
 
-        <AccountSelector
+        {/* <AccountSelector
           accounts={accounts}
           onSelect={console.log}
           selectedAccount={accounts[0]}
-        />
+        /> */}
+
+        <SettingsNavButton to="/settings/accounts">
+          {getAccountIcon(defaultAccount.type)}
+          <span>{defaultAccount.name}</span>
+        </SettingsNavButton>
 
         <Separator />
 
-        <SettingsNavButton to="/settings/accounts">Accounts</SettingsNavButton>
+        {/* <SettingsNavButton to="/settings/accounts">Accounts</SettingsNavButton> */}
         <SettingsNavButton to="/settings/appearance">
           Appearance
         </SettingsNavButton>

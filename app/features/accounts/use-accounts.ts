@@ -1,44 +1,71 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
-import type { DistributedOmit } from 'type-fest';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import type { Currency } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
+import type { User } from '../user/user';
 import { useUserStore } from '../user/user-provider';
+import type { Account } from './account';
 import { AccountRepository } from './account-repository';
 
 const accountRepository = new AccountRepository(boardwalkDb);
 
 const queryKey = 'accounts';
 
-export function useAccounts() {
+const isDefaultAccount = (account: Account, user: User) => {
+  if (account.currency === 'BTC') {
+    return user.defaultBtcAccountId === account.id;
+  }
+  if (account.currency === 'USD') {
+    return user.defaultUsdAccountId === account.id;
+  }
+  return false;
+};
+
+export function useAccounts(currency?: Currency) {
   const userId = useUserStore((x) => x.user.id);
-  return useSuspenseQuery({
+  const response = useSuspenseQuery({
     queryKey: [queryKey, userId],
     queryFn: () => accountRepository.getAll(userId),
   });
+
+  if (!currency) {
+    return response;
+  }
+
+  return {
+    ...response,
+    data: response.data.filter((x) => x.currency === currency),
+  };
 }
 
-type AccountInput = Parameters<AccountRepository['create']>[0][number];
+export function useAccount(id: string) {
+  const { data: accounts } = useAccounts();
+  const account = accounts.find((x) => x.id === id);
+  if (!account) {
+    // TODO: this should probably be changed to do a redirect to not found page
+    throw new Error(`Account with id ${id} not found`);
+  }
 
-export function useAddAccounts() {
-  const userId = useUserStore((x) => x.user.id);
-  const queryClient = useQueryClient();
+  const user = useUserStore((x) => x.user);
 
-  const { mutate } = useMutation({
-    mutationFn: (accounts: DistributedOmit<AccountInput, 'userId'>[]) =>
-      accountRepository.create(
-        accounts.map((account) => ({ ...account, userId })),
-      ),
-    scope: {
-      id: 'add-accounts',
-    },
-    onSuccess: (newAccounts) => {
-      queryClient.setQueryData([queryKey, userId], newAccounts);
-    },
-    throwOnError: true,
-  });
-
-  return mutate;
+  return { ...account, isDefault: isDefaultAccount(account, user) };
 }
+
+export const useDefaultAccount = () => {
+  const defaultCurrency = useUserStore((x) => x.user.defaultCurrency);
+  const { data: accounts } = useAccounts(defaultCurrency);
+
+  const defaultBtcAccountId = useUserStore((x) => x.user.defaultBtcAccountId);
+  const defaultUsdccountId = useUserStore((x) => x.user.defaultUsdAccountId);
+
+  const defaultAccount = accounts.find(
+    (x) =>
+      (x.currency === 'BTC' && x.id === defaultBtcAccountId) ||
+      (x.currency === 'USD' && x.id === defaultUsdccountId),
+  );
+
+  if (!defaultAccount) {
+    throw new Error(`No default account found for currency ${defaultCurrency}`);
+  }
+
+  return defaultAccount;
+};

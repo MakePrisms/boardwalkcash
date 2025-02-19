@@ -11,40 +11,23 @@ import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
 import { Skeleton } from '~/components/ui/skeleton';
 import { useTheme } from '~/features/theme';
-import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { Money } from '~/lib/money';
 import type { Currency } from '~/lib/money/types';
+import { useUserStore } from '../user/user-provider';
 
 type CurrencyOption = {
   label: string;
-  /** Total balance of all accounts for this currency */
-  balance: Money;
-  /**
-   * Whether this is an option the user can select.
-   * Would be false if the user has not accounts for this currency
-   */
-  isAvailable: boolean;
+  currency: Currency;
 };
 
-// placeholder data that should be replaced with user's account data
 const CURRENCY_OPTIONS: CurrencyOption[] = [
   {
     label: 'Bitcoin',
-    balance: new Money({
-      amount: 1500,
-      currency: 'BTC' as Currency,
-      unit: 'sat',
-    }),
-    isAvailable: true,
+    currency: 'BTC',
   },
   {
     label: 'US Dollar',
-    balance: new Money({
-      amount: 15,
-      currency: 'USD' as Currency,
-      unit: 'usd',
-    }),
-    isAvailable: true,
+    currency: 'USD',
   },
 ];
 
@@ -55,21 +38,32 @@ type CurrencyOptionProps = {
 };
 
 function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
-  const { label, balance, isAvailable } = data;
-  const currency = balance.currency;
-  const otherCurrency = currency === 'BTC' ? 'USD' : 'BTC';
-  const { data: rate, isLoading: isRateLoading } = useExchangeRate(
-    `${currency}-${otherCurrency}`,
-  );
-  // we only show conversion for BTC to USD
+  const { label, currency } = data;
+  // TODO: see how we will handle balances
+  // const otherCurrency = currency === 'BTC' ? 'USD' : 'BTC';
+  const balance = new Money({
+    amount: 0,
+    currency,
+  });
+  const isRateLoading = false;
   const convertedBalance =
-    currency === 'BTC' && rate ? balance.convert('USD', rate) : undefined;
+    currency === 'BTC'
+      ? new Money({
+          amount: 0,
+          currency: 'USD',
+        })
+      : undefined;
+  // const { data: rate, isLoading: isRateLoading } = useExchangeRate(
+  //   `${currency}-${otherCurrency}`,
+  // );
+  // // we only show conversion for BTC to USD
+  // const convertedBalance =
+  //   currency === 'BTC' && rate ? balance.convert('USD', rate) : undefined;
 
   return (
     <button
       type="button"
       className="flex w-full items-center justify-between"
-      disabled={!isAvailable}
       onClick={() => onSelect(currency)}
     >
       <div className="flex flex-col items-start gap-1">
@@ -99,14 +93,12 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
 /** A drawer that allows the user to switch their default currency */
 export function DefaultCurrencySwitcher() {
   const [isOpen, setIsOpen] = useState(false);
-  const { setTheme, theme } = useTheme();
-  // TODO: this should come from user settings and toggling should probably change that setting
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
-    theme.toUpperCase() as Currency,
-  );
+  const { setTheme } = useTheme();
+  const defaultCurrency = useUserStore((state) => state.user.defaultCurrency);
+  const setDefaultCurrency = useUserStore((state) => state.setDefaultCurrency);
 
-  const handleCurrencySelect = (currency: Currency) => {
-    setSelectedCurrency(currency);
+  const handleCurrencySelect = async (currency: Currency) => {
+    await setDefaultCurrency(currency);
     setIsOpen(false);
     setTheme(currency.toLowerCase() as 'usd' | 'btc');
   };
@@ -115,7 +107,7 @@ export function DefaultCurrencySwitcher() {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
         <button type="button" className="flex items-center gap-1">
-          {selectedCurrency}
+          {defaultCurrency}
           <ChevronDown className="h-4 w-4" />
         </button>
       </DrawerTrigger>
@@ -129,7 +121,7 @@ export function DefaultCurrencySwitcher() {
               <div key={option.label}>
                 <CurrencyOption
                   data={option}
-                  isSelected={selectedCurrency === option.balance.currency}
+                  isSelected={defaultCurrency === option.currency}
                   onSelect={handleCurrencySelect}
                 />
                 {index < CURRENCY_OPTIONS.length - 1 && (

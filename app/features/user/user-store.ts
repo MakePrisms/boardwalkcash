@@ -1,7 +1,12 @@
 import type { OpenSecretContextType } from '@opensecret/react';
+import type { DistributedOmit } from 'type-fest';
 import { create } from 'zustand';
 import { guestAccountStorage } from '~/features/user/guest-account-storage';
 import type { User } from '~/features/user/user';
+import type { Currency } from '~/lib/money';
+import type { Account } from '../accounts/account';
+import { boardwalkDb } from '../boardwalk-db/database';
+import { UserRepository } from './user-repository';
 
 type Props = {
   user: User;
@@ -17,7 +22,14 @@ export interface UserState {
   upgradeGuestToFullAccount: Props['convertGuestToUserAccount'];
   requestNewEmailVerificationCode: Props['requestNewVerificationCode'];
   verifyEmail: Props['verifyEmail'];
+  setDefaultCurrency: (currency: Currency) => Promise<void>;
+  setDefaultAccount: (account: Account) => Promise<void>;
+  addAccount: (
+    account: DistributedOmit<Account, 'id' | 'createdAt'>,
+  ) => Promise<Account>;
 }
+
+const userRepository = new UserRepository(boardwalkDb);
 
 export const createUserStore = ({
   user,
@@ -59,6 +71,63 @@ export const createUserStore = ({
       }
       await verifyEmail(code);
       await refetchUser();
+    },
+    setDefaultCurrency: async (currency: Currency) => {
+      const user = get().user;
+      const updatedUser = await userRepository.update({
+        id: user.id,
+        default_currency: currency,
+      });
+      set({
+        user: {
+          ...user,
+          defaultCurrency: currency,
+          updatedAt: updatedUser.updated_at,
+        },
+      });
+    },
+    setDefaultAccount: async (account: Account) => {
+      const user = get().user;
+
+      let updatedUser: Awaited<ReturnType<typeof userRepository.update>>;
+
+      if (account.currency === 'BTC') {
+        updatedUser = await userRepository.update({
+          id: user.id,
+          default_btc_account_id: account.id,
+        });
+      } else if (account.currency === 'USD') {
+        updatedUser = await userRepository.update({
+          id: user.id,
+          default_usd_account_id: account.id,
+        });
+      } else {
+        throw new Error('Unsupported currency');
+      }
+
+      set({
+        user: {
+          ...user,
+          defaultBtcAccountId:
+            updatedUser.default_btc_account_id ?? user.defaultBtcAccountId,
+          defaultUsdAccountId:
+            updatedUser.default_usd_account_id ?? user.defaultUsdAccountId,
+          updatedAt: updatedUser.updated_at,
+        },
+      });
+    },
+    addAccount: async (
+      account: DistributedOmit<Account, 'id' | 'createdAt'>,
+    ) => {
+      const user = get().user;
+      const addedAccount = await userRepository.addAccount(user.id, account);
+      set({
+        user: {
+          ...user,
+          accounts: [...user.accounts, addedAccount],
+        },
+      });
+      return addedAccount;
     },
   }));
 };
