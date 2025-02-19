@@ -1,9 +1,13 @@
+import type { Currency } from '~/lib/money';
+
 type CommonUserData = {
   id: string;
   emailVerified: boolean;
-  loginMethod: string;
   createdAt: string;
   updatedAt: string;
+  defaultBtcAccountId: string;
+  defaultUsdAccountId: string;
+  defaultCurrency: Currency;
 };
 
 export type FullUser = CommonUserData & {

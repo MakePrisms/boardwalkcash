@@ -4,14 +4,14 @@ import type {
 } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { boardwalkDb } from '~/features/boardwalk-db/database';
-import { useUserStore } from '~/features/user/user-provider';
+import { useUser } from '~/features/user/user-hooks';
 
 const accountsQuery = boardwalkDb.from('accounts').select();
 type Accounts = QueryData<typeof accountsQuery>;
 type Account = Accounts[number];
 
 export default function Demo() {
-  const user = useUserStore((x) => x.user);
+  const user = useUser();
   const [accounts, setAccounts] = useState<Accounts>([]);
   const [error, setError] = useState<string | null>(null);
 

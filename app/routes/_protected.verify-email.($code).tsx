@@ -3,10 +3,10 @@ import { Page, PageContent } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { VerifyEmailForm } from '~/features/signup/verify-email-form';
 import { shouldVerifyEmail as shouldUserVerifyEmail } from '~/features/user/user';
-import { useUserStore } from '~/features/user/user-provider';
+import { useUser } from '~/features/user/user-hooks';
 
 export default function VerifyEmail() {
-  const user = useUserStore((state) => state.user);
+  const user = useUser();
   const { code } = useParams<{ code?: string }>();
   const shouldVerifyEmail = shouldUserVerifyEmail(user);
 

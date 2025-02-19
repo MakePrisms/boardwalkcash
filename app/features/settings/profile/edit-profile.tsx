@@ -5,7 +5,7 @@ import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { UpgradeGuestForm } from '~/features/settings/profile/upgrade-guest-form';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { useUserStore } from '~/features/user/user-provider';
+import { useUser } from '~/features/user/user-hooks';
 
 type ProfileForm = {
   username: string;
@@ -13,7 +13,7 @@ type ProfileForm = {
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const user = useUserStore((s) => s.user);
+  const user = useUser();
 
   const { register, handleSubmit } = useForm<ProfileForm>({
     defaultValues: {
