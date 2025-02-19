@@ -50,6 +50,9 @@ export type Database = {
       users: {
         Row: {
           created_at: string
+          default_btc_account_id: string | null
+          default_currency: string
+          default_usd_account_id: string | null
           email: string | null
           email_verified: boolean
           id: string
@@ -57,6 +60,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_btc_account_id?: string | null
+          default_currency?: string
+          default_usd_account_id?: string | null
           email?: string | null
           email_verified: boolean
           id?: string
@@ -64,19 +70,45 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_btc_account_id?: string | null
+          default_currency?: string
+          default_usd_account_id?: string | null
           email?: string | null
           email_verified?: boolean
           id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_default_btc_account_id_fkey"
+            columns: ["default_btc_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_default_usd_account_id_fkey"
+            columns: ["default_usd_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      upsert_user_with_accounts: {
+        Args: {
+          user_id: string
+          email: string
+          email_verified: boolean
+          accounts: Json[]
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

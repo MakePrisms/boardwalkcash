@@ -1,39 +1,80 @@
-import {} from '@tanstack/react-query';
-import { type PropsWithChildren, useEffect } from 'react';
-import { useAccounts, useAddAccounts } from '../accounts/use-accounts';
+import { type PropsWithChildren, Suspense, useEffect } from 'react';
+import { useToast } from '~/hooks/use-toast';
+import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
+import { LoadingScreen } from '../loading/LoadingScreen';
+import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
+import { useUpsertUser, useUser } from '../user/user-hooks';
 
-const defaultAccounts = [
-  {
-    type: 'cashu',
-    currency: 'USD',
-    name: 'Default USD Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-  },
-  {
-    type: 'cashu',
-    currency: 'BTC',
-    name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-  },
-] as const;
+const useSetSupabseSession = (authUser: AuthUser) => {
+  useEffect(() => {
+    supabaseSessionStore.getState().setJwtPayload({ sub: authUser.id });
+  }, [authUser]);
+};
 
-export const Wallet = ({ children }: PropsWithChildren) => {
-  const { data: accounts } = useAccounts();
-  const addAccounts = useAddAccounts();
+/**
+ * Makes sure that the user is created in the Boardwalk DB for every new Open Secret user.
+ * If the user already exists, it will be updated to sync the shared data.
+ * @param authUser - The user data from Open Secret.
+ * @returns Created or updated user data from the Boardwalk DB.
+ */
+const useUpsertBoardwalkUser = (authUser: AuthUser) => {
+  const { data, mutate } = useUpsertUser();
 
   useEffect(() => {
-    if (accounts.length === 0) {
-      addAccounts([...defaultAccounts]);
+    if (authUser) {
+      mutate(authUser);
     }
-  }, [accounts.length, addAccounts]);
+  }, [authUser, mutate]);
 
-  if (!accounts.length) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center px-4">
-        <div>Setting up wallet...</div>
-      </div>
-    );
-  }
+  return data?.user ?? null;
+};
+
+const SessionManager = ({ children }: PropsWithChildren) => {
+  const { toast } = useToast();
+  const isGuestAccount = useUser((user) => user.isGuest);
+
+  useHandleSessionExpiry({
+    isGuestAccount,
+    onLogout: () => {
+      toast({
+        title: 'Session expired',
+        description:
+          'The session has expired. You will be redirected to the login page.',
+      });
+    },
+  });
 
   return children;
+};
+
+/**
+ * Creates the required wallet data for the user, if not already present.
+ * @param authUser - The user data from Open Secret.
+ * @returns True if the setup is done, false otherwise.
+ */
+const useSetupWallet = (authUser: AuthUser) => {
+  useSetSupabseSession(authUser);
+
+  const user = useUpsertBoardwalkUser(authUser);
+  const setupCompleted = user !== null;
+
+  return setupCompleted;
+};
+
+type Props = PropsWithChildren<{
+  authUser: AuthUser;
+}>;
+
+export const WalletSetup = ({ authUser, children }: Props) => {
+  const setupCompleted = useSetupWallet(authUser);
+
+  if (!setupCompleted) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <SessionManager>{children}</SessionManager>
+    </Suspense>
+  );
 };

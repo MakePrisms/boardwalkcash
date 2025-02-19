@@ -1,7 +1,7 @@
 import { useParams } from '@remix-run/react';
 import { Page } from '~/components/page';
 import { Redirect } from '~/components/redirect';
-import { useAccounts } from '~/features/accounts/use-accounts';
+import { useAccounts } from '~/features/accounts/account-hooks';
 import ReusablePaymentRequest from '~/features/receive/reusable-payment-request';
 
 export default function ReceiveRequest() {
