@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import type { Currency } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
 import type { User } from '../user/user';
-import { useUserStore } from '../user/user-provider';
+import { useUser } from '../user/user-hooks';
 import type { Account } from './account';
 import { AccountRepository } from './account-repository';
 
@@ -21,7 +21,7 @@ const isDefaultAccount = (account: Account, user: User) => {
 };
 
 export function useAccounts(currency?: Currency) {
-  const userId = useUserStore((x) => x.user.id);
+  const userId = useUser((x) => x.id);
   const response = useSuspenseQuery({
     queryKey: [queryKey, userId],
     queryFn: () => accountRepository.getAll(userId),
@@ -45,17 +45,17 @@ export function useAccount(id: string) {
     throw new Error(`Account with id ${id} not found`);
   }
 
-  const user = useUserStore((x) => x.user);
+  const user = useUser();
 
   return { ...account, isDefault: isDefaultAccount(account, user) };
 }
 
 export const useDefaultAccount = () => {
-  const defaultCurrency = useUserStore((x) => x.user.defaultCurrency);
+  const defaultCurrency = useUser((x) => x.defaultCurrency);
   const { data: accounts } = useAccounts(defaultCurrency);
 
-  const defaultBtcAccountId = useUserStore((x) => x.user.defaultBtcAccountId);
-  const defaultUsdccountId = useUserStore((x) => x.user.defaultUsdAccountId);
+  const defaultBtcAccountId = useUser((x) => x.defaultBtcAccountId);
+  const defaultUsdccountId = useUser((x) => x.defaultUsdAccountId);
 
   const defaultAccount = accounts.find(
     (x) =>

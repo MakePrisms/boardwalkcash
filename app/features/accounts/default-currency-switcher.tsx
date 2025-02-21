@@ -13,7 +13,7 @@ import { Skeleton } from '~/components/ui/skeleton';
 import { useTheme } from '~/features/theme';
 import { Money } from '~/lib/money';
 import type { Currency } from '~/lib/money/types';
-import { useUserStore } from '../user/user-provider';
+import { useUser, useUserActions } from '../user/user-hooks';
 
 type CurrencyOption = {
   label: string;
@@ -94,8 +94,8 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
 export function DefaultCurrencySwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const { setTheme } = useTheme();
-  const defaultCurrency = useUserStore((state) => state.user.defaultCurrency);
-  const setDefaultCurrency = useUserStore((state) => state.setDefaultCurrency);
+  const defaultCurrency = useUser((user) => user.defaultCurrency);
+  const { setDefaultCurrency } = useUserActions();
 
   const handleCurrencySelect = async (currency: Currency) => {
     await setDefaultCurrency(currency);

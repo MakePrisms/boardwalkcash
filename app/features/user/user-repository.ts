@@ -11,6 +11,33 @@ export class UserRepository {
   constructor(private readonly db: BoardwalkDb) {}
 
   /**
+   * Gets a user from the database.
+   * @param userId - The id of the user to get.
+   * @returns The user.
+   */
+  async get(userId: string, options?: { abortSignal?: AbortSignal }) {
+    const query = this.db.from('users').select().eq('id', userId);
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+      throw new Error('Failed to get user', error);
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(data);
+      }, 5000);
+    });
+
+    return data;
+  }
+
+  /**
    * Updates a user in the database.
    * @param user - The user to update. All specified properties will be updated.
    * @returns The updated user.

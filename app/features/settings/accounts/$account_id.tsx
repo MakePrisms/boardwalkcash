@@ -3,13 +3,13 @@ import { Button } from '~/components/ui/button';
 import type { Account } from '~/features/accounts/account';
 import { useAccount } from '~/features/accounts/use-accounts';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { useUserStore } from '~/features/user/user-provider';
+import { useUserActions } from '~/features/user/user-hooks';
 import { Money } from '~/lib/money';
 
 function CashuAccount({
   account,
 }: { account: Account & { type: 'cashu'; isDefault: boolean } }) {
-  const setDefaultAccount = useUserStore((x) => x.setDefaultAccount);
+  const { setDefaultAccount } = useUserActions();
 
   return (
     <div>

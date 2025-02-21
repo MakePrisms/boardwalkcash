@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useAccounts } from '~/features/accounts/use-accounts';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { useUserStore } from '~/features/user/user-provider';
+import { useUser } from '~/features/user/user-hooks';
 import { type Currency, Money } from '~/lib/money';
 
 function CurrencyAccounts({ currency }: { currency: Currency }) {
@@ -41,7 +41,7 @@ const getTab = (currency: Currency) => {
 };
 
 export default function AllAccounts() {
-  const defaultCurrency = useUserStore((x) => x.user.defaultCurrency);
+  const defaultCurrency = useUser((x) => x.defaultCurrency);
   const defaultTab = getTab(defaultCurrency);
 
   return (
