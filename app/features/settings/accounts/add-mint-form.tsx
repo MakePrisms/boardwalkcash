@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
-import { useUserActions } from '~/features/user/user-hooks';
+import { useAddAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
 import type { Currency } from '~/lib/money';
 
@@ -26,7 +26,7 @@ const currencies = [
 ];
 
 export function AddMintForm() {
-  const { addAccount } = useUserActions();
+  const addAccount = useAddAccount();
   const { toast } = useToast();
   const {
     register,

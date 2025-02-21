@@ -21,7 +21,7 @@ import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
-import { useAccounts } from '../accounts/use-accounts';
+import { useAccounts } from '../accounts/account-hooks';
 import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {

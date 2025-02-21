@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUserActions } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
+import {
+  useRrequestNewEmailVerificationCode,
+  useVerifyEmail,
+} from '../user/user-hooks';
 
 export const useVerifyEmailOnLoad = ({
   code,
@@ -9,7 +12,7 @@ export const useVerifyEmailOnLoad = ({
   code: string | undefined;
   onFailed: () => void;
 }) => {
-  const { verifyEmail } = useUserActions();
+  const verifyEmail = useVerifyEmail();
   const { toast } = useToast();
   const failedRef = useRef(onFailed);
 
@@ -35,7 +38,7 @@ export const useVerifyEmailOnLoad = ({
 
 export const useRequestEmailVerificationCode = () => {
   const { toast } = useToast();
-  const { requestNewEmailVerificationCode } = useUserActions();
+  const requestNewEmailVerificationCode = useRrequestNewEmailVerificationCode();
   const [requestingEmailVerificationCode, setRequestingEmailVerificationCode] =
     useState<boolean>(false);
 

@@ -1,15 +1,15 @@
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import type { Account } from '~/features/accounts/account';
-import { useAccount } from '~/features/accounts/use-accounts';
+import { useAccount } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { useUserActions } from '~/features/user/user-hooks';
+import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { Money } from '~/lib/money';
 
 function CashuAccount({
   account,
 }: { account: Account & { type: 'cashu'; isDefault: boolean } }) {
-  const { setDefaultAccount } = useUserActions();
+  const setDefaultAccount = useSetDefaultAccount();
 
   return (
     <div>

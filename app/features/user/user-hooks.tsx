@@ -2,11 +2,11 @@ import { useOpenSecret } from '@opensecret/react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
-import type { DistributedOmit } from 'type-fest';
 import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
+import { accountsQueryKey } from '../accounts/account-hooks';
 import { type BoardwalkDbUser, boardwalkDb } from '../boardwalk-db/database';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
@@ -41,7 +41,7 @@ const toUser = (boardwalkUserData: BoardwalkDbUser): User => {
 
 const userRepository = new UserRepository(boardwalkDb);
 
-const queryKey = 'users';
+const usersQueryKey = 'users';
 
 /**
  * This hook returns the logged in user data.
@@ -50,7 +50,6 @@ const queryKey = 'users';
  */
 export const useUser = <TData = User>(
   select?: (data: User) => TData,
-  initialData?: User,
 ): TData => {
   const authState = useAuthState();
   const authUser = authState.user;
@@ -59,10 +58,9 @@ export const useUser = <TData = User>(
   }
 
   const response = useSuspenseQuery({
-    queryKey: [queryKey, authUser.id],
+    queryKey: [usersQueryKey, authUser.id],
     queryFn: () => userRepository.get(authUser.id).then((data) => toUser(data)),
     select,
-    initialData,
   });
 
   return response.data;
@@ -83,27 +81,10 @@ const defaultAccounts = [
   },
 ] as const;
 
-export function useUserActions() {
-  const openSecret = useOpenSecret();
-
-  // We are doing this to keep references for these actions constant. Open secret implementation currently creates a new
-  // reference for each render. See https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L350
-  const convertGuestToUserAccountRef = useRef(openSecret.signUpGuest);
-  const requestNewVerificationCodeRef = useRef(
-    openSecret.requestNewVerificationCode,
-  );
-  const verifyEmailRef = useRef(openSecret.verifyEmail);
-  const refetchUserRef = useRef(openSecret.refetchUser);
-
+export const useUpsertUser = () => {
   const queryClient = useQueryClient();
-  const user = useUser();
-  const userRef = useRef(user);
 
-  useIsomorphicLayoutEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  const upsertUserMutation = useMutation({
+  return useMutation({
     mutationKey: ['user-upsert'],
     mutationFn: (user: AuthUser) =>
       userRepository
@@ -118,46 +99,51 @@ export function useUserActions() {
       id: 'user-upsert',
     },
     onSuccess: (data) => {
-      queryClient.setQueryData([queryKey, data.user.id], data.user);
+      queryClient.setQueryData<User>([usersQueryKey, data.user.id], data.user);
+      queryClient.setQueryData<Account[]>(
+        [accountsQueryKey, data.user.id],
+        data.accounts,
+      );
     },
     throwOnError: true,
   });
+};
 
-  const updateUserMutation = useMutation({
-    mutationFn: (updates: Partial<BoardwalkDbUser>) =>
-      userRepository.update({ id: userRef.current.id, ...updates }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [queryKey, userRef.current.id],
-      });
-    },
-  });
+const useUserRef = () => {
+  const user = useUser();
+  const userRef = useRef(user);
 
-  const addAccountMutation = useMutation({
-    mutationFn: (account: DistributedOmit<Account, 'id' | 'createdAt'>) =>
-      userRepository.addAccount(userRef.current.id, account),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [queryKey, userRef.current.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['accounts', userRef.current.id],
-      });
-    },
-  });
+  useIsomorphicLayoutEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
-  const upgradeGuestToFullAccount = useCallback(
-    async (email: string, password: string) => {
-      if (!userRef.current.isGuest) {
-        throw new Error('User already has a full account');
-      }
-      await convertGuestToUserAccountRef.current(email, password);
-      guestAccountStorage.clear();
-    },
-    [],
+  return userRef;
+};
+
+export const useUpgradeGuestToFullAccount = () => {
+  const openSecret = useOpenSecret();
+
+  const convertGuestToUserAccountRef = useRef(openSecret.signUpGuest);
+  const userRef = useUserRef();
+
+  return useCallback(async (email: string, password: string) => {
+    if (!userRef.current.isGuest) {
+      throw new Error('User already has a full account');
+    }
+    await convertGuestToUserAccountRef.current(email, password);
+    guestAccountStorage.clear();
+  }, []);
+};
+
+export const useRrequestNewEmailVerificationCode = () => {
+  const openSecret = useOpenSecret();
+
+  const requestNewVerificationCodeRef = useRef(
+    openSecret.requestNewVerificationCode,
   );
+  const userRef = useUserRef();
 
-  const requestNewEmailVerificationCode = useCallback(async () => {
+  return useCallback(async () => {
     if (userRef.current.isGuest) {
       throw new Error('Cannot request email verification for guest account');
     }
@@ -166,8 +152,16 @@ export function useUserActions() {
     }
     await requestNewVerificationCodeRef.current();
   }, []);
+};
 
-  const verifyEmail = useCallback(async (code: string) => {
+export const useVerifyEmail = () => {
+  const openSecret = useOpenSecret();
+
+  const verifyEmailRef = useRef(openSecret.verifyEmail);
+  const refetchUserRef = useRef(openSecret.refetchUser);
+  const userRef = useUserRef();
+
+  return useCallback(async (code: string) => {
     if (userRef.current.isGuest) {
       throw new Error('Cannot verify email for guest account');
     }
@@ -177,43 +171,49 @@ export function useUserActions() {
     await verifyEmailRef.current(code);
     await refetchUserRef.current();
   }, []);
+};
 
-  const setDefaultCurrency = useCallback(
-    (currency: Currency) =>
-      updateUserMutation.mutateAsync({ default_currency: currency }),
-    [updateUserMutation],
+const useUpdateUser = () => {
+  const queryClient = useQueryClient();
+  const userRef = useUserRef();
+
+  return useMutation({
+    mutationFn: (updates: Partial<BoardwalkDbUser>) =>
+      userRepository.update({ id: userRef.current.id, ...updates }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [usersQueryKey, userRef.current.id],
+      });
+    },
+  });
+};
+
+export const useSetDefaultCurrency = () => {
+  const { mutateAsync: updateUser } = useUpdateUser();
+
+  return useCallback(
+    (currency: Currency) => updateUser({ default_currency: currency }),
+    [updateUser],
   );
+};
 
-  const setDefaultAccount = useCallback(
+export const useSetDefaultAccount = () => {
+  const { mutateAsync: updateUser } = useUpdateUser();
+
+  return useCallback(
     async (account: Account) => {
       if (account.currency === 'BTC') {
-        return updateUserMutation.mutateAsync({
+        return updateUser({
           default_btc_account_id: account.id,
         });
       }
       if (account.currency === 'USD') {
-        return updateUserMutation.mutateAsync({
+        return updateUser({
           default_usd_account_id: account.id,
         });
       }
       throw new Error('Unsupported currency');
     },
-    [updateUserMutation],
+    [updateUser],
   );
-
-  const addAccount = useCallback(
-    (account: DistributedOmit<Account, 'id' | 'createdAt'>) =>
-      addAccountMutation.mutateAsync(account),
-    [addAccountMutation],
-  );
-
-  return {
-    upgradeGuestToFullAccount,
-    requestNewEmailVerificationCode,
-    verifyEmail,
-    setDefaultCurrency,
-    setDefaultAccount,
-    addAccount,
-    upsertUser: upsertUserMutation.mutate,
-  };
-}
+};

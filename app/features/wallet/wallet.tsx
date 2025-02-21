@@ -1,62 +1,15 @@
-import { useMutation } from '@tanstack/react-query';
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
-import { type BoardwalkDbUser, boardwalkDb } from '../boardwalk-db/database';
+import {} from '../boardwalk-db/database';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
-import type { User } from '../user/user';
-import { useUser } from '../user/user-hooks';
-import { UserRepository } from '../user/user-repository';
+import { useUpsertUser, useUser } from '../user/user-hooks';
 
 const useSetSupabseSession = (authUser: AuthUser) => {
   useEffect(() => {
     supabaseSessionStore.getState().setJwtPayload({ sub: authUser.id });
   }, [authUser]);
-};
-
-const userRepository = new UserRepository(boardwalkDb);
-
-const defaultAccounts = [
-  {
-    type: 'cashu',
-    currency: 'USD',
-    name: 'Default USD Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-  },
-  {
-    type: 'cashu',
-    currency: 'BTC',
-    name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-  },
-] as const;
-
-const toUser = (boardwalkUserData: BoardwalkDbUser): User => {
-  if (boardwalkUserData.email) {
-    return {
-      id: boardwalkUserData.id,
-      email: boardwalkUserData.email,
-      emailVerified: boardwalkUserData.email_verified,
-      createdAt: boardwalkUserData.created_at,
-      updatedAt: boardwalkUserData.updated_at,
-      defaultBtcAccountId: boardwalkUserData.default_btc_account_id ?? '',
-      defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
-      defaultCurrency: boardwalkUserData.default_currency,
-      isGuest: false,
-    };
-  }
-
-  return {
-    id: boardwalkUserData.id,
-    emailVerified: boardwalkUserData.email_verified,
-    createdAt: boardwalkUserData.created_at,
-    updatedAt: boardwalkUserData.updated_at,
-    defaultBtcAccountId: boardwalkUserData.default_btc_account_id ?? '',
-    defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
-    defaultCurrency: boardwalkUserData.default_currency,
-    isGuest: true,
-  };
 };
 
 /**
@@ -66,20 +19,7 @@ const toUser = (boardwalkUserData: BoardwalkDbUser): User => {
  * @returns Created or updated user data from the Boardwalk DB.
  */
 const useUpsertBoardwalkUser = (authUser: AuthUser) => {
-  // const queryClient = useQueryClient();
-
-  const { mutate, data } = useMutation({
-    mutationKey: ['user-upsert'],
-    mutationFn: (user: AuthUser) =>
-      userRepository.upsert({ ...user, accounts: [...defaultAccounts] }),
-    scope: {
-      id: 'user-upsert',
-    },
-    // onSuccess: (data) => {
-    //   queryClient.setQueryData(['users', data.id], toUser(data));
-    // },
-    throwOnError: true,
-  });
+  const { data, mutate } = useUpsertUser();
 
   useEffect(() => {
     if (authUser) {
@@ -87,15 +27,12 @@ const useUpsertBoardwalkUser = (authUser: AuthUser) => {
     }
   }, [authUser, mutate]);
 
-  return data ?? null;
+  return data?.user ?? null;
 };
 
-const SessionManager = ({
-  children,
-  user,
-}: PropsWithChildren<{ user: User }>) => {
+const SessionManager = ({ children }: PropsWithChildren) => {
   const { toast } = useToast();
-  const isGuestAccount = useUser((user) => user.isGuest, user);
+  const isGuestAccount = useUser((user) => user.isGuest);
 
   useHandleSessionExpiry({
     isGuestAccount,
@@ -112,25 +49,17 @@ const SessionManager = ({
 };
 
 /**
- * Creates the required wallet data for the user. If the data is already present, it will be updated if any changes are detected.
+ * Creates the required wallet data for the user, if not already present.
  * @param authUser - The user data from Open Secret.
- * @returns True if the wallet data is created or updated, false otherwise.
+ * @returns True if the setup is done, false otherwise.
  */
-const useSetupWallet = (
-  authUser: AuthUser,
-):
-  | { setupCompleted: false; user: null }
-  | { setupCompleted: true; user: User } => {
+const useSetupWallet = (authUser: AuthUser) => {
   useSetSupabseSession(authUser);
 
   const user = useUpsertBoardwalkUser(authUser);
   const setupCompleted = user !== null;
 
-  if (!setupCompleted) {
-    return { setupCompleted, user: null };
-  }
-
-  return { setupCompleted, user: toUser(user) };
+  return setupCompleted;
 };
 
 type Props = PropsWithChildren<{
@@ -138,7 +67,7 @@ type Props = PropsWithChildren<{
 }>;
 
 export const WalletSetup = ({ authUser, children }: Props) => {
-  const { setupCompleted, user } = useSetupWallet(authUser);
+  const setupCompleted = useSetupWallet(authUser);
 
   if (!setupCompleted) {
     return <LoadingScreen />;
@@ -146,7 +75,7 @@ export const WalletSetup = ({ authUser, children }: Props) => {
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <SessionManager user={user}>{children}</SessionManager>
+      <SessionManager>{children}</SessionManager>
     </Suspense>
   );
 };

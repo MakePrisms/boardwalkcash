@@ -28,12 +28,6 @@ export class UserRepository {
       throw new Error('Failed to get user', error);
     }
 
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(data);
-      }, 5000);
-    });
-
     return data;
   }
 
@@ -61,44 +55,6 @@ export class UserRepository {
     }
 
     return data;
-  }
-
-  /**
-   * Adds an account for the user.
-   * @param userId - The id of the user to add the account to.
-   * @param account - The account to add.
-   * @returns The added account.
-   */
-  async addAccount(
-    userId: string,
-    account: DistributedOmit<Account, 'id' | 'createdAt'>,
-    options?: { abortSignal?: AbortSignal },
-  ) {
-    const query = this.db
-      .from('accounts')
-      .insert({
-        user_id: userId,
-        name: account.name,
-        type: account.type,
-        currency: account.currency,
-        details:
-          account.type === 'cashu'
-            ? { mint_url: account.mintUrl }
-            : { nwc_url: account.nwcUrl },
-      })
-      .select();
-
-    if (options?.abortSignal) {
-      query.abortSignal(options.abortSignal);
-    }
-
-    const { data, error } = await query.single();
-
-    if (error) {
-      throw new Error('Failed to add account', error);
-    }
-
-    return this.toAccount(data);
   }
 
   /**

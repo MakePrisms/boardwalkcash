@@ -10,8 +10,8 @@ import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
+import { useDefaultAccount } from '../accounts/account-hooks';
 import { getAccountIcon } from '../accounts/account-icons';
-import { useDefaultAccount } from '../accounts/use-accounts';
 import { useAuthActions } from '../user/auth';
 
 const username = 'satoshi';

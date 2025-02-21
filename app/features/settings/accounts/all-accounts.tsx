@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react';
 import { PageContent } from '~/components/page';
 import { Separator } from '~/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { useAccounts } from '~/features/accounts/use-accounts';
+import { useAccounts } from '~/features/accounts/account-hooks';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { useUser } from '~/features/user/user-hooks';

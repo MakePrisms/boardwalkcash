@@ -9,7 +9,7 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
-import { useUserActions } from '~/features/user/user-hooks';
+import { useUpgradeGuestToFullAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -19,7 +19,7 @@ const validateEmail = buildEmailValidator('Invalid email');
 
 export function UpgradeGuestForm() {
   const { toast } = useToast();
-  const { upgradeGuestToFullAccount } = useUserActions();
+  const upgradeGuestToFullAccount = useUpgradeGuestToFullAccount();
 
   const {
     register,

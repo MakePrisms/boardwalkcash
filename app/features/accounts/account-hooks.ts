@@ -1,4 +1,9 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
+import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
 import type { User } from '../user/user';
@@ -8,9 +13,9 @@ import { AccountRepository } from './account-repository';
 
 const accountRepository = new AccountRepository(boardwalkDb);
 
-const queryKey = 'accounts';
+export const accountsQueryKey = 'accounts';
 
-const isDefaultAccount = (account: Account, user: User) => {
+function isDefaultAccount(account: Account, user: User) {
   if (account.currency === 'BTC') {
     return user.defaultBtcAccountId === account.id;
   }
@@ -18,12 +23,12 @@ const isDefaultAccount = (account: Account, user: User) => {
     return user.defaultUsdAccountId === account.id;
   }
   return false;
-};
+}
 
 export function useAccounts(currency?: Currency) {
   const userId = useUser((x) => x.id);
   const response = useSuspenseQuery({
-    queryKey: [queryKey, userId],
+    queryKey: [accountsQueryKey, userId],
     queryFn: () => accountRepository.getAll(userId),
   });
 
@@ -50,7 +55,7 @@ export function useAccount(id: string) {
   return { ...account, isDefault: isDefaultAccount(account, user) };
 }
 
-export const useDefaultAccount = () => {
+export function useDefaultAccount() {
   const defaultCurrency = useUser((x) => x.defaultCurrency);
   const { data: accounts } = useAccounts(defaultCurrency);
 
@@ -68,4 +73,21 @@ export const useDefaultAccount = () => {
   }
 
   return defaultAccount;
-};
+}
+
+export function useAddAccount() {
+  const queryClient = useQueryClient();
+  const userId = useUser((x) => x.id);
+
+  const { mutateAsync } = useMutation({
+    mutationFn: (account: DistributedOmit<Account, 'id' | 'createdAt'>) =>
+      accountRepository.create({ ...account, userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [accountsQueryKey, userId],
+      });
+    },
+  });
+
+  return mutateAsync;
+}
