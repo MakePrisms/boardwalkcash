@@ -3,6 +3,7 @@ import type { Account } from '../accounts/account';
 
 type CommonUserData = {
   id: string;
+  username: string;
   emailVerified: boolean;
   loginMethod: string;
   createdAt: string;

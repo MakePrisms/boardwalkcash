@@ -39,6 +39,7 @@ begin
   -- Select and lock the user row
   select jsonb_build_object(
     'id', u.id,
+    'username', u.username,
     'email', u.email,
     'email_verified', u.email_verified,
     'default_usd_account_id', u.default_usd_account_id,
@@ -120,6 +121,7 @@ begin
   where id = upsert_user_with_accounts.user_id
   returning jsonb_build_object(
     'id', u.id,
+    'username', u.username,
     'email', u.email,
     'email_verified', u.email_verified,
     'default_usd_account_id', u.default_usd_account_id,
