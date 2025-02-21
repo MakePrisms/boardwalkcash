@@ -85,6 +85,7 @@ const mergeUserData = (
       defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
       defaultCurrency: boardwalkUserData.default_currency,
       accounts: boardwalkUserData.accounts,
+      username: boardwalkUserData.username,
       isGuest: false,
     };
   }
@@ -99,6 +100,7 @@ const mergeUserData = (
     defaultUsdAccountId: boardwalkUserData.default_usd_account_id ?? '',
     defaultCurrency: boardwalkUserData.default_currency,
     accounts: boardwalkUserData.accounts,
+    username: boardwalkUserData.username,
     isGuest: true,
   };
 };

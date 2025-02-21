@@ -27,6 +27,7 @@ export interface UserState {
   addAccount: (
     account: DistributedOmit<Account, 'id' | 'createdAt'>,
   ) => Promise<Account>;
+  updateUsername: (username: string) => Promise<void>;
 }
 
 const userRepository = new UserRepository(boardwalkDb);
@@ -128,6 +129,16 @@ export const createUserStore = ({
         },
       });
       return addedAccount;
+    },
+    updateUsername: async (username: string) => {
+      const user = get().user;
+      const updatedUser = await userRepository.updateUsername(
+        user.id,
+        username,
+      );
+      set({
+        user: { ...user, username: updatedUser.username },
+      });
     },
   }));
 };

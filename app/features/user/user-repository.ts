@@ -159,4 +159,19 @@ export class UserRepository {
 
     throw new Error('Invalid account type');
   }
+
+  async updateUsername(userId: string, username: string) {
+    const { data, error } = await this.db
+      .from('users')
+      .update({ username })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error('Failed to update username', error);
+    }
+
+    return data;
+  }
 }
