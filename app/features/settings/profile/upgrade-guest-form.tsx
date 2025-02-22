@@ -9,9 +9,9 @@ import {
 } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { useUpgradeGuestToFullAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
-import { useUserStore } from '../../user/user-provider';
 
 type FormValues = { email: string; password: string; confirmPassword: string };
 
@@ -19,9 +19,7 @@ const validateEmail = buildEmailValidator('Invalid email');
 
 export function UpgradeGuestForm() {
   const { toast } = useToast();
-  const upgradeGuestToFullAccount = useUserStore(
-    (s) => s.upgradeGuestToFullAccount,
-  );
+  const upgradeGuestToFullAccount = useUpgradeGuestToFullAccount();
 
   const {
     register,

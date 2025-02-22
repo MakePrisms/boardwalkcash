@@ -30,6 +30,12 @@
       "correctness": {
         "noConstAssign": "error",
         "noConstantCondition": "error",
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": {
+            "hooks": [{ "name": "useUserRef", "stableResult": true }]
+          }
+        },
         "noEmptyCharacterClassInRegex": "error",
         "noEmptyPattern": "error",
         "noGlobalObjectCalls": "error",

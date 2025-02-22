@@ -8,13 +8,13 @@ export default function AddCashuAccountView() {
       <SettingsViewHeader
         title="Create Cashu Account"
         navBack={{
-          to: '/settings/accounts',
+          to: '/settings/accounts/create',
           transition: 'slideRight',
           applyTo: 'oldView',
         }}
       />
       <PageContent>
-        <AddMintForm unit="sat" />
+        <AddMintForm />
       </PageContent>
     </>
   );

@@ -1,16 +1,11 @@
+import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { BoardwalkDb, BoardwalkDbAccount } from '../boardwalk-db/database';
 import type { Account } from './account';
 
-type CashuAccountInput = Omit<
-  Extract<Account, { type: 'cashu' }>,
-  'id' | 'createdAt'
->;
-type NwcAccountInput = Omit<
-  Extract<Account, { type: 'nwc' }>,
-  'id' | 'createdAt'
->;
-type AccountInput = (CashuAccountInput | NwcAccountInput) & { userId: string };
+type AccountInput = DistributedOmit<Account, 'id' | 'createdAt'> & {
+  userId: string;
+};
 
 export class AccountRepository {
   constructor(private readonly db: BoardwalkDb) {}

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUserStore } from '~/features/user/user-provider';
 import { useToast } from '~/hooks/use-toast';
+import {
+  useRequestNewEmailVerificationCode,
+  useVerifyEmail,
+} from '../user/user-hooks';
 
 export const useVerifyEmailOnLoad = ({
   code,
@@ -9,7 +12,7 @@ export const useVerifyEmailOnLoad = ({
   code: string | undefined;
   onFailed: () => void;
 }) => {
-  const verifyEmail = useUserStore((state) => state.verifyEmail);
+  const verifyEmail = useVerifyEmail();
   const { toast } = useToast();
   const failedRef = useRef(onFailed);
 
@@ -34,12 +37,10 @@ export const useVerifyEmailOnLoad = ({
 };
 
 export const useRequestEmailVerificationCode = () => {
+  const { toast } = useToast();
+  const requestNewEmailVerificationCode = useRequestNewEmailVerificationCode();
   const [requestingEmailVerificationCode, setRequestingEmailVerificationCode] =
     useState<boolean>(false);
-  const requestNewEmailVerificationCode = useUserStore(
-    (state) => state.requestNewEmailVerificationCode,
-  );
-  const { toast } = useToast();
 
   const requestEmailVerificationCode = async () => {
     if (requestingEmailVerificationCode) return;
