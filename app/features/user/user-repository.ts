@@ -6,6 +6,7 @@ import type {
   BoardwalkDbAccount,
   BoardwalkDbUser,
 } from '../boardwalk-db/database';
+import type { User } from './user';
 
 export class UserRepository {
   constructor(private readonly db: BoardwalkDb) {}
@@ -173,5 +174,94 @@ export class UserRepository {
     }
 
     return data;
+  }
+
+  async getByUsername(username: string) {
+    const { data, error } = await this.db
+      .from('users')
+      .select(`
+        *,
+        accounts:accounts!user_id(*)
+      `)
+      .eq('username', username)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // not found
+        return null;
+      }
+      throw new Error('Failed to get user by username', { cause: error });
+    }
+
+    const user = this.toUser(data);
+    return {
+      ...user,
+      accounts: data.accounts.map(this.toAccount),
+    };
+  }
+
+  async defaultAccount(userId: string, currency?: Currency) {
+    const { data, error } = await this.db
+      .from('users')
+      .select(`
+        *,
+        accounts:accounts!user_id(*)
+      `)
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw new Error('Failed to get user default account IDs', error);
+    }
+    const defaultBtcAccountId = data.default_btc_account_id;
+    const defaultUsdAccountId = data.default_usd_account_id;
+
+    if (!defaultBtcAccountId || !defaultUsdAccountId) {
+      throw new Error('No default account IDs found for user');
+    }
+
+    const accountCurrency = currency ?? data.default_currency;
+    const defaultAccountId =
+      accountCurrency === 'BTC' ? defaultBtcAccountId : defaultUsdAccountId;
+
+    const account = data.accounts.find(
+      (account) => account.id === defaultAccountId,
+    );
+
+    if (!account) {
+      // cant happen, maybe I can do this differently
+      throw new Error('No default account found for user');
+    }
+
+    return this.toAccount(account);
+  }
+
+  private toUser(data: BoardwalkDbUser): User {
+    const commonData = {
+      id: data.id,
+      username: data.username,
+      emailVerified: data.email_verified,
+      loginMethod: 'email',
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      defaultBtcAccountId: data.default_btc_account_id ?? '',
+      defaultUsdAccountId: data.default_usd_account_id ?? '',
+      defaultCurrency: data.default_currency,
+      accounts: [],
+    };
+
+    if (data.email) {
+      return {
+        ...commonData,
+        email: data.email,
+        isGuest: false,
+      };
+    }
+
+    return {
+      ...commonData,
+      isGuest: true,
+    };
   }
 }

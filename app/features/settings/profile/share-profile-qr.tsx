@@ -1,9 +1,11 @@
 import { PageContent, PageFooter } from '~/components/page';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
+import { useUserStore } from '~/features/user/user-provider';
 
 export default function ProfileQR() {
   // TODO: Get actual username and profile URL from user context
-  const username = 'username';
+  const username = useUserStore((state) => state.user.username);
+  const lightningAddress = `${username}@${new URL(window.location.origin).host}`;
 
   return (
     <>
@@ -21,6 +23,9 @@ export default function ProfileQR() {
           <div className="rounded-lg p-4">QR Code</div>
           <p className="text-center text-muted-foreground text-sm">
             Scan to view profile
+          </p>
+          <p className="text-center text-muted-foreground text-sm">
+            {lightningAddress}
           </p>
         </div>
       </PageContent>

@@ -17,7 +17,7 @@ if (!supabaseAnonKey) {
 
 // Use when you need to fix/improve generated types
 // See https://supabase.com/docs/guides/api/rest/generating-types#helper-types-for-tables-and-joins
-type Database = MergeDeep<
+export type Database = MergeDeep<
   DatabaseGenerated,
   {
     wallet: {
@@ -82,3 +82,5 @@ export type BoardwalkDb = typeof boardwalkDb;
 export type BoardwalkDbUser = Database['wallet']['Tables']['users']['Row'];
 export type BoardwalkDbAccount =
   Database['wallet']['Tables']['accounts']['Row'];
+export type BoardwalkDbMintQuote =
+  Database['wallet']['Tables']['mint_quotes']['Row'];
