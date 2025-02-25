@@ -16,8 +16,8 @@ import {
 } from '~/features/signup/verify-email';
 import { useAuthActions } from '~/features/user/auth';
 import type { FullUser } from '~/features/user/user';
-import { useUserStore } from '~/features/user/user-provider';
 import { useToast } from '~/hooks/use-toast';
+import { useVerifyEmail } from '../user/user-hooks';
 
 type FormValues = { code: string };
 type Step = 'auto-verification' | 'manual-verification';
@@ -28,7 +28,7 @@ export function VerifyEmailForm({ user, code }: Props) {
     return code ? 'auto-verification' : 'manual-verification';
   });
   const { signOut } = useAuthActions();
-  const verifyEmail = useUserStore((state) => state.verifyEmail);
+  const verifyEmail = useVerifyEmail();
   const { toast } = useToast();
   const { requestingEmailVerificationCode, requestEmailVerificationCode } =
     useRequestEmailVerificationCode();
@@ -50,11 +50,13 @@ export function VerifyEmailForm({ user, code }: Props) {
   const onSubmit = async (data: FormValues) => {
     try {
       await verifyEmail(data.code);
-    } catch {
+    } catch (e) {
+      const description =
+        e instanceof Error ? e.message : 'Failed to verify email';
       toast({
         variant: 'destructive',
         title: 'Verification Failed',
-        description: 'Failed to verify email',
+        description,
       });
     }
   };

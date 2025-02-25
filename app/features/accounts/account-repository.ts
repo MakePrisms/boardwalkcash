@@ -1,16 +1,11 @@
+import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { BoardwalkDb, BoardwalkDbAccount } from '../boardwalk-db/database';
 import type { Account } from './account';
 
-type CashuAccountInput = Omit<
-  Extract<Account, { type: 'cashu' }>,
-  'id' | 'createdAt'
->;
-type NwcAccountInput = Omit<
-  Extract<Account, { type: 'nwc' }>,
-  'id' | 'createdAt'
->;
-type AccountInput = (CashuAccountInput | NwcAccountInput) & { userId: string };
+type AccountInput = DistributedOmit<Account, 'id' | 'createdAt'> & {
+  userId: string;
+};
 
 export class AccountRepository {
   constructor(private readonly db: BoardwalkDb) {}
@@ -38,7 +33,7 @@ export class AccountRepository {
       throw new Error('Failed to get account', error);
     }
 
-    return this.toAccount(data);
+    return AccountRepository.toAccount(data);
   }
 
   /**
@@ -64,7 +59,7 @@ export class AccountRepository {
       throw new Error('Failed to get accounts', error);
     }
 
-    return data.map(this.toAccount);
+    return data.map(AccountRepository.toAccount);
   }
 
   /**
@@ -75,37 +70,17 @@ export class AccountRepository {
   async create(
     accountInput: AccountInput,
     options?: { abortSignal?: AbortSignal },
-  ): Promise<Account>;
-  /**
-   * Creates multiple accounts.
-   * @param accountInput - The accounts to create.
-   * @returns The created accounts.
-   */
-  async create(
-    accountInput: AccountInput[],
-    options?: { abortSignal?: AbortSignal },
-  ): Promise<Account[]>;
-  /**
-   * Implementation of create method supporting both single and multiple accounts.
-   */
-  async create(
-    accountInput: AccountInput | AccountInput[],
-    options: {
-      abortSignal?: AbortSignal;
-    } = {},
-  ): Promise<Account | Account[]> {
-    const inputs = Array.isArray(accountInput) ? accountInput : [accountInput];
-
-    const accountsToCreate = inputs.map((account) => ({
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
+  ): Promise<Account> {
+    const accountsToCreate = {
+      name: accountInput.name,
+      type: accountInput.type,
+      currency: accountInput.currency,
       details:
-        account.type === 'cashu'
-          ? { mint_url: account.mintUrl }
-          : { nwc_url: account.nwcUrl },
-      user_id: account.userId,
-    }));
+        accountInput.type === 'cashu'
+          ? { mint_url: accountInput.mintUrl }
+          : { nwc_url: accountInput.nwcUrl },
+      user_id: accountInput.userId,
+    };
 
     const query = this.db.from('accounts').insert(accountsToCreate).select();
 
@@ -113,19 +88,21 @@ export class AccountRepository {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query;
+    const resp = await query.single();
+    const { data, error, status } = resp;
 
     if (error) {
-      throw new Error('Failed to store account(s)', error);
+      const message =
+        status === 409 && accountInput.type === 'cashu'
+          ? 'Account for this mint and currency already exists'
+          : 'Failed to create account';
+      throw new Error(message, error);
     }
 
-    const createdAccounts = data.map(this.toAccount);
-
-    // Return single account if input was single, array if input was array
-    return Array.isArray(accountInput) ? createdAccounts : createdAccounts[0];
+    return AccountRepository.toAccount(data);
   }
 
-  private toAccount(data: BoardwalkDbAccount): Account {
+  static toAccount(data: BoardwalkDbAccount): Account {
     const commonData = {
       id: data.id,
       name: data.name,

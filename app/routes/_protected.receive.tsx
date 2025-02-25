@@ -1,5 +1,5 @@
 import { Outlet } from '@remix-run/react';
-import { useAccounts } from '~/features/accounts/use-accounts';
+import { useAccounts } from '~/features/accounts/account-hooks';
 import { ReceiveProvider } from '~/features/receive';
 
 export default function ReceiveLayout() {

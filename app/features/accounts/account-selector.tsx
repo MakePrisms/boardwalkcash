@@ -1,6 +1,5 @@
-import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
-import { LandmarkIcon } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -8,20 +7,13 @@ import {
   DrawerTrigger,
 } from '~/components/ui/drawer';
 import { Money } from '~/lib/money';
-import type { Account, AccountType } from './account';
-
-const CashuIcon = () => <LandmarkIcon className="h-4 w-4" />;
-const NWCIcon = () => <Zap className="h-4 w-4" />;
-
-const icons: Record<AccountType, ReactNode> = {
-  cashu: <CashuIcon />,
-  nwc: <NWCIcon />,
-};
+import type { Account } from './account';
+import { AccountTypeIcon } from './account-icons';
 
 function AccountItem({ account }: { account: Account }) {
   return (
     <div className="flex items-center gap-4 px-3 py-4 ">
-      {icons[account.type]}
+      <AccountTypeIcon type={account.type} />
       <div className="flex flex-col justify-between gap-2 text-start ">
         <span className="font-medium">{account.name}</span>
         <span className="text-muted-foreground text-xs">
