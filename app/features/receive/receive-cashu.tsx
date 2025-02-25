@@ -1,6 +1,7 @@
 import { AlertCircle, Banknote, Zap } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
+import { useCopyToClipboard } from 'usehooks-ts';
 import { MoneyDisplay } from '~/components/money-display';
 import {
   PageBackButton,
@@ -28,6 +29,7 @@ type QRCarouselItemProps = {
   description: string;
   error?: string;
   isLoading?: boolean;
+  onClick?: () => void;
 };
 
 function QRCarouselItem({
@@ -35,6 +37,7 @@ function QRCarouselItem({
   description,
   error,
   isLoading,
+  onClick,
 }: QRCarouselItemProps) {
   const baseClasses =
     'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
@@ -45,14 +48,22 @@ function QRCarouselItem({
         {isLoading ? (
           <Skeleton className={baseClasses} />
         ) : value ? (
-          <div className={cn(baseClasses, 'bg-foreground')}>
+          <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+              baseClasses,
+              'bg-foreground transition-transform active:scale-95',
+            )}
+          >
+            {' '}
             <QRCodeSVG
               value={value}
               size={256}
               marginSize={3}
               className="rounded-lg bg-foreground"
             />
-          </div>
+          </button>
         ) : (
           error && (
             <div className={cn(baseClasses, 'border bg-card')}>
@@ -82,6 +93,8 @@ type CashuRequestQRProps = {
 
 function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
   const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
+  const [, copyToClipboard] = useCopyToClipboard();
+  const { toast } = useToast();
   // TODO: this should come from some hook that does a similar thing to the mint quote hook
   const cashuRequest = getCashuRequest(account, {
     amount,
@@ -93,6 +106,13 @@ function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
     <QRCarouselItem
       value={cashuRequest}
       description="Scan with any wallet that supports Cashu payment requests."
+      onClick={() => {
+        copyToClipboard(cashuRequest);
+        toast({
+          title: 'Copied Cashu Payment Request',
+          description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
+        });
+      }}
     />
   );
 }
@@ -104,6 +124,7 @@ type MintQuoteProps = {
 };
 
 function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
+  const [, copyToClipboard] = useCopyToClipboard();
   const { mintQuote, createQuote, fetchError, checkError, isLoading } =
     useMintQuote({
       account,
@@ -133,6 +154,17 @@ function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
       description="Scan with any Lightning wallet."
       error={fetchError || checkError}
       isLoading={isLoading}
+      onClick={
+        mintQuote?.request
+          ? () => {
+              copyToClipboard(mintQuote?.request);
+              toast({
+                title: 'Copied BOLT11 Lightning Invoice',
+                description: `${mintQuote?.request?.slice(0, 5)}...${mintQuote?.request?.slice(-5)}`,
+              });
+            }
+          : undefined
+      }
     />
   );
 }
