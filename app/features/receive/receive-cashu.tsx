@@ -398,7 +398,8 @@ const mintQuoteStore = create<MintQuoteStore>((set, get) => ({
       // I'm not yet sure if we need this, but I think we need  a counter for each keyset
       keysetId: quote.counter.id,
       // optionally provide all currently stored proofs of this mint.
-      // Cashu-ts will use them to derive the optimal output amounts
+      // Cashu-ts will use them to derive the optimal output amounts.
+      // NOTE: by pre-calculating `keepAmounts` this is not needed
       proofsWeHave: undefined,
       //optionally specify the output's amounts to keep and to send
       outputAmounts: {
@@ -425,14 +426,6 @@ const mintQuoteStore = create<MintQuoteStore>((set, get) => ({
 
       if (isAlreadyIssuedError(error)) {
         console.log('Mint quote already issued');
-        // Mint quote already issued
-        // This means the mint marked as issued but the proofs are not yet safe in the store (OR we messed up the counter)
-        // We need to recover here
-        // TODO: implement recovery
-        // - check the proof store to make sure we didn't already add the proofs
-        // - if we did, remove the mint quote from the issued quotes
-        // - if we didn't:
-        //   - figure out the keyset counter
 
         if (options.counter === undefined) {
           throw new Error('Counter is required to recover');
