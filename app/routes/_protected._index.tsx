@@ -1,20 +1,13 @@
 import type { LinksFunction } from '@remix-run/node';
-import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, ChartSpline, Cog } from 'lucide-react';
 import { useState } from 'react';
-import { MoneyDisplay } from '~/components/money-display';
-import {
-  Page,
-  PageContent,
-  PageFooter,
-  PageHeader,
-  PageHeaderTitle,
-} from '~/components/page';
+import { Page, PageContent, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { Skeleton } from '~/components/ui/skeleton';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
+import { BalanceDisplay } from '~/features/balance';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { links as pwaLinks } from '~/features/pwa/install-pwa-prompt';
-import { useTheme } from '~/features/theme';
-import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
 import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
@@ -22,56 +15,58 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 
 export const links: LinksFunction = () => [...pwaLinks()];
 
-export default function Index() {
-  const { signOut } = useAuthActions();
+const Price = () => {
   const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
-  const { theme, effectiveColorMode, colorMode, setColorMode } = useTheme();
   const { data: rates } = useExchangeRates(
-    (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
+    ['BTC-USD', 'USD-BTC'].sort() as Ticker[],
   );
 
-  const balanceBTC = new Money({ amount: 0, currency: 'BTC' });
-  const balanceUSD = new Money({ amount: 0, currency: 'USD' });
+  if (!rates) return <Skeleton className="h-6 w-24" />;
+
+  const moneyString = showSatsPerDollar
+    ? new Money({ amount: 1, currency: 'USD' })
+        .convert('BTC', rates['USD-BTC'])
+        .toLocaleString({ unit: 'sat' })
+    : new Money({ amount: rates['BTC-USD'], currency: 'USD' })
+        .toLocaleString({ unit: 'usd' })
+        .slice(0, -3);
 
   return (
+    <button
+      type="button"
+      onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
+      className="flex items-center gap-2 text-muted-foreground"
+    >
+      {showSatsPerDollar && <ChartSpline size={16} />}
+      <span>{moneyString}</span>
+      {!showSatsPerDollar && <ChartSpline size={16} />}
+    </button>
+  );
+};
+
+export default function Index() {
+  return (
     <>
-      <Page>
-        <PageHeader>
-          <PageHeaderTitle>
-            <button
-              type="button"
-              onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
-            >
-              {showSatsPerDollar && rates
-                ? new Money({ amount: 1, currency: 'USD' })
-                    .convert('BTC', rates['USD-BTC'])
-                    .toLocaleString({ unit: 'sat' })
-                : rates &&
-                  new Money({
-                    amount: rates['BTC-USD'],
-                    currency: 'USD',
-                  }).toLocaleString({ unit: 'usd' })}
-            </button>
-          </PageHeaderTitle>
+      <Page className="relative">
+        <PageHeader className="z-10">
           <LinkWithViewTransition
             to="/settings"
             transition="slideLeft"
             applyTo="newView"
+            aria-label="Settings"
           >
             <Cog />
           </LinkWithViewTransition>
         </PageHeader>
 
-        <p className="text-center text-lg">Welcome to Boardwalk!</p>
-
-        <PageContent className="items-center justify-around">
-          {theme === 'usd' ? (
-            <MoneyDisplay money={balanceUSD} unit="usd" />
-          ) : (
-            <MoneyDisplay money={balanceBTC} unit="sat" />
-          )}
+        <PageContent className="absolute inset-0 mx-auto flex flex-col items-center justify-center gap-24">
+          <div className="flex flex-col items-center">
+            <BalanceDisplay />
+            <Price />
+          </div>
           <DefaultCurrencySwitcher />
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-2 gap-10 pt-3">
             <LinkWithViewTransition
               to="/receive"
               transition="slideUp"
@@ -86,17 +81,6 @@ export default function Index() {
             </Button>
           </div>
         </PageContent>
-        <PageFooter className="flex flex-row justify-around">
-          <Button
-            className="w-fit"
-            onClick={() =>
-              setColorMode(colorMode === 'dark' ? 'light' : 'dark')
-            }
-          >
-            {effectiveColorMode}
-          </Button>
-          <Button onClick={signOut}>Log Out</Button>
-        </PageFooter>
       </Page>
       <InstallPwaPrompt />
     </>
