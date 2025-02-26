@@ -43,6 +43,8 @@ const getUnitFromMoney = (amount: Money) => {
   throw new Error('Invalid currency');
 };
 
+// ==== START COPIED FROM CASHU-TS ====
+
 /**
  * Splits the amount into denominations of the provided @param keyset
  * @param value amount to split
@@ -162,6 +164,8 @@ export function getKeysetAmounts(
 export function hasCorrespondingKey(amount: number, keyset: Keys): boolean {
   return amount in keyset;
 }
+
+// === END COPIED FROM CASHU-TS ==== 
 
 const isAlreadyIssuedError = (error: unknown): boolean => {
   return (
