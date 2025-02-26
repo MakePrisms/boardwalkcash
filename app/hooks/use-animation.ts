@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 type Options = {
-  name: 'shake';
+  name: 'shake' | 'slam';
   durationMs?: number;
 };
 
