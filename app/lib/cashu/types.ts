@@ -1,3 +1,4 @@
+import type { CashuWallet } from '@cashu/cashu-ts';
 import { z } from 'zod';
 
 /**
@@ -130,3 +131,9 @@ export type ProofSecret = NUT10Secret | PlainSecret;
  * @see https://github.com/cashubtc/nuts/blob/main/11.md for Pay-to-Pub-Key (P2PK) spending condition
  */
 export type P2PKSecret = NUT10Secret & { kind: 'P2PK' };
+
+/**
+ * A class that represents the data fetched from the mint's
+ * [NUT-06 info endpoint](https://github.com/cashubtc/nuts/blob/main/06.md)
+ */
+export type MintInfo = Awaited<ReturnType<CashuWallet['getMintInfo']>>;
