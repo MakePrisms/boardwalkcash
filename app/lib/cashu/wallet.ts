@@ -59,7 +59,7 @@ export const getCrossMintQuotes = async (
 
   // Estimate initial fee based on Nutshell defaults to limit the number of attempts:
   // See: https://github.com/cashubtc/nutshell/blob/main/cashu/core/helpers.py#L53-L58
-  const estimatedFeeReserve = Math.max(2, Math.floor(requestedAmount * 0.1));
+  const estimatedFeeReserve = Math.max(2, Math.floor(requestedAmount * 0.01));
   const estimatedTotalRequired = requestedAmount + estimatedFeeReserve;
 
   if (estimatedTotalRequired > proofsAvailable) {
