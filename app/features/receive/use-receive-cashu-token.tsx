@@ -173,6 +173,7 @@ const getBadges = (
 
   return badges;
 };
+
 /**
  * Hook to receive a cashu token.
  * @param token - The token to receive
