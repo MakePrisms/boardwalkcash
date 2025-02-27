@@ -18,3 +18,10 @@ export const getP2PKPubkeyFromProofs = (proofs: Proof[]): string | null => {
   }
   return pubkeys[0] || null;
 };
+
+/** Sum the amounts from a list of proofs. */
+export const sumProofs = (proofs: Proof[]): number => {
+  return proofs.reduce((acc, proof) => {
+    return acc + proof.amount;
+  }, 0);
+};
