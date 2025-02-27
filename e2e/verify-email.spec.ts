@@ -1,6 +1,7 @@
 import type { UserResponse } from '@opensecret/react';
 import { expect, test } from './fixtures';
 import { openSecretBaseUrl } from './fixtures/open-secret/fixture';
+import { expectHomePage } from './helpers';
 
 const getUser = (): UserResponse['user'] => {
   const id = crypto.randomUUID();
@@ -73,12 +74,12 @@ test('verify email by typing the code', async ({
   // will fail the test.
   await page.waitForLoadState('networkidle');
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 
   // Assert that verified user cannot go back to verify email page
   await page.goto('/verify-email');
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('verify email by opening the link', async ({
@@ -127,5 +128,5 @@ test('verify email by opening the link', async ({
 
   await expect(page.getByText('Verifying email...')).toBeVisible();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });

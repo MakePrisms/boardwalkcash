@@ -56,6 +56,7 @@ export const links: LinksFunction = () => [
 
 type RootLoaderData = {
   cookieSettings: ReturnType<typeof getThemeCookies>;
+  userAgentString: string;
 };
 
 export async function loader({
@@ -63,7 +64,12 @@ export async function loader({
 }: LoaderFunctionArgs): Promise<RootLoaderData> {
   /** Returns user settings from cookies */
   const cookieSettings = getThemeCookies(request);
-  return { cookieSettings: cookieSettings || null };
+  const userAgentString = request.headers.get('user-agent');
+
+  return {
+    cookieSettings: cookieSettings || null,
+    userAgentString: userAgentString || '',
+  };
 }
 
 // prevent loader from being revalidated
