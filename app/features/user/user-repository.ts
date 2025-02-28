@@ -11,6 +11,10 @@ export type UpdateUser = {
   defaultCurrency?: Currency;
 };
 
+export type UpdateProfile = {
+  username?: string;
+};
+
 export class UserRepository {
   constructor(private readonly db: BoardwalkDb) {}
 
@@ -36,6 +40,44 @@ export class UserRepository {
     }
 
     return this.toUser(data);
+  }
+
+  async getProfile(userId: string) {
+    const { data, error } = await this.db
+      .from('public_profiles')
+      .select()
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      throw new Error('Failed to get profile', error);
+    }
+
+    return data;
+  }
+
+  async updateProfile(
+    userId: string,
+    data: UpdateProfile,
+    options?: { abortSignal?: AbortSignal },
+  ) {
+    const query = this.db
+      .from('public_profiles')
+      .update(data)
+      .eq('user_id', userId)
+      .select();
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data: updatedProfile, error } = await query.single();
+
+    if (error) {
+      throw new Error('Failed to update profile', error);
+    }
+
+    return updatedProfile;
   }
 
   /**
@@ -94,6 +136,12 @@ export class UserRepository {
        * Will be used only when the account is created. For existing users, the accounts will be ignored.
        */
       accounts: DistributedOmit<Account, 'id' | 'createdAt'>[];
+      /**
+       * Profile to insert for the user.
+       */
+      profile: {
+        username: string;
+      };
     },
     options?: { abortSignal?: AbortSignal },
   ): Promise<{ user: User; accounts: Account[] }> {
@@ -112,6 +160,7 @@ export class UserRepository {
       email: user.email ?? null,
       email_verified: user.emailVerified,
       accounts: accountsToAdd,
+      profile: user.profile,
     });
 
     if (options?.abortSignal) {
@@ -132,6 +181,21 @@ export class UserRepository {
     };
   }
 
+  async updateUsername(userId: string, username: string) {
+    const { data, error } = await this.db
+      .from('public_profiles')
+      .update({ username })
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error('Failed to update username', error);
+    }
+
+    return data;
+  }
+
   private toUser(dbUser: BoardwalkDbUser): User {
     if (dbUser.email) {
       return {
@@ -143,6 +207,7 @@ export class UserRepository {
         defaultBtcAccountId: dbUser.default_btc_account_id ?? '',
         defaultUsdAccountId: dbUser.default_usd_account_id ?? '',
         defaultCurrency: dbUser.default_currency,
+        profileId: dbUser.profile_id ?? '',
         isGuest: false,
       };
     }
@@ -155,6 +220,7 @@ export class UserRepository {
       defaultBtcAccountId: dbUser.default_btc_account_id ?? '',
       defaultUsdAccountId: dbUser.default_usd_account_id ?? '',
       defaultCurrency: dbUser.default_currency,
+      profileId: dbUser.profile_id ?? '',
       isGuest: true,
     };
   }

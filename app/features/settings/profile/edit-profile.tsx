@@ -1,34 +1,12 @@
-import { useNavigate } from '@remix-run/react';
-import { useForm } from 'react-hook-form';
 import { PageContent } from '~/components/page';
-import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
+import { Separator } from '~/components/ui/separator';
 import { UpgradeGuestForm } from '~/features/settings/profile/upgrade-guest-form';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { useUser } from '~/features/user/user-hooks';
-
-type ProfileForm = {
-  username: string;
-};
+import EditableUsername from './editable-username';
 
 export default function EditProfile() {
-  const navigate = useNavigate();
-  const user = useUser();
-
-  const { register, handleSubmit } = useForm<ProfileForm>({
-    defaultValues: {
-      username: 'satoshi', // This should come from actual user data
-    },
-  });
-  const onSubmit = async (data: ProfileForm) => {
-    try {
-      // TODO: Implement username update logic
-      console.log('Updating username...', data.username);
-      navigate('/settings');
-    } catch {
-      // TODO
-    }
-  };
+  const isGuest = useUser((s) => s.isGuest);
 
   return (
     <>
@@ -40,23 +18,14 @@ export default function EditProfile() {
           applyTo: 'oldView',
         }}
       />
-      <PageContent className="gap-4">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="username" className="font-medium text-sm">
-              Username
-            </label>
-            <Input
-              id="username"
-              {...register('username', { required: true })}
-              placeholder="Enter your username"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Save Changes
-          </Button>
-        </form>
-        {user.isGuest && <UpgradeGuestForm />}
+      <PageContent className="gap-6">
+        <EditableUsername />
+        {isGuest && (
+          <>
+            <Separator />
+            <UpgradeGuestForm />
+          </>
+        )}
       </PageContent>
     </>
   );

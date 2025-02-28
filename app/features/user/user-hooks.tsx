@@ -10,7 +10,11 @@ import { accountsQueryKey } from '../accounts/account-hooks';
 import { boardwalkDb } from '../boardwalk-db/database';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
-import { type UpdateUser, UserRepository } from './user-repository';
+import {
+  type UpdateProfile,
+  type UpdateUser,
+  UserRepository,
+} from './user-repository';
 
 const userRepository = new UserRepository(boardwalkDb);
 
@@ -65,6 +69,9 @@ export const useUpsertUser = () => {
         email: user.email,
         emailVerified: user.email_verified,
         accounts: [...defaultAccounts],
+        profile: {
+          username: `user-${user.id.slice(-12)}`,
+        },
       }),
     scope: {
       id: 'user-upsert',
@@ -183,6 +190,21 @@ const useUpdateUser = () => {
   });
 };
 
+const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  const userRef = useUserRef();
+
+  return useMutation({
+    mutationFn: (updates: UpdateProfile) =>
+      userRepository.updateProfile(userRef.current.id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['user-profile', userRef.current.id],
+      });
+    },
+  });
+};
+
 export const useSetDefaultCurrency = () => {
   const { mutateAsync: updateUser } = useUpdateUser();
 
@@ -210,5 +232,25 @@ export const useSetDefaultAccount = () => {
       throw new Error('Unsupported currency');
     },
     [updateUser],
+  );
+};
+
+export const useUserProfile = () => {
+  const userRef = useUserRef();
+
+  const response = useSuspenseQuery({
+    queryKey: ['user-profile', userRef.current.id],
+    queryFn: () => userRepository.getProfile(userRef.current.id),
+  });
+
+  return response.data;
+};
+
+export const useUpdateUsername = () => {
+  const { mutateAsync: updateProfile } = useUpdateProfile();
+
+  return useCallback(
+    (username: string) => updateProfile({ username }),
+    [updateProfile],
   );
 };
