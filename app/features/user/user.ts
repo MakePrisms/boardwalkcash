@@ -8,6 +8,7 @@ type CommonUserData = {
   defaultBtcAccountId: string;
   defaultUsdAccountId: string;
   defaultCurrency: Currency;
+  profileId: string;
 };
 
 export type FullUser = CommonUserData & {

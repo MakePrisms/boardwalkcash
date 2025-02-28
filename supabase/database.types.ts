@@ -47,6 +47,35 @@ export type Database = {
           },
         ]
       }
+      public_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -56,6 +85,7 @@ export type Database = {
           email: string | null
           email_verified: boolean
           id: string
+          profile_id: string | null
           updated_at: string
         }
         Insert: {
@@ -66,6 +96,7 @@ export type Database = {
           email?: string | null
           email_verified: boolean
           id?: string
+          profile_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -76,6 +107,7 @@ export type Database = {
           email?: string | null
           email_verified?: boolean
           id?: string
+          profile_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -93,6 +125,13 @@ export type Database = {
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "users_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -100,12 +139,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      search_for_user_by_username: {
+        Args: {
+          query: string
+        }
+        Returns: {
+          id: string
+          username: string
+          user_id: string
+          created_at: string
+        }[]
+      }
       upsert_user_with_accounts: {
         Args: {
           user_id: string
           email: string
           email_verified: boolean
           accounts: Json[]
+          profile: Json
         }
         Returns: Json
       }

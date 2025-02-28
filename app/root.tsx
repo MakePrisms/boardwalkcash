@@ -19,6 +19,7 @@ import { Analytics } from '@vercel/analytics/react';
 import type { LinksFunction } from '@vercel/remix';
 import { useState } from 'react';
 import { useDehydratedState } from 'use-dehydrated-state';
+import animations from '~/animations.css?url';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -38,6 +39,7 @@ import stylesheet from '~/tailwind.css?url';
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
   { rel: 'stylesheet', href: transitionStyles },
+  { rel: 'stylesheet', href: animations },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
     rel: 'manifest',
