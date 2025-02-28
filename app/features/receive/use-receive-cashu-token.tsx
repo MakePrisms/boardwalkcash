@@ -154,15 +154,20 @@ const getDefaultReceiveAccount = (
   disableCrossMintSwap: boolean,
   defaultAccount: Account,
 ): CashuAccount => {
-  return (
-    selectableAccounts.find(
-      (a) =>
-        a.mintUrl ===
-        (disableCrossMintSwap
-          ? sourceAccount.mintUrl
-          : defaultAccount.type === 'cashu' && defaultAccount.mintUrl),
-    ) ?? sourceAccount
+  const targetMintUrl = disableCrossMintSwap
+    ? sourceAccount.mintUrl
+    : defaultAccount.type === 'cashu'
+      ? defaultAccount.mintUrl
+      : null;
+
+  const matchingAccount = selectableAccounts.find(
+    (account) =>
+      account.mintUrl === targetMintUrl &&
+      account.currency === defaultAccount.currency,
   );
+
+  // Fall back to source account if no match found
+  return matchingAccount ?? sourceAccount;
 };
 
 const getBadges = (
@@ -181,7 +186,8 @@ const getBadges = (
   }
   if (
     defaultAccount.type === 'cashu' &&
-    account.mintUrl === defaultAccount.mintUrl
+    account.mintUrl === defaultAccount.mintUrl &&
+    account.currency === defaultAccount.currency
   ) {
     badges.push('Default');
   }
@@ -215,12 +221,15 @@ export function useReceiveCashuToken({
   );
   const addAccount = useAddAccount();
   const defaultAccount = useDefaultAccount();
+  const tokenCurrency = tokenToMoney(token).currency;
 
   const { data: sourceAccountData, isLoading: isSourceAccountLoading } =
     useQuery({
-      queryKey: ['mint-info', token.mint],
+      queryKey: ['mint-info', token.mint, tokenCurrency],
       queryFn: async () => {
-        const existingAccount = accounts.find((a) => a.mintUrl === token.mint);
+        const existingAccount = accounts.find(
+          (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
+        );
         if (existingAccount) {
           return existingAccount;
         }
