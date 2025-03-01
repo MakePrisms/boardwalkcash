@@ -13,6 +13,7 @@ import {
 } from '~/components/ui/select';
 import { useAddAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
+import { checkIsTestMint } from '~/lib/cashu/utils';
 import type { Currency } from '~/lib/money';
 
 type FormValues = {
@@ -84,11 +85,13 @@ export function AddMintForm() {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      const isTestMint = await checkIsTestMint(data.mintUrl);
       await addAccount({
         name: data.name,
         currency: data.currency,
         mintUrl: data.mintUrl,
         type: 'cashu',
+        isTestMint,
       });
       toast({
         title: 'Success',

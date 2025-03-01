@@ -1,4 +1,5 @@
 import type { Proof } from '@cashu/cashu-ts';
+import { hashToCurve } from '@cashu/crypto/modules/common';
 import { getP2PKPubkeyFromSecret } from './secret';
 
 /**
@@ -24,4 +25,14 @@ export const sumProofs = (proofs: Proof[]): number => {
   return proofs.reduce((acc, proof) => {
     return acc + proof.amount;
   }, 0);
+};
+
+/**
+ * Determinsitcally maps the proof's secret to point on the curve.
+ *
+ * @see https://github.com/cashubtc/nuts/blob/main/00.md#hash_to_curvex-bytes---curve-point-y
+ */
+export const proofToY = (proof: Proof): string => {
+  const encoder = new TextEncoder();
+  return hashToCurve(encoder.encode(proof.secret)).toHex(true);
 };

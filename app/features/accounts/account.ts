@@ -12,9 +12,12 @@ export type Account = {
   | {
       type: 'cashu';
       mintUrl: string;
+      isTestMint: boolean;
     }
   | {
       type: 'nwc';
       nwcUrl: string;
     }
 );
+
+export type CashuAccount = Extract<Account, { type: 'cashu' }>;
