@@ -25,8 +25,8 @@ import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { MintInfo } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
-import { getDefaultUnit } from '../shared/currencies';
 import type { AccountWithBadges } from '../accounts/account-selector';
+import { getDefaultUnit } from '../shared/currencies';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -72,7 +72,7 @@ type UseReceiveCashuTokenData = {
 
 type UseReceiveCashuTokenReturn = {
   /** The data fetched by the query function. Will be undefined while isLoading is true */
-  data: UseReceiveCashuTokenData | undefined;
+  data: UseReceiveCashuTokenData | null | undefined;
   isLoading: boolean;
   isClaiming: boolean;
   /** Set the account to receive the token */
@@ -245,9 +245,9 @@ export function useReceiveCashuToken({
   const { data: tokenData, isLoading: isTokenDataLoading } = useQuery({
     queryKey: ['token-state', token, sourceAccountData],
     enabled: !!sourceAccountData,
-    queryFn: async (): Promise<UseReceiveCashuTokenData | undefined> => {
+    queryFn: async (): Promise<UseReceiveCashuTokenData | null> => {
       if (!sourceAccountData) {
-        return undefined;
+        return null;
       }
 
       const disableCrossMintSwap = sourceAccountData.isTestMint;
