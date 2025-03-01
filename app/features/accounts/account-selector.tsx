@@ -11,7 +11,8 @@ import { Money } from '~/lib/money';
 import type { Account } from './account';
 import { AccountTypeIcon } from './account-icons';
 
-type AccountWithBadges<T extends Account = Account> = T & {
+export type AccountWithBadges<T extends Account = Account> = T & {
+  /** Text to display as a badge in the account selector */
   badges?: string[];
 };
 

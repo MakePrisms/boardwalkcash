@@ -6,13 +6,13 @@ import { getDefaultUnit } from './currencies';
 
 export const MoneyWithConvertedAmount = ({ money }: { money: Money }) => {
   const defaultFiatCurrency = 'USD';
+  const convertedCurrency =
+    money.currency === 'BTC' ? defaultFiatCurrency : 'BTC';
   const {
     data: rate,
     error: exchangeRateError,
     isLoading: exchangeRateLoading,
-  } = useExchangeRate(
-    `${money.currency}-${money.currency === 'BTC' ? defaultFiatCurrency : 'BTC'}`,
-  );
+  } = useExchangeRate(`${money.currency}-${convertedCurrency}`);
   const shouldShowConvertedAmount =
     money.currency === 'BTC' || money.currency !== defaultFiatCurrency;
 
@@ -24,13 +24,8 @@ export const MoneyWithConvertedAmount = ({ money }: { money: Money }) => {
           {exchangeRateLoading && <Skeleton className="h-6 w-32" />}
           {!exchangeRateError && rate && (
             <MoneyDisplay
-              money={money.convert(
-                money.currency === 'BTC' ? defaultFiatCurrency : 'BTC',
-                rate,
-              )}
-              unit={getDefaultUnit(
-                money.currency === 'BTC' ? defaultFiatCurrency : 'BTC',
-              )}
+              money={money.convert(convertedCurrency, rate)}
+              unit={getDefaultUnit(convertedCurrency)}
               variant="secondary"
             />
           )}

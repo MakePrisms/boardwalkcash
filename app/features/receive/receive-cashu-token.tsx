@@ -38,9 +38,9 @@ export default function ReceiveToken({ token }: Props) {
     receiveAccount,
     selectableAccounts,
     disableCrossMintSwap,
-    selectedAccountIsSource,
+    receiveAccountIsSource,
     cannotClaimReason,
-    money,
+    value,
     isMintKnown,
   } = tokenData;
 
@@ -55,16 +55,13 @@ export default function ReceiveToken({ token }: Props) {
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center">
-        <MoneyWithConvertedAmount money={money} />
+        <MoneyWithConvertedAmount money={value} />
         <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
           {canClaim ? (
             <div className="w-full max-w-sm px-4">
               <AccountSelector
                 accounts={selectableAccounts}
-                selectedAccount={
-                  selectableAccounts.find((a) => a.id === receiveAccount.id) ??
-                  receiveAccount
-                }
+                selectedAccount={receiveAccount}
                 disabled={disableCrossMintSwap}
                 onSelect={setReceiveAccount}
               />
@@ -86,7 +83,7 @@ export default function ReceiveToken({ token }: Props) {
               className="min-w-[200px]"
               loading={isClaiming}
             >
-              {selectedAccountIsSource
+              {receiveAccountIsSource
                 ? isMintKnown
                   ? 'Claim'
                   : 'Add Mint and Claim'
