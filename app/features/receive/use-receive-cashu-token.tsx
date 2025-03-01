@@ -25,8 +25,10 @@ import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { MintInfo } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
-import type { CashuAccountWithBadges } from '../accounts/account-selector';
 import { getDefaultUnit } from '../shared/currencies';
+import type { AccountWithBadges } from '../accounts/account-selector';
+
+type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
 type UseReceiveCashuTokenProps = {
   token: Token;
