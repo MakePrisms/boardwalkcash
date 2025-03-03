@@ -15,11 +15,11 @@ import { authenticatedRequest } from '@/utils/appApiRequests';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RootState } from '@/redux/store';
 import { useSelector } from 'react-redux';
-import { Token, getDecodedToken } from '@cashu/cashu-ts';
+import { Token } from '@cashu/cashu-ts';
 import { areTokensSpent } from '@/utils/cashu';
 import useContacts from './useContacts';
 import useGifts from './useGifts';
-
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 const useNotifications = () => {
    const user = useSelector((state: RootState) => state.user);
    const [notifications, setNotifications] = useState<NotificationWithData[]>([]);
@@ -134,7 +134,8 @@ const useNotifications = () => {
       if (!rawToken) {
          throw new Error('Could not get raw token from notification');
       }
-      const token = getDecodedToken(rawToken);
+      const token = getDecodedTokenModified(rawToken);
+
       const giftId = notification.token?.giftId || null;
       const gift = giftId ? getGiftById(giftId) : null;
       return {

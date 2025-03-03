@@ -8,7 +8,8 @@ import WaitForEcashPayment from '../../views/WaitForEcashPayment';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
 import useMintlessMode from '@/hooks/boardwalk/useMintlessMode';
 import Amount from '@/components/utility/amounts/Amount';
-import { getDecodedToken, Token } from '@cashu/cashu-ts';
+import { Token } from '@cashu/cashu-ts';
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 import { QrCodeIcon } from '@heroicons/react/20/solid';
 import ScanIcon from '@/components/icons/ScanIcon';
 import QRScanner from '@/components/views/QRScanner';
@@ -174,7 +175,7 @@ const ReceiveFlow = ({ onClose }: ReceiveFlowProps) => {
             : pastedValue;
          if (encoded) {
             try {
-               decoded = getDecodedToken(encoded);
+               decoded = getDecodedTokenModified(encoded);
             } catch (e) {
                addToast('Invalid token', 'error');
             }

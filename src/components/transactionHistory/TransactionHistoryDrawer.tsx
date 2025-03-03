@@ -9,11 +9,11 @@ import { Drawer, Pagination } from 'flowbite-react';
 import { ComponentProps, FC, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import HistoryTable from './HistoryTable';
-import { CashuMint, CashuWallet, Proof, getDecodedToken } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, Proof } from '@cashu/cashu-ts';
 import { customDrawerTheme } from '@/themes/drawerTheme';
 import XMarkIcon from '@/components/icons/XMarkIcon';
 import ClockIcon from '@/components/icons/ClockIcon';
-
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 type NewType = FC<ComponentProps<'svg'>>;
 
 const NoIcon: NewType = () => null;
@@ -57,7 +57,7 @@ const TransactionHistoryDrawer = () => {
 
       const extractProofs = (transactions: EcashTransaction[]) => {
          return transactions.flatMap(({ token }) => {
-            const decoded = getDecodedToken(token);
+            const decoded = getDecodedTokenModified(token);
             return decoded.token[0].proofs;
          });
       };
@@ -81,7 +81,7 @@ const TransactionHistoryDrawer = () => {
                const spentSecrets = spent.map(s => s.secret);
 
                mintTransactions.forEach(tx => {
-                  const decoded = getDecodedToken(tx.token);
+                  const decoded = getDecodedTokenModified(tx.token);
                   const txSecrets = decoded.token[0].proofs.map(p => p.secret);
 
                   const isSpent = txSecrets.some(secret => spentSecrets.includes(secret));

@@ -297,7 +297,7 @@ export default function Home() {
                      <button
                         type='button'
                         className='ml-1 font-medium hover:underline text-cyan-teal'
-                        onClick={() => setMintUrl('https://stablenut.umint.cash')}
+                        onClick={() => setMintUrl('https://stablenut.cashu.network')}
                      >
                         top-rated mint
                      </button>

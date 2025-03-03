@@ -3,11 +3,11 @@ import {
    MeltQuoteResponse,
    MintQuoteResponse,
    Proof,
-   getDecodedToken,
    MintQuoteState,
    Token,
    getEncodedTokenV4,
 } from '@cashu/cashu-ts';
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 import { useProofStorage } from './useProofStorage';
 import { useNostrMintConnect } from '../nostr/useNostrMintConnect';
 import { useCashuContext } from '@/hooks/contexts/cashuContext';
@@ -687,7 +687,8 @@ export const useCashu = () => {
 
    const decodeToken = (token: string) => {
       try {
-         const decodedToken = getDecodedToken(token);
+         const decodedToken = getDecodedTokenModified(token);
+
          return decodedToken;
       } catch (e) {}
    };
@@ -708,7 +709,7 @@ export const useCashu = () => {
    };
 
    const isTokenSpent = async (token: string | Token) => {
-      const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+      const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
 
       if (decodedToken.token.length !== 1) {
          throw new Error('Invalid token. Multiple token entries are not supported.');

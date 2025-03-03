@@ -138,6 +138,55 @@ const migrations: Array<Migration> = [
       },
       reload: false,
    },
+   /* replace URLs in localStorage */
+   {
+      version: 5,
+      migrate: () => {
+         // Function to normalize URLs for consistent comparison
+         const normalizeUrl = (url: string): string => {
+            try {
+               // Remove trailing slashes and force lowercase
+               return url.replace(/\/$/, '').toLowerCase();
+            } catch (e) {
+               return url;
+            }
+         };
+
+         // NOTE: the mint url changed so this is a hacky solution to make it so that
+         // the old mint url will gets replaced with the new mint url
+
+         const toReplace = "https://stablenut.umint.cash"; // This will be replaced by actual value
+         const newValue = "https://stablenut.cashu.network";   // This will be replaced by actual value
+         
+         const normalizedToReplace = normalizeUrl(toReplace);
+         
+         // Create a regex that will match the URL in different formats (with or without quotes)
+         const urlRegex = new RegExp(normalizedToReplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+         // Keys to process
+         const keysToProcess = ['defaultWallets', 'keysets', 'persist:root', 'pendingMintQuotes'];
+         
+         // Process each key
+         keysToProcess.forEach(key => {
+            try {
+               const value = localStorage.getItem(key);
+               if (!value) return;
+               
+               // Find all instances of the URL to replace (case insensitive)
+               if (value.toLowerCase().includes(normalizedToReplace)) {
+                  // Replace all occurrences with new value
+                  const updatedValue = value.replace(urlRegex, newValue);
+                  if (updatedValue !== value) {
+                     localStorage.setItem(key, updatedValue);
+                  }
+               }
+            } catch (error) {
+               console.error(`Error updating ${key}:`, error);
+            }
+         });
+      },
+      reload: false,
+   },
 ];
 
 export const runMigrations = async () => {

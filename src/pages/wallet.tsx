@@ -11,7 +11,8 @@ import Disclaimer from '@/components/utility/Disclaimer';
 import ActivityIndicator from '@/components/utility/ActivityIndicator';
 import { setSuccess } from '@/redux/slices/ActivitySlice';
 import SettingsSidebar from '@/components/sidebar/SettingsSidebar';
-import { CashuMint, Token, getDecodedToken } from '@cashu/cashu-ts';
+import { CashuMint, Token } from '@cashu/cashu-ts';
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/util/useToast';
 import ConfirmEcashReceiveModal from '@/components/modals/ConfirmEcashReceiveModal';
@@ -79,7 +80,8 @@ export default function Home({ token }: { token?: string }) {
       const localKeysets = window.localStorage.getItem('keysets');
 
       const handleTokenQuery = async (token: string) => {
-         const decoded = getDecodedToken(token);
+         const decoded = getDecodedTokenModified(token);
+
          // make wallet view-only if token is locked and boardwalk has not been initialized
          if (proofsLockedTo(decoded.token[0].proofs) && !localKeysets) {
             setTokenDecoded(decoded);
@@ -317,7 +319,8 @@ export const getServerSideProps: GetServerSideProps = async (
 
    let tokenData: TokenProps | null = null;
    if (token) {
-      const decoded = getDecodedToken(token);
+      const decoded = getDecodedTokenModified(token);
+
 
       const pubkey = proofsLockedTo(decoded.token[0].proofs);
 

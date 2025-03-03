@@ -16,7 +16,7 @@ import {
 import { authMiddleware, runMiddleware } from '@/utils/middleware';
 import { NotifyTokenReceivedRequest } from '@/types';
 import { proofsLockedTo } from '@/utils/cashu';
-import { getDecodedToken } from '@cashu/cashu-ts';
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 import { notifyTokenReceived } from '@/lib/notificationModels';
 import { MintlessTransaction, Notification, Prisma, Token } from '@prisma/client';
 import { findManyContacts } from '@/lib/contactModels';
@@ -138,7 +138,7 @@ async function handleNotifyTokenReceived(
 
    let receiverPubkey: string;
    try {
-      const decoded = getDecodedToken(token);
+      const decoded = getDecodedTokenModified(token);
 
       const pubkey = proofsLockedTo(decoded.token[0].proofs);
 

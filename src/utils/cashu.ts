@@ -5,8 +5,8 @@ import {
    MintQuoteResponse,
    Proof,
    Token,
-   getDecodedToken,
 } from '@cashu/cashu-ts';
+import { getDecodedTokenModified } from '@/lib/getDecodedTokenModified';
 import { hashToCurve } from '@cashu/crypto/modules/common';
 import { bytesToHex } from '@noble/curves/abstract/utils';
 import { sha256 } from '@noble/hashes/sha256';
@@ -153,7 +153,7 @@ export const proofsLockedTo = (proofs: Proof[]) => {
 };
 
 export const isTokenSpent = async (token: string | Token) => {
-   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
 
    if (decodedToken.token.length !== 1) {
       throw new Error('Invalid token. Multiple token entries are not supported.');
@@ -201,7 +201,7 @@ export const areTokensSpent = async (tokenEntries: [string, string | Token][]) =
 
    // Group proofs by mint URL
    tokenEntries.forEach(([id, token]) => {
-      const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+      const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
       if (decodedToken.token.length !== 1) {
          throw new Error('Invalid token. Multiple token entries are not supported.');
       }
@@ -278,7 +278,7 @@ export const initializeWallet = async (
 };
 
 export const getProofsFromToken = (token: Token | string) => {
-   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
    return decodedToken.token[0].proofs;
 };
 
@@ -386,7 +386,7 @@ export const getTokenFromUrl = async (url: string) => {
 };
 
 export const getMintFromToken = (token: string | Token) => {
-   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
    return decodedToken.token[0].mint;
 };
 
@@ -400,7 +400,7 @@ export const isTestMint = (url: string) => {
  * @returns
  */
 export const getUnitFromToken = (token: string | Token): Currency => {
-   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
    const unitFromToken = decodedToken.unit;
    let unit: Currency;
    switch (unitFromToken) {
@@ -414,7 +414,7 @@ export const getUnitFromToken = (token: string | Token): Currency => {
 };
 
 export const dissectToken = (token: string | Token) => {
-   const decodedToken = typeof token === 'string' ? getDecodedToken(token) : token;
+   const decodedToken = typeof token === 'string' ? getDecodedTokenModified(token) : token;
 
    const unit = getUnitFromToken(decodedToken);
    const proofs = decodedToken.token[0].proofs;
