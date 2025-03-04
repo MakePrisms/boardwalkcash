@@ -13,12 +13,12 @@ type Return = {
   /** Function to permanently dismiss the PWA prompt */
   dontShowAgain: () => void;
   /** Function to temporarily dismiss the PWA prompt */
-  dismissForNow: () => void;
+  dismissTemporarily: () => void;
 };
 
 /** Hook for managing when to show the PWA prompt */
 export default function useShouldShowPwaPrompt(): Return {
-  const { shouldShow, handleDontShowAgain, handleDismissForNow } =
+  const { shouldShow, handleDontShowAgain, handleDismissTemporarily } =
     useShouldShowPrompt(key);
   const { isMobile, browser } = useUserAgent();
   const [isStandalone, setIsStandalone] = useState(false);
@@ -36,6 +36,7 @@ export default function useShouldShowPwaPrompt(): Return {
     browser,
     shouldShowPwaPrompt,
     dontShowAgain: handleDontShowAgain,
-    dismissForNow: () => handleDismissForNow(TEMPORARY_DISMISS_DURATION_MS),
+    dismissTemporarily: () =>
+      handleDismissTemporarily(TEMPORARY_DISMISS_DURATION_MS),
   };
 }

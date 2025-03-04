@@ -6,8 +6,8 @@ import useShouldShowPwaPrompt from './use-should-show-pwa-prompt';
 export default function InstallPwaBanner({
   onClickInstall,
 }: { onClickInstall: () => void }) {
-  const { dismissForNow } = useShouldShowPwaPrompt();
-  const { isVisible, handleDismiss } = useBanner(dismissForNow);
+  const { dismissTemporarily } = useShouldShowPwaPrompt();
+  const { isVisible, handleDismiss } = useBanner(dismissTemporarily);
 
   return (
     <div

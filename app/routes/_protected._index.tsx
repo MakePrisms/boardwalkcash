@@ -11,8 +11,10 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
-import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
-import { links as pwaLinks } from '~/features/pwa/install-pwa-prompt';
+import {
+  InstallPwaPrompt,
+  links as pwaLinks,
+} from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
@@ -34,71 +36,67 @@ export default function Index() {
   const balanceUSD = new Money({ amount: 0, currency: 'USD' });
 
   return (
-    <>
-      <Page>
-        <PageHeader>
-          <PageHeaderTitle>
-            <button
-              type="button"
-              onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
-            >
-              {showSatsPerDollar && rates
-                ? new Money({ amount: 1, currency: 'USD' })
-                    .convert('BTC', rates['USD-BTC'])
-                    .toLocaleString({ unit: 'sat' })
-                : rates &&
-                  new Money({
-                    amount: rates['BTC-USD'],
-                    currency: 'USD',
-                  }).toLocaleString({ unit: 'usd' })}
-            </button>
-          </PageHeaderTitle>
+    <Page>
+      <PageHeader>
+        <PageHeaderTitle>
+          <button
+            type="button"
+            onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
+          >
+            {showSatsPerDollar && rates
+              ? new Money({ amount: 1, currency: 'USD' })
+                  .convert('BTC', rates['USD-BTC'])
+                  .toLocaleString({ unit: 'sat' })
+              : rates &&
+                new Money({
+                  amount: rates['BTC-USD'],
+                  currency: 'USD',
+                }).toLocaleString({ unit: 'usd' })}
+          </button>
+        </PageHeaderTitle>
+        <LinkWithViewTransition
+          to="/settings"
+          transition="slideLeft"
+          applyTo="newView"
+        >
+          <Cog />
+        </LinkWithViewTransition>
+      </PageHeader>
+
+      <p className="text-center text-lg">Welcome to Boardwalk!</p>
+
+      <PageContent className="items-center justify-around">
+        {theme === 'usd' ? (
+          <MoneyDisplay money={balanceUSD} unit="usd" />
+        ) : (
+          <MoneyDisplay money={balanceBTC} unit="sat" />
+        )}
+        <DefaultCurrencySwitcher />
+        <div className="grid grid-cols-2 gap-4">
           <LinkWithViewTransition
-            to="/settings"
-            transition="slideLeft"
+            to="/receive"
+            transition="slideUp"
             applyTo="newView"
           >
-            <Cog />
-          </LinkWithViewTransition>
-        </PageHeader>
-
-        <p className="text-center text-lg">Welcome to Boardwalk!</p>
-
-        <PageContent className="items-center justify-around">
-          {theme === 'usd' ? (
-            <MoneyDisplay money={balanceUSD} unit="usd" />
-          ) : (
-            <MoneyDisplay money={balanceBTC} unit="sat" />
-          )}
-          <DefaultCurrencySwitcher />
-          <div className="grid grid-cols-2 gap-4">
-            <LinkWithViewTransition
-              to="/receive"
-              transition="slideUp"
-              applyTo="newView"
-            >
-              <Button className="text-lg">
-                Receive <ArrowDownRight />
-              </Button>
-            </LinkWithViewTransition>
             <Button className="text-lg">
-              Send <ArrowUpRight />
+              Receive <ArrowDownRight />
             </Button>
-          </div>
-        </PageContent>
-        <PageFooter className="flex flex-row justify-around">
-          <Button
-            className="w-fit"
-            onClick={() =>
-              setColorMode(colorMode === 'dark' ? 'light' : 'dark')
-            }
-          >
-            {effectiveColorMode}
+          </LinkWithViewTransition>
+          <Button className="text-lg">
+            Send <ArrowUpRight />
           </Button>
-          <Button onClick={signOut}>Log Out</Button>
-        </PageFooter>
-      </Page>
+        </div>
+      </PageContent>
+      <PageFooter className="flex flex-row justify-around">
+        <Button
+          className="w-fit"
+          onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
+        >
+          {effectiveColorMode}
+        </Button>
+        <Button onClick={signOut}>Log Out</Button>
+      </PageFooter>
       <InstallPwaPrompt />
-    </>
+    </Page>
   );
 }

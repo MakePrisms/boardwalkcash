@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useTimeout } from 'usehooks-ts';
 
 const DEFAULT_ANIMATION_DURATION_MS = 300;
 const DEFAULT_INITIAL_SHOW_DELAY_MS = 2000;
@@ -29,6 +30,7 @@ export default function useBanner(
   options: UseBannerOptions = {},
 ): UseBannerReturn {
   const [isVisible, setIsVisible] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   const animationDuration =
     options.animationDuration ?? DEFAULT_ANIMATION_DURATION_MS;
@@ -36,16 +38,23 @@ export default function useBanner(
     options.initialShowDelay ?? DEFAULT_INITIAL_SHOW_DELAY_MS;
 
   // Show the banner after initial delay
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), initialShowDelay);
-    return () => clearTimeout(timer);
-  }, [initialShowDelay]);
+  useTimeout(() => setIsVisible(true), initialShowDelay);
+
+  // Handle the callback after dismissal animation completes
+  useTimeout(
+    () => {
+      if (onDismissed && isDismissed) {
+        onDismissed();
+        setIsDismissed(false);
+      }
+    },
+    isDismissed ? animationDuration : null,
+  );
 
   const handleDismiss = () => {
     setIsVisible(false);
     if (onDismissed) {
-      const timer = setTimeout(onDismissed, animationDuration);
-      return () => clearTimeout(timer);
+      setIsDismissed(true);
     }
   };
 

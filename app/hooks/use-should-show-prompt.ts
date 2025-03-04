@@ -1,8 +1,11 @@
 import { useLocalStorage } from 'usehooks-ts';
 
-type DismissedValue = 'dismissed' | number | null;
+type DismissedValue =
+  | { state: 'dismissed' }
+  | { state: 'dismissed-temporarily'; showAfterTimestamp: number }
+  | null;
 
-const PROMPT_PERMANENTLY_DISMISSED = 'dismissed';
+const PROMPT_PERMANENTLY_DISMISSED: DismissedValue = { state: 'dismissed' };
 
 /**
  * Generic hook that uses localStorage to manage when to show a prompt
@@ -12,7 +15,7 @@ const PROMPT_PERMANENTLY_DISMISSED = 'dismissed';
  * const {
  *   shouldShow,
  *   handleDontShowAgain,
- *   handleDismissForNow
+ *   handleDismissTemporarily
  * } = useShouldShowPrompt('showInstallPwaPrompt');
  * ```
  * */
@@ -26,19 +29,22 @@ const useShouldShowPrompt = (promptName: string) => {
     setDismissedState(PROMPT_PERMANENTLY_DISMISSED);
   };
 
-  const handleDismissForNow = (showAfter: number) => {
+  const handleDismissTemporarily = (showAfter: number) => {
     const showAgainTimestamp = Date.now() + showAfter;
-    setDismissedState(showAgainTimestamp);
+    setDismissedState({
+      state: 'dismissed-temporarily',
+      showAfterTimestamp: showAgainTimestamp,
+    });
   };
 
-  const isPermantentlyDismissed =
-    dismissedState === PROMPT_PERMANENTLY_DISMISSED;
+  const isPermantentlyDismissed = dismissedState?.state === 'dismissed';
   const isTemporarilyDismissed =
-    typeof dismissedState === 'number' && Date.now() <= dismissedState;
+    dismissedState?.state === 'dismissed-temporarily' &&
+    Date.now() <= dismissedState.showAfterTimestamp;
 
   const shouldShow = !isPermantentlyDismissed && !isTemporarilyDismissed;
 
-  return { shouldShow, handleDontShowAgain, handleDismissForNow };
+  return { shouldShow, handleDontShowAgain, handleDismissTemporarily };
 };
 
 export default useShouldShowPrompt;
