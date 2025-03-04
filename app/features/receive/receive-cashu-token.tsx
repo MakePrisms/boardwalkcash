@@ -10,6 +10,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '../accounts/account-selector';
 import { LoadingScreen } from '../loading/LoadingScreen';
+import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useReceiveCashuToken } from './use-receive-cashu-token';
 
@@ -34,14 +35,13 @@ export default function ReceiveToken({ token }: Props) {
   }
 
   const {
-    canClaim,
     receiveAccount,
     selectableAccounts,
     crossMintSwapDisabled,
     receiveAccountIsSource,
     cannotClaimReason,
-    value,
     isMintKnown,
+    claimableToken,
   } = tokenData;
 
   return (
@@ -55,9 +55,11 @@ export default function ReceiveToken({ token }: Props) {
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center">
-        <MoneyWithConvertedAmount money={value} />
+        <MoneyWithConvertedAmount
+          money={tokenToMoney(claimableToken ?? token)}
+        />
         <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
-          {canClaim ? (
+          {claimableToken ? (
             <div className="w-full max-w-sm px-4">
               <AccountSelector
                 accounts={selectableAccounts}
@@ -70,13 +72,13 @@ export default function ReceiveToken({ token }: Props) {
             <div className="mx-4 flex w-full flex-col items-center justify-center gap-2 rounded-lg border bg-card p-4">
               <AlertCircle className="h-8 w-8 text-foreground" />
               <p className="text-center text-muted-foreground text-sm">
-                {cannotClaimReason || 'This ecash cannot be claimed.'}
+                {cannotClaimReason}
               </p>
             </div>
           )}
         </div>
 
-        {canClaim && (
+        {claimableToken && (
           <div className="z-10 mt-auto">
             <Button
               onClick={handleClaim}
