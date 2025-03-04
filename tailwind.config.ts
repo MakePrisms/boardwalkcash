@@ -57,6 +57,9 @@ export default {
         numeric: ['Teko', 'sans-serif'],
         primary: ['Kode Mono', 'monospace'],
       },
+      fontSize: {
+        '2xs': '0.625rem',
+      },
       animation: {
         shake: 'shake 0.2s ease-in-out',
       },
