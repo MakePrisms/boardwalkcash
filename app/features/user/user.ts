@@ -2,6 +2,7 @@ import type { Currency } from '~/lib/money';
 
 type CommonUserData = {
   id: string;
+  username: string;
   emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
