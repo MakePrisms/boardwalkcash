@@ -37,7 +37,7 @@ export default function ReceiveToken({ token }: Props) {
     canClaim,
     receiveAccount,
     selectableAccounts,
-    disableCrossMintSwap,
+    crossMintSwapDisabled,
     receiveAccountIsSource,
     cannotClaimReason,
     value,
@@ -62,7 +62,7 @@ export default function ReceiveToken({ token }: Props) {
               <AccountSelector
                 accounts={selectableAccounts}
                 selectedAccount={receiveAccount}
-                disabled={disableCrossMintSwap}
+                disabled={crossMintSwapDisabled}
                 onSelect={setReceiveAccount}
               />
             </div>

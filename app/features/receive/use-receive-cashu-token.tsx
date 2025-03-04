@@ -43,7 +43,7 @@ type UseReceiveCashuTokenData = {
   /** The account that the token is from */
   sourceAccount: CashuAccount;
   /** True if the source account cannot make a lightning payment to other accounts */
-  disableCrossMintSwap: boolean;
+  crossMintSwapDisabled: boolean;
   /** Whether the selected receive account is the source mint */
   receiveAccountIsSource: boolean;
   /** The accounts that the user can select to receive the token */
@@ -51,10 +51,9 @@ type UseReceiveCashuTokenData = {
   /** The token as Money object */
   value: Money;
   /**
-   * Whether the token's mint is in the user's accounts. Will be undefined
-   * if the user is not initialized (ie. they clicked a token link but do not have an account)
+   * Whether the token's mint is in the user's accounts.
    */
-  isMintKnown: boolean | undefined;
+  isMintKnown: boolean;
 } & (
   | {
       /** Token can be claimed by the current user */
@@ -251,10 +250,11 @@ export function useReceiveCashuToken({
       }
 
       const disableCrossMintSwap = sourceAccountData.isTestMint;
+      const crossMintSwapDisabled = sourceAccountData.isTestMint;
 
       const selectableAccounts = getSelectableAccounts(
         sourceAccountData,
-        disableCrossMintSwap,
+        crossMintSwapDisabled,
         accounts,
       );
       const accountWithBadges = selectableAccounts.map((a) => ({
@@ -265,7 +265,7 @@ export function useReceiveCashuToken({
       const defaultReceiveAccount = getDefaultReceiveAccount(
         accountWithBadges,
         sourceAccountData,
-        disableCrossMintSwap,
+        crossMintSwapDisabled,
         defaultAccount,
       );
       const currentReceiveAccount =
@@ -278,7 +278,7 @@ export function useReceiveCashuToken({
       const baseReturnData = {
         receiveAccount: currentReceiveAccount,
         sourceAccount: sourceAccountData,
-        disableCrossMintSwap,
+        crossMintSwapDisabled,
         receiveAccountIsSource:
           currentReceiveAccount.mintUrl === sourceAccountData.mintUrl,
         selectableAccounts: accountWithBadges,
