@@ -1,12 +1,5 @@
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '~/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useUpgradeGuestToFullAccount } from '~/features/user/user-hooks';
@@ -48,15 +41,15 @@ export function UpgradeGuestForm() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm">
-      <CardHeader>
-        <CardTitle>Upgrade</CardTitle>
-        <CardDescription>
+    <div className="mx-auto max-w-sm">
+      <div className="mb-6">
+        <h2 className="font-semibold text-lg">Upgrade</h2>
+        <p className="text-muted-foreground text-sm">
           Enter your email and password to backup your account and sync across
           devices.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </p>
+      </div>
+      <div>
         <form
           className="mt-2 grid gap-4"
           onSubmit={handleSubmit(onSubmit)}
@@ -124,7 +117,7 @@ export function UpgradeGuestForm() {
             Upgrade to full account
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
