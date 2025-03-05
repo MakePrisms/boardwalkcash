@@ -1,5 +1,13 @@
 import type { LinksFunction } from '@remix-run/node';
-import type { LucideIcon } from 'lucide-react';
+import {
+  House,
+  type LucideIcon,
+  Menu,
+  MoreVertical,
+  Plus,
+  Share,
+  SquarePlus,
+} from 'lucide-react';
 import icon from '~/assets/icon-192x192.png';
 import { Button } from '~/components/ui/button';
 import {
@@ -10,6 +18,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
+import useUserAgent, { type Browser } from '~/hooks/use-user-agent';
+
+const browserInstructions: Record<Browser, InstallInstruction[]> = {
+  Safari: [
+    { icon: Share, text: 'Click the Share button in navigation bar' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
+  ],
+  Chrome: [
+    { icon: MoreVertical, text: 'Click the menu button' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
+  ],
+  ChromeiOS: [
+    { icon: Share, text: 'Click the Share button in search bar' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
+  ],
+  Firefox: [
+    { icon: MoreVertical, text: 'Click the menu button' },
+    { icon: Plus, text: 'Click "Install"' },
+  ],
+  FirefoxiOS: [
+    { icon: Menu, text: 'Click the menu button' },
+    { icon: Share, text: 'Click "Share"' },
+    { icon: SquarePlus, text: 'Scroll down to "Add to Home Screen"' },
+  ],
+  SamsungBrowser: [
+    { icon: Menu, text: 'Click the menu button' },
+    { icon: Plus, text: 'Click "Add page to"' },
+    { icon: House, text: 'Click "Home screen"' },
+  ],
+  unknown: [
+    { icon: MoreVertical, text: 'Click the menu button' },
+    { icon: Plus, text: 'Look for "Add to Home Screen" option' },
+  ],
+};
 
 export const links: LinksFunction = () => [
   { rel: 'preload', href: icon, as: 'image' },
@@ -21,18 +63,19 @@ export type InstallInstruction = {
 };
 
 type Props = {
-  instructions: InstallInstruction[];
   showDialog: boolean;
   setShowDialog: (showDialog: boolean) => void;
   onDoNotShowAgain: () => void;
 };
 
 export default function InstallPwaInstructionsDialog({
-  instructions,
   showDialog,
   setShowDialog,
   onDoNotShowAgain,
 }: Props) {
+  const { browser } = useUserAgent();
+  const instructions = browserInstructions[browser];
+
   return (
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
       <DialogContent className="px-4 sm:max-w-md">

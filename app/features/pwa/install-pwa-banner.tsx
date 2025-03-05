@@ -1,13 +1,12 @@
 import { Button } from '~/components/ui/button';
 import useBanner from '~/hooks/use-banner';
 import { cn } from '~/lib/utils';
-import useShouldShowPwaPrompt from './use-should-show-pwa-prompt';
 
 export default function InstallPwaBanner({
   onClickInstall,
-}: { onClickInstall: () => void }) {
-  const { dismissTemporarily } = useShouldShowPwaPrompt();
-  const { isVisible, handleDismiss } = useBanner(dismissTemporarily);
+  onDismiss,
+}: { onClickInstall: () => void; onDismiss: () => void }) {
+  const { isVisible, handleDismiss } = useBanner(onDismiss);
 
   return (
     <div

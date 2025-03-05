@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTimeout } from 'usehooks-ts';
 
-const DEFAULT_ANIMATION_DURATION_MS = 300;
+const DEFAULT_DISMISS_DELAY_MS = 300;
 const DEFAULT_INITIAL_SHOW_DELAY_MS = 2000;
 
 /** Return type for the useBanner hook */
@@ -14,47 +14,34 @@ type UseBannerReturn = {
 
 /** Options for configuring the useBanner hook */
 type UseBannerOptions = {
-  /** Duration in ms of the show/hide animation. Defaults to 300ms */
-  animationDuration?: number;
   /** Delay in ms before initially showing the banner. Defaults to 2000ms */
   initialShowDelay?: number;
+  /** Delay in ms before the banner is dismissed. Defaults to 300ms */
+  onDismissedDelay?: number;
 };
 
 /**
- * Hook for managing a banner component that can be shown and hidden with animations
- * @param onDismissed Optional callback that will be called after the banner is dismissed and animation completes
- * @param options Configuration options for animation timing
+ * Hook for managing a banner component
+ * @param onDismissed Optional callback that will be called after the banner is dismissed
+ * @param options Configuration options
  */
 export default function useBanner(
   onDismissed?: () => void,
   options: UseBannerOptions = {},
 ): UseBannerReturn {
   const [isVisible, setIsVisible] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
 
-  const animationDuration =
-    options.animationDuration ?? DEFAULT_ANIMATION_DURATION_MS;
+  const onDismissedDelay = options.onDismissedDelay ?? DEFAULT_DISMISS_DELAY_MS;
   const initialShowDelay =
     options.initialShowDelay ?? DEFAULT_INITIAL_SHOW_DELAY_MS;
 
   // Show the banner after initial delay
   useTimeout(() => setIsVisible(true), initialShowDelay);
 
-  // Handle the callback after dismissal animation completes
-  useTimeout(
-    () => {
-      if (onDismissed && isDismissed) {
-        onDismissed();
-        setIsDismissed(false);
-      }
-    },
-    isDismissed ? animationDuration : null,
-  );
-
   const handleDismiss = () => {
     setIsVisible(false);
     if (onDismissed) {
-      setIsDismissed(true);
+      setTimeout(onDismissed, onDismissedDelay);
     }
   };
 
