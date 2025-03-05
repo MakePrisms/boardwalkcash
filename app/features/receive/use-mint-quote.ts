@@ -13,6 +13,8 @@ type UseMintQuoteProps = {
   amount: Money;
 };
 
+const pollingInterval = 7_000;
+
 /**
  * A hook to create a mint quote for a Cashu account and then poll the
  * status of the quote
@@ -40,7 +42,7 @@ export function useMintQuote({ account, amount }: UseMintQuoteProps) {
     queryFn: () => wallet.checkMintQuote(mintQuote?.quote ?? ''),
     enabled: !!mintQuote,
     refetchInterval: ({ state: { data } }) => {
-      return data?.state === MintQuoteState.PAID ? false : 1500;
+      return data?.state === MintQuoteState.PAID ? false : pollingInterval;
     },
     refetchIntervalInBackground: true,
     retry: 1,
