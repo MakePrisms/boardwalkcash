@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useLocalStorage } from 'usehooks-ts';
+import { useLocalStorage, useMediaQuery } from 'usehooks-ts';
 import useUserAgent from '~/hooks/use-user-agent';
 
 type DismissedValue =
@@ -66,14 +65,8 @@ export default function useShouldShowPwaPrompt(): Return {
   const { shouldShow, handleDontShowAgain, handleDismissTemporarily } =
     useShouldShowPrompt(key);
   const { isMobile } = useUserAgent();
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  useEffect(() => {
-    // Check if app is installed (if it's installed we wont show the prompt)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsStandalone(true);
-    }
-  }, []);
+  // true if the app is already installed
+  const isStandalone = useMediaQuery('(display-mode: standalone)');
 
   const shouldShowPwaPrompt = shouldShow && isMobile && !isStandalone;
 
