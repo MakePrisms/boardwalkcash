@@ -9,7 +9,6 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { AccountSelector } from '../accounts/account-selector';
-import { LoadingScreen } from '../loading/LoadingScreen';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useReceiveCashuToken } from './use-receive-cashu-token';
@@ -29,10 +28,6 @@ export default function ReceiveToken({ token }: Props) {
     cashuPubKey:
       '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   });
-
-  if (!tokenData) {
-    return <LoadingScreen />;
-  }
 
   const {
     receiveAccount,

@@ -4,7 +4,7 @@ import {
   type Proof,
   type Token,
 } from '@cashu/cashu-ts';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { Account, CashuAccount } from '~/features/accounts/account';
 import {
@@ -63,7 +63,7 @@ type UseReceiveCashuTokenData = {
 
 type UseReceiveCashuTokenReturn = {
   /** Data about the token and the accounts available to receive it */
-  data: UseReceiveCashuTokenData | null;
+  data: UseReceiveCashuTokenData;
   isClaiming: boolean;
   /** Set the account to receive the token */
   setReceiveAccount: (account: CashuAccount) => void;
@@ -215,45 +215,56 @@ export function useReceiveCashuToken({
   const defaultAccount = useDefaultAccount();
   const tokenCurrency = tokenToMoney(token).currency;
 
-  const { data: sourceAccountData } = useSuspenseQuery({
-    queryKey: ['mint-info', token.mint, tokenCurrency],
-    queryFn: async () => {
-      const existingAccount = accounts.find(
-        (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
-      );
-      if (existingAccount) {
-        return existingAccount;
-      }
-
-      const info = await getMintInfo(token.mint);
-      const isTestMint = await checkIsTestMint(token.mint);
-      return tokenToSourceAccount(token, info, isTestMint);
-    },
-  });
-
-  const { data: tokenData } = useSuspenseQuery({
-    queryKey: ['token-state', token, sourceAccountData],
-    queryFn: async (): Promise<TokenQueryResult> => {
-      const unspentProofs = await getUnspentProofsFromToken(token);
-
-      if (unspentProofs.length === 0) {
-        return {
-          claimableToken: null,
-          cannotClaimReason: 'This ecash has already been spent',
-        };
-      }
-
-      const { claimableProofs, cannotClaimReason } = getClaimableProofs(
-        unspentProofs,
-        cashuPubKey,
-      );
-
-      return claimableProofs
-        ? {
-            claimableToken: { ...token, proofs: claimableProofs },
-            cannotClaimReason,
+  const { tokenData, sourceAccountData } = useSuspenseQueries({
+    queries: [
+      {
+        queryKey: ['mint-info', token.mint, tokenCurrency],
+        queryFn: async () => {
+          const existingAccount = accounts.find(
+            (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
+          );
+          if (existingAccount) {
+            return existingAccount;
           }
-        : { cannotClaimReason, claimableToken: null };
+          const info = await getMintInfo(token.mint);
+          const isTestMint = await checkIsTestMint(token.mint);
+          return tokenToSourceAccount(token, info, isTestMint);
+        },
+        retry: 1,
+        retryDelay: 5000,
+      },
+      {
+        queryKey: ['token-state', token],
+        queryFn: async (): Promise<TokenQueryResult> => {
+          const unspentProofs = await getUnspentProofsFromToken(token);
+          if (unspentProofs.length === 0) {
+            return {
+              claimableToken: null,
+              cannotClaimReason: 'This ecash has already been spent',
+            };
+          }
+
+          const { claimableProofs, cannotClaimReason } = getClaimableProofs(
+            unspentProofs,
+            cashuPubKey,
+          );
+
+          return claimableProofs
+            ? {
+                claimableToken: { ...token, proofs: claimableProofs },
+                cannotClaimReason,
+              }
+            : { cannotClaimReason, claimableToken: null };
+        },
+        retry: 1,
+        retryDelay: 5000,
+      },
+    ],
+    combine: (results) => {
+      return {
+        sourceAccountData: results[0].data,
+        tokenData: results[1].data,
+      };
     },
   });
 
