@@ -1,4 +1,3 @@
-import type { LinksFunction } from '@remix-run/node';
 import {
   House,
   type LucideIcon,
@@ -52,10 +51,6 @@ const browserInstructions: Record<Browser, InstallInstruction[]> = {
     { icon: Plus, text: 'Look for "Add to Home Screen" option' },
   ],
 };
-
-export const links: LinksFunction = () => [
-  { rel: 'preload', href: icon, as: 'image' },
-];
 
 export type InstallInstruction = {
   icon: LucideIcon;
