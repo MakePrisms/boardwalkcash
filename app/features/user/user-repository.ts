@@ -103,7 +103,7 @@ export class UserRepository {
       currency: account.currency,
       details:
         account.type === 'cashu'
-          ? { mint_url: account.mintUrl }
+          ? { mint_url: account.mintUrl, is_test_mint: account.isTestMint }
           : { nwc_url: account.nwcUrl },
     }));
 

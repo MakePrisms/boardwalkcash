@@ -2,7 +2,6 @@ import { AlertCircle, Banknote, Zap } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 import { useCopyToClipboard } from 'usehooks-ts';
-import { MoneyDisplay } from '~/components/money-display';
 import {
   PageBackButton,
   PageContent,
@@ -16,12 +15,11 @@ import {
   CarouselItem,
 } from '~/components/ui/carousel';
 import { Skeleton } from '~/components/ui/skeleton';
-import { getDefaultUnit } from '~/features/shared/currencies';
-import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 import type { Account } from '../accounts/account';
+import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { getCashuRequest } from './reusable-payment-request';
 import { useMintQuote } from './use-mint-quote';
 type QRCarouselItemProps = {
@@ -227,9 +225,6 @@ type Props = {
 
 export default function ReceiveCashu({ amount, account }: Props) {
   const { current, scrollToIndex, setApi } = useCarousel();
-  const { data: rate, error: exchangeRateError } = useExchangeRate(
-    `${amount.currency}-${amount.currency === 'BTC' ? 'USD' : 'BTC'}`,
-  );
 
   return (
     <>
@@ -242,20 +237,7 @@ export default function ReceiveCashu({ amount, account }: Props) {
         <PageHeaderTitle>Receive Ecash</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
-        <div className="flex min-h-[116px] flex-col items-center">
-          <MoneyDisplay money={amount} unit={getDefaultUnit(amount.currency)} />
-          {!exchangeRateError && rate && (
-            <MoneyDisplay
-              money={amount.convert(
-                amount.currency === 'BTC' ? 'USD' : 'BTC',
-                rate,
-              )}
-              unit={getDefaultUnit(amount.currency === 'BTC' ? 'USD' : 'BTC')}
-              variant="secondary"
-            />
-          )}
-        </div>
-
+        <MoneyWithConvertedAmount money={amount} />
         <div className="flex w-full flex-col items-center justify-center px-8 py-8">
           <Carousel setApi={setApi} opts={{ align: 'center', loop: true }}>
             <CarouselContent>
