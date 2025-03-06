@@ -2,24 +2,31 @@ import {
   CashuMint,
   CashuWallet,
   CheckStateEnum,
+  type Proof,
   type Token,
 } from '@cashu/cashu-ts';
+import { proofToY } from './proof';
 
-export const checkTokenForSpentProofs = async (token: Token) => {
+/**
+ * A token consists of a set of proofs, and each proof can be in one of three states:
+ * spent, pending, or unspent. When claiming a token, all that we care about is the unspent proofs.
+ * The rest of the proofs will not be claimable.
+ *
+ * This function returns the set of proofs that are unspent
+ * @param token - The token to get the unspent proofs from
+ * @returns The set of unspent proofs
+ */
+export const getUnspentProofsFromToken = async (
+  token: Token,
+): Promise<Proof[]> => {
   const wallet = new CashuWallet(new CashuMint(token.mint), {
     unit: token.unit,
   });
   const states = await wallet.checkProofsStates(token.proofs);
 
-  const spent = states.filter((s) => s.state === CheckStateEnum.SPENT);
-  const _pending = states.filter((s) => s.state === CheckStateEnum.PENDING);
-  const _unspent = states.filter((s) => s.state === CheckStateEnum.UNSPENT);
-
-  // TODO: should have some way to seperate proofs by state so that
-  // if a token is partially spent, we can still use it
-  // for now we just return true if any proofs are spent
-
-  if (spent.length > 0) return true;
-
-  return false;
+  return token.proofs.filter((proof) => {
+    const Y = proofToY(proof);
+    const state = states.find((s) => s.Y === Y);
+    return state?.state === CheckStateEnum.UNSPENT;
+  });
 };

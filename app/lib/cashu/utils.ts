@@ -1,5 +1,6 @@
 import { CashuMint, CashuWallet } from '@cashu/cashu-ts';
 import { decodeBolt11 } from '~/lib/bolt11';
+import type { MintInfo } from './types';
 
 const knownTestMints = [
   'https://testnut.cashu.space',
@@ -17,7 +18,7 @@ const knownTestMints = [
  * @param mintUrl - The URL of the mint
  * @returns True if the mint is not on mainnet
  */
-export const isTestMint = async (mintUrl: string): Promise<boolean> => {
+export const checkIsTestMint = async (mintUrl: string): Promise<boolean> => {
   // Normalize URL by removing trailing slash and converting to lowercase
   const normalizedUrl = mintUrl.toLowerCase().replace(/\/+$/, '');
   if (knownTestMints.includes(normalizedUrl)) {
@@ -27,4 +28,8 @@ export const isTestMint = async (mintUrl: string): Promise<boolean> => {
   const { request: bolt11 } = await wallet.createMintQuote(1);
   const { network } = decodeBolt11(bolt11);
   return network !== 'bitcoin';
+};
+
+export const getMintInfo = async (mintUrl: string): Promise<MintInfo> => {
+  return new CashuWallet(new CashuMint(mintUrl)).getMintInfo();
 };
