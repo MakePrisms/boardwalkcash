@@ -57,6 +57,7 @@ export type Database = {
           email_verified: boolean
           id: string
           updated_at: string
+          username: string
         }
         Insert: {
           created_at?: string
@@ -67,6 +68,7 @@ export type Database = {
           email_verified: boolean
           id?: string
           updated_at?: string
+          username: string
         }
         Update: {
           created_at?: string
@@ -77,6 +79,7 @@ export type Database = {
           email_verified?: boolean
           id?: string
           updated_at?: string
+          username?: string
         }
         Relationships: [
           {
@@ -100,6 +103,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_reserved_username: {
+        Args: {
+          username: string
+        }
+        Returns: boolean
+      }
       upsert_user_with_accounts: {
         Args: {
           user_id: string
