@@ -9,6 +9,7 @@ export type UpdateUser = {
   defaultBtcAccountId?: string;
   defaultUsdAccountId?: string;
   defaultCurrency?: Currency;
+  username?: string;
 };
 
 export class UserRepository {
@@ -54,6 +55,7 @@ export class UserRepository {
         default_btc_account_id: data.defaultBtcAccountId,
         default_usd_account_id: data.defaultUsdAccountId,
         default_currency: data.defaultCurrency,
+        username: data.username,
       })
       .eq('id', userId)
       .select();
@@ -136,6 +138,7 @@ export class UserRepository {
     if (dbUser.email) {
       return {
         id: dbUser.id,
+        username: dbUser.username,
         email: dbUser.email,
         emailVerified: dbUser.email_verified,
         createdAt: dbUser.created_at,
@@ -149,6 +152,7 @@ export class UserRepository {
 
     return {
       id: dbUser.id,
+      username: dbUser.username,
       emailVerified: dbUser.email_verified,
       createdAt: dbUser.created_at,
       updatedAt: dbUser.updated_at,
@@ -157,5 +161,20 @@ export class UserRepository {
       defaultCurrency: dbUser.default_currency,
       isGuest: true,
     };
+  }
+
+  async updateUsername(userId: string, username: string) {
+    const { data, error } = await this.db
+      .from('users')
+      .update({ username })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error('Failed to update username', error);
+    }
+
+    return data;
   }
 }
