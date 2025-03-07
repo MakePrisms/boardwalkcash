@@ -59,7 +59,6 @@ export default function EditableUsername() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
     setFocus,
   } = useForm<FormValues>({
@@ -97,6 +96,8 @@ export default function EditableUsername() {
     setIsEditing(true);
   };
 
+  const textSize = user.username.length > 12 ? 'text-xl' : 'text-2xl';
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -108,10 +109,14 @@ export default function EditableUsername() {
             <input
               {...register('username', { validate: validateUsername })}
               type="text"
-              className="w-full bg-transparent text-2xl text-white outline-none"
+              autoComplete="username"
+              className={cn(
+                'w-full bg-transparent text-white outline-none',
+                textSize,
+              )}
             />
           ) : (
-            <span className="text-2xl text-white">{watch('username')}</span>
+            <span className={cn('text-white', textSize)}>{user.username}</span>
           )}
         </div>
 

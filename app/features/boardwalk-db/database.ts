@@ -82,3 +82,5 @@ export type BoardwalkDb = typeof boardwalkDb;
 export type BoardwalkDbUser = Database['wallet']['Tables']['users']['Row'];
 export type BoardwalkDbAccount =
   Database['wallet']['Tables']['accounts']['Row'];
+export type BoardwalkDbContact =
+  Database['wallet']['Tables']['contacts']['Row'];

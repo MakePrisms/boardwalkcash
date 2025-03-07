@@ -57,18 +57,20 @@ export const links: LinksFunction = () => [
 type RootLoaderData = {
   cookieSettings: ReturnType<typeof getThemeCookies>;
   userAgentString: string;
+  origin: string;
 };
-
 export async function loader({
   request,
 }: LoaderFunctionArgs): Promise<RootLoaderData> {
   /** Returns user settings from cookies */
   const cookieSettings = getThemeCookies(request);
   const userAgentString = request.headers.get('user-agent');
-
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  const origin = `${protocol}://${request.headers.get('host')}`;
   return {
     cookieSettings: cookieSettings || null,
     userAgentString: userAgentString || '',
+    origin,
   };
 }
 
