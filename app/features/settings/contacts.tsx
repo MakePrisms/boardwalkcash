@@ -24,12 +24,8 @@ export default function Contacts() {
         <AddContactDrawer />
       </SettingsViewHeader>
       <PageContent>
-        <div className="mb-4">
-          <SearchBar
-            onSearch={setSearchQuery}
-            placeholder="Search contacts..."
-          />
-        </div>
+        <SearchBar onSearch={setSearchQuery} placeholder="Search contacts..." />
+
         <ContactsList contacts={filteredContacts} />
       </PageContent>
     </>

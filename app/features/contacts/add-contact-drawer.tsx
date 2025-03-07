@@ -46,7 +46,7 @@ export function AddContactDrawer() {
         <DrawerHeader className="space-y-2">
           <DrawerTitle>Add Contact</DrawerTitle>
         </DrawerHeader>
-        <div className="space-y-8 px-4">
+        <div className="flex flex-col gap-3 px-4">
           <SearchBar onSearch={setSearchQuery} placeholder="satoshi" />
           <SearchResults
             searchQuery={searchQuery}
@@ -72,7 +72,7 @@ function SearchResults({
 
   if (!results || results.length === 0) {
     return (
-      <div className="pt-8 text-center text-muted-foreground">
+      <div className="py-6 text-center text-muted-foreground">
         {!results ? 'Search by username' : 'No Results'}
       </div>
     );
@@ -94,7 +94,7 @@ function SearchResults({
     .filter((contact) => contact.username !== userId);
 
   return (
-    <div className="h-full">
+    <div className="h-full py-6">
       <ContactList
         contacts={filteredResults}
         selectedContact={selectedContact}
@@ -124,7 +124,7 @@ function ContactList({
   onContactSelect: (contact: Contact | null) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-4">
       {contacts.map((contact) => (
         <div
           key={contact.id}
