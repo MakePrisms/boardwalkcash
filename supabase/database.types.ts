@@ -47,6 +47,42 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_username_fkey"
+            columns: ["username"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["username"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -57,6 +93,7 @@ export type Database = {
           email_verified: boolean
           id: string
           updated_at: string
+          username: string
         }
         Insert: {
           created_at?: string
@@ -67,6 +104,7 @@ export type Database = {
           email_verified: boolean
           id?: string
           updated_at?: string
+          username: string
         }
         Update: {
           created_at?: string
@@ -77,6 +115,7 @@ export type Database = {
           email_verified?: boolean
           id?: string
           updated_at?: string
+          username?: string
         }
         Relationships: [
           {
@@ -100,6 +139,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_not_self_contact: {
+        Args: {
+          owner_id: string
+          contact_username: string
+        }
+        Returns: boolean
+      }
+      is_reserved_username: {
+        Args: {
+          username: string
+        }
+        Returns: boolean
+      }
+      search_users_by_partial_username: {
+        Args: {
+          partial_username: string
+        }
+        Returns: {
+          username: string
+          default_currency: string
+        }[]
+      }
       upsert_user_with_accounts: {
         Args: {
           user_id: string

@@ -214,3 +214,12 @@ export const useSetDefaultAccount = () => {
     [updateUser],
   );
 };
+
+export const useUpdateUsername = () => {
+  const { mutateAsync: updateUser } = useUpdateUser();
+
+  return useCallback(
+    (username: string) => updateUser({ username }),
+    [updateUser],
+  );
+};
