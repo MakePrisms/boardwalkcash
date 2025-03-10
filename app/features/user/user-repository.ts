@@ -23,6 +23,7 @@ export class UserRepository {
     userId: string,
     options?: { abortSignal?: AbortSignal },
   ): Promise<User> {
+    console.log('get user', userId);
     const query = this.db.from('users').select().eq('id', userId);
 
     if (options?.abortSignal) {
