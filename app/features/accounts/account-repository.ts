@@ -71,14 +71,20 @@ export class AccountRepository {
     accountInput: AccountInput,
     options?: { abortSignal?: AbortSignal },
   ): Promise<Account> {
+    let details = {};
+    if (accountInput.type === 'cashu') {
+      details = { mint_url: accountInput.mintUrl };
+    } else if (accountInput.type === 'nwc') {
+      details = { nwc_url: accountInput.nwcUrl };
+    } else if (accountInput.type === 'spark') {
+      details = {};
+    }
+
     const accountsToCreate = {
       name: accountInput.name,
       type: accountInput.type,
       currency: accountInput.currency,
-      details:
-        accountInput.type === 'cashu'
-          ? { mint_url: accountInput.mintUrl }
-          : { nwc_url: accountInput.nwcUrl },
+      details,
       user_id: accountInput.userId,
     };
 
@@ -132,6 +138,12 @@ export class AccountRepository {
       };
     }
 
+    if (data.type === 'spark') {
+      return {
+        ...commonData,
+        type: 'spark',
+      };
+    }
     throw new Error('Invalid account type');
   }
 }

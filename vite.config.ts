@@ -29,4 +29,8 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
   },
+  define: {
+    // Polyfill for the global object in browser environment
+    global: 'globalThis',
+  },
 });

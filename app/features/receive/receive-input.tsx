@@ -23,7 +23,6 @@ import {
 } from '~/lib/transitions';
 import { useAccounts } from '../accounts/account-hooks';
 import { useReceiveStore } from './receive-provider';
-
 type ConvertedMoneyToggleProps = {
   onSwitchInputCurrency: () => void;
   money?: Money;
@@ -58,7 +57,6 @@ export default function ReceiveInput() {
   const { toast } = useToast();
   const { animationClass: shakeAnimationClass, start: startShakeAnimation } =
     useAnimation({ name: 'shake' });
-
   const receiveAccount = useReceiveStore((s) => s.account);
   const receiveAmount = useReceiveStore((s) => s.amount);
   const receiveCurrencyUnit = getDefaultUnit(receiveAccount.currency);
@@ -93,6 +91,11 @@ export default function ReceiveInput() {
 
     if (receiveAccount.type === 'cashu') {
       navigate('/receive/cashu', {
+        transition: 'slideLeft',
+        applyTo: 'newView',
+      });
+    } else if (receiveAccount.type === 'spark') {
+      navigate('/receive/spark', {
         transition: 'slideLeft',
         applyTo: 'newView',
       });

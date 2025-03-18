@@ -1,9 +1,11 @@
+import { SparkWallet } from '@buildonspark/spark-sdk';
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import type { DistributedOmit } from 'type-fest';
+import { useSparkSeed } from '~/features/keys/key-hooks';
 import type { Currency } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
 import type { User } from '../user/user';
@@ -90,3 +92,25 @@ export function useAddAccount() {
 
   return mutateAsync;
 }
+
+// QUESTION: how to make sure this is only used when user has a spark account?
+export const useSparkAccount = (network: 'REGTEST' | 'MAINNET') => {
+  const { data: privateKey } = useSparkSeed(network);
+
+  const initWallet = async () => {
+    const { wallet } = await SparkWallet.create({
+      mnemonicOrSeed: privateKey.private_key,
+      options: {
+        network,
+      },
+    });
+    return wallet;
+  };
+
+  const { data: wallet } = useSuspenseQuery({
+    queryKey: ['sparkWallet', network],
+    queryFn: initWallet,
+  });
+
+  return wallet;
+};

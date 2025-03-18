@@ -2,7 +2,6 @@ import type { LinksFunction } from '@remix-run/node';
 import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
 import { useState } from 'react';
 import boardwalkIcon192 from '~/assets/icon-192x192.png';
-import { MoneyDisplay } from '~/components/money-display';
 import {
   Page,
   PageContent,
@@ -12,6 +11,7 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
+import { BalanceDisplay } from '~/features/balance';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
@@ -28,13 +28,10 @@ export const links: LinksFunction = () => [
 export default function Index() {
   const { signOut } = useAuthActions();
   const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
-  const { theme, effectiveColorMode, colorMode, setColorMode } = useTheme();
+  const { effectiveColorMode, colorMode, setColorMode } = useTheme();
   const { data: rates } = useExchangeRates(
     (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
   );
-
-  const balanceBTC = new Money({ amount: 0, currency: 'BTC' });
-  const balanceUSD = new Money({ amount: 0, currency: 'USD' });
 
   return (
     <Page>
@@ -67,11 +64,7 @@ export default function Index() {
       <p className="text-center text-lg">Welcome to Boardwalk!</p>
 
       <PageContent className="items-center justify-around">
-        {theme === 'usd' ? (
-          <MoneyDisplay money={balanceUSD} unit="usd" />
-        ) : (
-          <MoneyDisplay money={balanceBTC} unit="sat" />
-        )}
+        <BalanceDisplay />
         <DefaultCurrencySwitcher />
         <div className="grid grid-cols-2 gap-4">
           <LinkWithViewTransition

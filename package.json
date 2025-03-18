@@ -20,14 +20,17 @@
     "test": "bun test",
     "test:e2e": "playwright test",
     "supabase": "supabase",
-    "db:generate-types": "supabase gen types typescript --local --schema wallet > supabase/database.types.ts"
+    "db:generate-types": "supabase gen types typescript --local --schema wallet > supabase/database.types.ts",
+    "postinstall": "mkdir -p public/node_modules/.vite/wasm && cp node_modules/@buildonspark/spark-sdk/dist/wasm/spark_bindings_bg.wasm public/node_modules/.vite/wasm/spark_bindings_bg.wasm"
   },
   "scripts:comments": {
     "dev": "We are using tsx instead of bun because bun doesn't support all node APIs that Remix development server needs. See https://bun.sh/guides/ecosystem/remix. We need to exclude the config file from tsx watch because vite seems to be writing to those temporary files which causes watcher loop.",
     "build:server": "We are building for node for now. We will see what we will be using in the runtime once we implement the deployment. Depending on that we might change this to target bun. 'cross-env NODE_ENV=production' is needed because bun build otherwise seems to be setting it to 'development'.",
-    "start": "We are running the build in node because atm we are using node as the build target."
+    "start": "We are running the build in node because atm we are using node as the build target.",
+    "postinstall": "This is a temporary workaround to copy the Spark SDK wasm file to the public folder so that it can be bundled with the app."
   },
   "dependencies": {
+    "@buildonspark/spark-sdk": "0.0.16",
     "@cashu/cashu-ts": "2.2.0",
     "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
     "@opensecret/react": "0.3.3",
