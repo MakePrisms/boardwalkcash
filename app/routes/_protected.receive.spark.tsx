@@ -9,13 +9,13 @@ export default function ReceiveSparkPage() {
   const receiveAccount = useReceiveStore((state) => state.account);
   const shouldRedirect = !receiveAmount || receiveAccount.type !== 'spark';
 
+  if (shouldRedirect) {
+    return <Redirect to="/receive" />;
+  }
+
   // TODO: this check shouldn't be necessary
   if (receiveAmount?.currency !== 'BTC') {
     throw new Error('Receive amount must be in BTC');
-  }
-
-  if (shouldRedirect) {
-    return <Redirect to="/receive" />;
   }
 
   return (
