@@ -1,6 +1,6 @@
 import type { Currency } from '~/lib/money';
 
-export type AccountType = 'cashu' | 'nwc';
+export type AccountType = 'cashu' | 'nwc' | 'spark';
 
 export type Account = {
   id: string;
@@ -18,6 +18,10 @@ export type Account = {
       type: 'nwc';
       nwcUrl: string;
     }
+  | {
+      type: 'spark';
+    }
 );
 
 export type CashuAccount = Extract<Account, { type: 'cashu' }>;
+export type SparkAccount = Extract<Account, { type: 'spark' }>;

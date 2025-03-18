@@ -48,11 +48,9 @@ const defaultAccounts = [
     isTestMint: false,
   },
   {
-    type: 'cashu',
+    type: 'spark',
     currency: 'BTC',
-    name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-    isTestMint: false,
+    name: 'Spark',
   },
 ] as const;
 

@@ -104,7 +104,9 @@ export class UserRepository {
       details:
         account.type === 'cashu'
           ? { mint_url: account.mintUrl, is_test_mint: account.isTestMint }
-          : { nwc_url: account.nwcUrl },
+          : account.type === 'nwc'
+            ? { nwc_url: account.nwcUrl }
+            : {},
     }));
 
     const query = this.db.rpc('upsert_user_with_accounts', {
