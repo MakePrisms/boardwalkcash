@@ -1,53 +1,6 @@
-import { CashuMint, CashuWallet, type Proof } from '@cashu/cashu-ts';
-import { getCrossMintQuotes } from './wallet';
+import type { Proof, Token } from '@cashu/cashu-ts';
 
-const mint1 = new CashuMint('https://testnut.cashu.space');
-const mint2 = new CashuMint('https://nofees.testnut.cashu.space');
-
-const from = new CashuWallet(mint1);
-const to = new CashuWallet(mint2);
-
-async function testCrossMintQuotes(amountWeWant: number, totalBalance: number) {
-  console.log(`\n====== WE WANT: ${amountWeWant} ======`);
-
-  const quotes = await getCrossMintQuotes(
-    from,
-    to,
-    totalBalance,
-    amountWeWant,
-  ).catch((e) => {
-    console.error(e);
-    return null;
-  });
-
-  if (!quotes) {
-    console.error('Failed to get quotes');
-    return;
-  }
-
-  const { meltQuote, mintQuote: _ } = quotes;
-
-  const proofsRequired = meltQuote.amount + meltQuote.fee_reserve;
-
-  if (proofsRequired > totalBalance) {
-    throw new Error('Rerturned more proofs required than our total balance');
-  }
-
-  console.log('got request amount?', meltQuote.amount === amountWeWant);
-  console.log('meltQuote', {
-    amount: meltQuote.amount,
-    fee_reserve: meltQuote.fee_reserve,
-  });
-  console.log('amountToMint', meltQuote.amount);
-  console.log('numProofsRequired', meltQuote.amount + meltQuote.fee_reserve);
-  console.log('======================\n\n');
-}
-
-const totalBalance = 600;
-const amountWeWant = 500;
-
-testCrossMintQuotes(amountWeWant, totalBalance);
-
+/** Generate fake proofs */
 export const createMockProofs = (amount: number): Proof[] => {
   const proofs: Proof[] = [];
   let remaining = amount;
@@ -69,4 +22,13 @@ export const createMockProofs = (amount: number): Proof[] => {
   }
 
   return proofs;
+};
+
+export const createMockToken = (amount: number): Token => {
+  return {
+    mint: 'https://mint.example.com',
+    proofs: createMockProofs(amount),
+    unit: 'sat',
+    memo: 'This is a memo',
+  };
 };

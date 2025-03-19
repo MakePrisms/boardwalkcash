@@ -1,22 +1,13 @@
 import type { LinksFunction } from '@remix-run/node';
-import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowDownRight, ArrowUpRight, Clock, Cog } from 'lucide-react';
 import boardwalkIcon192 from '~/assets/icon-192x192.png';
 import { MoneyDisplay } from '~/components/money-display';
-import {
-  Page,
-  PageContent,
-  PageFooter,
-  PageHeader,
-  PageHeaderTitle,
-} from '~/components/page';
+import { Page, PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
-import { useExchangeRates } from '~/hooks/use-exchange-rate';
-import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
@@ -27,34 +18,21 @@ export const links: LinksFunction = () => [
 
 export default function Index() {
   const { signOut } = useAuthActions();
-  const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
   const { theme, effectiveColorMode, colorMode, setColorMode } = useTheme();
-  const { data: rates } = useExchangeRates(
-    (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
-  );
 
   const balanceBTC = new Money({ amount: 0, currency: 'BTC' });
   const balanceUSD = new Money({ amount: 0, currency: 'USD' });
 
   return (
     <Page>
-      <PageHeader>
-        <PageHeaderTitle>
-          <button
-            type="button"
-            onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
-          >
-            {showSatsPerDollar && rates
-              ? new Money({ amount: 1, currency: 'USD' })
-                  .convert('BTC', rates['USD-BTC'])
-                  .toLocaleString({ unit: 'sat' })
-              : rates &&
-                new Money({
-                  amount: rates['BTC-USD'],
-                  currency: 'USD',
-                }).toLocaleString({ unit: 'usd' })}
-          </button>
-        </PageHeaderTitle>
+      <header className="flex w-full items-center justify-end gap-4">
+        <LinkWithViewTransition
+          to="/transactions"
+          transition="slideLeft"
+          applyTo="newView"
+        >
+          <Clock />
+        </LinkWithViewTransition>
         <LinkWithViewTransition
           to="/settings"
           transition="slideLeft"
@@ -62,7 +40,7 @@ export default function Index() {
         >
           <Cog />
         </LinkWithViewTransition>
-      </PageHeader>
+      </header>
 
       <p className="text-center text-lg">Welcome to Boardwalk!</p>
 
