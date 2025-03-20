@@ -9,7 +9,7 @@ import { useState } from 'react';
 import type { Account, CashuAccount } from '~/features/accounts/account';
 import {
   useAccounts,
-  useAddAccount,
+  useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { tokenToMoney } from '~/features/shared/cashu';
@@ -83,6 +83,9 @@ const tokenToSourceAccount = (
   name: mintInfo?.name ?? 'Unknown Mint',
   currency: tokenToMoney(token).currency,
   isTestMint: isTestMint ?? false,
+  version: 0,
+  keysetCounters: {},
+  proofs: [],
 });
 
 const getClaimableProofs = (unspentProofs: Proof[], cashuPubKey: string) => {
@@ -211,7 +214,7 @@ export function useReceiveCashuToken({
   const accounts: CashuAccount[] = allAccounts.filter(
     (a) => a.type === 'cashu',
   );
-  const addAccount = useAddAccount();
+  const addAccount = useAddCashuAccount();
   const defaultAccount = useDefaultAccount();
   const tokenCurrency = tokenToMoney(token).currency;
 

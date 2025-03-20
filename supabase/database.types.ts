@@ -18,6 +18,7 @@ export type Database = {
           name: string
           type: string
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
@@ -27,6 +28,7 @@ export type Database = {
           name: string
           type: string
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
@@ -36,10 +38,83 @@ export type Database = {
           name?: string
           type?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
             foreignKeyName: "accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cashu_receive_quotes: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          number_of_blinded_messages: number | null
+          payment_request: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          currency: string
+          description?: string | null
+          expires_at: string
+          id?: string
+          keyset_counter?: number | null
+          keyset_id?: string | null
+          number_of_blinded_messages?: number | null
+          payment_request: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          keyset_counter?: number | null
+          keyset_id?: string | null
+          number_of_blinded_messages?: number | null
+          payment_request?: string
+          quote_id?: string
+          state?: string
+          unit?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashu_receive_quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_receive_quotes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -100,6 +175,67 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_cashu_receive_quote: {
+        Args: {
+          p_quote_id: string
+          quote_version: number
+          proofs: Json
+          account_version: number
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          number_of_blinded_messages: number | null
+          payment_request: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version: number
+        }
+      }
+      expire_cashu_receive_quote: {
+        Args: {
+          quote_id: string
+          quote_version: number
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          number_of_blinded_messages: number | null
+          payment_request: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version: number
+        }
+      }
+      process_cashu_receive_quote_payment: {
+        Args: {
+          p_quote_id: string
+          quote_version: number
+          p_keyset_id: string
+          p_keyset_counter: number
+          p_number_of_blinded_messages: number
+          account_version: number
+        }
+        Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
+      }
       upsert_user_with_accounts: {
         Args: {
           user_id: string
@@ -114,7 +250,10 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      cashu_receive_quote_payment_result: {
+        updated_quote: unknown
+        updated_account: unknown
+      }
     }
   }
 }

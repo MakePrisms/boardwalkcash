@@ -1,6 +1,8 @@
 import type { Token } from '@cashu/cashu-ts';
+import { useMemo } from 'react';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
+import { useEncryption } from './encryption';
 
 function getCurrencyAndUnitFromToken(token: Token): {
   currency: Currency;
@@ -24,4 +26,31 @@ export function tokenToMoney(token: Token): Money {
     currency,
     unit,
   });
+}
+
+// TODO: this was written by Claude, check if it's correct
+function hexToUint8Array(hex: string): Uint8Array {
+  const pairs = hex.match(/.{1,2}/g) || [];
+  return new Uint8Array(pairs.map((byte) => Number.parseInt(byte, 16)));
+}
+
+export type CashuCryptography = Pick<
+  ReturnType<typeof useEncryption>,
+  'encrypt' | 'decrypt'
+> & { getSeed: () => Promise<Uint8Array> };
+
+export function useCashuCryptography(): CashuCryptography {
+  const encryption = useEncryption();
+
+  return useMemo(() => {
+    const { getPrivateKeyBytes, encrypt, decrypt } = encryption;
+
+    const getSeed = async (): Promise<Uint8Array> => {
+      // TODO: see which derivation path to use
+      const response = await getPrivateKeyBytes(`m/44'/0'/0'/0/0`);
+      return hexToUint8Array(response.private_key);
+    };
+
+    return { getSeed, encrypt, decrypt };
+  }, [encryption]);
 }

@@ -53,13 +53,23 @@ export class ExchangeRateService {
         });
         return { ...rates, ...providerRates };
       } catch (e) {
-        console.warn(`Error fetching rates from provider ${provider}`, e);
+        if (!signal?.aborted) {
+          console.warn(`Error fetching rates from provider ${provider}`, e);
+        }
         errors.push(e);
       }
     }
 
-    console.error('Failed to fetch rates', errors);
-    throw new Error('Failed to fetch rates');
+    if (!signal?.aborted) {
+      console.error(
+        `Failed to fetch rates for tickers ${remainingTickers}`,
+        errors,
+      );
+    }
+    const errorMessage = signal?.aborted
+      ? 'Fetch rates aborted'
+      : 'Failed to fetch rates';
+    throw new Error(errorMessage);
   }
 
   private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {

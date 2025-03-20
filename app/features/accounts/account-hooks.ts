@@ -4,14 +4,14 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import type { DistributedOmit } from 'type-fest';
-import type { Currency } from '~/lib/money';
+import { checkIsTestMint } from '~/lib/cashu';
+import { type Currency, Money } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
+import { useCashuCryptography } from '../shared/cashu';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
-import type { Account } from './account';
+import { type Account, type CashuAccount, getAccountBalance } from './account';
 import { AccountRepository } from './account-repository';
-
-const accountRepository = new AccountRepository(boardwalkDb);
 
 export const accountsQueryKey = 'accounts';
 
@@ -26,7 +26,9 @@ function isDefaultAccount(user: User, account: Account) {
 }
 
 export function useAccounts(currency?: Currency) {
+  const cryptography = useCashuCryptography();
   const userId = useUser((x) => x.id);
+  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
   const response = useSuspenseQuery({
     queryKey: [accountsQueryKey, userId],
     queryFn: () => accountRepository.getAll(userId),
@@ -74,13 +76,34 @@ export function useDefaultAccount() {
   return defaultAccount;
 }
 
-export function useAddAccount() {
+export function useAddCashuAccount() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
+  const cryptography = useCashuCryptography();
+  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
 
   const { mutateAsync } = useMutation({
-    mutationFn: (account: DistributedOmit<Account, 'id' | 'createdAt'>) =>
-      accountRepository.create({ ...account, userId }),
+    mutationFn: async (
+      account: DistributedOmit<
+        CashuAccount,
+        | 'id'
+        | 'createdAt'
+        | 'isTestMint'
+        | 'keysetCounters'
+        | 'proofs'
+        | 'version'
+      >,
+    ) => {
+      const isTestMint = await checkIsTestMint(account.mintUrl);
+
+      return accountRepository.create({
+        ...account,
+        userId,
+        isTestMint,
+        keysetCounters: {},
+        proofs: [],
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [accountsQueryKey, userId],
@@ -89,4 +112,16 @@ export function useAddAccount() {
   });
 
   return mutateAsync;
+}
+
+export function useBalance(currency: Currency) {
+  const { data: accounts } = useAccounts(currency);
+  const balance = accounts.reduce(
+    (acc, account) => {
+      const accountBalance = getAccountBalance(account);
+      return acc.add(accountBalance);
+    },
+    new Money({ amount: 0, currency }),
+  );
+  return balance;
 }

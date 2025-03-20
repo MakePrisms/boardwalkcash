@@ -11,9 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
-import { useAddAccount } from '~/features/accounts/account-hooks';
+import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
-import { checkIsTestMint } from '~/lib/cashu/utils';
 import type { Currency } from '~/lib/money';
 
 type FormValues = {
@@ -72,7 +71,7 @@ const validateMintUrl = async (
 };
 
 export function AddMintForm() {
-  const addAccount = useAddAccount();
+  const addAccount = useAddCashuAccount();
   const { toast } = useToast();
   const {
     register,
@@ -85,13 +84,11 @@ export function AddMintForm() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const isTestMint = await checkIsTestMint(data.mintUrl);
       await addAccount({
         name: data.name,
         currency: data.currency,
         mintUrl: data.mintUrl,
         type: 'cashu',
-        isTestMint,
       });
       toast({
         title: 'Success',

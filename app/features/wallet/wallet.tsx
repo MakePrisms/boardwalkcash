@@ -2,6 +2,7 @@ import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
+import { useTrackAllCashuReceiveQuotes } from '../receive/cashu-receive-quote';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -29,7 +30,7 @@ const useUpsertBoardwalkUser = (authUser: AuthUser) => {
   return data?.user ?? null;
 };
 
-const SessionManager = ({ children }: PropsWithChildren) => {
+const Wallet = ({ children }: PropsWithChildren) => {
   const { toast } = useToast();
   const isGuestAccount = useUser((user) => user.isGuest);
 
@@ -43,6 +44,8 @@ const SessionManager = ({ children }: PropsWithChildren) => {
       });
     },
   });
+
+  useTrackAllCashuReceiveQuotes();
 
   return children;
 };
@@ -74,7 +77,7 @@ export const WalletSetup = ({ authUser, children }: Props) => {
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <SessionManager>{children}</SessionManager>
+      <Wallet>{children}</Wallet>
     </Suspense>
   );
 };
