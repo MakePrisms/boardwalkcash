@@ -125,7 +125,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HydrationBoundary state={dehydratedState}>
-        <OpenSecretProvider apiUrl="https://preview-enclave.opensecret.cloud">
+        <OpenSecretProvider
+          apiUrl="https://enclave.trymaple.ai"
+          clientId="409b99a0-a153-4963-83c9-de9b378c858a"
+        >
           <Outlet />
         </OpenSecretProvider>
         <ReactQueryDevtools initialIsOpen={false} />

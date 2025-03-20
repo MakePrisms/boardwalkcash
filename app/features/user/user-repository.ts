@@ -11,6 +11,15 @@ export type UpdateUser = {
   defaultCurrency?: Currency;
 };
 
+type Options = {
+  abortSignal?: AbortSignal;
+};
+
+type OptionsWithEncryption = Options & {
+  encryptData: <T = unknown>(data: T) => Promise<string>;
+  decryptData: <T = unknown>(data: string) => Promise<T>;
+};
+
 export class UserRepository {
   constructor(private readonly db: BoardwalkDb) {}
 
@@ -93,19 +102,29 @@ export class UserRepository {
        * Accounts to insert for the user.
        * Will be used only when the account is created. For existing users, the accounts will be ignored.
        */
-      accounts: DistributedOmit<Account, 'id' | 'createdAt'>[];
+      accounts: DistributedOmit<
+        Account,
+        'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters'
+      >[];
     },
-    options?: { abortSignal?: AbortSignal },
+    options: OptionsWithEncryption,
   ): Promise<{ user: User; accounts: Account[] }> {
-    const accountsToAdd = user.accounts.map((account) => ({
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-      details:
-        account.type === 'cashu'
-          ? { mint_url: account.mintUrl, is_test_mint: account.isTestMint }
-          : { nwc_url: account.nwcUrl },
-    }));
+    const accountsToAdd = await Promise.all(
+      user.accounts.map(async (account) => ({
+        name: account.name,
+        type: account.type,
+        currency: account.currency,
+        details:
+          account.type === 'cashu'
+            ? {
+                mint_url: account.mintUrl,
+                is_test_mint: account.isTestMint,
+                keyset_counters: {}, // TODO: should we initialize keyset counters here?
+                proofs: await options.encryptData([]),
+              }
+            : { nwc_url: account.nwcUrl },
+      })),
+    );
 
     const query = this.db.rpc('upsert_user_with_accounts', {
       user_id: user.id,
@@ -114,7 +133,7 @@ export class UserRepository {
       accounts: accountsToAdd,
     });
 
-    if (options?.abortSignal) {
+    if (options.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -128,7 +147,11 @@ export class UserRepository {
 
     return {
       user: this.toUser(upsertedUser),
-      accounts: accounts.map(AccountRepository.toAccount),
+      accounts: await Promise.all(
+        accounts.map((account) =>
+          AccountRepository.toAccount(account, options.decryptData),
+        ),
+      ),
     };
   }
 

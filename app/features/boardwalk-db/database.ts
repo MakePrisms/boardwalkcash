@@ -15,6 +15,11 @@ if (!supabaseAnonKey) {
   throw new Error('VITE_SUPABASE_ANON_KEY is not set');
 }
 
+type CashuReceiveQuotePaymentResult = {
+  updated_quote: BoardwalkDbCashuReceiveQuote;
+  updated_account: BoardwalkDbAccount;
+};
+
 // Use when you need to fix/improve generated types
 // See https://supabase.com/docs/guides/api/rest/generating-types#helper-types-for-tables-and-joins
 type Database = MergeDeep<
@@ -57,6 +62,12 @@ type Database = MergeDeep<
             accounts: BoardwalkDbAccount[];
           };
         };
+        process_cashu_receive_quote_payment: {
+          Returns: CashuReceiveQuotePaymentResult;
+        };
+      };
+      CompositeTypes: {
+        cashu_receive_quote_payment_result: CashuReceiveQuotePaymentResult;
       };
     };
   }
@@ -82,3 +93,5 @@ export type BoardwalkDb = typeof boardwalkDb;
 export type BoardwalkDbUser = Database['wallet']['Tables']['users']['Row'];
 export type BoardwalkDbAccount =
   Database['wallet']['Tables']['accounts']['Row'];
+export type BoardwalkDbCashuReceiveQuote =
+  Database['wallet']['Tables']['cashu_receive_quotes']['Row'];

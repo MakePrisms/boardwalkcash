@@ -4,11 +4,13 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import type { DistributedOmit } from 'type-fest';
+import { checkIsTestMint, getKeysets } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import { boardwalkDb } from '../boardwalk-db/database';
+import { useCashuCryptography } from '../shared/cashu';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
-import type { Account } from './account';
+import type { Account, CashuAccount } from './account';
 import { AccountRepository } from './account-repository';
 
 const accountRepository = new AccountRepository(boardwalkDb);
@@ -26,10 +28,11 @@ function isDefaultAccount(user: User, account: Account) {
 }
 
 export function useAccounts(currency?: Currency) {
+  const cryptography = useCashuCryptography();
   const userId = useUser((x) => x.id);
   const response = useSuspenseQuery({
     queryKey: [accountsQueryKey, userId],
-    queryFn: () => accountRepository.getAll(userId),
+    queryFn: () => accountRepository.getAll(userId, cryptography),
   });
 
   if (!currency) {
@@ -74,13 +77,53 @@ export function useDefaultAccount() {
   return defaultAccount;
 }
 
-export function useAddAccount() {
+export function useAddCashuAccount() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
+  const cryptography = useCashuCryptography();
 
   const { mutateAsync } = useMutation({
-    mutationFn: (account: DistributedOmit<Account, 'id' | 'createdAt'>) =>
-      accountRepository.create({ ...account, userId }),
+    mutationFn: async (
+      account: DistributedOmit<
+        CashuAccount,
+        | 'id'
+        | 'createdAt'
+        | 'isTestMint'
+        | 'keysetCounters'
+        | 'proofs'
+        | 'version'
+      >,
+    ) => {
+      const isTestMintPromise = checkIsTestMint(account.mintUrl);
+      const keysetsPromise = getKeysets(
+        account.mintUrl,
+        account.currency === 'USD' ? 'cent' : 'sat', // TODO: check if this is correct
+      );
+      const [isTestMint, keysets] = await Promise.all([
+        isTestMintPromise,
+        keysetsPromise,
+      ]);
+
+      // TODO: see if mint can change keysets over time and if it can where would we detect new keysets and update the keysetCounters
+      const keysetCounters = keysets.reduce(
+        (acc, keyset) => {
+          acc[keyset.id] = 0;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      return accountRepository.create(
+        {
+          ...account,
+          userId,
+          isTestMint,
+          keysetCounters,
+          proofs: [],
+        },
+        cryptography,
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [accountsQueryKey, userId],

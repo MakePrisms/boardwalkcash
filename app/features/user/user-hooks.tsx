@@ -8,6 +8,7 @@ import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
 import { accountsQueryKey } from '../accounts/account-hooks';
 import { boardwalkDb } from '../boardwalk-db/database';
+import { useCashuCryptography } from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, UserRepository } from './user-repository';
@@ -58,16 +59,20 @@ const defaultAccounts = [
 
 export const useUpsertUser = () => {
   const queryClient = useQueryClient();
+  const cryptography = useCashuCryptography();
 
   return useMutation({
     mutationKey: ['user-upsert'],
     mutationFn: (user: AuthUser) =>
-      userRepository.upsert({
-        id: user.id,
-        email: user.email,
-        emailVerified: user.email_verified,
-        accounts: [...defaultAccounts],
-      }),
+      userRepository.upsert(
+        {
+          id: user.id,
+          email: user.email,
+          emailVerified: user.email_verified,
+          accounts: [...defaultAccounts],
+        },
+        cryptography,
+      ),
     scope: {
       id: 'user-upsert',
     },
@@ -82,7 +87,7 @@ export const useUpsertUser = () => {
   });
 };
 
-const useUserRef = () => {
+export const useUserRef = () => {
   const user = useUser();
   const userRef = useRef(user);
 

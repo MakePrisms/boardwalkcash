@@ -7,6 +7,7 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from '~/components/ui/drawer';
+import { sumProofs } from '~/lib/cashu';
 import { Money } from '~/lib/money';
 import type { Account } from './account';
 import { AccountTypeIcon } from './account-icons';
@@ -17,6 +18,8 @@ export type AccountWithBadges<T extends Account = Account> = T & {
 };
 
 function AccountItem({ account }: { account: AccountWithBadges }) {
+  const balanceAmount =
+    account.type === 'cashu' ? sumProofs(account.proofs) : 0;
   return (
     <div className="flex w-full items-center gap-4 px-3 py-4">
       <AccountTypeIcon type={account.type} />
@@ -25,8 +28,9 @@ function AccountItem({ account }: { account: AccountWithBadges }) {
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
             {new Money({
-              amount: 0, // TODO: see how we will do this
+              amount: balanceAmount,
               currency: account.currency,
+              unit: account.currency === 'BTC' ? 'sat' : 'usd',
             }).toLocaleString({
               unit: account.currency === 'BTC' ? 'sat' : undefined,
             })}
