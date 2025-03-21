@@ -13,8 +13,6 @@ import { useUser } from '../user/user-hooks';
 import type { Account, CashuAccount } from './account';
 import { AccountRepository } from './account-repository';
 
-const accountRepository = new AccountRepository(boardwalkDb);
-
 export const accountsQueryKey = 'accounts';
 
 function isDefaultAccount(user: User, account: Account) {
@@ -30,9 +28,10 @@ function isDefaultAccount(user: User, account: Account) {
 export function useAccounts(currency?: Currency) {
   const cryptography = useCashuCryptography();
   const userId = useUser((x) => x.id);
+  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
   const response = useSuspenseQuery({
     queryKey: [accountsQueryKey, userId],
-    queryFn: () => accountRepository.getAll(userId, cryptography),
+    queryFn: () => accountRepository.getAll(userId),
   });
 
   if (!currency) {
@@ -81,6 +80,7 @@ export function useAddCashuAccount() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
   const cryptography = useCashuCryptography();
+  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
 
   const { mutateAsync } = useMutation({
     mutationFn: async (
@@ -113,16 +113,13 @@ export function useAddCashuAccount() {
         {} as Record<string, number>,
       );
 
-      return accountRepository.create(
-        {
-          ...account,
-          userId,
-          isTestMint,
-          keysetCounters,
-          proofs: [],
-        },
-        cryptography,
-      );
+      return accountRepository.create({
+        ...account,
+        userId,
+        isTestMint,
+        keysetCounters,
+        proofs: [],
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -27,7 +27,7 @@ export const useEncryption = () => {
 
   return {
     getPrivateKeyBytes,
-    encryptData: async <T = unknown>(
+    encrypt: async <T = unknown>(
       data: T,
       derivationPath?: string,
     ): Promise<string> => {
@@ -44,7 +44,7 @@ export const useEncryption = () => {
       const response = await encryptData(serialized, derivationPath);
       return response.encrypted_data;
     },
-    decryptData: async <T = unknown>(
+    decrypt: async <T = unknown>(
       encryptedData: string,
       derivationPath?: string,
     ): Promise<T> => {

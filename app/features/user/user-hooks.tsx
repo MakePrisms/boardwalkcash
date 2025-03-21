@@ -13,8 +13,6 @@ import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, UserRepository } from './user-repository';
 
-const userRepository = new UserRepository(boardwalkDb);
-
 const usersQueryKey = 'users';
 
 /**
@@ -25,11 +23,14 @@ const usersQueryKey = 'users';
 export const useUser = <TData = User>(
   select?: (data: User) => TData,
 ): TData => {
+  const cryptography = useCashuCryptography();
   const authState = useAuthState();
   const authUser = authState.user;
   if (!authUser) {
     throw new Error('Cannot use useUser hook in anonymous context');
   }
+
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   const response = useSuspenseQuery({
     queryKey: [usersQueryKey, authUser.id],
@@ -60,19 +61,17 @@ const defaultAccounts = [
 export const useUpsertUser = () => {
   const queryClient = useQueryClient();
   const cryptography = useCashuCryptography();
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   return useMutation({
     mutationKey: ['user-upsert'],
     mutationFn: (user: AuthUser) =>
-      userRepository.upsert(
-        {
-          id: user.id,
-          email: user.email,
-          emailVerified: user.email_verified,
-          accounts: [...defaultAccounts],
-        },
-        cryptography,
-      ),
+      userRepository.upsert({
+        id: user.id,
+        email: user.email,
+        emailVerified: user.email_verified,
+        accounts: [...defaultAccounts],
+      }),
     scope: {
       id: 'user-upsert',
     },
@@ -178,6 +177,8 @@ export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
 const useUpdateUser = () => {
   const queryClient = useQueryClient();
   const userRef = useUserRef();
+  const cryptography = useCashuCryptography();
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   return useMutation({
     mutationFn: (updates: UpdateUser) =>

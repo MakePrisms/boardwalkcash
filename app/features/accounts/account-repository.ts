@@ -12,20 +12,23 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
-type OptionsWithEncryption = Options & {
-  encryptData: <T = unknown>(data: T) => Promise<string>;
-  decryptData: <T = unknown>(data: string) => Promise<T>;
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
 };
 
 export class AccountRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly encryption: Encryption,
+  ) {}
 
   /**
    * Gets the account with the given id.
    * @param id - The id of the account to get.
    * @returns The account.
    */
-  async get(id: string, options: OptionsWithEncryption): Promise<Account> {
+  async get(id: string, options?: Options): Promise<Account> {
     const query = this.db.from('accounts').select().eq('id', id);
 
     if (options?.abortSignal) {
@@ -38,7 +41,7 @@ export class AccountRepository {
       throw new Error('Failed to get account', error);
     }
 
-    return AccountRepository.toAccount(data, options.decryptData);
+    return AccountRepository.toAccount(data, this.encryption.decrypt);
   }
 
   /**
@@ -46,13 +49,10 @@ export class AccountRepository {
    * @param userId - The id of the user to get the accounts for.
    * @returns The accounts.
    */
-  async getAll(
-    userId: string,
-    options: OptionsWithEncryption,
-  ): Promise<Account[]> {
+  async getAll(userId: string, options?: Options): Promise<Account[]> {
     const query = this.db.from('accounts').select().eq('user_id', userId);
 
-    if (options.abortSignal) {
+    if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -63,7 +63,7 @@ export class AccountRepository {
     }
 
     return Promise.all(
-      data.map((x) => AccountRepository.toAccount(x, options.decryptData)),
+      data.map((x) => AccountRepository.toAccount(x, this.encryption.decrypt)),
     );
   }
 
@@ -74,7 +74,7 @@ export class AccountRepository {
    */
   async create(
     accountInput: AccountInput,
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<Account> {
     const accountsToCreate = {
       name: accountInput.name,
@@ -86,7 +86,7 @@ export class AccountRepository {
               mint_url: accountInput.mintUrl,
               is_test_mint: accountInput.isTestMint,
               keyset_counters: accountInput.keysetCounters,
-              proofs: await options.encryptData(accountInput.proofs),
+              proofs: await this.encryption.encrypt(accountInput.proofs),
             }
           : { nwc_url: accountInput.nwcUrl },
       user_id: accountInput.userId,
@@ -94,7 +94,7 @@ export class AccountRepository {
 
     const query = this.db.from('accounts').insert(accountsToCreate).select();
 
-    if (options.abortSignal) {
+    if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -109,12 +109,12 @@ export class AccountRepository {
       throw new Error(message, error);
     }
 
-    return AccountRepository.toAccount(data, options.decryptData);
+    return AccountRepository.toAccount(data, this.encryption.decrypt);
   }
 
   static async toAccount(
     data: BoardwalkDbAccount,
-    decryptData: OptionsWithEncryption['decryptData'],
+    decryptData: Encryption['decrypt'],
   ): Promise<Account> {
     const commonData = {
       id: data.id,
