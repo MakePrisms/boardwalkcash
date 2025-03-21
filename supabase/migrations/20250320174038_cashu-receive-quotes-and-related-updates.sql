@@ -134,42 +134,6 @@ end;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION wallet.create_cashu_receive_quote(user_id uuid, account_id uuid, amount numeric, unit text, quote_id text, payment_request text, expires_at timestamp with time zone, state text, description text DEFAULT NULL::text)
- RETURNS wallet.cashu_receive_quotes
- LANGUAGE plpgsql
-AS $function$
-declare
-  v_quote wallet.cashu_receive_quotes;
-begin
-  -- Insert the quote
-  insert into wallet.cashu_receive_quotes (
-    user_id,
-    account_id,
-    amount,
-    unit,
-    payment_request,
-    quote_id,
-    description,
-    expires_at,
-    state
-  ) values (
-    user_id,
-    account_id,
-    amount,
-    unit,
-    payment_request,
-    quote_id,
-    description,
-    expires_at,
-    state
-  )
-  returning * into v_quote;
-
-  return v_quote;
-end;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION wallet.expire_cashu_receive_quote(quote_id uuid, quote_version integer)
  RETURNS wallet.cashu_receive_quotes
  LANGUAGE plpgsql

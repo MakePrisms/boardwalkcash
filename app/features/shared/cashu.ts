@@ -36,13 +36,14 @@ function hexToUint8Array(hex: string): Uint8Array {
 export type CashuCryptography = Pick<
   ReturnType<typeof useEncryption>,
   'encrypt' | 'decrypt'
-> & { getSeed: (derivationPath: string) => Promise<Uint8Array> };
+> & { getSeed: () => Promise<Uint8Array> };
 
 export function useCashuCryptography(): CashuCryptography {
   const { getPrivateKeyBytes, encrypt, decrypt } = useEncryption();
 
-  const getSeed = async (derivationPath: string): Promise<Uint8Array> => {
-    const response = await getPrivateKeyBytes(derivationPath);
+  const getSeed = async (): Promise<Uint8Array> => {
+    // TODO: see which derivation path to use
+    const response = await getPrivateKeyBytes(`m/44'/0'/0'/0/0`);
     return hexToUint8Array(response.private_key);
   };
 

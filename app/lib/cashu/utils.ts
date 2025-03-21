@@ -7,7 +7,10 @@ const knownTestMints = [
   'https://nofees.testnut.cashu.space',
 ];
 
-const getWallet = (mintUrl: string, options?: { unit?: string }) => {
+export const getCashuWallet = (
+  mintUrl: string,
+  options?: ConstructorParameters<typeof CashuWallet>[1],
+) => {
   return new CashuWallet(new CashuMint(mintUrl), options);
 };
 
@@ -28,19 +31,19 @@ export const checkIsTestMint = async (mintUrl: string): Promise<boolean> => {
   if (knownTestMints.includes(normalizedUrl)) {
     return true;
   }
-  const wallet = getWallet(mintUrl);
+  const wallet = getCashuWallet(mintUrl);
   const { request: bolt11 } = await wallet.createMintQuote(1);
   const { network } = decodeBolt11(bolt11);
   return network !== 'bitcoin';
 };
 
 export const getMintInfo = async (mintUrl: string): Promise<MintInfo> => {
-  return getWallet(mintUrl).getMintInfo();
+  return getCashuWallet(mintUrl).getMintInfo();
 };
 
 export const getKeysets = async (
   mintUrl: string,
   unit: string,
 ): Promise<Array<MintKeyset>> => {
-  return getWallet(mintUrl, { unit }).getKeySets();
+  return getCashuWallet(mintUrl, { unit }).getKeySets();
 };

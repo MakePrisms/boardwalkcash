@@ -11,40 +11,20 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import { useAccounts } from '~/features/accounts/account-hooks';
+import { useBalance } from '~/features/accounts/account-hooks';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
 import { useAuthActions } from '~/features/user/auth';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
-import { sumProofs } from '~/lib/cashu';
 import type { Ticker } from '~/lib/exchange-rate';
-import { type Currency, Money } from '~/lib/money';
+import { Money } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
 export const links: LinksFunction = () => [
   // This icon is used in the PWA dialog and prefetched here to avoid a flash while loading
   { rel: 'preload', href: boardwalkIcon192, as: 'image' },
 ];
-
-const useBalance = (currency: Currency) => {
-  const { data: accounts } = useAccounts(currency);
-  const balance = accounts.reduce(
-    (acc, account) => {
-      const accountBalance =
-        account.type === 'cashu'
-          ? new Money({
-              amount: sumProofs(account.proofs),
-              currency: account.currency,
-              unit: account.currency === 'USD' ? 'usd' : 'sat',
-            })
-          : new Money({ amount: 0, currency: account.currency });
-      return acc.add(accountBalance);
-    },
-    new Money({ amount: 0, currency }),
-  );
-  return balance;
-};
 
 export default function Index() {
   const { signOut } = useAuthActions();

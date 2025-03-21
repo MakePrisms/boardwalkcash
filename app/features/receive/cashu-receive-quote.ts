@@ -1,6 +1,5 @@
 import {
-  CashuMint,
-  CashuWallet,
+  type CashuWallet,
   MintOperationError,
   OutputData,
   type Proof,
@@ -15,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 import { useToast } from '~/hooks/use-toast';
+import { getCashuWallet } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { Account, CashuAccount } from '../accounts/account';
 import { accountsQueryKey } from '../accounts/account-hooks';
@@ -23,6 +23,7 @@ import {
   boardwalkDb,
 } from '../boardwalk-db/database';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import { getDefaultUnit } from '../shared/currencies';
 import { useUserRef } from '../user/user-hooks';
 import { CashuReceiveQuoteRepository } from './cashu-receive-quote-repository';
 
@@ -80,7 +81,7 @@ export type CashuReceiveQuote = {
        */
       keysetId: string;
       /**
-       * Counter value for the keyset at the time of quote creation.
+       * Counter value for the keyset at the time the time of quote payment.
        */
       keysetCounter: number;
       /**
@@ -100,7 +101,7 @@ const createCashuReceiveQuote = async (
   const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
   const moneyUnit = cashuUnit === 'usd' ? 'cent' : 'sat';
 
-  const wallet = new CashuWallet(new CashuMint(account.mintUrl), {
+  const wallet = getCashuWallet(account.mintUrl, {
     unit: cashuUnit,
   });
 
@@ -174,7 +175,7 @@ const mintCashuTokens = async (
 ) => {
   const keys = await wallet.getKeys(quote.keysetId);
   const counter = account.keysetCounters[wallet.keysetId] ?? 0;
-  const seed = await cryptography.getSeed(`m/44'/0'/0'/0/0`); // TODO: see which derivation path to use
+  const seed = await cryptography.getSeed();
   const outputData = OutputData.createDeterministicData(
     quote.amount,
     seed,
@@ -248,8 +249,8 @@ async function checkCashuReceiveQuote(
     throw new Error('Quote account id does not match account id');
   }
 
-  const seed = await cryptography.getSeed(`m/44'/0'/0'/0/0`); // TODO: see which derivation path to use
-  const wallet = new CashuWallet(new CashuMint(account.mintUrl), {
+  const seed = await cryptography.getSeed();
+  const wallet = getCashuWallet(account.mintUrl, {
     unit: quote.unit,
     bip39seed: seed,
   });
@@ -345,24 +346,22 @@ export function useTrackAllCashuReceiveQuotes() {
               payload.old.id,
             ]);
             setTrackedQuotes((prev) =>
-              prev.filter((account) => account.id !== payload.old.id),
+              prev.filter((q) => q.id !== payload.old.id),
             );
             // TODO: toast is here only temporarily. Later we should be probably be showing notifications based on the history items not quotes.
-            if (
-              deletedQuote?.state === 'PAID' &&
-              deletedQuote?.amount &&
-              deletedQuote?.currency
-            ) {
+            if (deletedQuote?.state === 'PAID') {
               queryClient.invalidateQueries({
                 queryKey: [accountsQueryKey, userRef.current.id],
               });
+              const unit = getDefaultUnit(deletedQuote.currency);
               const money = new Money({
                 amount: deletedQuote.amount,
                 currency: deletedQuote.currency,
+                unit,
               });
               toast({
                 title: 'Payment Received',
-                description: `You received ${money.toLocaleString()}`,
+                description: `You received ${money.toLocaleString({ unit })}`,
               });
             }
           } else if (payload.eventType === 'INSERT') {
@@ -381,9 +380,7 @@ export function useTrackAllCashuReceiveQuotes() {
               updatedQuote,
             );
             setTrackedQuotes((prev) =>
-              prev.map((account) =>
-                account.id === payload.new.id ? updatedQuote : account,
-              ),
+              prev.map((q) => (q.id === payload.new.id ? updatedQuote : q)),
             );
           }
         },

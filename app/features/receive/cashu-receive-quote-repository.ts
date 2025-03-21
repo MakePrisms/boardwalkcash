@@ -1,5 +1,5 @@
 import type { Proof } from '@cashu/cashu-ts';
-import type { Currency, CurrencyUnit, Money } from '~/lib/money';
+import type { Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
 import type {
@@ -18,15 +18,41 @@ type Encryption = {
 };
 
 type CreateQuote = {
+  /**
+   * ID of the receiving user.
+   */
   userId: string;
+  /**
+   * ID of the receiving account.
+   */
   accountId: string;
+  /**
+   * Amount of the quote.
+   */
   amount: Money;
-  // TODO: check if this type is correct for unit. We want cashu unit here so check that cashu units are the same as our money units.
-  unit: CurrencyUnit;
+  /**
+   * Cashu unit of the quote.
+   */
+  unit: 'sat' | 'usd';
+  /**
+   * ID of the mint's quote. Used after the payment to exchange the quote for proofs.
+   */
   quoteId: string;
+  /**
+   * Lightning payment request.
+   */
   paymentRequest: string;
+  /**
+   * Expiry of the quote in ISO 8601 format.
+   */
   expiresAt: string;
+  /**
+   * Description of the quote.
+   */
   description?: string;
+  /**
+   * State of the quote.
+   */
   state: CashuReceiveQuote['state'];
 };
 
@@ -37,8 +63,7 @@ export class CashuReceiveQuoteRepository {
   ) {}
 
   /**
-   * Creates a cashu receive quote and related history record.
-   * @param user - The user to upsert.
+   * Creates a cashu receive quote.
    * @returns Created cashu receive quote.
    */
   async create(
@@ -57,7 +82,7 @@ export class CashuReceiveQuoteRepository {
   ): Promise<CashuReceiveQuote> {
     const encryptedQuoteId = await this.encryption.encrypt(quoteId);
 
-    // TODO: create migration for create_cashu_receive_quote function and also update function to add history item.
+    // TODO: update function to add history item (in the pending state).
     // The whole reason why we added the function for this instead of doing standard insert is to later be able to add the history item in the same transaction as the quote.
     const query = this.db.rpc('create_cashu_receive_quote', {
       user_id: userId,
@@ -87,7 +112,6 @@ export class CashuReceiveQuoteRepository {
 
   /**
    * Expires the cashu receive quote with the given id by deleting the quote.
-   * @param id - The id of the expired cashu receive quote.
    */
   async expire(
     {
@@ -105,7 +129,7 @@ export class CashuReceiveQuoteRepository {
     },
     options?: Options,
   ): Promise<void> {
-    // TODO: create migration for expire_cashu_receive_quote function and implement function. The function should also delete the related history item.
+    // TODO: The function should also delete the related history item.
     // The whole reason why we added the function for this instead of doing standard delete is to later be able to delete the related history item in the same transaction as the quote.
     const query = this.db.rpc('expire_cashu_receive_quote', {
       quote_id: id,
@@ -126,7 +150,6 @@ export class CashuReceiveQuoteRepository {
   /**
    * Processes the payment of the cashu receive quote with the given id.
    * Marks the quote as paid and updates the related data. It also updates the account counter for the keyset.
-   * @param id - The id of the cashu receive quote for which the payment has been received.
    */
   async processPayment(
     {
@@ -150,7 +173,7 @@ export class CashuReceiveQuoteRepository {
        */
       keysetId: string;
       /**
-       * Counter value for the keyset at the time of quote creation.
+       * Counter value for the keyset at the time the time of quote payment.
        */
       keysetCounter: number;
       /**
@@ -167,8 +190,7 @@ export class CashuReceiveQuoteRepository {
     updatedQuote: CashuReceiveQuote;
     updatedAccount: CashuAccount;
   }> {
-    // TODO: create migration for process_cashu_receive_quote_payment function and implement function. The function should also update the related history item.
-    // The whole reason why we added the function for this instead of doing standard update is to later be able to update the related history item in the same transaction as the quote.
+    // TODO: The function should also update the related history item.
     const query = this.db.rpc('process_cashu_receive_quote_payment', {
       p_quote_id: quoteId,
       quote_version: quoteVersion,
@@ -208,7 +230,6 @@ export class CashuReceiveQuoteRepository {
   /**
    * Completes the cashu receive quote with the given id.
    * Completing the quote means that the quote is paid and the tokens have been minted, so the quote is deleted and the account is updated with the new proofs.
-   * @param id - The id of the cashu receive quote to complete.
    */
   async completeReceive(
     {
@@ -238,7 +259,7 @@ export class CashuReceiveQuoteRepository {
   ): Promise<void> {
     const encryptedProofs = await this.encryption.encrypt(proofs);
 
-    // TODO: create migration for complete_cashu_receive_quote function and implement function. The function should also update the related history item.
+    // TODO: The function should also update the related history item.
     const query = this.db.rpc('complete_cashu_receive_quote', {
       p_quote_id: quoteId,
       quote_version: quoteVersion,

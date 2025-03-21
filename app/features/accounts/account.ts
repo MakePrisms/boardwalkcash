@@ -1,5 +1,7 @@
 import type { Proof } from '@cashu/cashu-ts';
-import type { Currency } from '~/lib/money';
+import { sumProofs } from '~/lib/cashu';
+import { type Currency, Money } from '~/lib/money';
+import { getDefaultUnit } from '../shared/currencies';
 
 export type AccountType = 'cashu' | 'nwc';
 
@@ -33,3 +35,16 @@ export type Account = {
 );
 
 export type CashuAccount = Extract<Account, { type: 'cashu' }>;
+
+export const getAccountBalance = (account: Account) => {
+  if (account.type === 'cashu') {
+    const value = sumProofs(account.proofs);
+    return new Money({
+      amount: value,
+      currency: account.currency,
+      unit: getDefaultUnit(account.currency),
+    });
+  }
+  // TODO: implement balance logic for other account types
+  return new Money({ amount: 0, currency: account.currency });
+};
