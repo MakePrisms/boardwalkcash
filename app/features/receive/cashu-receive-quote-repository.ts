@@ -12,9 +12,9 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
-type OptionsWithEncryption = Options & {
-  encryptData: <T = unknown>(data: T) => Promise<string>;
-  decryptData: <T = unknown>(data: string) => Promise<T>;
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
 };
 
 type CreateQuote = {
@@ -31,7 +31,10 @@ type CreateQuote = {
 };
 
 export class CashuReceiveQuoteRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly encryption: Encryption,
+  ) {}
 
   /**
    * Creates a cashu receive quote and related history record.
@@ -50,9 +53,9 @@ export class CashuReceiveQuoteRepository {
       description,
       state,
     }: CreateQuote,
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<CashuReceiveQuote> {
-    const encryptedQuoteId = await options.encryptData(quoteId);
+    const encryptedQuoteId = await this.encryption.encrypt(quoteId);
 
     // TODO: create migration for create_cashu_receive_quote function and also update function to add history item.
     // The whole reason why we added the function for this instead of doing standard insert is to later be able to add the history item in the same transaction as the quote.
@@ -69,7 +72,7 @@ export class CashuReceiveQuoteRepository {
       state,
     });
 
-    if (options.abortSignal) {
+    if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -79,7 +82,7 @@ export class CashuReceiveQuoteRepository {
       throw new Error('Failed to create cashu receive quote', error);
     }
 
-    return CashuReceiveQuoteRepository.toQuote(data, options.decryptData);
+    return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
   }
 
   /**
@@ -159,7 +162,7 @@ export class CashuReceiveQuoteRepository {
        */
       accountVersion: number;
     },
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<{
     updatedQuote: CashuReceiveQuote;
     updatedAccount: CashuAccount;
@@ -188,9 +191,12 @@ export class CashuReceiveQuoteRepository {
     const [updatedQuote, updatedAccount] = await Promise.all([
       CashuReceiveQuoteRepository.toQuote(
         data.updated_quote as BoardwalkDbCashuReceiveQuote,
-        options.decryptData,
+        this.encryption.decrypt,
       ),
-      AccountRepository.toAccount(data.updated_account, options.decryptData),
+      AccountRepository.toAccount(
+        data.updated_account,
+        this.encryption.decrypt,
+      ),
     ]);
 
     return {
@@ -228,9 +234,9 @@ export class CashuReceiveQuoteRepository {
        */
       accountVersion: number;
     },
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<void> {
-    const encryptedProofs = await options.encryptData(proofs);
+    const encryptedProofs = await this.encryption.encrypt(proofs);
 
     // TODO: create migration for complete_cashu_receive_quote function and implement function. The function should also update the related history item.
     const query = this.db.rpc('complete_cashu_receive_quote', {
@@ -256,13 +262,10 @@ export class CashuReceiveQuoteRepository {
    * @param id - The id of the cashu receive quote to get.
    * @returns The cashu receive quote.
    */
-  async get(
-    id: string,
-    options: OptionsWithEncryption,
-  ): Promise<CashuReceiveQuote> {
+  async get(id: string, options?: Options): Promise<CashuReceiveQuote> {
     const query = this.db.from('cashu_receive_quotes').select().eq('id', id);
 
-    if (options.abortSignal) {
+    if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -272,7 +275,7 @@ export class CashuReceiveQuoteRepository {
       throw new Error('Failed to get cashu receive quote', error);
     }
 
-    return CashuReceiveQuoteRepository.toQuote(data, options.decryptData);
+    return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
   }
 
   /**
@@ -282,7 +285,7 @@ export class CashuReceiveQuoteRepository {
    */
   async getAll(
     userId: string,
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<CashuReceiveQuote[]> {
     const query = this.db
       .from('cashu_receive_quotes')
@@ -302,14 +305,17 @@ export class CashuReceiveQuoteRepository {
     return await Promise.all(
       data.map(
         async (data) =>
-          await CashuReceiveQuoteRepository.toQuote(data, options.decryptData),
+          await CashuReceiveQuoteRepository.toQuote(
+            data,
+            this.encryption.decrypt,
+          ),
       ),
     );
   }
 
   static async toQuote(
     data: BoardwalkDbCashuReceiveQuote,
-    decryptData: OptionsWithEncryption['decryptData'],
+    decryptData: Encryption['decrypt'],
   ): Promise<CashuReceiveQuote> {
     const decryptedData = {
       ...data,

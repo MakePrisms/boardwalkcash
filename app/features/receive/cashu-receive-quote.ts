@@ -90,12 +90,8 @@ export type CashuReceiveQuote = {
     }
 );
 
-const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
-  boardwalkDb,
-);
-
 const createCashuReceiveQuote = async (
-  cryptography: CashuCryptography,
+  cashuReceiveQuoteRepository: CashuReceiveQuoteRepository,
   userId: string,
   account: CashuAccount,
   amount: Money,
@@ -115,23 +111,17 @@ const createCashuReceiveQuote = async (
 
   const expiresAt = new Date(mintQuoteResponse.expiry * 1000).toISOString();
 
-  const cashuReceiveQuote = await cashuReceiveQuoteRepository.create(
-    {
-      accountId: account.id,
-      userId,
-      amount,
-      unit: cashuUnit,
-      description,
-      quoteId: mintQuoteResponse.quote,
-      expiresAt,
-      state: mintQuoteResponse.state as CashuReceiveQuote['state'],
-      paymentRequest: mintQuoteResponse.request,
-    },
-    {
-      encryptData: cryptography.encryptData,
-      decryptData: cryptography.decryptData,
-    },
-  );
+  const cashuReceiveQuote = await cashuReceiveQuoteRepository.create({
+    accountId: account.id,
+    userId,
+    amount,
+    unit: cashuUnit,
+    description,
+    quoteId: mintQuoteResponse.quote,
+    expiresAt,
+    state: mintQuoteResponse.state as CashuReceiveQuote['state'],
+    paymentRequest: mintQuoteResponse.request,
+  });
 
   return cashuReceiveQuote;
 };
@@ -176,6 +166,7 @@ const mintProofs = async (
 };
 
 const mintCashuTokens = async (
+  cashuReceiveQuoteRepository: CashuReceiveQuoteRepository,
   cryptography: CashuCryptography,
   account: CashuAccount,
   wallet: CashuWallet,
@@ -192,36 +183,24 @@ const mintCashuTokens = async (
   );
 
   const { updatedQuote, updatedAccount } =
-    await cashuReceiveQuoteRepository.processPayment(
-      {
-        quoteId: quote.id,
-        quoteVersion: quote.version,
-        keysetId: wallet.keysetId,
-        keysetCounter: counter,
-        numberOfBlindedMessages: outputData.length,
-        accountVersion: account.version,
-      },
-      {
-        encryptData: cryptography.encryptData,
-        decryptData: cryptography.decryptData,
-      },
-    );
+    await cashuReceiveQuoteRepository.processPayment({
+      quoteId: quote.id,
+      quoteVersion: quote.version,
+      keysetId: wallet.keysetId,
+      keysetCounter: counter,
+      numberOfBlindedMessages: outputData.length,
+      accountVersion: account.version,
+    });
 
   const mintedProofs = await mintProofs(wallet, updatedQuote, outputData);
   const allProofs = [...updatedAccount.proofs, ...mintedProofs];
 
-  await cashuReceiveQuoteRepository.completeReceive(
-    {
-      quoteId: quote.id,
-      quoteVersion: updatedQuote.version,
-      proofs: allProofs,
-      accountVersion: updatedAccount.version,
-    },
-    {
-      encryptData: cryptography.encryptData,
-      decryptData: cryptography.decryptData,
-    },
-  );
+  await cashuReceiveQuoteRepository.completeReceive({
+    quoteId: quote.id,
+    quoteVersion: updatedQuote.version,
+    proofs: allProofs,
+    accountVersion: updatedAccount.version,
+  });
 };
 
 type CreateProps = {
@@ -234,6 +213,10 @@ export function useCreateCashuReceiveQuote() {
   const userRef = useUserRef();
   const cashuCryptography = useCashuCryptography();
   const queryClient = useQueryClient();
+  const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
+    boardwalkDb,
+    cashuCryptography,
+  );
 
   return useMutation({
     mutationKey: ['create-cashu-receive-quote'],
@@ -242,7 +225,7 @@ export function useCreateCashuReceiveQuote() {
     },
     mutationFn: ({ account, amount, description }: CreateProps) =>
       createCashuReceiveQuote(
-        cashuCryptography,
+        cashuReceiveQuoteRepository,
         userRef.current.id,
         account,
         amount,
@@ -256,6 +239,7 @@ export function useCreateCashuReceiveQuote() {
 }
 
 async function checkCashuReceiveQuote(
+  cashuReceiveQuoteRepository: CashuReceiveQuoteRepository,
   cryptography: CashuCryptography,
   account: CashuAccount,
   quote: CashuReceiveQuote,
@@ -283,7 +267,13 @@ async function checkCashuReceiveQuote(
     mintQuoteResponse.state === 'PAID' ||
     mintQuoteResponse.state === 'ISSUED'
   ) {
-    await mintCashuTokens(cryptography, account, wallet, quote);
+    await mintCashuTokens(
+      cashuReceiveQuoteRepository,
+      cryptography,
+      account,
+      wallet,
+      quote,
+    );
   }
 }
 
@@ -293,14 +283,14 @@ export function useTrackAllCashuReceiveQuotes() {
   const [trackedQuotes, setTrackedQuotes] = useState<CashuReceiveQuote[]>([]);
   const cashuCryptography = useCashuCryptography();
   const { toast } = useToast();
+  const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
+    boardwalkDb,
+    cashuCryptography,
+  );
 
   const { data } = useQuery({
     queryKey: ['cashu-receive-quotes', userRef.current.id],
-    queryFn: () =>
-      cashuReceiveQuoteRepository.getAll(userRef.current.id, {
-        encryptData: cashuCryptography.encryptData,
-        decryptData: cashuCryptography.decryptData,
-      }),
+    queryFn: () => cashuReceiveQuoteRepository.getAll(userRef.current.id),
     gcTime: 0,
     throwOnError: true,
   });
@@ -324,7 +314,12 @@ export function useTrackAllCashuReceiveQuotes() {
           throw new Error(`Account not found for id: ${quote.accountId}`);
         }
 
-        await checkCashuReceiveQuote(cashuCryptography, account, quote);
+        await checkCashuReceiveQuote(
+          cashuReceiveQuoteRepository,
+          cashuCryptography,
+          account,
+          quote,
+        );
       },
       refetchInterval: 5000,
       refetchIntervalInBackground: true,
@@ -373,13 +368,13 @@ export function useTrackAllCashuReceiveQuotes() {
           } else if (payload.eventType === 'INSERT') {
             const addedQuote = await CashuReceiveQuoteRepository.toQuote(
               payload.new,
-              cashuCryptography.decryptData,
+              cashuCryptography.decrypt,
             );
             setTrackedQuotes((prev) => [...prev, addedQuote]);
           } else if (payload.eventType === 'UPDATE') {
             const updatedQuote = await CashuReceiveQuoteRepository.toQuote(
               payload.new,
-              cashuCryptography.decryptData,
+              cashuCryptography.decrypt,
             );
             queryClient.setQueryData(
               ['cashu-receive-quote', payload.new.id],

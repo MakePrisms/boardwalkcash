@@ -15,13 +15,16 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
-type OptionsWithEncryption = Options & {
-  encryptData: <T = unknown>(data: T) => Promise<string>;
-  decryptData: <T = unknown>(data: string) => Promise<T>;
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
 };
 
 export class UserRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly encryption: Encryption,
+  ) {}
 
   /**
    * Gets a user from the database.
@@ -107,7 +110,7 @@ export class UserRepository {
         'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters'
       >[];
     },
-    options: OptionsWithEncryption,
+    options?: Options,
   ): Promise<{ user: User; accounts: Account[] }> {
     const accountsToAdd = await Promise.all(
       user.accounts.map(async (account) => ({
@@ -120,7 +123,7 @@ export class UserRepository {
                 mint_url: account.mintUrl,
                 is_test_mint: account.isTestMint,
                 keyset_counters: {}, // TODO: should we initialize keyset counters here?
-                proofs: await options.encryptData([]),
+                proofs: await this.encryption.encrypt([]),
               }
             : { nwc_url: account.nwcUrl },
       })),
@@ -133,7 +136,7 @@ export class UserRepository {
       accounts: accountsToAdd,
     });
 
-    if (options.abortSignal) {
+    if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
@@ -149,7 +152,7 @@ export class UserRepository {
       user: this.toUser(upsertedUser),
       accounts: await Promise.all(
         accounts.map((account) =>
-          AccountRepository.toAccount(account, options.decryptData),
+          AccountRepository.toAccount(account, this.encryption.decrypt),
         ),
       ),
     };
