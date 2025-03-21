@@ -1,23 +1,19 @@
 import {
   type CashuWallet,
   MintOperationError,
+  type MintQuoteResponse,
   OutputData,
   type Proof,
 } from '@cashu/cashu-ts';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 import { useToast } from '~/hooks/use-toast';
 import { getCashuWallet } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
-import type { Account, CashuAccount } from '../accounts/account';
-import { accountsQueryKey } from '../accounts/account-hooks';
+import type { CashuAccount } from '../accounts/account';
+import { accountsQueryKey, useAccounts } from '../accounts/account-hooks';
 import {
   type BoardwalkDbCashuReceiveQuote,
   boardwalkDb,
@@ -239,23 +235,14 @@ export function useCreateCashuReceiveQuote() {
   });
 }
 
-async function checkCashuReceiveQuote(
+async function onMintQuoteUpdate(
   cashuReceiveQuoteRepository: CashuReceiveQuoteRepository,
   cryptography: CashuCryptography,
   account: CashuAccount,
+  wallet: CashuWallet,
   quote: CashuReceiveQuote,
+  mintQuoteResponse: MintQuoteResponse,
 ) {
-  if (quote.accountId !== account.id) {
-    throw new Error('Quote account id does not match account id');
-  }
-
-  const seed = await cryptography.getSeed();
-  const wallet = getCashuWallet(account.mintUrl, {
-    unit: quote.unit,
-    bip39seed: seed,
-  });
-
-  const mintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
   const expiresAt = new Date(mintQuoteResponse.expiry * 1000);
   const now = new Date();
 
@@ -278,10 +265,77 @@ async function checkCashuReceiveQuote(
   }
 }
 
+async function subscribeAndHandleMintQuoteUpdates(
+  cashuReceiveQuoteRepository: CashuReceiveQuoteRepository,
+  cryptography: CashuCryptography,
+  quoteData: {
+    account: CashuAccount;
+    quote: CashuReceiveQuote;
+  }[],
+) {
+  const quotesByAccount = quoteData.reduce<
+    {
+      account: CashuAccount;
+      quotes: CashuReceiveQuote[];
+    }[]
+  >((acc, { account, quote }) => {
+    const existingAccountIndex = acc.findIndex(
+      (item) => item.account.id === account.id,
+    );
+
+    if (existingAccountIndex >= 0) {
+      acc[existingAccountIndex].quotes.push(quote);
+    } else {
+      acc.push({
+        account,
+        quotes: [quote],
+      });
+    }
+
+    return acc;
+  }, []);
+
+  const seed = await cryptography.getSeed();
+
+  for (const data of quotesByAccount) {
+    for (const quote of data.quotes) {
+      if (quote.accountId !== data.account.id) {
+        throw new Error('Quote account id does not match account id');
+      }
+    }
+    const wallet = getCashuWallet(data.account.mintUrl, {
+      unit: data.quotes[0].unit,
+      bip39seed: seed,
+    });
+
+    wallet.onMintQuoteUpdates(
+      data.quotes.map((quote) => quote.quoteId),
+      (mintQuoteResponse) => {
+        const quote = data.quotes.find(
+          (q) => q.quoteId === mintQuoteResponse.quote,
+        );
+        if (!quote) return;
+        onMintQuoteUpdate(
+          cashuReceiveQuoteRepository,
+          cryptography,
+          data.account,
+          wallet,
+          quote,
+          mintQuoteResponse,
+        );
+      },
+      (e) => {
+        console.error(e);
+      },
+    );
+  }
+}
+
 export function useTrackAllCashuReceiveQuotes() {
   const userRef = useUserRef();
   const queryClient = useQueryClient();
-  const [trackedQuotes, setTrackedQuotes] = useState<CashuReceiveQuote[]>([]);
+  const { data: accounts } = useAccounts();
+  const [_trackedQuotes, setTrackedQuotes] = useState<CashuReceiveQuote[]>([]);
   const cashuCryptography = useCashuCryptography();
   const { toast } = useToast();
   const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
@@ -302,30 +356,31 @@ export function useTrackAllCashuReceiveQuotes() {
     }
   }, [data]);
 
-  useQueries({
-    queries: trackedQuotes.map((quote) => ({
-      queryKey: ['track-cashu-receive-quote', quote.id],
-      queryFn: async () => {
-        const accounts = queryClient.getQueryData<Account[]>([
-          accountsQueryKey,
-          userRef.current.id,
-        ]);
+  useEffect(() => {
+    const quotes = data
+      ?.map((quote) => {
         const account = accounts?.find((acc) => acc.id === quote.accountId);
         if (!account || account.type !== 'cashu') {
-          throw new Error(`Account not found for id: ${quote.accountId}`);
+          return null;
         }
-
-        await checkCashuReceiveQuote(
-          cashuReceiveQuoteRepository,
-          cashuCryptography,
-          account,
+        return {
+          account: account as CashuAccount,
           quote,
-        );
-      },
-      refetchInterval: 5000,
-      refetchIntervalInBackground: true,
-    })),
-  });
+        };
+      })
+      .filter(
+        (item): item is { account: CashuAccount; quote: CashuReceiveQuote } =>
+          item !== null,
+      );
+
+    if (quotes && quotes.length > 0) {
+      subscribeAndHandleMintQuoteUpdates(
+        cashuReceiveQuoteRepository,
+        cashuCryptography,
+        quotes,
+      );
+    }
+  }, [data, cashuCryptography, cashuReceiveQuoteRepository, accounts]);
 
   useEffect(() => {
     const channel = boardwalkDb
