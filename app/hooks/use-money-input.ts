@@ -127,21 +127,74 @@ export function useMoneyInput({
 
   const decimalSeparator = getLocaleDecimalSeparator();
 
-  const handleSetValue = (newValue: string) => {
-    const rate = rates
-      ? rates[`${state.input.currency}-${state.converted.currency}`]
-      : undefined;
+  /**
+   * Updates the input value and converted value
+   * The `currency` should be the currency of the `newValue`.
+   *
+   * This function will update the input value and converted value
+   * based on the currency of the `newValue`.
+   *
+   * If the `currency` is the same as the input currency, then the input value
+   * will be updated directly; otherwise, the `newValue` will be converted before
+   * updating the state.
+   *
+   * The returned values are the new input and converted values as Money objects.
+   */
+  const setValue = (
+    newValue: string,
+    currency: Currency,
+  ): {
+    newInputValue: Money;
+    newConvertedValue: Money | undefined;
+  } => {
+    let newInputValue: string;
+    let newConvertedValue: string | undefined;
 
-    const newConvertedValue = rate
-      ? toMoney({ value: newValue, currency: state.input.currency })
-          .convert(state.converted.currency, rate)
-          .toString(getDefaultUnit(state.converted.currency))
-      : undefined;
+    if (currency === state.input.currency) {
+      newInputValue = newValue;
+      const rate = rates
+        ? rates[`${state.input.currency}-${state.converted.currency}`]
+        : undefined;
+
+      newConvertedValue = rate
+        ? toMoney({ value: newValue, currency: state.input.currency })
+            .convert(state.converted.currency, rate)
+            .toString(getDefaultUnit(state.converted.currency))
+        : undefined;
+    } else if (currency === state.converted.currency) {
+      // Converted currency input, need reverse conversion
+      const rate = rates
+        ? rates[`${state.converted.currency}-${state.input.currency}`]
+        : undefined;
+
+      if (!rate) throw new Error('Exchange rate not found');
+
+      newInputValue = toMoney({ value: newValue, currency })
+        .convert(state.input.currency, rate)
+        .toString(getDefaultUnit(state.input.currency));
+
+      newConvertedValue = newValue;
+    } else {
+      throw new Error(`Currency does not exist in input state: ${currency}`);
+    }
 
     setState((current) => ({
-      input: { ...current.input, value: newValue },
+      input: { ...current.input, value: newInputValue },
       converted: { ...current.converted, value: newConvertedValue },
     }));
+
+    return {
+      newInputValue: toMoney({
+        value: newInputValue,
+        currency: state.input.currency,
+      }),
+      newConvertedValue: newConvertedValue
+        ? toMoney({
+            value: newConvertedValue,
+            currency: state.converted.currency,
+          })
+        : undefined,
+    };
   };
 
   /** Updates the input value or calls onInvalidInput if the input is invalid */
@@ -158,7 +211,7 @@ export function useMoneyInput({
 
       const newValue =
         currentValue.length === 1 ? '0' : currentValue.slice(0, -1);
-      return handleSetValue(newValue);
+      return setValue(newValue, state.input.currency);
     }
 
     const valueHasDecimal = currentValue.includes(decimalSeparator);
@@ -167,7 +220,7 @@ export function useMoneyInput({
       // Only add decimal if one doesn't exist yet
       return valueHasDecimal
         ? onInvalidInput()
-        : handleSetValue(`${currentValue}${decimalSeparator}`);
+        : setValue(`${currentValue}${decimalSeparator}`, state.input.currency);
     }
 
     const hasMaxDecimals =
@@ -185,7 +238,7 @@ export function useMoneyInput({
     // replace 0 value with button value
     const newValue = currentValue === '0' ? input : currentValue + input;
 
-    handleSetValue(newValue);
+    setValue(newValue, state.input.currency);
   };
 
   const switchInputCurrency = () => {
@@ -211,5 +264,6 @@ export function useMoneyInput({
     handleNumberInput,
     switchInputCurrency,
     exchangeRateError,
+    setInputValue: setValue,
   };
 }
