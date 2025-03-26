@@ -1,11 +1,14 @@
 import type { Proof } from '@cashu/cashu-ts';
-import type { Currency, Money } from '~/lib/money';
+import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
-import type {
-  BoardwalkDb,
-  BoardwalkDbCashuReceiveQuote,
+import {
+  type BoardwalkDb,
+  type BoardwalkDbCashuReceiveQuote,
+  boardwalkDb,
 } from '../boardwalk-db/database';
+import { getDefaultUnit } from '../shared/currencies';
+import { useEncryption } from '../shared/encryption';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 
 type Options = {
@@ -30,10 +33,6 @@ type CreateQuote = {
    * Amount of the quote.
    */
   amount: Money;
-  /**
-   * Cashu unit of the quote.
-   */
-  unit: 'sat' | 'usd';
   /**
    * ID of the mint's quote. Used after the payment to exchange the quote for proofs.
    */
@@ -71,7 +70,6 @@ export class CashuReceiveQuoteRepository {
       userId,
       accountId,
       amount,
-      unit,
       quoteId,
       paymentRequest,
       expiresAt,
@@ -81,6 +79,7 @@ export class CashuReceiveQuoteRepository {
     options?: Options,
   ): Promise<CashuReceiveQuote> {
     const encryptedQuoteId = await this.encryption.encrypt(quoteId);
+    const unit = getDefaultUnit(amount.currency);
 
     const query = this.db
       .from('cashu_receive_quotes')
@@ -105,7 +104,7 @@ export class CashuReceiveQuoteRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to create cashu receive quote', error);
+      throw new Error('Failed to create cashu receive quote', { cause: error });
     }
 
     return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
@@ -131,7 +130,7 @@ export class CashuReceiveQuoteRepository {
     options?: Options,
   ): Promise<void> {
     const query = this.db.rpc('expire_cashu_receive_quote', {
-      quote_id: id,
+      p_quote_id: id,
       quote_version: version,
     });
 
@@ -142,7 +141,7 @@ export class CashuReceiveQuoteRepository {
     const { error } = await query;
 
     if (error) {
-      throw new Error('Failed to expire cashu receive quote', error);
+      throw new Error('Failed to expire cashu receive quote', { cause: error });
     }
   }
 
@@ -205,7 +204,9 @@ export class CashuReceiveQuoteRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to mark cashu receive quote as paid', error);
+      throw new Error('Failed to mark cashu receive quote as paid', {
+        cause: error,
+      });
     }
 
     const [updatedQuote, updatedAccount] = await Promise.all([
@@ -272,7 +273,9 @@ export class CashuReceiveQuoteRepository {
     const { error } = await query;
 
     if (error) {
-      throw new Error('Failed to complete cashu receive quote', error);
+      throw new Error('Failed to complete cashu receive quote', {
+        cause: error,
+      });
     }
   }
 
@@ -291,25 +294,26 @@ export class CashuReceiveQuoteRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to get cashu receive quote', error);
+      throw new Error('Failed to get cashu receive quote', { cause: error });
     }
 
     return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
   }
 
   /**
-   * Gets all the cashu receive quotes for the given user.
+   * Gets all pending (unpaid or expired) cashu receive quotes for the given user.
    * @param userId - The id of the user to get the cashu receive quotes for.
    * @returns The cashu receive quotes.
    */
-  async getAll(
+  async getPending(
     userId: string,
     options?: Options,
   ): Promise<CashuReceiveQuote[]> {
     const query = this.db
       .from('cashu_receive_quotes')
       .select()
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .in('state', ['UNPAID', 'EXPIRED']);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -318,7 +322,7 @@ export class CashuReceiveQuoteRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to get cashu receive quotes', error);
+      throw new Error('Failed to get cashu receive quotes', { cause: error });
     }
 
     return await Promise.all(
@@ -346,9 +350,11 @@ export class CashuReceiveQuoteRepository {
       userId: decryptedData.user_id,
       accountId: decryptedData.account_id,
       quoteId: decryptedData.quote_id,
-      amount: decryptedData.amount,
-      currency: decryptedData.currency as Currency,
-      unit: decryptedData.unit,
+      amount: new Money({
+        amount: decryptedData.amount,
+        currency: decryptedData.currency as Currency,
+        unit: decryptedData.unit as CurrencyUnit<Currency>,
+      }),
       description: decryptedData.description ?? undefined,
       createdAt: decryptedData.created_at,
       expiresAt: decryptedData.expires_at,
@@ -356,22 +362,31 @@ export class CashuReceiveQuoteRepository {
       version: decryptedData.version,
     };
 
-    if (decryptedData.state === 'PAID') {
+    if (decryptedData.state === 'PAID' || decryptedData.state === 'COMPLETED') {
       return {
         ...commonData,
-        state: 'PAID',
+        state: decryptedData.state,
         keysetId: decryptedData.keyset_id ?? '',
         keysetCounter: decryptedData.keyset_counter ?? 0,
         numberOfBlindedMessages: decryptedData.number_of_blinded_messages ?? 0,
       };
     }
 
-    return {
-      ...commonData,
-      state: 'UNPAID',
-      keysetId: undefined,
-      keysetCounter: undefined,
-      numberOfBlindedMessages: undefined,
-    };
+    if (decryptedData.state === 'UNPAID' || decryptedData.state === 'EXPIRED') {
+      return {
+        ...commonData,
+        state: decryptedData.state,
+        keysetId: undefined,
+        keysetCounter: undefined,
+        numberOfBlindedMessages: undefined,
+      };
+    }
+
+    throw new Error(`Unexpected quote state ${decryptedData.state}`);
   }
+}
+
+export function useCashuReceiveQuoteRepository() {
+  const encryption = useEncryption();
+  return new CashuReceiveQuoteRepository(boardwalkDb, encryption);
 }

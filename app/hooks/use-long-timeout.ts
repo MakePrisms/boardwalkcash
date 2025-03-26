@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useIsomorphicLayoutEffect } from 'usehooks-ts';
+import { useEffect } from 'react';
 import { clearLongTimeout, setLongTimeout } from '~/lib/timeout';
+import { useLatest } from '~/lib/use-latest';
 
 /**
  * Custom hook that handles long timeouts in React components using the `setLongTimeout API`.
@@ -23,12 +23,8 @@ export function useLongTimeout(
   callback: () => void,
   delay: number | null,
 ): void {
-  const savedCallback = useRef(callback);
-
   // Remember the latest callback if it changes.
-  useIsomorphicLayoutEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
+  const savedCallback = useLatest(callback);
 
   // Set up the timeout.
   useEffect(() => {

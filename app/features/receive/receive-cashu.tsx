@@ -19,11 +19,12 @@ import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 import type { Account, CashuAccount } from '../accounts/account';
+import { getDefaultUnit } from '../shared/currencies';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
   useCashuReceiveQuote,
   useCreateCashuReceiveQuote,
-} from './cashu-receive-quote';
+} from './cashu-receive-quote-hooks';
 import { getCashuRequest } from './reusable-payment-request';
 type QRCarouselItemProps = {
   value?: string;
@@ -142,10 +143,11 @@ function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
         description: 'Please create a new quote.',
       });
     },
-    onPaid: () => {
+    onPaid: (quote) => {
+      const unit = getDefaultUnit(quote.amount.currency);
       toast({
         title: 'Quote paid',
-        description: 'Please create a new quote.',
+        description: `Received ${quote.amount.toLocaleString({ unit })}`,
       });
     },
   });

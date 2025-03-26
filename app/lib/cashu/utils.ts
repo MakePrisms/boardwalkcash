@@ -1,5 +1,7 @@
 import { CashuMint, CashuWallet, type MintKeyset } from '@cashu/cashu-ts';
+import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
+import type { Currency, CurrencyUnit } from '../money';
 import type { MintInfo } from './types';
 
 const knownTestMints = [
@@ -7,11 +9,34 @@ const knownTestMints = [
   'https://nofees.testnut.cashu.space',
 ];
 
+const currencyToUnit: {
+  [K in Currency]: CurrencyUnit<K>;
+} = {
+  BTC: 'sat',
+  USD: 'cent',
+};
+
+export const getCashuUnit = (currency: Currency) => {
+  return currencyToUnit[currency];
+};
+
 export const getCashuWallet = (
   mintUrl: string,
-  options?: ConstructorParameters<typeof CashuWallet>[1],
+  options: DistributedOmit<
+    ConstructorParameters<typeof CashuWallet>[1],
+    'unit'
+  > & {
+    unit?: CurrencyUnit;
+  } = {},
 ) => {
-  return new CashuWallet(new CashuMint(mintUrl), options);
+  const { unit, ...rest } = options;
+  // Cashu calls the unit 'usd' even though the amount is in cents.
+  // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
+  const cashuUnit = unit === 'cent' ? 'usd' : unit;
+  return new CashuWallet(new CashuMint(mintUrl), {
+    ...rest,
+    unit: cashuUnit,
+  });
 };
 
 /**
@@ -43,7 +68,7 @@ export const getMintInfo = async (mintUrl: string): Promise<MintInfo> => {
 
 export const getKeysets = async (
   mintUrl: string,
-  unit: string,
+  unit: CurrencyUnit,
 ): Promise<Array<MintKeyset>> => {
   return getCashuWallet(mintUrl, { unit }).getKeySets();
 };

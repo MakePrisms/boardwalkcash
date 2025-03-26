@@ -1,12 +1,11 @@
 import { useOpenSecret } from '@opensecret/react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef } from 'react';
-import { useIsomorphicLayoutEffect } from 'usehooks-ts';
+import { useCallback } from 'react';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
+import { useLatest } from '~/lib/use-latest';
 import type { Account } from '../accounts/account';
-import { accountsQueryKey } from '../accounts/account-hooks';
 import { boardwalkDb } from '../boardwalk-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
@@ -75,12 +74,8 @@ export const useUpsertUser = () => {
     scope: {
       id: 'user-upsert',
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData<User>([usersQueryKey, data.user.id], data.user);
-      queryClient.setQueryData<Account[]>(
-        [accountsQueryKey, data.user.id],
-        data.accounts,
-      );
+    onSuccess: (user) => {
+      queryClient.setQueryData<User>([usersQueryKey, user.id], user);
     },
     throwOnError: true,
   });
@@ -88,13 +83,7 @@ export const useUpsertUser = () => {
 
 export const useUserRef = () => {
   const user = useUser();
-  const userRef = useRef(user);
-
-  useIsomorphicLayoutEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  return userRef;
+  return useLatest(user);
 };
 
 export const useUpgradeGuestToFullAccount = (): ((

@@ -38,7 +38,7 @@ export class AccountRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to get account', error);
+      throw new Error('Failed to get account', { cause: error });
     }
 
     return AccountRepository.toAccount(data, this.encryption.decrypt);
@@ -59,7 +59,7 @@ export class AccountRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to get accounts', error);
+      throw new Error('Failed to get accounts', { cause: error });
     }
 
     return Promise.all(
@@ -106,7 +106,7 @@ export class AccountRepository {
         status === 409 && accountInput.type === 'cashu'
           ? 'Account for this mint and currency already exists'
           : 'Failed to create account';
-      throw new Error(message, error);
+      throw new Error(message, { cause: error });
     }
 
     return AccountRepository.toAccount(data, this.encryption.decrypt);

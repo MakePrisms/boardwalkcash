@@ -21,7 +21,7 @@ import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
-import { useAccounts } from '../accounts/account-hooks';
+import { useAccount, useAccounts } from '../accounts/account-hooks';
 import { useReceiveStore } from './receive-provider';
 
 type ConvertedMoneyToggleProps = {
@@ -59,7 +59,8 @@ export default function ReceiveInput() {
   const { animationClass: shakeAnimationClass, start: startShakeAnimation } =
     useAnimation({ name: 'shake' });
 
-  const receiveAccount = useReceiveStore((s) => s.account);
+  const receiveAccountId = useReceiveStore((s) => s.accountId);
+  const receiveAccount = useAccount(receiveAccountId);
   const receiveAmount = useReceiveStore((s) => s.amount);
   const receiveCurrencyUnit = getDefaultUnit(receiveAccount.currency);
   const setReceiveAccount = useReceiveStore((s) => s.setAccount);

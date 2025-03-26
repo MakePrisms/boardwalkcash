@@ -27,7 +27,6 @@ export const useEncryption = () => {
   const { getPrivateKeyBytes, encryptData, decryptData } = useOpenSecret();
 
   return useMemo(() => {
-    console.log('useEncryption useMemo called!!!!!!!!!!!!!!!!!!');
     return {
       getPrivateKeyBytes,
       encrypt: async <T = unknown>(

@@ -1,7 +1,6 @@
 import type { Proof } from '@cashu/cashu-ts';
-import { sumProofs } from '~/lib/cashu';
+import { getCashuUnit, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
-import { getDefaultUnit } from '../shared/currencies';
 
 export type AccountType = 'cashu' | 'nwc';
 
@@ -25,7 +24,10 @@ export type Account = {
        * Holds counter value for each mint keyset. Key is the keyset id, value is counter value.
        */
       keysetCounters: Record<string, number>;
-      // TODO: See if this is the type we want here
+      /**
+       * Holds all cashu proofs for the account.
+       * Amounts are denominated in the cashu units (e.g. sats for BTC accounts, cents for USD accounts).
+       */
       proofs: Proof[];
     }
   | {
@@ -42,7 +44,7 @@ export const getAccountBalance = (account: Account) => {
     return new Money({
       amount: value,
       currency: account.currency,
-      unit: getDefaultUnit(account.currency),
+      unit: getCashuUnit(account.currency),
     });
   }
   // TODO: implement balance logic for other account types

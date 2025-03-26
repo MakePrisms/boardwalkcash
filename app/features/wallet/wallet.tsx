@@ -1,8 +1,9 @@
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
+import { useTrackAccounts } from '../accounts/account-hooks';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
-import { useTrackAllCashuReceiveQuotes } from '../receive/cashu-receive-quote';
+import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -19,7 +20,7 @@ const useSetSupabseSession = (authUser: AuthUser) => {
  * @returns Created or updated user data from the Boardwalk DB.
  */
 const useUpsertBoardwalkUser = (authUser: AuthUser) => {
-  const { data, mutate } = useUpsertUser();
+  const { data: user, mutate } = useUpsertUser();
 
   useEffect(() => {
     if (authUser) {
@@ -27,7 +28,7 @@ const useUpsertBoardwalkUser = (authUser: AuthUser) => {
     }
   }, [authUser, mutate]);
 
-  return data?.user ?? null;
+  return user ?? null;
 };
 
 const Wallet = ({ children }: PropsWithChildren) => {
@@ -45,7 +46,8 @@ const Wallet = ({ children }: PropsWithChildren) => {
     },
   });
 
-  useTrackAllCashuReceiveQuotes();
+  useTrackAccounts();
+  useTrackPendingCashuReceiveQuotes();
 
   return children;
 };

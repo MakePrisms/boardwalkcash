@@ -1,5 +1,6 @@
 import type { Token } from '@cashu/cashu-ts';
 import { useMemo } from 'react';
+import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { useEncryption } from './encryption';
@@ -28,7 +29,6 @@ export function tokenToMoney(token: Token): Money {
   });
 }
 
-// TODO: this was written by Claude, check if it's correct
 function hexToUint8Array(hex: string): Uint8Array {
   const pairs = hex.match(/.{1,2}/g) || [];
   return new Uint8Array(pairs.map((byte) => Number.parseInt(byte, 16)));
@@ -39,18 +39,38 @@ export type CashuCryptography = Pick<
   'encrypt' | 'decrypt'
 > & { getSeed: () => Promise<Uint8Array> };
 
+type CashuSeedStore = {
+  seedPromise: ReturnType<
+    ReturnType<typeof useCashuCryptography>['getSeed']
+  > | null;
+  setSeedPromise: (
+    promise: ReturnType<ReturnType<typeof useCashuCryptography>['getSeed']>,
+  ) => void;
+};
+
+// TODO: needs to be cleared when the user logs out
+const cashuSeedStore = create<CashuSeedStore>((set) => ({
+  seedPromise: null,
+  setSeedPromise: (promise) => set({ seedPromise: promise }),
+}));
+
 export function useCashuCryptography(): CashuCryptography {
   const encryption = useEncryption();
+  const { getPrivateKeyBytes, encrypt, decrypt } = encryption;
 
   return useMemo(() => {
-    const { getPrivateKeyBytes, encrypt, decrypt } = encryption;
+    const getSeed = async () => {
+      const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
+      if (seedPromise) return seedPromise;
 
-    const getSeed = async (): Promise<Uint8Array> => {
-      // TODO: see which derivation path to use
-      const response = await getPrivateKeyBytes(`m/44'/0'/0'/0/0`);
-      return hexToUint8Array(response.private_key);
+      const promise = getPrivateKeyBytes(`m/44'/0'/0'/0/0`).then((response) =>
+        hexToUint8Array(response.private_key),
+      );
+
+      setSeedPromise(promise);
+      return promise;
     };
 
     return { getSeed, encrypt, decrypt };
-  }, [encryption]);
+  }, [getPrivateKeyBytes, encrypt, decrypt]);
 }

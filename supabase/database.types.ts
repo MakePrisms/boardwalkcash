@@ -203,7 +203,7 @@ export type Database = {
       }
       expire_cashu_receive_quote: {
         Args: {
-          quote_id: string
+          p_quote_id: string
           quote_version: number
         }
         Returns: {

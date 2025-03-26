@@ -33,7 +33,10 @@
         "useExhaustiveDependencies": {
           "level": "error",
           "options": {
-            "hooks": [{ "name": "useUserRef", "stableResult": true }]
+            "hooks": [
+              { "name": "useUserRef", "stableResult": true },
+              { "name": "useLatest", "stableResult": true }
+            ]
           }
         },
         "noEmptyCharacterClassInRegex": "error",

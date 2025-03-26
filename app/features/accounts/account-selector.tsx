@@ -5,6 +5,7 @@ import {
   Drawer,
   DrawerContent,
   DrawerHeader,
+  DrawerTitle,
   DrawerTrigger,
 } from '~/components/ui/drawer';
 import { getDefaultUnit } from '../shared/currencies';
@@ -83,7 +84,9 @@ export function AccountSelector<T extends Account>({
       </DrawerTrigger>
       <DrawerContent className="font-primary">
         <div className="mx-auto w-full max-w-sm">
-          <DrawerHeader>Select account</DrawerHeader>
+          <DrawerHeader>
+            <DrawerTitle>Select account</DrawerTitle>
+          </DrawerHeader>
           <div className="flex flex-col gap-2 p-2">
             {[
               selectedAccount,

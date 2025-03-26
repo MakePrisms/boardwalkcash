@@ -1,7 +1,6 @@
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
-import { AccountRepository } from '../accounts/account-repository';
 import type { BoardwalkDb, BoardwalkDbUser } from '../boardwalk-db/database';
 import type { User } from './user';
 
@@ -44,7 +43,7 @@ export class UserRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to get user', error);
+      throw new Error('Failed to get user', { cause: error });
     }
 
     return this.toUser(data);
@@ -76,7 +75,7 @@ export class UserRepository {
     const { data: updatedUser, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to update user', error);
+      throw new Error('Failed to update user', { cause: error });
     }
 
     return this.toUser(updatedUser);
@@ -111,7 +110,7 @@ export class UserRepository {
       >[];
     },
     options?: Options,
-  ): Promise<{ user: User; accounts: Account[] }> {
+  ): Promise<User> {
     const accountsToAdd = await Promise.all(
       user.accounts.map(async (account) => ({
         name: account.name,
@@ -143,19 +142,11 @@ export class UserRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to upsert user', error);
+      throw new Error('Failed to upsert user', { cause: error });
     }
 
     const { accounts, ...upsertedUser } = data;
-
-    return {
-      user: this.toUser(upsertedUser),
-      accounts: await Promise.all(
-        accounts.map((account) =>
-          AccountRepository.toAccount(account, this.encryption.decrypt),
-        ),
-      ),
-    };
+    return this.toUser(upsertedUser);
   }
 
   private toUser(dbUser: BoardwalkDbUser): User {
