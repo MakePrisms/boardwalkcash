@@ -1,26 +1,34 @@
+import type { Proof } from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { BoardwalkDb, BoardwalkDbAccount } from '../boardwalk-db/database';
 import type { Account } from './account';
 
-type AccountInput = DistributedOmit<Account, 'id' | 'createdAt'> & {
+type AccountInput = DistributedOmit<Account, 'id' | 'createdAt' | 'version'> & {
   userId: string;
 };
 
+type Options = {
+  abortSignal?: AbortSignal;
+};
+
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
+};
+
 export class AccountRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly encryption: Encryption,
+  ) {}
 
   /**
    * Gets the account with the given id.
    * @param id - The id of the account to get.
    * @returns The account.
    */
-  async get(
-    id: string,
-    options: {
-      abortSignal?: AbortSignal;
-    } = {},
-  ): Promise<Account> {
+  async get(id: string, options?: Options): Promise<Account> {
     const query = this.db.from('accounts').select().eq('id', id);
 
     if (options?.abortSignal) {
@@ -30,10 +38,10 @@ export class AccountRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to get account', error);
+      throw new Error('Failed to get account', { cause: error });
     }
 
-    return AccountRepository.toAccount(data);
+    return AccountRepository.toAccount(data, this.encryption.decrypt);
   }
 
   /**
@@ -41,12 +49,7 @@ export class AccountRepository {
    * @param userId - The id of the user to get the accounts for.
    * @returns The accounts.
    */
-  async getAll(
-    userId: string,
-    options: {
-      abortSignal?: AbortSignal;
-    } = {},
-  ): Promise<Account[]> {
+  async getAll(userId: string, options?: Options): Promise<Account[]> {
     const query = this.db.from('accounts').select().eq('user_id', userId);
 
     if (options?.abortSignal) {
@@ -56,10 +59,12 @@ export class AccountRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to get accounts', error);
+      throw new Error('Failed to get accounts', { cause: error });
     }
 
-    return data.map(AccountRepository.toAccount);
+    return Promise.all(
+      data.map((x) => AccountRepository.toAccount(x, this.encryption.decrypt)),
+    );
   }
 
   /**
@@ -69,7 +74,7 @@ export class AccountRepository {
    */
   async create(
     accountInput: AccountInput,
-    options?: { abortSignal?: AbortSignal },
+    options?: Options,
   ): Promise<Account> {
     const accountsToCreate = {
       name: accountInput.name,
@@ -77,7 +82,12 @@ export class AccountRepository {
       currency: accountInput.currency,
       details:
         accountInput.type === 'cashu'
-          ? { mint_url: accountInput.mintUrl }
+          ? {
+              mint_url: accountInput.mintUrl,
+              is_test_mint: accountInput.isTestMint,
+              keyset_counters: accountInput.keysetCounters,
+              proofs: await this.encryption.encrypt(accountInput.proofs),
+            }
           : { nwc_url: accountInput.nwcUrl },
       user_id: accountInput.userId,
     };
@@ -96,30 +106,38 @@ export class AccountRepository {
         status === 409 && accountInput.type === 'cashu'
           ? 'Account for this mint and currency already exists'
           : 'Failed to create account';
-      throw new Error(message, error);
+      throw new Error(message, { cause: error });
     }
 
-    return AccountRepository.toAccount(data);
+    return AccountRepository.toAccount(data, this.encryption.decrypt);
   }
 
-  static toAccount(data: BoardwalkDbAccount): Account {
+  static async toAccount(
+    data: BoardwalkDbAccount,
+    decryptData: Encryption['decrypt'],
+  ): Promise<Account> {
     const commonData = {
       id: data.id,
       name: data.name,
       currency: data.currency as Currency,
       createdAt: data.created_at,
+      version: data.version,
     };
 
     if (data.type === 'cashu') {
       const details = data.details as {
         mint_url: string;
         is_test_mint: boolean;
+        keyset_counters: Record<string, number>;
+        proofs: string;
       };
       return {
         ...commonData,
         type: 'cashu',
         mintUrl: details.mint_url,
         isTestMint: details.is_test_mint,
+        keysetCounters: details.keyset_counters,
+        proofs: await decryptData<Proof[]>(details.proofs),
       };
     }
 

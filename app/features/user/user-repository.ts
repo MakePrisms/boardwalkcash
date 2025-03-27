@@ -1,7 +1,6 @@
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
-import { AccountRepository } from '../accounts/account-repository';
 import type { BoardwalkDb, BoardwalkDbUser } from '../boardwalk-db/database';
 import type { User } from './user';
 
@@ -11,8 +10,20 @@ export type UpdateUser = {
   defaultCurrency?: Currency;
 };
 
+type Options = {
+  abortSignal?: AbortSignal;
+};
+
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
+};
+
 export class UserRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly encryption: Encryption,
+  ) {}
 
   /**
    * Gets a user from the database.
@@ -32,7 +43,7 @@ export class UserRepository {
     const { data, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to get user', error);
+      throw new Error('Failed to get user', { cause: error });
     }
 
     return this.toUser(data);
@@ -64,7 +75,7 @@ export class UserRepository {
     const { data: updatedUser, error } = await query.single();
 
     if (error) {
-      throw new Error('Failed to update user', error);
+      throw new Error('Failed to update user', { cause: error });
     }
 
     return this.toUser(updatedUser);
@@ -93,25 +104,35 @@ export class UserRepository {
        * Accounts to insert for the user.
        * Will be used only when the account is created. For existing users, the accounts will be ignored.
        */
-      accounts: DistributedOmit<Account, 'id' | 'createdAt'>[];
+      accounts: DistributedOmit<
+        Account,
+        'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters'
+      >[];
     },
-    options?: { abortSignal?: AbortSignal },
-  ): Promise<{ user: User; accounts: Account[] }> {
-    const accountsToAdd = user.accounts.map((account) => ({
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-      details:
-        account.type === 'cashu'
-          ? { mint_url: account.mintUrl, is_test_mint: account.isTestMint }
-          : { nwc_url: account.nwcUrl },
-    }));
+    options?: Options,
+  ): Promise<User> {
+    const accountsToAdd = await Promise.all(
+      user.accounts.map(async (account) => ({
+        name: account.name,
+        type: account.type,
+        currency: account.currency,
+        details:
+          account.type === 'cashu'
+            ? {
+                mint_url: account.mintUrl,
+                is_test_mint: account.isTestMint,
+                keyset_counters: {},
+                proofs: await this.encryption.encrypt([]),
+              }
+            : { nwc_url: account.nwcUrl },
+      })),
+    );
 
     const query = this.db.rpc('upsert_user_with_accounts', {
-      user_id: user.id,
-      email: user.email ?? null,
-      email_verified: user.emailVerified,
-      accounts: accountsToAdd,
+      p_user_id: user.id,
+      p_email: user.email ?? null,
+      p_email_verified: user.emailVerified,
+      p_accounts: accountsToAdd,
     });
 
     if (options?.abortSignal) {
@@ -121,15 +142,11 @@ export class UserRepository {
     const { data, error } = await query;
 
     if (error) {
-      throw new Error('Failed to upsert user', error);
+      throw new Error('Failed to upsert user', { cause: error });
     }
 
     const { accounts, ...upsertedUser } = data;
-
-    return {
-      user: this.toUser(upsertedUser),
-      accounts: accounts.map(AccountRepository.toAccount),
-    };
+    return this.toUser(upsertedUser);
   }
 
   private toUser(dbUser: BoardwalkDbUser): User {

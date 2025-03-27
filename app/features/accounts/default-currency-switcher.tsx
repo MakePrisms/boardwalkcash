@@ -11,10 +11,11 @@ import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
 import { Skeleton } from '~/components/ui/skeleton';
 import { useTheme } from '~/features/theme';
+import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
-import { Money } from '~/lib/money';
 import type { Currency } from '~/lib/money/types';
 import { useSetDefaultCurrency, useUser } from '../user/user-hooks';
+import { useBalance } from './account-hooks';
 
 type CurrencyOption = {
   label: string;
@@ -40,26 +41,14 @@ type CurrencyOptionProps = {
 
 function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
   const { label, currency } = data;
-  // TODO: see how we will handle balances
-  // const otherCurrency = currency === 'BTC' ? 'USD' : 'BTC';
-  const balance = new Money({
-    amount: 0,
-    currency,
-  });
-  const isRateLoading = false;
+  const otherCurrency = currency === 'BTC' ? 'USD' : 'BTC';
+  const balance = useBalance(currency);
+  const { data: rate, isLoading: isRateLoading } = useExchangeRate(
+    `${currency}-${otherCurrency}`,
+  );
+  // we only show conversion for BTC to USD
   const convertedBalance =
-    currency === 'BTC'
-      ? new Money({
-          amount: 0,
-          currency: 'USD',
-        })
-      : undefined;
-  // const { data: rate, isLoading: isRateLoading } = useExchangeRate(
-  //   `${currency}-${otherCurrency}`,
-  // );
-  // // we only show conversion for BTC to USD
-  // const convertedBalance =
-  //   currency === 'BTC' && rate ? balance.convert('USD', rate) : undefined;
+    currency === 'BTC' && rate ? balance.convert('USD', rate) : undefined;
 
   return (
     <button

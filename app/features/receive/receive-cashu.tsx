@@ -18,10 +18,14 @@ import { Skeleton } from '~/components/ui/skeleton';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
-import type { Account } from '../accounts/account';
+import type { Account, CashuAccount } from '../accounts/account';
+import { getDefaultUnit } from '../shared/currencies';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import {
+  useCashuReceiveQuote,
+  useCreateCashuReceiveQuote,
+} from './cashu-receive-quote-hooks';
 import { getCashuRequest } from './reusable-payment-request';
-import { useMintQuote } from './use-mint-quote';
 type QRCarouselItemProps = {
   value?: string;
   description: string;
@@ -85,7 +89,7 @@ function QRCarouselItem({
 }
 
 type CashuRequestQRProps = {
-  account: Account & { type: 'cashu' };
+  account: CashuAccount;
   amount: Money;
 };
 
@@ -116,49 +120,57 @@ function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
 }
 
 type MintQuoteProps = {
-  account: Account & { type: 'cashu' };
+  account: CashuAccount;
   amount: Money;
   isVisible: boolean;
 };
 
 function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
   const [, copyToClipboard] = useCopyToClipboard();
-  const { mintQuote, createQuote, fetchError, checkError, isLoading } =
-    useMintQuote({
-      account,
-      amount,
-    });
   const { toast } = useToast();
+  const {
+    mutate: createQuote,
+    data: createdQuote,
+    isPending,
+    error,
+  } = useCreateCashuReceiveQuote();
 
-  useEffect(() => {
-    if (checkError) {
+  const { quote, status } = useCashuReceiveQuote({
+    quoteId: createdQuote?.id,
+    onExpired: () => {
       toast({
-        title: 'Error',
-        description: checkError,
-        variant: 'destructive',
+        title: 'Quote expired',
+        description: 'Please create a new quote.',
       });
-    }
-  }, [checkError, toast]);
+    },
+    onPaid: (quote) => {
+      const unit = getDefaultUnit(quote.amount.currency);
+      toast({
+        title: 'Quote paid',
+        description: `Received ${quote.amount.toLocaleString({ unit })}`,
+      });
+    },
+  });
 
   useEffect(() => {
-    if (isVisible && !mintQuote) {
-      createQuote();
+    if (isVisible && !quote) {
+      createQuote({ account, amount });
     }
-  }, [isVisible, createQuote, mintQuote]);
+  }, [isVisible, createQuote, quote, account, amount]);
 
   return (
     <QRCarouselItem
-      value={mintQuote?.request}
-      description="Scan with any Lightning wallet."
-      error={fetchError || checkError}
-      isLoading={isLoading}
+      value={quote?.paymentRequest}
+      description={`Scan with any Lightning wallet. Status: ${status}`}
+      error={error?.message}
+      isLoading={isPending}
       onClick={
-        mintQuote?.request
+        quote?.paymentRequest
           ? () => {
-              copyToClipboard(mintQuote?.request);
+              copyToClipboard(quote.paymentRequest);
               toast({
                 title: 'Copied BOLT11 Lightning Invoice',
-                description: `${mintQuote?.request?.slice(0, 5)}...${mintQuote?.request?.slice(-5)}`,
+                description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
               });
             }
           : undefined

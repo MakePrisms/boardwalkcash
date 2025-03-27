@@ -3,8 +3,8 @@ import type { Currency, Money } from '~/lib/money';
 import type { Account } from '../accounts/account';
 
 export type ReceiveState<T extends Currency = Currency> = {
-  /** The account to receive funds in */
-  account: Account;
+  /** The ID of the account to receive funds in */
+  accountId: string;
   /** The amount to receive in the account's currency */
   amount: Money<T> | null;
   /** Set the account to receive funds in */
@@ -20,19 +20,11 @@ export const createReceiveStore = ({
   initialAccount: Account;
   initialAmount: Money | null;
 }) => {
-  return create<ReceiveState>((set, get) => ({
-    account: initialAccount,
+  return create<ReceiveState>((set) => ({
+    accountId: initialAccount.id,
     amount: initialAmount,
-    setAccount: (account) => set({ account, amount: null }),
-    setAmount: (amount) => {
-      const { account } = get();
-      if (amount.currency !== account.currency) {
-        throw new Error(
-          `Amount currency (${amount.currency}) must match account currency (${account.currency})`,
-        );
-      }
-      set({ amount });
-    },
+    setAccount: (account) => set({ accountId: account.id, amount: null }),
+    setAmount: (amount) => set({ amount }),
   }));
 };
 

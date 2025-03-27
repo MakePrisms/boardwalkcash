@@ -1,9 +1,9 @@
 import '~/components/qr-scanner/qr-scanner.css';
 import Scanner from 'qr-scanner';
 import { useEffect, useRef, useState } from 'react';
-import { useIsomorphicLayoutEffect } from 'usehooks-ts';
 import { useToast } from '~/hooks/use-toast';
 import { useAnimatedQRDecoder } from '~/lib/cashu/animated-qr-code';
+import { useLatest } from '~/lib/use-latest';
 
 const AnimatedScanProgress = ({ progress }: { progress: number }) => {
   if (progress === 0) return null;
@@ -46,11 +46,7 @@ export const QRScanner = ({ onDecode }: QRScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scanner = useRef<Scanner | null>(null);
   const [currentFragment, setCurrentFragment] = useState('');
-  const decodeRef = useRef(onDecode);
-
-  useIsomorphicLayoutEffect(() => {
-    decodeRef.current = onDecode;
-  }, [onDecode]);
+  const decodeRef = useLatest(onDecode);
 
   const { progress, error } = useAnimatedQRDecoder({
     fragment: currentFragment,
