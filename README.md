@@ -9,7 +9,7 @@ database hosted on Supabase.
 ## Getting started
 
 We use [Nix](https://nixos.org/) and [devenv](https://devenv.sh/) to set up the development environment. To start:
-1. Install `Nix` (on macOS run `sh <(curl -L https://nixos.org/nix/install)`
+1. Install `Nix` (on macOS run `curl -L https://github.com/NixOS/experimental-nix-installer/releases/download/0.27.0/nix-installer.sh | sh -s -- install`
 2. Install `devenv` (on macOS run `nix-env -iA devenv -f https://github.com/NixOS/nixpkgs/tarball/nixpkgs-unstable`
 3. Install `direnv` (for automatic shell activation):
     * on macOS run `brew install direnv`
