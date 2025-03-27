@@ -14,6 +14,7 @@ describe('decodeBolt11', () => {
       amountSat: 250000,
       expiryUnixMs: 1496314718000,
       network: 'bitcoin',
+      description: '1 cup coffee',
     });
   });
 
@@ -23,6 +24,7 @@ describe('decodeBolt11', () => {
       amountSat: 2000000,
       expiryUnixMs: undefined,
       network: 'testnet',
+      description: undefined,
     });
   });
 
@@ -32,6 +34,7 @@ describe('decodeBolt11', () => {
       amountSat: 250000,
       expiryUnixMs: 1496314718000,
       network: 'bitcoin',
+      description: '1 cup coffee',
     });
   });
 });
