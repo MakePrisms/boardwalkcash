@@ -11,6 +11,7 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { useBalance } from '~/features/accounts/account-hooks';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { useTheme } from '~/features/theme';
@@ -33,8 +34,8 @@ export default function Index() {
     (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
   );
 
-  const balanceBTC = new Money({ amount: 0, currency: 'BTC' });
-  const balanceUSD = new Money({ amount: 0, currency: 'USD' });
+  const balanceBTC = useBalance('BTC');
+  const balanceUSD = useBalance('USD');
 
   return (
     <Page>

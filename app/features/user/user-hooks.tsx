@@ -1,18 +1,16 @@
 import { useOpenSecret } from '@opensecret/react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef } from 'react';
-import { useIsomorphicLayoutEffect } from 'usehooks-ts';
+import { useCallback } from 'react';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
+import { useLatest } from '~/lib/use-latest';
 import type { Account } from '../accounts/account';
-import { accountsQueryKey } from '../accounts/account-hooks';
 import { boardwalkDb } from '../boardwalk-db/database';
+import { useCashuCryptography } from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, UserRepository } from './user-repository';
-
-const userRepository = new UserRepository(boardwalkDb);
 
 const usersQueryKey = 'users';
 
@@ -24,11 +22,14 @@ const usersQueryKey = 'users';
 export const useUser = <TData = User>(
   select?: (data: User) => TData,
 ): TData => {
+  const cryptography = useCashuCryptography();
   const authState = useAuthState();
   const authUser = authState.user;
   if (!authUser) {
     throw new Error('Cannot use useUser hook in anonymous context');
   }
+
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   const response = useSuspenseQuery({
     queryKey: [usersQueryKey, authUser.id],
@@ -58,6 +59,8 @@ const defaultAccounts = [
 
 export const useUpsertUser = () => {
   const queryClient = useQueryClient();
+  const cryptography = useCashuCryptography();
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   return useMutation({
     mutationKey: ['user-upsert'],
@@ -71,26 +74,16 @@ export const useUpsertUser = () => {
     scope: {
       id: 'user-upsert',
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData<User>([usersQueryKey, data.user.id], data.user);
-      queryClient.setQueryData<Account[]>(
-        [accountsQueryKey, data.user.id],
-        data.accounts,
-      );
+    onSuccess: (user) => {
+      queryClient.setQueryData<User>([usersQueryKey, user.id], user);
     },
     throwOnError: true,
   });
 };
 
-const useUserRef = () => {
+export const useUserRef = () => {
   const user = useUser();
-  const userRef = useRef(user);
-
-  useIsomorphicLayoutEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  return userRef;
+  return useLatest(user);
 };
 
 export const useUpgradeGuestToFullAccount = (): ((
@@ -173,6 +166,8 @@ export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
 const useUpdateUser = () => {
   const queryClient = useQueryClient();
   const userRef = useUserRef();
+  const cryptography = useCashuCryptography();
+  const userRepository = new UserRepository(boardwalkDb, cryptography);
 
   return useMutation({
     mutationFn: (updates: UpdateUser) =>
