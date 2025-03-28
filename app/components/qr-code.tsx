@@ -29,9 +29,9 @@ export type QRCodeProps = {
 
 /**
  * Displays a QR code with an optional description and various states.
- * If the value prop is defined, the QR code will be displayed.
- * if isLoading is true, a skeleton will be displayed.
- * If the error prop is defined and neither value nor isLoading are, then the error will be displayed.
+ * If error is defined, the error will be displayed.
+ * If isLoading is true, a skeleton will be displayed.
+ * If the value prop is defined and there's no error, the QR code will be displayed.
  */
 export function QRCode({
   value,
@@ -51,9 +51,18 @@ export function QRCode({
         className,
       )}
     >
-      {isLoading ? (
-        <Skeleton className={baseClasses} />
-      ) : value ? (
+      {error && (
+        <div className={cn(baseClasses, 'border bg-card')}>
+          <div className="flex flex-col items-center justify-center gap-2 p-4">
+            <AlertCircle className="h-8 w-8 text-foreground" />
+            <p className="text-center text-muted-foreground text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {!error && isLoading && <Skeleton className={baseClasses} />}
+
+      {!error && !isLoading && value && (
         <button
           type="button"
           onClick={onClick}
@@ -69,17 +78,6 @@ export function QRCode({
             className="rounded-lg bg-foreground"
           />
         </button>
-      ) : (
-        error && (
-          <div className={cn(baseClasses, 'border bg-card')}>
-            <div className="flex flex-col items-center justify-center gap-2 p-4">
-              <AlertCircle className="h-8 w-8 text-foreground" />
-              <p className="text-center text-muted-foreground text-sm">
-                {error}
-              </p>
-            </div>
-          </div>
-        )
       )}
 
       {description && (
