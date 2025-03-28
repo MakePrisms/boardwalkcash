@@ -30,7 +30,7 @@ type CashuRequestItemProps = {
   amount: Money;
 };
 
-function CashuRequestItem({ account, amount }: CashuRequestItemProps) {
+function CashuRequestCarouselItem({ account, amount }: CashuRequestItemProps) {
   const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
@@ -64,7 +64,7 @@ type MintQuoteProps = {
   onPaid: () => void;
 };
 
-function MintQuoteItem({ account, amount, onPaid }: MintQuoteProps) {
+function MintQuoteCarouselItem({ account, amount, onPaid }: MintQuoteProps) {
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
 
@@ -144,8 +144,8 @@ export default function ReceiveCashu({ amount, account }: Props) {
 
         <Carousel opts={{ align: 'center', loop: true }}>
           <CarouselContent>
-            <CashuRequestItem account={account} amount={amount} />
-            <MintQuoteItem
+            <CashuRequestCarouselItem account={account} amount={amount} />
+            <MintQuoteCarouselItem
               account={account}
               amount={amount}
               onPaid={() => setStatus('received')}
