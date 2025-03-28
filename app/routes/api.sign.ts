@@ -1,8 +1,8 @@
-import type { ActionFunctionArgs } from '@remix-run/node';
 import sign from 'jwt-encode';
+import type { Route } from './+types/api.sign';
 
 // TODO: this endpoint should check for presence of OS jwt and valdate that sub in the OS jwt matches the sub in the request body
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }

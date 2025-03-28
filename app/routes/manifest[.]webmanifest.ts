@@ -1,10 +1,10 @@
-import type { LoaderFunctionArgs } from '@remix-run/node';
 import { getBgColorForTheme } from '~/features/theme/colors';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import {
   defaultColorMode,
   defaultTheme,
 } from '~/features/theme/theme.constants';
+import type { Route } from './+types/manifest[.]webmanifest';
 
 interface WebAppManifest {
   /**
@@ -158,7 +158,7 @@ interface WebAppManifest {
   iarc_rating_ids?: Array<string>;
 }
 
-export const loader = ({ request }: LoaderFunctionArgs) => {
+export const loader = ({ request }: Route.LoaderArgs) => {
   const cookies = getThemeCookies(request);
 
   const theme = cookies?.theme || defaultTheme;

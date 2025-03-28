@@ -1,6 +1,6 @@
-import type { LinksFunction } from '@remix-run/node';
 import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
 import { useState } from 'react';
+import type { LinksFunction } from 'react-router';
 import boardwalkIcon192 from '~/assets/icon-192x192.png';
 import { MoneyDisplay } from '~/components/money-display';
 import {

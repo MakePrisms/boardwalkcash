@@ -1,5 +1,5 @@
-import { Link } from '@remix-run/react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
+import { Link } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,

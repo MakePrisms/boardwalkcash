@@ -1,5 +1,5 @@
-import { useNavigate } from '@remix-run/react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router';
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
