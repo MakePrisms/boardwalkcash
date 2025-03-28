@@ -26,7 +26,7 @@ export function SuccessfulReceivePage({ amount, account }: Props) {
       </PageHeader>
       <PageContent className="relative flex flex-col items-center gap-12">
         <MoneyWithConvertedAmount money={amount} />
-        <div className="flex w-full flex-col gap-8 place-self-center">
+        <div className="fade-in-0 flex w-full animate-in flex-col gap-8 place-self-center duration-300">
           <div className="mb-2 flex justify-center">
             <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
