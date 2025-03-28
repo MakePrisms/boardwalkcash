@@ -1,12 +1,6 @@
 import { Banknote, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCopyToClipboard } from 'usehooks-ts';
-import {
-  CarouselControls,
-  CarouselWithControls,
-  type Control,
-  useCarousel,
-} from '~/components/carousel-with-controls';
 import {
   PageBackButton,
   PageContent,
@@ -14,6 +8,12 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { QRCode } from '~/components/qr-code';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselControls,
+  CarouselItem,
+} from '~/components/ui/carousel';
 import type { CashuAccount } from '~/features/accounts/account';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
@@ -42,99 +42,90 @@ function CashuRequestItem({ account, amount }: CashuRequestItemProps) {
   }).toEncodedRequest();
 
   return (
-    <QRCode
-      value={cashuRequest}
-      description="Scan with any wallet that supports Cashu payment requests."
-      onClick={() => {
-        copyToClipboard(cashuRequest);
-        toast({
-          title: 'Copied Cashu Payment Request',
-          description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
-        });
-      }}
-    />
+    <CarouselItem>
+      <QRCode
+        value={cashuRequest}
+        description="Scan with any wallet that supports Cashu payment requests."
+        onClick={() => {
+          copyToClipboard(cashuRequest);
+          toast({
+            title: 'Copied Cashu Payment Request',
+            description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
+          });
+        }}
+      />
+    </CarouselItem>
   );
 }
 
 type MintQuoteProps = {
   account: CashuAccount;
   amount: Money;
-  isVisible: boolean;
   onPaid: () => void;
 };
 
-function MintQuoteItem({ account, amount, isVisible, onPaid }: MintQuoteProps) {
+function MintQuoteItem({ account, amount, onPaid }: MintQuoteProps) {
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
 
   const {
     mutate: createQuote,
     data: createdQuote,
-    isPending,
+    status: createQuoteStatus,
     error,
   } = useCreateCashuReceiveQuote();
 
-  const { quote, status } = useCashuReceiveQuote({
+  const { quote, status: quotePaymentStatus } = useCashuReceiveQuote({
     quoteId: createdQuote?.id,
     onPaid: onPaid,
   });
 
-  useEffect(() => {
-    if (isVisible && !quote) {
+  const isExpired = quotePaymentStatus === 'EXPIRED';
+
+  const handlePresented = () => {
+    if (!quote) {
       createQuote({ account, amount });
     }
-  }, [isVisible, createQuote, quote, account, amount]);
-
-  const isExpired = status === 'EXPIRED';
+  };
 
   return (
-    <QRCode
-      value={!isExpired ? quote?.paymentRequest : undefined}
-      description="Scan with any Lightning wallet."
-      error={
-        isExpired
-          ? 'This invoice has expired. Please create a new one.'
-          : error?.message
-      }
-      isLoading={isPending}
-      onClick={
-        quote?.paymentRequest
-          ? () => {
-              copyToClipboard(quote.paymentRequest);
-              toast({
-                title: 'Copied Lightning invoice',
-                description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
-              });
-            }
-          : undefined
-      }
-    />
+    <CarouselItem onPresented={handlePresented}>
+      <QRCode
+        value={quote?.paymentRequest}
+        description="Scan with any Lightning wallet."
+        error={
+          isExpired
+            ? 'This invoice has expired. Please create a new one.'
+            : error?.message
+        }
+        isLoading={['pending', 'idle'].includes(createQuoteStatus)}
+        onClick={
+          quote?.paymentRequest
+            ? () => {
+                copyToClipboard(quote.paymentRequest);
+                toast({
+                  title: 'Copied Lightning invoice',
+                  description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
+                });
+              }
+            : undefined
+        }
+      />
+    </CarouselItem>
   );
 }
-
-const carouselControls: Control[] = [
-  {
-    icon: <Banknote className="h-5 w-5" />,
-    id: 'cashu',
-    label: 'Cashu Payment Request',
-  },
-  {
-    icon: <Zap className="h-5 w-5" />,
-    id: 'lightning',
-    label: 'Lightning Invoice',
-  },
-];
 
 type Props = {
   amount: Money;
   account: CashuAccount;
 };
 
-export default function ReceiveCashu({ amount, account }: Props) {
-  const { current, setApi } = useCarousel();
-  const [isPaid, setIsPaid] = useState(false);
+type Status = 'received' | 'pending';
 
-  if (isPaid) {
+export default function ReceiveCashu({ amount, account }: Props) {
+  const [status, setStatus] = useState<Status>('pending');
+
+  if (status === 'received') {
     return <SuccessfulReceivePage amount={amount} account={account} />;
   }
 
@@ -151,27 +142,20 @@ export default function ReceiveCashu({ amount, account }: Props) {
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
         <MoneyWithConvertedAmount money={amount} />
 
-        <CarouselWithControls setApi={setApi}>
-          <CarouselWithControls.Content>
-            <CarouselWithControls.Item>
-              <CashuRequestItem account={account} amount={amount} />
-            </CarouselWithControls.Item>
-
-            <CarouselWithControls.Item>
-              <MintQuoteItem
-                account={account}
-                amount={amount}
-                isVisible={current === 1}
-                onPaid={() => setIsPaid(true)}
-              />
-            </CarouselWithControls.Item>
-          </CarouselWithControls.Content>
+        <Carousel opts={{ align: 'center', loop: true }}>
+          <CarouselContent>
+            <CashuRequestItem account={account} amount={amount} />
+            <MintQuoteItem
+              account={account}
+              amount={amount}
+              onPaid={() => setStatus('received')}
+            />
+          </CarouselContent>
           <CarouselControls>
-            {carouselControls.map((control) => (
-              <CarouselControls.Control key={control.id} {...control} />
-            ))}
+            <Banknote className="h-5 w-5" />
+            <Zap className="h-5 w-5" />
           </CarouselControls>
-        </CarouselWithControls>
+        </Carousel>
       </PageContent>
     </>
   );

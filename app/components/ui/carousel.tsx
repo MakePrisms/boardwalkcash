@@ -171,13 +171,40 @@ CarouselContent.displayName = 'CarouselContent';
 
 const CarouselItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & { onPresented?: () => void }
+>(({ className, onPresented, ...props }, ref) => {
   const { orientation } = useCarousel();
+  // We added this onPresented observer logic as an extension to the shadcn/ui Carousel component
+  const onPresentedRef = React.useRef(onPresented);
+  const itemRef = React.useRef<HTMLDivElement>(null);
+
+  React.useImperativeHandle(ref, () => itemRef.current as HTMLDivElement);
+
+  React.useEffect(() => {
+    onPresentedRef.current = onPresented;
+  }, [onPresented]);
+
+  React.useEffect(() => {
+    if (!onPresentedRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onPresentedRef.current?.();
+          observer.disconnect(); // only trigger once
+        }
+      },
+      { threshold: 0.7 },
+    );
+
+    if (itemRef.current) observer.observe(itemRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
-      ref={ref}
+      ref={itemRef}
       role="group"
       aria-roledescription="slide"
       className={cn(
@@ -249,6 +276,62 @@ const CarouselNext = React.forwardRef<
 });
 CarouselNext.displayName = 'CarouselNext';
 
+// We added Carousel Controls as an extension to the shadcn/ui Carousel component
+
+type CarouselControlProps = {
+  api?: CarouselApi;
+  children: React.ReactElement[];
+  className?: string;
+};
+
+const CarouselControls = React.forwardRef<
+  HTMLDivElement,
+  CarouselControlProps & React.HTMLAttributes<HTMLDivElement>
+>(({ children, className, ...props }, ref) => {
+  const { api } = useCarousel();
+  const [current, setCurrent] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!api) return;
+
+    setCurrent(api.selectedScrollSnap());
+
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap());
+    };
+
+    api.on('select', onSelect);
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn('mt-8 flex justify-center', className)}
+      {...props}
+    >
+      <div className="flex rounded-full border">
+        {children.map((child, index) => (
+          <button
+            key={child.key || index}
+            type="button"
+            className={cn(
+              'rounded-full px-6 py-3',
+              current === index ? 'bg-primary text-primary-foreground' : '',
+            )}
+            onClick={() => api?.scrollTo(index)}
+          >
+            {child}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+});
+CarouselControls.displayName = 'CarouselControls';
+
 export {
   type CarouselApi,
   Carousel,
@@ -256,4 +339,5 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  CarouselControls,
 };
