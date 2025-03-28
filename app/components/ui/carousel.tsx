@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '~/components/ui/button';
+import { useLatest } from '~/lib/use-latest';
 import { cn } from '~/lib/utils';
 
 type CarouselApi = UseEmblaCarouselType[1];
@@ -175,14 +176,10 @@ const CarouselItem = React.forwardRef<
 >(({ className, onPresented, ...props }, ref) => {
   const { orientation } = useCarousel();
   // We added this onPresented observer logic as an extension to the shadcn/ui Carousel component
-  const onPresentedRef = React.useRef(onPresented);
+  const onPresentedRef = useLatest(onPresented);
   const itemRef = React.useRef<HTMLDivElement>(null);
 
   React.useImperativeHandle(ref, () => itemRef.current as HTMLDivElement);
-
-  React.useEffect(() => {
-    onPresentedRef.current = onPresented;
-  }, [onPresented]);
 
   React.useEffect(() => {
     if (!onPresentedRef.current) return;
