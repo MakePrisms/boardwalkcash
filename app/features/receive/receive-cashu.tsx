@@ -1,6 +1,5 @@
-import { AlertCircle, Banknote, Zap } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { useEffect, useState } from 'react';
+import { Banknote, Zap } from 'lucide-react';
+import { useState } from 'react';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   PageBackButton,
@@ -8,92 +7,30 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { QRCode } from '~/components/qr-code';
 import {
   Carousel,
-  type CarouselApi,
   CarouselContent,
+  CarouselControls,
   CarouselItem,
 } from '~/components/ui/carousel';
-import { Skeleton } from '~/components/ui/skeleton';
+import type { CashuAccount } from '~/features/accounts/account';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
-import { cn } from '~/lib/utils';
-import type { Account, CashuAccount } from '../accounts/account';
-import { getDefaultUnit } from '../shared/currencies';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
   useCashuReceiveQuote,
   useCreateCashuReceiveQuote,
 } from './cashu-receive-quote-hooks';
 import { getCashuRequest } from './reusable-payment-request';
-type QRCarouselItemProps = {
-  value?: string;
-  description: string;
-  error?: string;
-  isLoading?: boolean;
-  onClick?: () => void;
-};
+import { SuccessfulReceivePage } from './successful-receive-page';
 
-function QRCarouselItem({
-  value,
-  description,
-  error,
-  isLoading,
-  onClick,
-}: QRCarouselItemProps) {
-  const baseClasses =
-    'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
-
-  return (
-    <CarouselItem>
-      <div className="flex flex-col items-center justify-center gap-8">
-        {isLoading ? (
-          <Skeleton className={baseClasses} />
-        ) : value ? (
-          <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-              baseClasses,
-              'bg-foreground transition-transform active:scale-95',
-            )}
-          >
-            {' '}
-            <QRCodeSVG
-              value={value}
-              size={256}
-              marginSize={3}
-              className="rounded-lg bg-foreground"
-            />
-          </button>
-        ) : (
-          error && (
-            <div className={cn(baseClasses, 'border bg-card')}>
-              <div className="flex flex-col items-center justify-center gap-2 p-4">
-                <AlertCircle className="h-8 w-8 text-foreground" />
-                <p className="text-center text-muted-foreground text-sm">
-                  {error}
-                </p>
-              </div>
-            </div>
-          )
-        )}
-        <div className="w-[256px]">
-          <p className="flex h-[32px] items-center justify-center text-center font-medium text-muted-foreground text-xs">
-            {description}
-          </p>
-        </div>
-      </div>
-    </CarouselItem>
-  );
-}
-
-type CashuRequestQRProps = {
+type CashuRequestItemProps = {
   account: CashuAccount;
   amount: Money;
 };
 
-function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
+function CashuRequestCarouselItem({ account, amount }: CashuRequestItemProps) {
   const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
@@ -105,138 +42,92 @@ function CashuRequestQRItem({ account, amount }: CashuRequestQRProps) {
   }).toEncodedRequest();
 
   return (
-    <QRCarouselItem
-      value={cashuRequest}
-      description="Scan with any wallet that supports Cashu payment requests."
-      onClick={() => {
-        copyToClipboard(cashuRequest);
-        toast({
-          title: 'Copied Cashu Payment Request',
-          description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
-        });
-      }}
-    />
+    <CarouselItem>
+      <QRCode
+        value={cashuRequest}
+        description="Scan with any wallet that supports Cashu payment requests."
+        onClick={() => {
+          copyToClipboard(cashuRequest);
+          toast({
+            title: 'Copied Cashu Payment Request',
+            description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
+          });
+        }}
+      />
+    </CarouselItem>
   );
 }
 
 type MintQuoteProps = {
   account: CashuAccount;
   amount: Money;
-  isVisible: boolean;
+  onPaid: () => void;
 };
 
-function MintQuoteItem({ account, amount, isVisible }: MintQuoteProps) {
+function MintQuoteCarouselItem({ account, amount, onPaid }: MintQuoteProps) {
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
+
   const {
     mutate: createQuote,
     data: createdQuote,
-    isPending,
+    status: createQuoteStatus,
     error,
   } = useCreateCashuReceiveQuote();
 
-  const { quote, status } = useCashuReceiveQuote({
+  const { quote, status: quotePaymentStatus } = useCashuReceiveQuote({
     quoteId: createdQuote?.id,
-    onExpired: () => {
-      toast({
-        title: 'Quote expired',
-        description: 'Please create a new quote.',
-      });
-    },
-    onPaid: (quote) => {
-      const unit = getDefaultUnit(quote.amount.currency);
-      toast({
-        title: 'Quote paid',
-        description: `Received ${quote.amount.toLocaleString({ unit })}`,
-      });
-    },
+    onPaid: onPaid,
   });
 
-  useEffect(() => {
-    if (isVisible && !quote) {
+  const isExpired = quotePaymentStatus === 'EXPIRED';
+
+  const handlePresented = () => {
+    if (!quote) {
       createQuote({ account, amount });
     }
-  }, [isVisible, createQuote, quote, account, amount]);
-
-  return (
-    <QRCarouselItem
-      value={quote?.paymentRequest}
-      description={`Scan with any Lightning wallet. Status: ${status}`}
-      error={error?.message}
-      isLoading={isPending}
-      onClick={
-        quote?.paymentRequest
-          ? () => {
-              copyToClipboard(quote.paymentRequest);
-              toast({
-                title: 'Copied BOLT11 Lightning Invoice',
-                description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
-              });
-            }
-          : undefined
-      }
-    />
-  );
-}
-
-function useCarousel() {
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    if (!api) return;
-    setCurrent(api.selectedScrollSnap());
-    api.on('select', () => setCurrent(api.selectedScrollSnap()));
-  }, [api]);
-
-  const scrollToIndex = (index: number) => {
-    api?.scrollTo(index);
   };
 
-  return { current, scrollToIndex, setApi };
-}
-
-/** Two buttons to flip back and forth between the two QR codes. */
-function CarouselControls({
-  current,
-  onSelect,
-}: {
-  current: number;
-  onSelect: (index: number) => void;
-}) {
   return (
-    <div className="mt-8 flex flex-col items-center gap-4">
-      <div className="flex rounded-full border">
-        <button
-          type="button"
-          className={`rounded-full px-6 py-3 ${
-            current === 0 ? 'bg-primary text-primary-foreground' : ''
-          }`}
-          onClick={() => onSelect(0)}
-        >
-          <Banknote className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          className={`rounded-full px-6 py-3 ${
-            current === 1 ? 'bg-primary text-primary-foreground' : ''
-          }`}
-          onClick={() => onSelect(1)}
-        >
-          <Zap className="h-5 w-5" />
-        </button>
-      </div>
-    </div>
+    <CarouselItem onPresented={handlePresented}>
+      <QRCode
+        value={quote?.paymentRequest}
+        description="Scan with any Lightning wallet."
+        error={
+          isExpired
+            ? 'This invoice has expired. Please create a new one.'
+            : error?.message
+        }
+        isLoading={['pending', 'idle'].includes(createQuoteStatus)}
+        onClick={
+          quote?.paymentRequest
+            ? () => {
+                copyToClipboard(quote.paymentRequest);
+                toast({
+                  title: 'Copied Lightning invoice',
+                  description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
+                });
+              }
+            : undefined
+        }
+      />
+    </CarouselItem>
   );
 }
 
 type Props = {
   amount: Money;
-  account: Account & { type: 'cashu' };
+  account: CashuAccount;
 };
 
+type Status = 'received' | 'pending';
+
 export default function ReceiveCashu({ amount, account }: Props) {
-  const { current, scrollToIndex, setApi } = useCarousel();
+  const [status, setStatus] = useState<Status>('pending');
+
+  if (status === 'received') {
+    return <SuccessfulReceivePage amount={amount} account={account} />;
+  }
 
   return (
     <>
@@ -250,19 +141,21 @@ export default function ReceiveCashu({ amount, account }: Props) {
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
         <MoneyWithConvertedAmount money={amount} />
-        <div className="flex w-full flex-col items-center justify-center px-8 py-8">
-          <Carousel setApi={setApi} opts={{ align: 'center', loop: true }}>
-            <CarouselContent>
-              <CashuRequestQRItem account={account} amount={amount} />
-              <MintQuoteItem
-                account={account}
-                amount={amount}
-                isVisible={current === 1}
-              />
-            </CarouselContent>
-          </Carousel>
-          <CarouselControls current={current} onSelect={scrollToIndex} />
-        </div>
+
+        <Carousel opts={{ align: 'center', loop: true }}>
+          <CarouselContent>
+            <CashuRequestCarouselItem account={account} amount={amount} />
+            <MintQuoteCarouselItem
+              account={account}
+              amount={amount}
+              onPaid={() => setStatus('received')}
+            />
+          </CarouselContent>
+          <CarouselControls>
+            <Banknote className="h-5 w-5" />
+            <Zap className="h-5 w-5" />
+          </CarouselControls>
+        </Carousel>
       </PageContent>
     </>
   );
