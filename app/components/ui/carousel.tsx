@@ -191,7 +191,7 @@ const CarouselItem = React.forwardRef<
           observer.disconnect(); // only trigger once
         }
       },
-      { threshold: 0.7 },
+      { threshold: 0.3 },
     );
 
     if (itemRef.current) observer.observe(itemRef.current);
