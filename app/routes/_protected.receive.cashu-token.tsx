@@ -1,6 +1,7 @@
 import { getDecodedToken } from '@cashu/cashu-ts';
 import { useLocation } from '@remix-run/react';
 import { useMemo } from 'react';
+import { Page } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { ReceiveCashuToken } from '~/features/receive';
 
@@ -25,5 +26,9 @@ export default function ReceiveCashuTokenPage() {
     return <Redirect to="/receive" />;
   }
 
-  return <ReceiveCashuToken token={decodedToken} />;
+  return (
+    <Page>
+      <ReceiveCashuToken token={decodedToken} />
+    </Page>
+  );
 }

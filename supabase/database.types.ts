@@ -122,6 +122,69 @@ export type Database = {
           },
         ]
       }
+      cashu_token_swaps: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          state: string
+          token_hash: string
+          token_proofs: string
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          currency: string
+          id?: string
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          state?: string
+          token_hash: string
+          token_proofs: string
+          unit: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          keyset_counter?: number
+          keyset_id?: string
+          output_amounts?: number[]
+          state?: string
+          token_hash?: string
+          token_proofs?: string
+          unit?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashu_token_swaps_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_token_swaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -199,6 +262,44 @@ export type Database = {
           unit: string
           user_id: string
           version: number
+        }
+      }
+      complete_token_swap: {
+        Args: {
+          p_token_hash: string
+          proofs: Json
+          account_version: number
+        }
+        Returns: undefined
+      }
+      create_token_swap: {
+        Args: {
+          p_token_hash: string
+          p_token_proofs: string
+          p_account_id: string
+          p_user_id: string
+          p_currency: string
+          p_unit: string
+          p_keyset_id: string
+          p_keyset_counter: number
+          p_output_amounts: number[]
+          p_amount: number
+          p_account_version: number
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          state: string
+          token_hash: string
+          token_proofs: string
+          unit: string
+          user_id: string
         }
       }
       expire_cashu_receive_quote: {

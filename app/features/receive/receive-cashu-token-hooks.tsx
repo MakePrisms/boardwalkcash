@@ -1,31 +1,25 @@
-import {
-  CashuMint,
-  CashuWallet,
-  type Proof,
-  type Token,
-} from '@cashu/cashu-ts';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import type { Proof, Token } from '@cashu/cashu-ts';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { Account, CashuAccount } from '~/features/accounts/account';
 import {
   useAccounts,
-  useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { tokenToMoney } from '~/features/shared/cashu';
-import { useToast } from '~/hooks/use-toast';
 import {
   getP2PKPubkeyFromProofs,
   getUnspentProofsFromToken,
   isP2PKSecret,
   isPlainSecret,
-  swapProofsToWallet,
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { MintInfo } from '~/lib/cashu';
-import { useNavigateWithViewTransition } from '~/lib/transitions';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import { getDefaultUnit } from '../shared/currencies';
+import {
+  usePrepareCashuTokenSwap,
+  useTokenSwap,
+} from './cashu-token-swap-hooks';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -64,11 +58,8 @@ type UseReceiveCashuTokenData = {
 type UseReceiveCashuTokenReturn = {
   /** Data about the token and the accounts available to receive it */
   data: UseReceiveCashuTokenData;
-  isClaiming: boolean;
   /** Set the account to receive the token */
   setReceiveAccount: (account: CashuAccount) => void;
-  /** Claim the token to the selected account */
-  handleClaim: () => Promise<void>;
 };
 
 const tokenToSourceAccount = (
@@ -200,13 +191,10 @@ const getBadges = (
  * @returns Token data fetched by the query function and functions to claim the token.
  * Data is undefined while isLoading is true.
  */
-export function useReceiveCashuToken({
+export function useCashuTokenData({
   token,
   cashuPubKey,
 }: UseReceiveCashuTokenProps): UseReceiveCashuTokenReturn {
-  const [isClaiming, setIsClaiming] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigateWithViewTransition();
   const [selectedReceiveAccount, setSelectedReceiveAccount] = useState<
     CashuAccountWithBadges | undefined
   >();
@@ -214,7 +202,6 @@ export function useReceiveCashuToken({
   const accounts: CashuAccount[] = allAccounts.filter(
     (a) => a.type === 'cashu',
   );
-  const addAccount = useAddCashuAccount();
   const defaultAccount = useDefaultAccount();
   const tokenCurrency = tokenToMoney(token).currency;
 
@@ -271,78 +258,6 @@ export function useReceiveCashuToken({
     },
   });
 
-  const handleClaim = async () => {
-    const {
-      claimableToken,
-      receiveAccount,
-      receiveAccountIsSource,
-      isMintKnown,
-    } = data;
-
-    if (!claimableToken) {
-      throw new Error('Token cannot be claimed');
-    }
-    setIsClaiming(true);
-
-    const claimFrom = new CashuWallet(new CashuMint(token.mint));
-    const claimTo = new CashuWallet(new CashuMint(receiveAccount.mintUrl));
-
-    try {
-      if (receiveAccountIsSource && !isMintKnown) {
-        await addAccount({
-          ...sourceAccountData,
-          type: 'cashu',
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: 'Failed to add account',
-        description: 'Please try again',
-      });
-      setIsClaiming(false);
-      return;
-    }
-
-    try {
-      const { newProofs, change } = await swapProofsToWallet(
-        claimFrom,
-        claimTo,
-        claimableToken.proofs,
-        {
-          proofsWeHave: [], // add to get the optimal proof amounts
-          privkey: undefined, // add to unlock the proofs
-          pubkey: undefined, // add to lock the new proofs
-          counter: undefined, // add for deterministic secrets
-        },
-      );
-
-      console.log('SUCCESS!', newProofs, change);
-      // TODO: store the proofs
-      // QUESTION: what to do with the change? We get change when the fees don't quite match up and we cannot
-      // melt all the proofs. Options: burn the change, store it under the source mint.
-
-      const value = tokenToMoney(claimableToken);
-      toast({
-        title: 'Success!',
-        description: `Claimed ${value.toLocaleString({
-          unit: getDefaultUnit(value.currency),
-        })} to ${receiveAccount.name}`,
-      });
-      navigate('/', { transition: 'slideDown', applyTo: 'oldView' });
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: 'Failed to claim',
-        description:
-          error instanceof Error ? error.message : 'Something went wrong',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
   const crossMintSwapDisabled = sourceAccountData.isTestMint;
   const selectableAccounts = getSelectableAccounts(
     sourceAccountData,
@@ -374,8 +289,57 @@ export function useReceiveCashuToken({
 
   return {
     data,
-    isClaiming,
     setReceiveAccount: setSelectedReceiveAccount,
-    handleClaim,
+  };
+}
+
+export function useReceiveCashuToken() {
+  const [status, setStatus] = useState<
+    'idle' | 'pending' | 'success' | 'error'
+  >('idle');
+  const { mutate: prepareSwap, data: swapData } = usePrepareCashuTokenSwap();
+
+  useTokenSwap({
+    tokenHash: swapData?.tokenHash,
+    onCompleted: () => {
+      setStatus('success');
+    },
+  });
+
+  const { mutate: startReceive } = useMutation({
+    mutationFn: async ({
+      token,
+      receiveAccount,
+    }: { token: Token; receiveAccount: Account }) => {
+      if (receiveAccount.type !== 'cashu') {
+        throw new Error('Receive account must be a cashu account');
+      }
+      if (receiveAccount.mintUrl !== token.mint) {
+        throw new Error('Receive account must be the same mint as the token');
+      }
+      const isSource = receiveAccount.mintUrl === token.mint;
+      if (isSource) {
+        prepareSwap({
+          token,
+          account: receiveAccount,
+        });
+      } else if (receiveAccount.type === 'cashu') {
+        throw new Error('Not implemented');
+        // get mint and melt quotes
+        // create a cashu-receive-quote with mint quote
+        // melt proofs to pay the mint quote
+      } else {
+        // claim to some other account type by making a lightning payment
+        throw new Error('Not implemented');
+      }
+    },
+    onMutate: () => {
+      setStatus('pending');
+    },
+  });
+
+  return {
+    status,
+    startReceive,
   };
 }
