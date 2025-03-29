@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from '@remix-run/react';
+import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';

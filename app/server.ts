@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequestHandler } from '@vercel/remix/server';
+import { createRequestHandler } from '@react-router/express';
 import express from 'express';
 
 const viteDevServer =
@@ -22,7 +22,7 @@ app.use(
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const build =
   process.env.NODE_ENV !== 'production' && viteDevServer
-    ? () => viteDevServer.ssrLoadModule('virtual:remix/server-build')
+    ? () => viteDevServer.ssrLoadModule('virtual:react-router/server-build')
     : await import(path.join(dirname, 'server/index.js'));
 
 app.all('*', createRequestHandler({ build }));

@@ -1,6 +1,6 @@
 import { CashuMint } from '@cashu/cashu-ts';
-import { Link, useNavigate } from '@remix-run/react';
 import { Controller, useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';

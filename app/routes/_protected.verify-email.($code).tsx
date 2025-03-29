@@ -1,4 +1,4 @@
-import { useParams } from '@remix-run/react';
+import { useParams } from 'react-router';
 import { Page, PageContent } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { VerifyEmailForm } from '~/features/signup/verify-email-form';

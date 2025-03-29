@@ -1,5 +1,5 @@
-import { useNavigate } from '@remix-run/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { PasswordReset } from '~/features/login/password-reset';
 import { RequestPasswordReset } from '~/features/login/request-password-reset';
 

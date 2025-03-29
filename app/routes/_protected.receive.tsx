@@ -1,4 +1,4 @@
-import { Outlet } from '@remix-run/react';
+import { Outlet } from 'react-router';
 import { useDefaultAccount } from '~/features/accounts/account-hooks';
 import { ReceiveProvider } from '~/features/receive';
 

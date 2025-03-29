@@ -1,6 +1,6 @@
-import { Link, NavLink, useNavigate, useNavigation } from '@remix-run/react';
 import { type ComponentProps, useEffect } from 'react';
-import type { NavigateOptions, To } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useNavigation } from 'react-router';
+import type { NavigateOptions, To } from 'react-router';
 
 const transitions = [
   'slideLeft',

@@ -1,6 +1,6 @@
 import { getDecodedToken } from '@cashu/cashu-ts';
-import { useLocation } from '@remix-run/react';
 import { useMemo } from 'react';
+import { useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
 import { ReceiveCashuToken } from '~/features/receive';
 
