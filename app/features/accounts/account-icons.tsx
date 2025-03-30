@@ -2,14 +2,23 @@ import { LandmarkIcon, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { AccountType } from './account';
 
-const CashuIcon = () => <LandmarkIcon className="h-4 w-4" />;
-const NWCIcon = () => <Zap className="h-4 w-4" />;
+const CashuIcon = ({ size = 16 }: { size?: number }) => (
+  <LandmarkIcon size={size} />
+);
+const NWCIcon = ({ size = 16 }: { size?: number }) => <Zap size={size} />;
 
-const iconsByAccountType: Record<AccountType, ReactNode> = {
-  cashu: <CashuIcon />,
-  nwc: <NWCIcon />,
+const iconsByAccountType: Record<
+  AccountType,
+  (props: { size?: number }) => ReactNode
+> = {
+  cashu: CashuIcon,
+  nwc: NWCIcon,
 };
 
-export function AccountTypeIcon({ type }: { type: AccountType }) {
-  return iconsByAccountType[type];
+export function AccountTypeIcon({
+  type,
+  size,
+}: { type: AccountType; size?: number }) {
+  const IconComponent = iconsByAccountType[type];
+  return <IconComponent size={size} />;
 }
