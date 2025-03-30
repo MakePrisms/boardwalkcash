@@ -52,7 +52,7 @@ const browserInstructions: Record<Browser, InstallInstruction[]> = {
   ],
 };
 
-export type InstallInstruction = {
+type InstallInstruction = {
   icon: LucideIcon;
   text: string;
 };

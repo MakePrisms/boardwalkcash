@@ -23,5 +23,3 @@ export function AnimatedQRCode({ text, size = 275 }: AnimatedQRCodeProps) {
     return <QRCodeSVG value={fragment} size={size} />;
   }
 }
-
-export default AnimatedQRCode;

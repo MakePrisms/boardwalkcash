@@ -9,7 +9,7 @@ import { guestAccountStorage } from './guest-account-storage';
 
 export type AuthUser = UserResponse['user'];
 
-export type AuthState = {
+type AuthState = {
   loading: boolean;
 } & (
   | {

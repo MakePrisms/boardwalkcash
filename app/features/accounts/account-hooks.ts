@@ -17,7 +17,7 @@ import { useUser } from '../user/user-hooks';
 import { type Account, type CashuAccount, getAccountBalance } from './account';
 import { AccountRepository } from './account-repository';
 
-export const accountsQueryKey = 'accounts';
+const accountsQueryKey = 'accounts';
 
 class AccountsCache {
   constructor(

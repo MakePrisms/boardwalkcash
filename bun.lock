@@ -5,6 +5,7 @@
       "name": "boardwalkcash",
       "dependencies": {
         "@cashu/cashu-ts": "2.4.1",
+        "@cashu/crypto": "0.3.4",
         "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
         "@opensecret/react": "1.0.1",
         "@radix-ui/react-dialog": "1.1.6",
@@ -53,6 +54,8 @@
         "@biomejs/biome": "1.9.4",
         "@playwright/test": "1.49.1",
         "@react-router/dev": "7.4.1",
+        "@stablelib/base64": "2.0.1",
+        "@stablelib/chacha20poly1305": "2.0.1",
         "@types/big.js": "6.2.2",
         "@types/bun": "1.2.8",
         "@types/express": "5.0.0",
