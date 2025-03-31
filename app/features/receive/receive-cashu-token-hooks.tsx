@@ -16,10 +16,7 @@ import {
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { MintInfo } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import {
-  usePrepareCashuTokenSwap,
-  useTokenSwap,
-} from './cashu-token-swap-hooks';
+import { useSwapToClaimCashuToken } from './cashu-token-swap-hooks';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -294,19 +291,9 @@ export function useCashuTokenData({
 }
 
 export function useReceiveCashuToken() {
-  const [status, setStatus] = useState<
-    'idle' | 'pending' | 'success' | 'error'
-  >('idle');
-  const { mutate: prepareSwap, data: swapData } = usePrepareCashuTokenSwap();
+  const { mutateAsync: swapToClaim } = useSwapToClaimCashuToken();
 
-  useTokenSwap({
-    tokenHash: swapData?.tokenHash,
-    onCompleted: () => {
-      setStatus('success');
-    },
-  });
-
-  const { mutate: startReceive } = useMutation({
+  return useMutation({
     mutationFn: async ({
       token,
       receiveAccount,
@@ -319,27 +306,12 @@ export function useReceiveCashuToken() {
       }
       const isSource = receiveAccount.mintUrl === token.mint;
       if (isSource) {
-        prepareSwap({
-          token,
-          account: receiveAccount,
-        });
-      } else if (receiveAccount.type === 'cashu') {
-        throw new Error('Not implemented');
-        // get mint and melt quotes
-        // create a cashu-receive-quote with mint quote
-        // melt proofs to pay the mint quote
-      } else {
-        // claim to some other account type by making a lightning payment
-        throw new Error('Not implemented');
+        await swapToClaim({ token, account: receiveAccount });
+        // TODO: return something more detailed
+        return true;
       }
-    },
-    onMutate: () => {
-      setStatus('pending');
+      // TODO: handle cross mint swaps and claiming to other account types
+      throw new Error('Not implemented');
     },
   });
-
-  return {
-    status,
-    startReceive,
-  };
 }

@@ -1,10 +1,17 @@
-import type { Proof } from '@cashu/cashu-ts';
+import {
+  type Proof,
+  type Token,
+  getDecodedToken,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
+import { computeSHA256 } from '~/lib/sha256';
 import {
   type BoardwalkDb,
   type BoardwalkDbCashuTokenSwap,
   boardwalkDb,
 } from '../boardwalk-db/database';
+import { tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuTokenSwap } from './cashu-token-swap';
@@ -28,10 +35,6 @@ type CreateTokenSwap = {
    */
   accountId: string;
   /**
-   * Amount of the token being claimed.
-   */
-  amount: Money;
-  /**
    * Keyset ID.
    */
   keysetId: string;
@@ -44,13 +47,9 @@ type CreateTokenSwap = {
    */
   outputAmounts: number[];
   /**
-   * Cashu proofs being claimed
+   * Cashu token being claimed
    */
-  proofs: Proof[];
-  /**
-   * A SHA256 hash of the token being claimed.
-   */
-  tokenHash: string;
+  token: Token;
   /**
    * Version of the account as seen by the client. Used for optimistic concurrency control.
    */
@@ -67,28 +66,28 @@ export class CashuTokenSwapRepository {
    * Creates a cashu token swap and updates the account keyset counter.
    * @returns Created cashu token swap.
    */
-  async create(
+  async getOrCreate(
     {
+      token,
       userId,
       accountId,
-      amount,
       keysetId,
       keysetCounter,
       outputAmounts,
-      proofs,
-      tokenHash,
       accountVersion,
     }: CreateTokenSwap,
     options?: Options,
   ): Promise<CashuTokenSwap> {
-    const encryptedProofs = await this.encryption.encrypt(proofs);
+    const encodedToken = getEncodedToken(token);
+    const amount = tokenToMoney(token);
     const unit = getDefaultUnit(amount.currency);
 
-    // QEUSTION: do we need this? I did it so that we can update the account keyset counter.
-    // in the same transaction as the token swap being created
-    const query = this.db.rpc('create_token_swap', {
+    const tokenHash = await computeSHA256(encodedToken);
+    const encryptedToken = await this.encryption.encrypt(encodedToken);
+
+    const query = this.db.rpc('get_or_create_cashu_token_swap', {
       p_token_hash: tokenHash,
-      p_token_proofs: encryptedProofs,
+      p_encoded_token: encryptedToken,
       p_account_id: accountId,
       p_user_id: userId,
       p_currency: amount.currency,
@@ -219,15 +218,14 @@ export class CashuTokenSwapRepository {
   ): Promise<CashuTokenSwap> {
     const decryptedData = {
       ...data,
-      token_proofs: await decryptData<Proof[]>(data.token_proofs),
+      encoded_token: await decryptData<string>(data.encoded_token),
     };
 
     return {
-      id: decryptedData.token_hash,
       userId: decryptedData.user_id,
       accountId: decryptedData.account_id,
       tokenHash: decryptedData.token_hash,
-      tokenProofs: decryptedData.token_proofs,
+      token: getDecodedToken(decryptedData.encoded_token),
       amount: new Money({
         amount: decryptedData.amount,
         currency: decryptedData.currency,

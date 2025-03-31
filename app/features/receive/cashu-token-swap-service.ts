@@ -3,17 +3,14 @@ import {
   MintOperationError,
   OutputData,
   type Token,
-  getEncodedToken,
 } from '@cashu/cashu-ts';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
-import { computeSHA256 } from '~/lib/sha256';
+import { getCashuUnitFromToken, getCashuWallet, sumProofs } from '~/lib/cashu';
 import type { CashuAccount } from '../accounts/account';
+import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import {
-  type CashuCryptography,
-  tokenToMoney,
-  useCashuCryptography,
-} from '../shared/cashu';
-import type { CashuTokenSwap } from './cashu-token-swap';
+  type CashuTokenSwap,
+  FailedToCompleteTokenSwapError,
+} from './cashu-token-swap';
 import {
   type CashuTokenSwapRepository,
   useCashuTokenSwapRepository,
@@ -25,18 +22,16 @@ export class CashuTokenSwapService {
     private readonly tokenSwapRepository: CashuTokenSwapRepository,
   ) {}
 
-  async prepareSwap({
+  async swapToClaim({
     userId,
     token,
     account,
-  }: { userId: string; token: Token; account: CashuAccount }) {
-    const tokenHash = await computeSHA256(getEncodedToken(token));
-    const amount = tokenToMoney(token);
-    const cashuUnit = getCashuUnit(amount.currency);
-
-    if (account.type !== 'cashu') {
-      throw new Error('Not implemented');
-    }
+  }: {
+    userId: string;
+    token: Token;
+    account: CashuAccount;
+  }): Promise<CashuTokenSwap> {
+    const cashuUnit = getCashuUnitFromToken(token);
 
     if (account.mintUrl !== token.mint) {
       throw new Error('Cannot swap a token to a different mint');
@@ -59,60 +54,37 @@ export class CashuTokenSwapService {
     );
     const outputAmounts = outputData.map((o) => o.blindedMessage.amount);
 
-    const tokenSwap = await this.tokenSwapRepository.create({
-      tokenHash,
+    // TODO: handle where the tokenSwap is already completed
+    const tokenSwap = await this.tokenSwapRepository.getOrCreate({
+      token,
       userId,
       accountId: account.id,
-      amount,
-      proofs: token.proofs,
       keysetId: wallet.keysetId,
       keysetCounter: counter,
       outputAmounts,
       accountVersion: account.version,
     });
 
-    return tokenSwap;
-  }
-
-  async finalizeSwap(account: CashuAccount, tokenSwap: CashuTokenSwap) {
-    const cashuUnit = getCashuUnit(tokenSwap.amount.currency);
-    const seed = await this.cryptography.getSeed();
-
-    // QUESTION: I wonder if we can avoid creating a new wallet here if already created
-    // in prepareSwap. The thing is that this function is used for recovery
-    // and on the first attempt
-
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
-
-    const { tokenProofs, keysetId, keysetCounter } = tokenSwap;
-
-    const outputData = OutputData.createDeterministicData(
-      sumProofs(tokenProofs),
-      seed,
-      keysetCounter,
-      await wallet.getKeys(keysetId),
-      tokenSwap.outputAmounts,
-    );
-
     const newProofs = await this.swapProofs(wallet, tokenSwap, outputData);
     const allProofs = [...account.proofs, ...newProofs];
 
-    await this.tokenSwapRepository.completeTokenSwap({
-      tokenHash: tokenSwap.tokenHash,
-      proofs: allProofs,
-      accountVersion: account.version,
-    });
-
-    return {
-      updatedAccount: {
-        ...account,
+    try {
+      // QUESTION: de we need optimist updates on token swaps?
+      // I don't think so because we only update the state from pending to completed
+      await this.tokenSwapRepository.completeTokenSwap({
+        tokenHash: tokenSwap.tokenHash,
         proofs: allProofs,
-        version: account.version + 1,
-      },
-    };
+        accountVersion: account.version,
+      });
+
+      return tokenSwap;
+    } catch (error) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Failed to complete token swap';
+      throw new FailedToCompleteTokenSwapError(msg, tokenSwap);
+    }
   }
 
   private async swapProofs(
@@ -120,14 +92,11 @@ export class CashuTokenSwapService {
     tokenSwap: CashuTokenSwap,
     outputData: OutputData[],
   ) {
+    const proofs = tokenSwap.token.proofs;
     try {
-      const { send: newProofs } = await wallet.swap(
-        sumProofs(tokenSwap.tokenProofs),
-        tokenSwap.tokenProofs,
-        {
-          outputData: { send: outputData },
-        },
-      );
+      const { send: newProofs } = await wallet.swap(sumProofs(proofs), proofs, {
+        outputData: { send: outputData },
+      });
       return newProofs;
     } catch (error) {
       if (

@@ -1,17 +1,56 @@
-import type { Proof } from '@cashu/cashu-ts';
+import type { Token } from '@cashu/cashu-ts';
 import type { Money } from '~/lib/money';
 
 export type CashuTokenSwap = {
-  id: string;
-  /** A hash of the token being received */
-  tokenHash: string; // QUESTION: should we have this and the ID if we will use the hash to query? The id could be set as the hash.
-  tokenProofs: Proof[];
+  /**
+   * A hash of the token being received
+   */
+  tokenHash: string;
+  /**
+   * The token being received as a Token object
+   */
+  token: Token;
+  /**
+   * The user ID of the user receiving the token
+   */
   userId: string;
+  /**
+   * The account ID of the account receiving the token
+   */
   accountId: string;
+  /**
+   * The amount of the token being received
+   */
   amount: Money;
+  /**
+   * ID of the keyset used to create the blinded messages
+   */
   keysetId: string;
+  /**
+   * Counter value for the keyset at the time the time of quote payment
+   */
   keysetCounter: number;
+  /**
+   * The output amount for each blinded message
+   */
   outputAmounts: number[];
+  /**
+   * The state of the token swap
+   */
+  state: 'PENDING' | 'COMPLETED';
+  /**
+   * Timestamp when the token swap was created
+   */
   createdAt: string;
-  state: 'PENDING' | 'COMPLETED' | 'FAILED';
 };
+
+export class FailedToCompleteTokenSwapError extends Error {
+  /**
+   * The token swap that failed to complete
+   */
+  tokenSwap: CashuTokenSwap;
+  constructor(message: string, tokenSwap: CashuTokenSwap) {
+    super(message);
+    this.tokenSwap = tokenSwap;
+  }
+}

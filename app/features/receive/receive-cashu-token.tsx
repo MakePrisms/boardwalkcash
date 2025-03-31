@@ -44,7 +44,11 @@ export default function ReceiveToken({ token }: Props) {
     claimableToken,
   } = tokenData;
 
-  const { status: receiveTokenStatus, startReceive } = useReceiveCashuToken();
+  const {
+    mutate: receiveToken,
+    status: receiveTokenStatus,
+    data: receiveTokenData,
+  } = useReceiveCashuToken();
 
   const handleClaim = async () => {
     if (!claimableToken) {
@@ -68,10 +72,11 @@ export default function ReceiveToken({ token }: Props) {
       }
     }
 
-    startReceive({ token, receiveAccount: account });
+    receiveToken({ token, receiveAccount: account });
   };
 
-  if (receiveTokenStatus === 'success') {
+  // TODO: receiveTokenData should be more detailed, for now if true it means swapToClaim was successful
+  if (receiveTokenStatus === 'success' && receiveTokenData === true) {
     return (
       <SuccessfulReceivePage
         amount={tokenToMoney(claimableToken ?? token)}

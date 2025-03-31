@@ -2,7 +2,7 @@ create table "wallet"."cashu_token_swaps" (
     "id" uuid not null default gen_random_uuid(),
     "token_hash" text not null,
     "created_at" timestamp with time zone not null default now(),
-    "token_proofs" text not null,
+    "encoded_token" text not null,
     "account_id" uuid not null,
     "user_id" uuid not null,
     "currency" text not null,
@@ -67,9 +67,9 @@ end;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION wallet.create_token_swap(
+CREATE OR REPLACE FUNCTION wallet.get_or_create_cashu_token_swap(
   p_token_hash text,
-  p_token_proofs text,
+  p_encoded_token text,
   p_account_id uuid,
   p_user_id uuid,
   p_currency text,
@@ -91,15 +91,15 @@ begin
   v_updated_counter := p_keyset_counter + array_length(p_output_amounts, 1);
 
   -- Check if there's already a token swap for this hash
-  -- select * into v_token_swap
-  -- from wallet.cashu_token_swaps
-  -- where token_hash = p_token_hash
-  -- for update;
+  select * into v_token_swap
+  from wallet.cashu_token_swaps
+  where token_hash = p_token_hash
+  for update;
 
-  -- if v_token_swap is not null then
-  --   -- Return existing token swap without making changes
-  --   return v_token_swap;
-  -- end if;
+  if v_token_swap is not null then
+    -- Return existing token swap without making changes
+    return v_token_swap;
+  end if;
 
   -- Update the account with optimistic concurrency
   update wallet.accounts a
@@ -122,7 +122,7 @@ begin
   -- Create the token swap
   insert into wallet.cashu_token_swaps (
     token_hash,
-    token_proofs,
+    encoded_token,
     account_id,
     user_id,
     currency,
@@ -134,7 +134,7 @@ begin
     state
   ) values (
     p_token_hash,
-    p_token_proofs,
+    p_encoded_token,
     p_account_id,
     p_user_id,
     p_currency,

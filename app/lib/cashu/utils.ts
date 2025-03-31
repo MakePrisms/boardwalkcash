@@ -1,4 +1,9 @@
-import { CashuMint, CashuWallet, type MintKeyset } from '@cashu/cashu-ts';
+import {
+  CashuMint,
+  CashuWallet,
+  type MintKeyset,
+  type Token,
+} from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
@@ -18,6 +23,17 @@ const currencyToUnit: {
 
 export const getCashuUnit = (currency: Currency) => {
   return currencyToUnit[currency];
+};
+
+export const getCashuUnitFromToken = (token: Token) => {
+  switch (token.unit) {
+    case 'sat':
+      return 'sat';
+    case 'usd':
+      return 'cent';
+    default:
+      throw new Error(`Unknown token unit: ${token.unit}`);
+  }
 };
 
 export const getCashuWallet = (
