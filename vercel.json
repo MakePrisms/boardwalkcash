@@ -1,5 +1,5 @@
 {
-  "framework": "remix",
+  "framework": "react-router",
   "installCommand": "bun install",
   "buildCommand": "bun run build",
   "outputDirectory": "build"

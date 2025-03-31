@@ -1,6 +1,6 @@
-import { Link, NavLink, useNavigate, useNavigation } from '@remix-run/react';
 import { type ComponentProps, useEffect } from 'react';
-import type { NavigateOptions, To } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useNavigation } from 'react-router';
+import type { NavigateOptions, To } from 'react-router';
 
 const transitions = [
   'slideLeft',
@@ -8,13 +8,13 @@ const transitions = [
   'slideUp',
   'slideDown',
 ] as const;
-export type Transition = (typeof transitions)[number];
+type Transition = (typeof transitions)[number];
 
 const isTransition = (value: unknown): value is Transition =>
   transitions.includes(value as Transition);
 
 const applyToTypes = ['newView', 'oldView', 'bothViews'] as const;
-export type ApplyTo = (typeof applyToTypes)[number];
+type ApplyTo = (typeof applyToTypes)[number];
 
 const isApplyTo = (value: unknown): value is ApplyTo =>
   applyToTypes.includes(value as ApplyTo);

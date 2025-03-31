@@ -1,4 +1,4 @@
-import { mergeTests } from 'playwright/test';
+import { mergeTests } from '@playwright/test';
 import { test as authTest } from './auth-fixture';
 import { test as openSecretTest } from './open-secret/fixture';
 import { test as passwordGeneratorTest } from './password-generator-fixture';

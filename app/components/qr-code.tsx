@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Skeleton } from '~/components/ui/skeleton';
 import { cn } from '~/lib/utils';
 
-export type QRCodeProps = {
+type QRCodeProps = {
   /**
    * The value to display in the QR code.
    */

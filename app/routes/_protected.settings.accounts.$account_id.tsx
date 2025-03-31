@@ -1,4 +1,4 @@
-import { useParams } from '@remix-run/react';
+import { useParams } from 'react-router';
 import { Page } from '~/components/page';
 import SingleAccount from '~/features/settings/accounts/$account_id';
 

@@ -1,10 +1,12 @@
 import * as crypto from 'node:crypto';
 import { type Page, type Route, test as base, expect } from '@playwright/test';
 import { decode } from '@stablelib/base64';
-import type { Serializable } from 'playwright-core/types/structs';
 import delay from '~/lib/delay';
 import { session } from '../../mocks/open-secret';
 import { openSecretEncryption } from './encryption';
+
+// biome-ignore lint/suspicious/noExplicitAny: This type is copied from playwright-core/types/structs.d.ts. We needed to copy it because it is not exported from playwright-core.
+type Serializable = any;
 
 type OpenSecretApiMockOptions<
   TRes extends Serializable,

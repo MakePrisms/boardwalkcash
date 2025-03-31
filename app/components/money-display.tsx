@@ -2,7 +2,7 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
 
-export interface MoneyInputDisplayProps<C extends Currency = Currency> {
+interface MoneyInputDisplayProps<C extends Currency = Currency> {
   /** Raw input value from user (e.g., "1", "1.", "1.0") */
   inputValue: string;
   currency: C;

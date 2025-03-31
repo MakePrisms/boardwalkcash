@@ -1,14 +1,4 @@
 import { OpenSecretProvider } from '@opensecret/react';
-import type { LoaderFunctionArgs } from '@remix-run/node';
-import {
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  isRouteErrorResponse,
-  useRouteError,
-} from '@remix-run/react';
 import {
   HydrationBoundary,
   QueryClient,
@@ -16,9 +6,17 @@ import {
 } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Analytics } from '@vercel/analytics/react';
-import type { LinksFunction } from '@vercel/remix';
 import { useState } from 'react';
-import { useDehydratedState } from 'use-dehydrated-state';
+import {
+  Links,
+  type LinksFunction,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  isRouteErrorResponse,
+  useRouteError,
+} from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -34,6 +32,8 @@ import { getBgColorForTheme } from '~/features/theme/colors';
 import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
+import type { Route } from './+types/root';
+import { useDehydratedState } from './hooks/use-dehydrated-state';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -61,7 +61,7 @@ type RootLoaderData = {
 
 export async function loader({
   request,
-}: LoaderFunctionArgs): Promise<RootLoaderData> {
+}: Route.LoaderArgs): Promise<RootLoaderData> {
   /** Returns user settings from cookies */
   const cookieSettings = getThemeCookies(request);
   const userAgentString = request.headers.get('user-agent');
