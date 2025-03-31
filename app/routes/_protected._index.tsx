@@ -80,13 +80,19 @@ export default function Index() {
             transition="slideUp"
             applyTo="newView"
           >
-            <Button className="text-lg">
+            <Button className="w-full text-lg">
               Receive <ArrowDownRight />
             </Button>
           </LinkWithViewTransition>
-          <Button className="text-lg">
-            Send <ArrowUpRight />
-          </Button>
+          <LinkWithViewTransition
+            to="/send"
+            transition="slideUp"
+            applyTo="newView"
+          >
+            <Button className="w-full text-lg">
+              Send <ArrowUpRight />
+            </Button>
+          </LinkWithViewTransition>
         </div>
       </PageContent>
       <PageFooter className="flex flex-row justify-around">

@@ -3,23 +3,23 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useAnimatedQREncoder } from './use-animated-qr-encoder';
 
-type AnimatedQRCodeProps = {
+type QRCodeSVGProps = Parameters<typeof QRCodeSVG>[0];
+
+type AnimatedQRCodeProps = QRCodeSVGProps & {
   /**
-   * The text to encode.
+   * The value to encode into the QR Code.
    */
-  text: string;
-  /**
-   * The size, in pixels, to render the QR Code.
-   *
-   * @defaultValue 275
-   */
-  size?: number;
+  value: string;
 };
 
-export function AnimatedQRCode({ text, size = 275 }: AnimatedQRCodeProps) {
-  const { fragment, isReady } = useAnimatedQREncoder({ text });
+export function AnimatedQRCode({
+  value,
+  size = 275,
+  ...props
+}: AnimatedQRCodeProps) {
+  const { fragment, isReady } = useAnimatedQREncoder({ text: value });
 
   if (isReady) {
-    return <QRCodeSVG value={fragment} size={size} />;
+    return <QRCodeSVG value={fragment} size={size} {...props} />;
   }
 }
