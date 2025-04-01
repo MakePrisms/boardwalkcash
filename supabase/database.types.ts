@@ -128,13 +128,13 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
-          encoded_token: string
           id: string
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
           state: string
           token_hash: string
+          token_proofs: string
           unit: string
           user_id: string
         }
@@ -143,13 +143,13 @@ export type Database = {
           amount: number
           created_at?: string
           currency: string
-          encoded_token: string
           id?: string
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
           state?: string
           token_hash: string
+          token_proofs: string
           unit: string
           user_id: string
         }
@@ -158,13 +158,13 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
-          encoded_token?: string
           id?: string
           keyset_counter?: number
           keyset_id?: string
           output_amounts?: number[]
           state?: string
           token_hash?: string
+          token_proofs?: string
           unit?: string
           user_id?: string
         }
@@ -299,7 +299,7 @@ export type Database = {
       get_or_create_cashu_token_swap: {
         Args: {
           p_token_hash: string
-          p_encoded_token: string
+          p_token_proofs: string
           p_account_id: string
           p_user_id: string
           p_currency: string
@@ -315,13 +315,13 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
-          encoded_token: string
           id: string
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
           state: string
           token_hash: string
+          token_proofs: string
           unit: string
           user_id: string
         }

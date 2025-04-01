@@ -1,9 +1,4 @@
-import {
-  type Proof,
-  type Token,
-  getDecodedToken,
-  getEncodedToken,
-} from '@cashu/cashu-ts';
+import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
 import {
@@ -83,11 +78,11 @@ export class CashuTokenSwapRepository {
     const unit = getDefaultUnit(amount.currency);
 
     const tokenHash = await computeSHA256(encodedToken);
-    const encryptedToken = await this.encryption.encrypt(encodedToken);
+    const encryptedProofs = await this.encryption.encrypt(token.proofs);
 
     const query = this.db.rpc('get_or_create_cashu_token_swap', {
       p_token_hash: tokenHash,
-      p_encoded_token: encryptedToken,
+      p_token_proofs: encryptedProofs,
       p_account_id: accountId,
       p_user_id: userId,
       p_currency: amount.currency,
@@ -218,14 +213,14 @@ export class CashuTokenSwapRepository {
   ): Promise<CashuTokenSwap> {
     const decryptedData = {
       ...data,
-      encoded_token: await decryptData<string>(data.encoded_token),
+      token_proofs: await decryptData<Proof[]>(data.token_proofs),
     };
 
     return {
       userId: decryptedData.user_id,
       accountId: decryptedData.account_id,
       tokenHash: decryptedData.token_hash,
-      token: getDecodedToken(decryptedData.encoded_token),
+      tokenProofs: decryptedData.token_proofs,
       amount: new Money({
         amount: decryptedData.amount,
         currency: decryptedData.currency,

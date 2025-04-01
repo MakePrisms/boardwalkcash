@@ -2,7 +2,7 @@ create table "wallet"."cashu_token_swaps" (
     "id" uuid not null default gen_random_uuid(),
     "token_hash" text not null,
     "created_at" timestamp with time zone not null default now(),
-    "encoded_token" text not null,
+    "token_proofs" text not null,
     "account_id" uuid not null,
     "user_id" uuid not null,
     "currency" text not null,
@@ -69,7 +69,7 @@ $function$
 
 CREATE OR REPLACE FUNCTION wallet.get_or_create_cashu_token_swap(
   p_token_hash text,
-  p_encoded_token text,
+  p_token_proofs text,
   p_account_id uuid,
   p_user_id uuid,
   p_currency text,
@@ -122,7 +122,7 @@ begin
   -- Create the token swap
   insert into wallet.cashu_token_swaps (
     token_hash,
-    encoded_token,
+    token_proofs,
     account_id,
     user_id,
     currency,
@@ -134,7 +134,7 @@ begin
     state
   ) values (
     p_token_hash,
-    p_encoded_token,
+    p_token_proofs,
     p_account_id,
     p_user_id,
     p_currency,

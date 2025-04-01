@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { getCashuUnit } from '~/lib/cashu';
 import type { CashuAccount } from '../accounts/account';
 import { useAccountsCache } from '../accounts/account-hooks';
 import { useUserRef } from '../user/user-hooks';
@@ -119,7 +120,7 @@ export function useRecoverPendingCashuTokenSwaps() {
       return pendingSwaps.reduce(
         (promise, swap) =>
           promise.then(async (results) => {
-            const { token, accountId } = swap;
+            const { tokenProofs, amount, accountId } = swap;
             const account = accountsCache.get(accountId);
 
             if (!account || account.type !== 'cashu') {
@@ -128,7 +129,14 @@ export function useRecoverPendingCashuTokenSwaps() {
               );
             }
 
-            const result = await swapToClaim({ token, account });
+            const result = await swapToClaim({
+              token: {
+                mint: account.mintUrl,
+                proofs: tokenProofs,
+                unit: getCashuUnit(amount.currency),
+              },
+              account,
+            });
             return [...results, result];
           }),
         Promise.resolve<CashuTokenSwap[]>([]),

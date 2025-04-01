@@ -1,4 +1,4 @@
-import type { Token } from '@cashu/cashu-ts';
+import type { Proof } from '@cashu/cashu-ts';
 import type { Money } from '~/lib/money';
 
 export type CashuTokenSwap = {
@@ -7,9 +7,9 @@ export type CashuTokenSwap = {
    */
   tokenHash: string;
   /**
-   * The token being received as a Token object
+   * The proofs from the token being received
    */
-  token: Token;
+  tokenProofs: Proof[];
   /**
    * The user ID of the user receiving the token
    */

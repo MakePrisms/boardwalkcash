@@ -92,7 +92,7 @@ export class CashuTokenSwapService {
     tokenSwap: CashuTokenSwap,
     outputData: OutputData[],
   ) {
-    const proofs = tokenSwap.token.proofs;
+    const proofs = tokenSwap.tokenProofs;
     try {
       const { send: newProofs } = await wallet.swap(sumProofs(proofs), proofs, {
         outputData: { send: outputData },
