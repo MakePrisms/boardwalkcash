@@ -2,7 +2,6 @@ import type { Token } from '@cashu/cashu-ts';
 import {
   type QueryClient,
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
@@ -91,31 +90,49 @@ function usePendingCashuTokenSwaps() {
   const { data } = useQuery({
     queryKey: [pendingCashuTokenSwapsQueryKey, userRef.current.id],
     queryFn: () => tokenSwapRepository.getPending(userRef.current.id),
+    staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
-    initialData: [],
     refetchOnWindowFocus: false,
   });
 
-  return data;
+  return data ?? [];
 }
 
 export function useRecoverPendingCashuTokenSwaps() {
   const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutate: swapToClaim } = useSwapToClaimCashuToken();
+  const { mutate: mutateSwapToClaim } = useSwapToClaimCashuToken();
   const accountsCache = useAccountsCache();
 
-  useQueries({
-    queries: pendingSwaps.map((swap) => ({
-      queryKey: ['recover-cashu-token-swap', swap.tokenHash],
-      queryFn: () => {
-        const { token, accountId } = swap;
-        const account = accountsCache.get(accountId);
-        if (!account || account.type !== 'cashu') {
-          throw new Error(`Account not found for id: ${accountId}`);
-        }
-        return swapToClaim({ token, account });
-      },
-      refetchInterval: 30_000,
-    })),
+  return useMutation({
+    mutationKey: ['recover-pending-cashu-token-swaps'],
+    mutationFn: async () => {
+      const swapToClaim = (props: CreateProps): Promise<CashuTokenSwap> => {
+        return new Promise((resolve, reject) => {
+          mutateSwapToClaim(props, {
+            onSuccess: (data) => resolve(data),
+            onError: (error) => reject(error),
+          });
+        });
+      };
+
+      // Process each swap sequentially using reduce with promises
+      return pendingSwaps.reduce(
+        (promise, swap) =>
+          promise.then(async (results) => {
+            const { token, accountId } = swap;
+            const account = accountsCache.get(accountId);
+
+            if (!account || account.type !== 'cashu') {
+              throw new Error(
+                `Account not found or not a Cashu account: ${accountId}`,
+              );
+            }
+
+            const result = await swapToClaim({ token, account });
+            return [...results, result];
+          }),
+        Promise.resolve<CashuTokenSwap[]>([]),
+      );
+    },
   });
 }
