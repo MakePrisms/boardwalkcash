@@ -2,18 +2,24 @@ import { type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { AlertCircle } from 'lucide-react';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
-  Page,
   PageBackButton,
   PageContent,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
-import { useReceiveCashuToken } from './use-receive-cashu-token';
+import {
+  useGetClaimableToken,
+  useGetCashuTokenSourceAccount,
+  useReceiveCashuToken,
+  useReceiveCashuTokenAccounts,
+} from './receive-cashu-token-hooks';
+import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
@@ -22,29 +28,59 @@ type Props = {
 export default function ReceiveToken({ token }: Props) {
   const [_, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
-  const {
-    data: tokenData,
-    isClaiming,
-    handleClaim,
-    setReceiveAccount,
-  } = useReceiveCashuToken({
+  const addCashuAccount = useAddCashuAccount();
+  const { claimableToken, cannotClaimReason } = useGetClaimableToken({
     token,
-    cashuPubKey:
+    cashuPubKey: // TODO: replace with user's pubkey from OS
       '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   });
-
+  const sourceAccount = useGetCashuTokenSourceAccount(token);
   const {
-    receiveAccount,
     selectableAccounts,
-    crossMintSwapDisabled,
+    receiveAccount,
     receiveAccountIsSource,
-    cannotClaimReason,
-    isMintKnown,
-    claimableToken,
-  } = tokenData;
+    isSourceAccountAdded,
+    isCrossMintSwapDisabled,
+    setReceiveAccount,
+  } = useReceiveCashuTokenAccounts(sourceAccount);
+
+  const { status: receiveTokenStatus, startReceive } = useReceiveCashuToken();
+
+  const handleClaim = async () => {
+    if (!claimableToken) {
+      return;
+    }
+
+    // QUESTION: when we call startReceive the account needs to be created already.
+    // Is there a better way to do this?
+    let account = receiveAccount;
+
+    if (!isSourceAccountAdded && receiveAccountIsSource) {
+      try {
+        account = await addCashuAccount(receiveAccount);
+      } catch (error) {
+        console.error(error);
+        return toast({
+          title: 'Failed to add account',
+          description: 'Please try again',
+        });
+      }
+    }
+
+    startReceive({ token, account });
+  };
+
+  if (receiveTokenStatus === 'success') {
+    return (
+      <SuccessfulReceivePage
+        amount={tokenToMoney(claimableToken ?? token)}
+        account={receiveAccount}
+      />
+    );
+  }
 
   return (
-    <Page>
+    <>
       <PageHeader className="z-10">
         <PageBackButton
           to="/receive"
@@ -75,7 +111,7 @@ export default function ReceiveToken({ token }: Props) {
               <AccountSelector
                 accounts={selectableAccounts}
                 selectedAccount={receiveAccount}
-                disabled={crossMintSwapDisabled}
+                disabled={isCrossMintSwapDisabled}
                 onSelect={setReceiveAccount}
               />
             </div>
@@ -94,10 +130,10 @@ export default function ReceiveToken({ token }: Props) {
             <Button
               onClick={handleClaim}
               className="min-w-[200px]"
-              loading={isClaiming}
+              loading={receiveTokenStatus === 'pending'}
             >
               {receiveAccountIsSource
-                ? isMintKnown
+                ? isSourceAccountAdded
                   ? 'Claim'
                   : 'Add Mint and Claim'
                 : 'Claim'}
@@ -105,6 +141,6 @@ export default function ReceiveToken({ token }: Props) {
           </div>
         )}
       </PageContent>
-    </Page>
+    </>
   );
 }

@@ -191,10 +191,10 @@ export function useAddCashuAccount() {
         | 'proofs'
         | 'version'
       >,
-    ) => {
+    ): Promise<CashuAccount> => {
       const isTestMint = await checkIsTestMint(account.mintUrl);
 
-      return accountRepository.create({
+      return accountRepository.create<CashuAccount>({
         ...account,
         userId,
         isTestMint,
