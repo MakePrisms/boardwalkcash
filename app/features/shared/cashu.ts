@@ -34,6 +34,24 @@ function hexToUint8Array(hex: string): Uint8Array {
   return new Uint8Array(pairs.map((byte) => Number.parseInt(byte, 16)));
 }
 
+const derivationPathIndexes: Record<string, number> = {
+  cashu: 0,
+};
+
+/**
+ * Get the derivation path for a given account type based on the BIP-85 standard
+ * in the format `m/83696968'/39'/0'/${words}'/${index}'`
+ * - `83696968` defines the purpose and is 'SEED' in ascii.
+ * - `39` denotes the application is BIP-39 (mnemonic seed words)
+ * - `0` denotes the language of the seed words is English
+ * - `words` denotes the number of words in the seed phrase (12 or 24)
+ * - `index` denotes the index for unique seed phrases
+ */
+function getSeedPhraseDerivationPath(accountType: 'cashu', words: 12 | 24) {
+  const index = derivationPathIndexes[accountType];
+  return `m/83696968'/39'/0'/${words}'/${index}'`;
+}
+
 export type CashuCryptography = Pick<
   ReturnType<typeof useEncryption>,
   'encrypt' | 'decrypt'
@@ -63,9 +81,9 @@ export function useCashuCryptography(): CashuCryptography {
       const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
       if (seedPromise) return seedPromise;
 
-      const promise = getPrivateKeyBytes(`m/44'/0'/0'/0/0`).then((response) =>
-        hexToUint8Array(response.private_key),
-      );
+      const promise = getPrivateKeyBytes({
+        seed_phrase_derivation_path: getSeedPhraseDerivationPath('cashu', 12),
+      }).then((response) => hexToUint8Array(response.private_key));
 
       setSeedPromise(promise);
       return promise;

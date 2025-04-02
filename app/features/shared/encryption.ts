@@ -31,7 +31,7 @@ export const useEncryption = () => {
       getPrivateKeyBytes,
       encrypt: async <T = unknown>(
         data: T,
-        derivationPath?: string,
+        seedPhraseDerivationPath?: string,
       ): Promise<string> => {
         const preprocessedData = preprocessData(data);
         const serialized = JSON.stringify(preprocessedData, (_, value) => {
@@ -43,14 +43,18 @@ export const useEncryption = () => {
           }
           return value;
         });
-        const response = await encryptData(serialized, derivationPath);
+        const response = await encryptData(serialized, {
+          seed_phrase_derivation_path: seedPhraseDerivationPath,
+        });
         return response.encrypted_data;
       },
       decrypt: async <T = unknown>(
         encryptedData: string,
-        derivationPath?: string,
+        seedPhraseDerivationPath?: string,
       ): Promise<T> => {
-        const response = await decryptData(encryptedData, derivationPath);
+        const response = await decryptData(encryptedData, {
+          seed_phrase_derivation_path: seedPhraseDerivationPath,
+        });
         return JSON.parse(response, (_, value) => {
           if (value && typeof value === 'object' && '__type' in value) {
             switch (value.__type) {
