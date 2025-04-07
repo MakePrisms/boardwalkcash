@@ -36,7 +36,10 @@ export type Account = {
     }
 );
 
+export type ExtendedAccount = Account & { isDefault: boolean };
+
 export type CashuAccount = Extract<Account, { type: 'cashu' }>;
+export type ExtendedCashuAccount = Extract<ExtendedAccount, { type: 'cashu' }>;
 
 export const getAccountBalance = (account: Account) => {
   if (account.type === 'cashu') {

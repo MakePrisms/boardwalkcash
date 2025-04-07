@@ -63,10 +63,12 @@ class PendingCashuTokenSwapsCache {
   constructor(private readonly queryClient: QueryClient) {}
 
   add(tokenSwap: CashuTokenSwap) {
+    console.debug('will add pending swap to cache: ', tokenSwap.tokenHash);
     this.queryClient.setQueryData<CashuTokenSwap[]>(
       [pendingCashuTokenSwapsQueryKey, tokenSwap.userId],
       (curr) => [...(curr ?? []), tokenSwap],
     );
+    console.debug('added pending swap to cache: ', tokenSwap.tokenHash);
   }
 
   update(tokenSwap: CashuTokenSwap) {
@@ -100,18 +102,18 @@ export function useCreateCashuTokenSwap() {
     scope: {
       id: 'create-cashu-token-swap',
     },
-    // QUESTION: should we check the cache for an existing swap?
-    // Create is idempotent, but would incur unnecessary network requests if
-    // the swap already exists. I didn't add just because it makes this hook
-    // slightly more complex.
-    mutationFn: async ({ token, account }: CreateProps) =>
-      tokenSwapService.create({
+    mutationFn: async ({ token, account }: CreateProps) => {
+      console.log('triggering create swap for receiving account: ', account);
+      return tokenSwapService.create({
         userId: userRef.current.id,
         token,
         account,
-      }),
-    onSuccess: (data) => {
+      });
+    },
+    onSuccess: async (data) => {
       tokenSwapCache.add(data);
+      // console.log('triggering complete swap from create swap onSuccess', data);
+      // completeSwap(data);
     },
   });
 }
@@ -178,12 +180,13 @@ function useCompleteCashuTokenSwap() {
       id: 'complete-cashu-token-swap',
     },
     mutationFn: async (swap: CashuTokenSwap) => {
+      console.debug('executing complete swap for: ', swap);
       try {
         const account = accountsCache.get(swap.accountId);
         if (!account || account.type !== 'cashu') {
-          throw new Error(`Account not found for id: ${swap.accountId}`);
+          throw new Error(`Cashu account not found for id: ${swap.accountId}`);
         }
-        return tokenSwapService.completeSwap(account, swap);
+        await tokenSwapService.completeSwap(account, swap);
       } catch (error) {
         console.error('Error finalizing token swap', error);
         throw error;
@@ -217,17 +220,22 @@ function useOnCashuTokenSwapChange({
         async (
           payload: RealtimePostgresChangesPayload<BoardwalkDbCashuTokenSwap>,
         ) => {
+          console.debug('cashu token swap postgres change: ', payload);
           if (payload.eventType === 'INSERT') {
+            console.debug('will map db swap to domain swap');
             const swap = await CashuTokenSwapRepository.toTokenSwap(
               payload.new,
               cashuCryptography.decrypt,
             );
+            console.debug('mapped db swap to domain swap');
             onCreatedRef.current(swap);
           } else if (payload.eventType === 'UPDATE') {
+            console.debug('will map db swap to domain swap');
             const swap = await CashuTokenSwapRepository.toTokenSwap(
               payload.new,
               cashuCryptography.decrypt,
             );
+            console.debug('mapped db swap to domain swap');
             onUpdatedRef.current(swap);
           }
         },
@@ -278,14 +286,24 @@ function usePendingCashuTokenSwaps() {
 
 export function useTrackPendingCashuTokenSwaps() {
   const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutate: completeSwap } = useCompleteCashuTokenSwap();
+  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
+  const accountsCache = useAccountsCache();
+
+  console.debug('pendingSwaps: ', pendingSwaps);
 
   useQueries({
     queries: pendingSwaps.map((swap) => ({
       queryKey: ['complete-cashu-token-swap', swap.tokenHash],
-      queryFn: () => completeSwap(swap),
+      queryFn: async () => {
+        const account = accountsCache.get(swap.accountId);
+        console.debug('triggering complete swap for: ', { swap, account });
+        await completeSwap(swap);
+        return true;
+      },
       refetchInterval: 10_000,
       refetchIntervalInBackground: true,
+      gcTime: 0,
+      staleTime: 0,
     })),
   });
 }

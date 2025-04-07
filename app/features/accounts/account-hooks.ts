@@ -14,7 +14,12 @@ import { type BoardwalkDbAccount, boardwalkDb } from '../boardwalk-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
-import { type Account, type CashuAccount, getAccountBalance } from './account';
+import {
+  type Account,
+  type CashuAccount,
+  type ExtendedAccount,
+  getAccountBalance,
+} from './account';
 import { AccountRepository } from './account-repository';
 
 const accountsQueryKey = 'accounts';
@@ -33,10 +38,18 @@ class AccountsCache {
   }
 
   update(account: Account) {
+    console.debug('will update account: ', {
+      id: account.id,
+      newVersion: account.version,
+    });
     this.queryClient.setQueryData(
       [accountsQueryKey, this.userId],
       (curr: Account[]) => curr.map((x) => (x.id === account.id ? account : x)),
     );
+    console.debug('account updated: ', {
+      id: account.id,
+      version: account.version,
+    });
   }
 
   getAll() {
@@ -93,6 +106,7 @@ function useOnAccountChange({
           table: 'accounts',
         },
         async (payload: RealtimePostgresChangesPayload<BoardwalkDbAccount>) => {
+          console.debug('account postgres change: ', payload);
           if (payload.eventType === 'INSERT') {
             const addedAccount = await AccountRepository.toAccount(
               payload.new,
@@ -100,10 +114,12 @@ function useOnAccountChange({
             );
             onCreatedRef.current(addedAccount);
           } else if (payload.eventType === 'UPDATE') {
+            console.debug('will map db account to domain account');
             const updatedAccount = await AccountRepository.toAccount(
               payload.new,
               cashuCryptography.decrypt,
             );
+            console.debug('mapped db account to domain account');
             onUpdatedRef.current(updatedAccount);
           }
         },
@@ -143,7 +159,9 @@ export function useAccounts(currency?: Currency) {
   });
 }
 
-export function useAccount(id: string) {
+export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
+  id: string,
+) {
   const { data: accounts } = useAccounts();
   const account = accounts.find((x) => x.id === id);
   if (!account) {
@@ -152,7 +170,7 @@ export function useAccount(id: string) {
 
   const user = useUser();
 
-  return { ...account, isDefault: isDefaultAccount(user, account) };
+  return { ...account, isDefault: isDefaultAccount(user, account) } as T;
 }
 
 export function useDefaultAccount() {

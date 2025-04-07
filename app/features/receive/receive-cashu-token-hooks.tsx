@@ -1,8 +1,13 @@
 import type { Proof, Token } from '@cashu/cashu-ts';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import type { Account, CashuAccount } from '~/features/accounts/account';
+import type {
+  Account,
+  CashuAccount,
+  ExtendedCashuAccount,
+} from '~/features/accounts/account';
 import {
+  useAccount,
   useAccounts,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
@@ -245,8 +250,10 @@ export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
     defaultAccount,
   );
 
-  const [receiveAccount, setReceiveAccountState] =
-    useState<CashuAccountWithBadges>(defaultReceiveAccount);
+  const [receiveAccountId, setReceiveAccountId] = useState<string>(
+    defaultReceiveAccount.id,
+  );
+  const receiveAccount = useAccount<ExtendedCashuAccount>(receiveAccountId);
 
   const accountWithBadges = selectableAccounts.map((a) => ({
     ...a,
@@ -265,7 +272,7 @@ export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
       throw new Error('Account is not selectable');
     }
 
-    setReceiveAccountState(account);
+    setReceiveAccountId(account.id);
   };
 
   return {

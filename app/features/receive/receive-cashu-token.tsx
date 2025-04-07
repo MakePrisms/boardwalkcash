@@ -10,12 +10,13 @@ import {
 import { Button } from '~/components/ui/button';
 import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
+import type { CashuAccount } from '../accounts/account';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
-  useGetClaimableToken,
   useGetCashuTokenSourceAccount,
+  useGetClaimableToken,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
 } from './receive-cashu-token-hooks';
@@ -53,7 +54,7 @@ export default function ReceiveToken({ token }: Props) {
 
     // QUESTION: when we call startReceive the account needs to be created already.
     // Is there a better way to do this?
-    let account = receiveAccount;
+    let account: CashuAccount = receiveAccount;
 
     if (!isSourceAccountAdded && receiveAccountIsSource) {
       try {
