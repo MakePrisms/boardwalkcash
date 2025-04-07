@@ -194,19 +194,14 @@ export class CashuReceiveQuoteService {
             .includes('outputs have already been signed before') ||
           error.message.toLowerCase().includes('mint quote already issued.'))
       ) {
-        try {
-          const { proofs } = await wallet.restore(
-            quote.keysetCounter,
-            quote.numberOfBlindedMessages,
-            {
-              keysetId: quote.keysetId,
-            },
-          );
-          return proofs;
-        } catch (error) {
-          console.error(error);
-          throw error;
-        }
+        const { proofs } = await wallet.restore(
+          quote.keysetCounter,
+          quote.numberOfBlindedMessages,
+          {
+            keysetId: quote.keysetId,
+          },
+        );
+        return proofs;
       }
       throw error;
     }

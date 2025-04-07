@@ -10,6 +10,7 @@ import {
   getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
+import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import {
   type CashuCryptography,
@@ -48,8 +49,11 @@ export class CashuTokenSwapService {
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
+    const fees = wallet.getFeesForProofs(token.proofs);
+    const amountToReceive = sumProofs(token.proofs) - fees;
+
     const outputData = OutputData.createDeterministicData(
-      sumProofs(token.proofs),
+      amountToReceive,
       seed,
       counter,
       keys,
@@ -88,10 +92,11 @@ export class CashuTokenSwapService {
       bip39seed: seed,
     });
 
-    const { tokenProofs, keysetId, keysetCounter } = tokenSwap;
+    const { keysetId, keysetCounter } = tokenSwap;
+    const amountToReceive = sum(tokenSwap.outputAmounts);
 
     const outputData = OutputData.createDeterministicData(
-      sumProofs(tokenProofs),
+      amountToReceive,
       seed,
       keysetCounter,
       await wallet.getKeys(keysetId),
@@ -114,8 +119,9 @@ export class CashuTokenSwapService {
     outputData: OutputData[],
   ) {
     try {
+      const amountToReceive = sum(tokenSwap.outputAmounts);
       const { send: newProofs } = await wallet.swap(
-        sumProofs(tokenSwap.tokenProofs),
+        amountToReceive,
         tokenSwap.tokenProofs,
         {
           outputData: { send: outputData },
@@ -134,22 +140,17 @@ export class CashuTokenSwapService {
           error.message
             .toLowerCase()
             .includes('outputs have already been signed before') ||
-          error.message.toLowerCase().includes('mint quote already issued.'))
+          error.message.toLowerCase().includes('mint quote already issued'))
       ) {
-        try {
-          const { proofs } = await wallet.restore(
-            tokenSwap.keysetCounter,
-            tokenSwap.outputAmounts.length,
-            {
-              keysetId: tokenSwap.keysetId,
-            },
-          );
-          // TODO: make sure these proofs are not already in our balance and that they are not spent
-          return proofs;
-        } catch (error) {
-          console.error(error);
-          throw error;
-        }
+        const { proofs } = await wallet.restore(
+          tokenSwap.keysetCounter,
+          tokenSwap.outputAmounts.length,
+          {
+            keysetId: tokenSwap.keysetId,
+          },
+        );
+        // TODO: make sure these proofs are not already in our balance and that they are not spent
+        return proofs;
       }
       throw error;
     }
