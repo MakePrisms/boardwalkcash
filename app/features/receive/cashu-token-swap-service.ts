@@ -60,7 +60,7 @@ export class CashuTokenSwapService {
     );
     const outputAmounts = outputData.map((o) => o.blindedMessage.amount);
 
-    const tokenSwap = await this.tokenSwapRepository.getOrCreate({
+    const tokenSwap = await this.tokenSwapRepository.create({
       token,
       userId,
       accountId: account.id,
@@ -108,6 +108,7 @@ export class CashuTokenSwapService {
 
     await this.tokenSwapRepository.completeTokenSwap({
       tokenHash: tokenSwap.tokenHash,
+      swapVersion: tokenSwap.version,
       proofs: allProofs,
       accountVersion: account.version,
     });

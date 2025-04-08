@@ -187,7 +187,6 @@ function useCompleteCashuTokenSwap() {
         throw error;
       }
     },
-    retry: 1,
   });
 }
 
@@ -289,6 +288,7 @@ export function useTrackPendingCashuTokenSwaps() {
       refetchIntervalInBackground: true,
       gcTime: 0,
       staleTime: 0,
+      retry: 0,
     })),
   });
 }

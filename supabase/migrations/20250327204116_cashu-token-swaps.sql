@@ -9,8 +9,9 @@ create table "wallet"."cashu_token_swaps" (
     "keyset_id" text not null,
     "keyset_counter" integer not null,
     "output_amounts" integer[] not null,
-    "amount" integer not null,
-    "state" text not null default 'PENDING'
+    "amount" numeric not null,
+    "state" text not null default 'PENDING',
+    "version" integer not null default 0
 );
 
 alter table "wallet"."cashu_token_swaps" enable row level security;
@@ -28,44 +29,8 @@ alter table "wallet"."cashu_token_swaps" add constraint "cashu_token_swaps_user_
 alter table "wallet"."cashu_token_swaps" validate constraint "cashu_token_swaps_user_id_fkey";
 
 set check_function_bodies = off;
-CREATE OR REPLACE FUNCTION wallet.complete_cashu_token_swap(p_token_hash text, p_proofs jsonb, p_account_version integer)
- RETURNS void
- LANGUAGE plpgsql
-AS $function$
-declare
-  v_draft wallet.cashu_token_swaps;
-begin
-  -- Get and lock the draft 
-  select * into v_draft
-  from wallet.cashu_token_swaps
-  where token_hash = p_token_hash
-  for update;
 
-  if v_draft is null then
-    raise exception 'Draft for token hash % not found', p_token_hash;
-  end if;
-
-  -- Update the account with optimistic concurrency
-  update wallet.accounts
-  set details = jsonb_set(details, '{proofs}', p_proofs, true),
-      version = version + 1
-  where id = v_draft.account_id and version = p_account_version;
-
-  if not found then
-    raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', v_draft.account_id, p_account_version;
-  end if;
-
-  update wallet.cashu_token_swaps
-  set state = 'COMPLETED'
-  where token_hash = p_token_hash;
-
-  -- No need to return anything
-  return;
-end;
-$function$
-;
-
-CREATE OR REPLACE FUNCTION wallet.get_or_create_cashu_token_swap(
+CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
   p_token_hash text,
   p_token_proofs text,
   p_account_id uuid,
@@ -87,17 +52,6 @@ begin
   -- Calculate new counter
   v_updated_counter := p_keyset_counter + array_length(p_output_amounts, 1);
 
-  -- Check if there's already a token swap for this hash
-  select * into v_token_swap
-  from wallet.cashu_token_swaps
-  where token_hash = p_token_hash
-  for update;
-
-  if v_token_swap is not null then
-    -- Return existing token swap without making changes
-    return v_token_swap;
-  end if;
-
   -- Update the account with optimistic concurrency
   update wallet.accounts a
   set 
@@ -114,7 +68,6 @@ begin
     raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', p_account_id, p_account_version;
   end if;
 
-  -- Create the token swap
   insert into wallet.cashu_token_swaps (
     token_hash,
     token_proofs,
@@ -126,7 +79,8 @@ begin
     keyset_counter,
     output_amounts,
     amount,
-    state
+    state,
+    version
   ) values (
     p_token_hash,
     p_token_proofs,
@@ -138,10 +92,56 @@ begin
     p_keyset_counter,
     p_output_amounts,
     p_amount,
-    'PENDING'
+    'PENDING',
+    0
   ) returning * into v_token_swap;
 
   return v_token_swap;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION wallet.complete_cashu_token_swap(
+  p_token_hash text,
+  p_swap_version integer,
+  p_proofs jsonb,
+  p_account_version integer
+) RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+declare
+  v_token_swap wallet.cashu_token_swaps;
+begin
+  select * into v_token_swap
+  from wallet.cashu_token_swaps
+  where token_hash = p_token_hash
+  for update;
+
+  if v_token_swap is null then
+    raise exception 'Token swap for token hash % not found', p_token_hash;
+  end if;
+
+  -- Update the account with optimistic concurrency
+  update wallet.accounts
+  set details = jsonb_set(details, '{proofs}', p_proofs, true),
+      version = version + 1
+  where id = v_token_swap.account_id and version = p_account_version;
+
+  if not found then
+    raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', v_token_swap.account_id, p_account_version;
+  end if;
+
+  -- Update the token swap to completed
+  update wallet.cashu_token_swaps
+  set state = 'COMPLETED',
+      version = version + 1
+  where token_hash = p_token_hash and version = p_swap_version;
+
+  if not found then
+    raise exception 'Concurrency error: Token swap % was modified by another transaction. Expected version %, but found different one', p_token_hash, p_swap_version;
+  end if;
+
+  return;
 end;
 $function$
 ;

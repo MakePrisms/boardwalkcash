@@ -1,6 +1,6 @@
 import type { Proof, Token } from '@cashu/cashu-ts';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import type {
   Account,
   CashuAccount,
@@ -27,7 +27,7 @@ import {
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
-type UseReceiveCashuTokenProps = {
+type UseGetClaimableTokenProps = {
   token: Token;
   cashuPubKey: string;
 };
@@ -125,7 +125,7 @@ const getClaimableProofs = (unspentProofs: Proof[], cashuPubKey: string) => {
 export function useGetClaimableToken({
   token,
   cashuPubKey,
-}: UseReceiveCashuTokenProps) {
+}: UseGetClaimableTokenProps) {
   const { data: tokenData } = useSuspenseQuery({
     queryKey: ['token-state', token],
     queryFn: async (): Promise<TokenQueryResult> => {
@@ -285,45 +285,70 @@ export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
   };
 }
 
-export function useReceiveCashuToken() {
-  const [status, setStatus] = useState<
-    'idle' | 'pending' | 'success' | 'error'
-  >('idle');
-  const { mutate: createSwap, data: swapData } = useCreateCashuTokenSwap();
-  useTokenSwap({
+type ClaimDestination = 'source' | 'other' | null;
+
+type UseReceiveCashuTokenProps = {
+  onError?: (error: Error) => void;
+};
+
+export function useReceiveCashuToken({
+  onError,
+}: UseReceiveCashuTokenProps = {}) {
+  const onErrorRef = useRef(onError);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [activeClaimDestination, setActiveClaimDestination] =
+    useState<ClaimDestination>(null);
+
+  const { mutateAsync: createSwap, data: swapData } = useCreateCashuTokenSwap();
+  const { status: swapStatus } = useTokenSwap({
     tokenHash: swapData?.tokenHash,
-    onCompleted: () => {
-      setStatus('success');
-    },
+    onFailed: () => onErrorRef.current?.(new Error('Failed to swap token')),
+    onCompleted: () => setIsSuccess(true),
   });
 
-  const { mutate: startReceive } = useMutation({
-    mutationFn: async ({
-      token,
-      account,
-    }: { token: Token; account: CashuAccount }) => {
-      const isSource = account.mintUrl === token.mint;
-      if (isSource) {
-        createSwap({
-          token,
-          account,
-        });
+  const claimTokenToAcount = async ({
+    token,
+    account,
+  }: {
+    token: Token;
+    account: CashuAccount;
+  }) => {
+    try {
+      const isSourceMint = account.mintUrl === token.mint;
+
+      if (isSourceMint) {
+        setActiveClaimDestination('source');
+        await createSwap({ token, account });
       } else {
-        // TODO: implement cross mint swap and  claim to other account types
-        throw new Error('Not implemented');
+        setActiveClaimDestination('other');
+        // TODO: implement cross mint swap
+        throw new Error('Claiming to other account types not implemented');
       }
-    },
-    onMutate: () => {
-      setStatus('pending');
-    },
-    onError: (error) => {
-      setStatus('error');
-      console.error('Failed to create cashu token swap', error);
-    },
-  });
+    } catch (error) {
+      console.error('Failed to claim token', error);
+      setActiveClaimDestination(null);
+
+      onErrorRef.current?.(
+        error instanceof Error ? error : new Error('An unknown error occurred'),
+      );
+    }
+  };
+
+  // Determine if claiming is in progress based on the active destination
+  const isClaiming = (() => {
+    if (activeClaimDestination === 'source') {
+      return ['PENDING', 'LOADING'].includes(swapStatus);
+    }
+    if (activeClaimDestination === 'other') {
+      // TODO: Return loading state for cross mint method
+      return true;
+    }
+    return false;
+  })();
 
   return {
-    status,
-    startReceive,
+    isClaiming,
+    isSuccess,
+    claimTokenToAcount,
   };
 }

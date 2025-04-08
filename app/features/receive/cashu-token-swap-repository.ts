@@ -1,15 +1,15 @@
-import { getEncodedToken, type Token, type Proof } from '@cashu/cashu-ts';
+import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
+import { computeSHA256 } from '~/lib/sha256';
 import {
   type BoardwalkDb,
   type BoardwalkDbCashuTokenSwap,
   boardwalkDb,
 } from '../boardwalk-db/database';
+import { tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuTokenSwap } from './cashu-token-swap';
-import { tokenToMoney } from '../shared/cashu';
-import { computeSHA256 } from '~/lib/sha256';
 
 type Options = {
   abortSignal?: AbortSignal;
@@ -64,11 +64,11 @@ export class CashuTokenSwapRepository {
   ) {}
 
   /**
-   * Creates a cashu token swap and updates the account keyset counter or gets
-   * the existing token swap by token hash.
+   * Creates a cashu token swap and updates the account keyset counter.
    * @returns Created cashu token swap.
+   * @throws Error if a token swap with the same token hash already exists.
    */
-  async getOrCreate(
+  async create(
     {
       token,
       userId,
@@ -85,7 +85,7 @@ export class CashuTokenSwapRepository {
     const tokenHash = await getTokenHash(token);
     const encryptedProofs = await this.encryption.encrypt(token.proofs);
 
-    const query = this.db.rpc('get_or_create_cashu_token_swap', {
+    const query = this.db.rpc('create_cashu_token_swap', {
       p_token_hash: tokenHash,
       p_token_proofs: encryptedProofs,
       p_account_id: accountId,
@@ -120,6 +120,7 @@ export class CashuTokenSwapRepository {
     {
       tokenHash,
       proofs,
+      swapVersion,
       accountVersion,
     }: {
       /**
@@ -131,6 +132,10 @@ export class CashuTokenSwapRepository {
        */
       proofs: Proof[];
       /**
+       * Version of the token swap as seen by the client. Used for optimistic concurrency control.
+       */
+      swapVersion: number;
+      /**
        * Version of the account as seen by the client. Used for optimistic concurrency control.
        */
       accountVersion: number;
@@ -141,6 +146,7 @@ export class CashuTokenSwapRepository {
 
     const query = this.db.rpc('complete_cashu_token_swap', {
       p_token_hash: tokenHash,
+      p_swap_version: swapVersion,
       p_proofs: encryptedProofs,
       p_account_version: accountVersion,
     });
@@ -211,6 +217,7 @@ export class CashuTokenSwapRepository {
       outputAmounts: data.output_amounts,
       createdAt: data.created_at,
       state: data.state as CashuTokenSwap['state'],
+      version: data.version,
     };
   }
 }

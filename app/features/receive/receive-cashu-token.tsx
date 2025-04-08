@@ -45,7 +45,15 @@ export default function ReceiveToken({ token }: Props) {
     setReceiveAccount,
   } = useReceiveCashuTokenAccounts(sourceAccount);
 
-  const { status: receiveTokenStatus, startReceive } = useReceiveCashuToken();
+  const { isClaiming, isSuccess, claimTokenToAcount } = useReceiveCashuToken({
+    onError: (error) => {
+      toast({
+        title: 'Failed to claim token',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   const handleClaim = async () => {
     if (!claimableToken) {
@@ -68,10 +76,10 @@ export default function ReceiveToken({ token }: Props) {
       }
     }
 
-    startReceive({ token, account });
+    claimTokenToAcount({ token, account });
   };
 
-  if (receiveTokenStatus === 'success') {
+  if (isSuccess) {
     return (
       <SuccessfulReceivePage
         amount={tokenToMoney(claimableToken ?? token)}
@@ -131,7 +139,7 @@ export default function ReceiveToken({ token }: Props) {
             <Button
               onClick={handleClaim}
               className="min-w-[200px]"
-              loading={receiveTokenStatus === 'pending'}
+              loading={isClaiming}
             >
               {receiveAccountIsSource
                 ? isSourceAccountAdded

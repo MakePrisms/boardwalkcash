@@ -93,7 +93,7 @@ type Database = MergeDeep<
         process_cashu_receive_quote_payment: {
           Returns: CashuReceiveQuotePaymentResult;
         };
-        get_or_create_cashu_token_swap: {
+        create_cashu_token_swap: {
           Returns: BoardwalkDbCashuTokenSwap;
         };
         complete_cashu_token_swap: {

@@ -136,6 +136,7 @@ export type Database = {
           token_proofs: string
           unit: string
           user_id: string
+          version: number
         }
         Insert: {
           account_id: string
@@ -150,6 +151,7 @@ export type Database = {
           token_proofs: string
           unit: string
           user_id: string
+          version?: number
         }
         Update: {
           account_id?: string
@@ -164,6 +166,7 @@ export type Database = {
           token_proofs?: string
           unit?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -264,36 +267,13 @@ export type Database = {
       complete_cashu_token_swap: {
         Args: {
           p_token_hash: string
+          p_swap_version: number
           p_proofs: Json
           p_account_version: number
         }
         Returns: undefined
       }
-      expire_cashu_receive_quote: {
-        Args: {
-          p_quote_id: string
-          p_quote_version: number
-        }
-        Returns: {
-          account_id: string
-          amount: number
-          created_at: string
-          currency: string
-          description: string | null
-          expires_at: string
-          id: string
-          keyset_counter: number | null
-          keyset_id: string | null
-          number_of_blinded_messages: number | null
-          payment_request: string
-          quote_id: string
-          state: string
-          unit: string
-          user_id: string
-          version: number
-        }
-      }
-      get_or_create_cashu_token_swap: {
+      create_cashu_token_swap: {
         Args: {
           p_token_hash: string
           p_token_proofs: string
@@ -320,6 +300,31 @@ export type Database = {
           token_proofs: string
           unit: string
           user_id: string
+          version: number
+        }
+      }
+      expire_cashu_receive_quote: {
+        Args: {
+          p_quote_id: string
+          p_quote_version: number
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          number_of_blinded_messages: number | null
+          payment_request: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version: number
         }
       }
       process_cashu_receive_quote_payment: {
