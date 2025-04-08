@@ -23,14 +23,73 @@ import {
 import { AccountRepository, useAccountRepository } from './account-repository';
 
 const accountsQueryKey = 'accounts';
+const accountVersionsQueryKey = 'account-versions';
+
+/**
+ * Cache that stores the latest known version of each account.
+ * This is used when we have the information about the latest version of the account before we have the full account data.
+ */
+class AccountVersionsCache {
+  constructor(
+    private readonly queryClient: QueryClient,
+    private readonly accountsCache: AccountsCache,
+  ) {}
+
+  /**
+   * Get the latest known version of the account.
+   * @param accountId - The id of the account.
+   * @returns The latest known version of the account or -1 if the account is not found.
+   */
+  getLatestVersion(accountId: string) {
+    const version = this.queryClient.getQueryData<number>([
+      accountVersionsQueryKey,
+      accountId,
+    ]);
+
+    if (version) {
+      return version;
+    }
+
+    const account = this.accountsCache.get(accountId);
+    if (!account) {
+      return -1;
+    }
+
+    return account.version;
+  }
+
+  /**
+   * Update the latest known version of the account if it is stale.
+   * @param accountId - The id of the account.
+   * @param version - The new version of the account. If the version passed is lower than the latest known version, it will be ignored.
+   */
+  updateLatestVersionIfStale(accountId: string, version: number) {
+    const latestVersion = this.getLatestVersion(accountId);
+    if (latestVersion < version) {
+      this.queryClient.setQueryData<number>(
+        [accountVersionsQueryKey, accountId],
+        version,
+      );
+    }
+  }
+}
 
 class AccountsCache {
+  private readonly accountVersionsCache;
+
   constructor(
     private readonly queryClient: QueryClient,
     private readonly userId: string,
-  ) {}
+  ) {
+    this.accountVersionsCache = new AccountVersionsCache(queryClient, this);
+  }
 
   add(account: Account) {
+    this.accountVersionsCache.updateLatestVersionIfStale(
+      account.id,
+      account.version,
+    );
+
     this.queryClient.setQueryData(
       [accountsQueryKey, this.userId],
       (curr: Account[]) => [...curr, account],
@@ -38,20 +97,22 @@ class AccountsCache {
   }
 
   update(account: Account) {
-    console.debug('will update account: ', {
-      id: account.id,
-      newVersion: account.version,
-    });
+    this.accountVersionsCache.updateLatestVersionIfStale(
+      account.id,
+      account.version,
+    );
+
     this.queryClient.setQueryData(
       [accountsQueryKey, this.userId],
       (curr: Account[]) => curr.map((x) => (x.id === account.id ? account : x)),
     );
-    console.debug('account updated: ', {
-      id: account.id,
-      version: account.version,
-    });
   }
 
+  /**
+   * Gets all accounts.
+   * Each account returned is the last version for which we have a full account data.
+   * @returns The list of accounts.
+   */
   getAll() {
     return this.queryClient.getQueryData<Account[]>([
       accountsQueryKey,
@@ -59,9 +120,78 @@ class AccountsCache {
     ]);
   }
 
+  /**
+   * Get an account by id.
+   * Returns the last version of the account for which we have a full account data.
+   * @param id - The id of the account.
+   * @returns The account or null if the account is not found.
+   */
   get(id: string) {
     const accounts = this.getAll();
-    return accounts?.find((x) => x.id === id);
+    return accounts?.find((x) => x.id === id) ?? null;
+  }
+
+  /**
+   * Set the latest known version of an account.
+   * Use when we know the latest version of an account before we can update the account data in cache. `getLatest` can then be used to wait for the account to be updated with the latest data.
+   * @param id - The id of the account.
+   * @param version - The new version of the account. If the version passed is lower than the latest known version, it will be ignored.
+   */
+  setLatestVersion(id: string, version: number) {
+    this.accountVersionsCache.updateLatestVersionIfStale(id, version);
+  }
+
+  /**
+   * Get the latest account by id.
+   * Returns the latest version of the account. If we don't have the full data for the latest known version yet, this will wait for the account data to be updated.
+   * @param id - The id of the account.
+   * @returns The latest account or null if the account is not found.
+   */
+  async getLatest(id: string): Promise<Account | null> {
+    const latestKnownVersion = this.accountVersionsCache.getLatestVersion(id);
+
+    const account = this.get(id);
+    if (!account || account.version >= latestKnownVersion) {
+      return account;
+    }
+
+    return new Promise<Account | null>((resolve) => {
+      const unsubscribe = this.subscribe((accounts) => {
+        const updatedAccount = accounts.find((x) => x.id === id);
+        if (!updatedAccount) {
+          resolve(null);
+          unsubscribe();
+          return;
+        }
+
+        if (updatedAccount.version >= latestKnownVersion) {
+          this.accountVersionsCache.updateLatestVersionIfStale(
+            id,
+            updatedAccount.version,
+          );
+          resolve(updatedAccount);
+          unsubscribe();
+        }
+      });
+    });
+  }
+
+  /**
+   * Subscribe to changes in the accounts cache.
+   * @param callback - The callback to call when the accounts cache changes.
+   * @returns A function to unsubscribe from the accounts cache.
+   */
+  private subscribe(callback: (accounts: Account[]) => void) {
+    const cache = this.queryClient.getQueryCache();
+    return cache.subscribe((event) => {
+      if (
+        event.query.queryKey.length === 2 &&
+        event.query.queryKey[0] === accountsQueryKey &&
+        event.query.queryKey[1] === this.userId
+      ) {
+        callback(event.query.state.data);
+      }
+    });
   }
 }
 
@@ -94,6 +224,7 @@ function useOnAccountChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const accountCache = useAccountsCache();
 
   useEffect(() => {
     const channel = boardwalkDb
@@ -106,7 +237,6 @@ function useOnAccountChange({
           table: 'accounts',
         },
         async (payload: RealtimePostgresChangesPayload<BoardwalkDbAccount>) => {
-          console.debug('account postgres change: ', payload);
           if (payload.eventType === 'INSERT') {
             const addedAccount = await AccountRepository.toAccount(
               payload.new,
@@ -114,12 +244,15 @@ function useOnAccountChange({
             );
             onCreatedRef.current(addedAccount);
           } else if (payload.eventType === 'UPDATE') {
-            console.debug('will map db account to domain account');
+            // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
+            // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
+            accountCache.setLatestVersion(payload.new.id, payload.new.version);
+
             const updatedAccount = await AccountRepository.toAccount(
               payload.new,
               cashuCryptography.decrypt,
             );
-            console.debug('mapped db account to domain account');
+
             onUpdatedRef.current(updatedAccount);
           }
         },
@@ -129,7 +262,7 @@ function useOnAccountChange({
     return () => {
       channel.unsubscribe();
     };
-  }, [cashuCryptography]);
+  }, [cashuCryptography, accountCache]);
 }
 
 export function useTrackAccounts() {
