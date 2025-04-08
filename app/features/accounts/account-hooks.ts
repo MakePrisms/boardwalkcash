@@ -20,7 +20,7 @@ import {
   type ExtendedAccount,
   getAccountBalance,
 } from './account';
-import { AccountRepository } from './account-repository';
+import { AccountRepository, useAccountRepository } from './account-repository';
 
 const accountsQueryKey = 'accounts';
 
@@ -142,9 +142,8 @@ export function useTrackAccounts() {
 }
 
 export function useAccounts(currency?: Currency) {
-  const cryptography = useCashuCryptography();
   const userId = useUser((x) => x.id);
-  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
+  const accountRepository = useAccountRepository();
 
   return useSuspenseQuery({
     queryKey: [accountsQueryKey, userId],
@@ -195,8 +194,7 @@ export function useDefaultAccount() {
 
 export function useAddCashuAccount() {
   const userId = useUser((x) => x.id);
-  const cryptography = useCashuCryptography();
-  const accountRepository = new AccountRepository(boardwalkDb, cryptography);
+  const accountRepository = useAccountRepository();
 
   const { mutateAsync } = useMutation({
     mutationFn: async (

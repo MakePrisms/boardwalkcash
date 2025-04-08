@@ -6,11 +6,9 @@ import { type AuthUser, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { Account } from '../accounts/account';
-import { boardwalkDb } from '../boardwalk-db/database';
-import { useCashuCryptography } from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
-import { type UpdateUser, UserRepository } from './user-repository';
+import { type UpdateUser, useUserRepository } from './user-repository';
 
 const usersQueryKey = 'users';
 
@@ -22,14 +20,13 @@ const usersQueryKey = 'users';
 export const useUser = <TData = User>(
   select?: (data: User) => TData,
 ): TData => {
-  const cryptography = useCashuCryptography();
   const authState = useAuthState();
   const authUser = authState.user;
   if (!authUser) {
     throw new Error('Cannot use useUser hook in anonymous context');
   }
 
-  const userRepository = new UserRepository(boardwalkDb, cryptography);
+  const userRepository = useUserRepository();
 
   const response = useSuspenseQuery({
     queryKey: [usersQueryKey, authUser.id],
@@ -59,8 +56,7 @@ const defaultAccounts = [
 
 export const useUpsertUser = () => {
   const queryClient = useQueryClient();
-  const cryptography = useCashuCryptography();
-  const userRepository = new UserRepository(boardwalkDb, cryptography);
+  const userRepository = useUserRepository();
 
   return useMutation({
     mutationKey: ['user-upsert'],
@@ -166,8 +162,7 @@ export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
 const useUpdateUser = () => {
   const queryClient = useQueryClient();
   const userRef = useUserRef();
-  const cryptography = useCashuCryptography();
-  const userRepository = new UserRepository(boardwalkDb, cryptography);
+  const userRepository = useUserRepository();
 
   return useMutation({
     mutationFn: (updates: UpdateUser) =>

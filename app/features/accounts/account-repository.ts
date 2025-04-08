@@ -1,7 +1,12 @@
 import type { Proof } from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
-import type { BoardwalkDb, BoardwalkDbAccount } from '../boardwalk-db/database';
+import {
+  type BoardwalkDb,
+  type BoardwalkDbAccount,
+  boardwalkDb,
+} from '../boardwalk-db/database';
+import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
 type AccountInput<T extends Account> = DistributedOmit<
@@ -155,4 +160,9 @@ export class AccountRepository {
 
     throw new Error('Invalid account type');
   }
+}
+
+export function useAccountRepository() {
+  const encryption = useEncryption();
+  return new AccountRepository(boardwalkDb, encryption);
 }
