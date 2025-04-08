@@ -1,6 +1,11 @@
 import { useOpenSecret } from '@opensecret/react';
 import { useMemo } from 'react';
 
+type KeyOptions = {
+  seedPhraseDerivationPath?: string;
+  privateKeyDerivationPath?: string;
+};
+
 /**
  * This function preprocesses the data to preserve the type information for dates.
  * This is needed before serializing the data to a string because JSON.stringify replaces Date with string before replacer function is called.
@@ -31,7 +36,7 @@ export const useEncryption = () => {
       getPrivateKeyBytes,
       encrypt: async <T = unknown>(
         data: T,
-        derivationPath?: string,
+        keyOptions?: KeyOptions,
       ): Promise<string> => {
         const preprocessedData = preprocessData(data);
         const serialized = JSON.stringify(preprocessedData, (_, value) => {
@@ -43,14 +48,20 @@ export const useEncryption = () => {
           }
           return value;
         });
-        const response = await encryptData(serialized, derivationPath);
+        const response = await encryptData(serialized, {
+          seed_phrase_derivation_path: keyOptions?.seedPhraseDerivationPath,
+          private_key_derivation_path: keyOptions?.privateKeyDerivationPath,
+        });
         return response.encrypted_data;
       },
       decrypt: async <T = unknown>(
         encryptedData: string,
-        derivationPath?: string,
+        keyOptions?: KeyOptions,
       ): Promise<T> => {
-        const response = await decryptData(encryptedData, derivationPath);
+        const response = await decryptData(encryptedData, {
+          seed_phrase_derivation_path: keyOptions?.seedPhraseDerivationPath,
+          private_key_derivation_path: keyOptions?.privateKeyDerivationPath,
+        });
         return JSON.parse(response, (_, value) => {
           if (value && typeof value === 'object' && '__type' in value) {
             switch (value.__type) {
