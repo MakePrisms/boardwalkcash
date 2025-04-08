@@ -229,7 +229,7 @@ const useOnMintQuoteStateChange = ({
       queryKey: ['mint-quote', quote.id],
       queryFn: async () => {
         try {
-          const account = accountsCache.get(quote.accountId);
+          const account = await accountsCache.getLatest(quote.accountId);
           if (!account || account.type !== 'cashu') {
             throw new Error(`Account not found for id: ${quote.accountId}`);
           }
