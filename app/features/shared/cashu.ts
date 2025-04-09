@@ -1,8 +1,9 @@
-import type { Token } from '@cashu/cashu-ts';
+import { type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
+import { computeSHA256 } from '~/lib/sha256';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
 import { useEncryption } from './encryption';
 
@@ -74,4 +75,10 @@ export function useCashuCryptography(): CashuCryptography {
 
     return { getSeed, encrypt, decrypt };
   }, [getPrivateKeyBytes, encrypt, decrypt]);
+}
+
+export function getTokenHash(token: Token | string): Promise<string> {
+  const encodedToken =
+    typeof token === 'string' ? token : getEncodedToken(token);
+  return computeSHA256(encodedToken);
 }

@@ -12,7 +12,7 @@ import {
   useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
-import { tokenToMoney } from '~/features/shared/cashu';
+import { getTokenHash, tokenToMoney } from '~/features/shared/cashu';
 import { getClaimableProofs, getUnspentProofsFromToken } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
@@ -21,6 +21,7 @@ import {
   useCreateCashuTokenSwap,
   useTokenSwap,
 } from './cashu-token-swap-hooks';
+import { useCashuTokenSwapRepository } from './cashu-token-swap-repository';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -97,9 +98,22 @@ export function useTokenWithClaimableProofs({
   token,
   cashuPubKey,
 }: UseGetClaimableTokenProps) {
+  const tokenSwapRepository = useCashuTokenSwapRepository();
+
   const { data: tokenData } = useSuspenseQuery({
     queryKey: ['token-state', token],
     queryFn: async (): Promise<TokenQueryResult> => {
+      const existingSwap = await tokenSwapRepository.get(
+        await getTokenHash(token),
+      );
+
+      if (existingSwap) {
+        return {
+          claimableToken: null,
+          cannotClaimReason: 'You have already claimed this token',
+        };
+      }
+
       const unspentProofs = await getUnspentProofsFromToken(token);
       if (unspentProofs.length === 0) {
         return {
