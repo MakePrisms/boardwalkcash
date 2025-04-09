@@ -289,3 +289,9 @@ $function$
 alter table "wallet"."cashu_receive_quotes" add constraint "cashu_receive_quotes_output_amounts_check" CHECK (output_amounts IS NULL OR array_length(output_amounts, 1) > 0) not valid;
 
 alter table "wallet"."cashu_receive_quotes" validate constraint "cashu_receive_quotes_output_amounts_check";
+
+-- Cleanup failed and completed token swaps every day at midnight
+select cron.schedule('cleanup-cashu-token-swaps', '0 0 * * *', $$
+  DELETE FROM wallet.cashu_token_swaps
+  WHERE state IN ('COMPLETED', 'FAILED') AND created_at < NOW() - INTERVAL '1 day';
+$$);
