@@ -125,12 +125,14 @@ export type Database = {
       cashu_token_swaps: {
         Row: {
           account_id: string
-          amount: number
           created_at: string
           currency: string
+          fee_amount: number
+          input_amount: number
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
+          receive_amount: number
           state: string
           token_hash: string
           token_proofs: string
@@ -140,12 +142,14 @@ export type Database = {
         }
         Insert: {
           account_id: string
-          amount: number
           created_at?: string
           currency: string
+          fee_amount: number
+          input_amount: number
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
+          receive_amount: number
           state?: string
           token_hash: string
           token_proofs: string
@@ -155,12 +159,14 @@ export type Database = {
         }
         Update: {
           account_id?: string
-          amount?: number
           created_at?: string
           currency?: string
+          fee_amount?: number
+          input_amount?: number
           keyset_counter?: number
           keyset_id?: string
           output_amounts?: number[]
+          receive_amount?: number
           state?: string
           token_hash?: string
           token_proofs?: string
@@ -284,17 +290,21 @@ export type Database = {
           p_keyset_id: string
           p_keyset_counter: number
           p_output_amounts: number[]
-          p_amount: number
+          p_input_amount: number
+          p_receive_amount: number
+          p_fee_amount: number
           p_account_version: number
         }
         Returns: {
           account_id: string
-          amount: number
           created_at: string
           currency: string
+          fee_amount: number
+          input_amount: number
           keyset_counter: number
           keyset_id: string
           output_amounts: number[]
+          receive_amount: number
           state: string
           token_hash: string
           token_proofs: string

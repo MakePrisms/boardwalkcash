@@ -45,7 +45,6 @@ export class CashuTokenSwapService {
 
     const wallet = getCashuWallet(account.mintUrl, {
       unit: cashuUnit,
-      bip39seed: seed,
     });
 
     const keys = await wallet.getKeys();
@@ -72,6 +71,7 @@ export class CashuTokenSwapService {
       keysetId: wallet.keysetId,
       keysetCounter: counter,
       outputAmounts,
+      fees,
       accountVersion: account.version,
     });
 

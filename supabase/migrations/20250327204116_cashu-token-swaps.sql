@@ -9,7 +9,9 @@ create table "wallet"."cashu_token_swaps" (
     "keyset_id" text not null,
     "keyset_counter" integer not null,
     "output_amounts" integer[] not null,
-    "amount" numeric not null,
+    "input_amount" numeric not null,
+    "receive_amount" numeric not null,
+    "fee_amount" numeric not null,
     "state" text not null default 'PENDING',
     "version" integer not null default 0
 );
@@ -45,7 +47,9 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
   p_keyset_id text,
   p_keyset_counter integer,
   p_output_amounts integer[],
-  p_amount numeric,
+  p_input_amount numeric,
+  p_receive_amount numeric,
+  p_fee_amount numeric,
   p_account_version integer
 ) RETURNS wallet.cashu_token_swaps
  LANGUAGE plpgsql
@@ -83,7 +87,9 @@ begin
     keyset_id,
     keyset_counter,
     output_amounts,
-    amount,
+    input_amount,
+    receive_amount,
+    fee_amount,
     state,
     version
   ) values (
@@ -96,7 +102,9 @@ begin
     p_keyset_id,
     p_keyset_counter,
     p_output_amounts,
-    p_amount,
+    p_input_amount,
+    p_receive_amount,
+    p_fee_amount,
     'PENDING',
     0
   ) returning * into v_token_swap;

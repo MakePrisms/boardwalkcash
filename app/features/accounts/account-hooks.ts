@@ -1,6 +1,7 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type QueryClient,
+  type UseSuspenseQueryResult,
   useMutation,
   useQueryClient,
   useSuspenseQuery,
@@ -274,10 +275,11 @@ export function useTrackAccounts() {
     onUpdated: (account) => accountCache.update(account),
   });
 }
+
 export function useAccounts<T extends AccountType = AccountType>(select?: {
   currency?: Currency;
   type?: T;
-}) {
+}): UseSuspenseQueryResult<ExtendedAccount<T>[]> {
   const user = useUser();
   const accountRepository = useAccountRepository();
 

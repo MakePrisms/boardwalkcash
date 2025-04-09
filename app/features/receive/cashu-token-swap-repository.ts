@@ -1,6 +1,7 @@
 import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
+import { sum } from '~/lib/utils';
 import {
   type BoardwalkDb,
   type BoardwalkDbCashuTokenSwap,
@@ -42,6 +43,10 @@ type CreateTokenSwap = {
    */
   outputAmounts: number[];
   /**
+   * The amount of the fee in the unit of the token.
+   */
+  fees: number;
+  /**
    * Cashu token being claimed
    */
   token: Token;
@@ -74,6 +79,7 @@ export class CashuTokenSwapRepository {
       userId,
       accountId,
       keysetId,
+      fees,
       keysetCounter,
       outputAmounts,
       accountVersion,
@@ -95,7 +101,9 @@ export class CashuTokenSwapRepository {
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
       p_output_amounts: outputAmounts,
-      p_amount: amount.toNumber(unit),
+      p_input_amount: sum(outputAmounts),
+      p_receive_amount: sum(outputAmounts) - fees,
+      p_fee_amount: fees,
       p_account_version: accountVersion,
     });
 
@@ -208,7 +216,7 @@ export class CashuTokenSwapRepository {
       userId: decryptedData.user_id,
       accountId: decryptedData.account_id,
       amount: new Money({
-        amount: decryptedData.amount,
+        amount: decryptedData.input_amount,
         currency: decryptedData.currency,
         unit: decryptedData.unit,
       }),
