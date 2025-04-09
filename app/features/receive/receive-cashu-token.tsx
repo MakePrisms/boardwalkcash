@@ -15,10 +15,10 @@ import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
-  useGetCashuTokenSourceAccount,
-  useGetClaimableToken,
+  useCashuTokenSourceAccount,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
+  useTokenWithClaimableProofs,
 } from './receive-cashu-token-hooks';
 import { SuccessfulReceivePage } from './successful-receive-page';
 
@@ -30,12 +30,12 @@ export default function ReceiveToken({ token }: Props) {
   const [_, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
   const addCashuAccount = useAddCashuAccount();
-  const { claimableToken, cannotClaimReason } = useGetClaimableToken({
+  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
     token,
     cashuPubKey: // TODO: replace with user's pubkey from OS
       '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   });
-  const sourceAccount = useGetCashuTokenSourceAccount(token);
+  const sourceAccount = useCashuTokenSourceAccount(token);
   const {
     selectableAccounts,
     receiveAccount,
@@ -45,7 +45,7 @@ export default function ReceiveToken({ token }: Props) {
     setReceiveAccount,
   } = useReceiveCashuTokenAccounts(sourceAccount);
 
-  const { status, startClaimingTokenToAccount } = useReceiveCashuToken({
+  const { status, claimToken } = useReceiveCashuToken({
     onError: (error) => {
       toast({
         title: 'Failed to claim token',
@@ -60,11 +60,11 @@ export default function ReceiveToken({ token }: Props) {
       return;
     }
 
-    // QUESTION: when we call startReceive the account needs to be created already.
-    // Is there a better way to do this?
     let account: CashuAccount = receiveAccount;
 
-    if (!isSourceAccountAdded && receiveAccountIsSource) {
+    const isReceiveAccountAdded =
+      isSourceAccountAdded && receiveAccountIsSource;
+    if (!isReceiveAccountAdded) {
       try {
         account = await addCashuAccount(receiveAccount);
       } catch (error) {
@@ -76,7 +76,7 @@ export default function ReceiveToken({ token }: Props) {
       }
     }
 
-    startClaimingTokenToAccount({ token, account });
+    await claimToken({ token, account });
   };
 
   if (status === 'SUCCESS') {

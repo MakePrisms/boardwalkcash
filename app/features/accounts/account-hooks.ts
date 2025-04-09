@@ -314,6 +314,13 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
   });
 }
 
+/**
+ * Hook to get an account by ID.
+ * @param id - The ID of the account to retrieve.
+ * @param getFallbackAccount - Optional function that returns a fallback account if the requested account is not found.
+ * @returns The specified account or the result of the fallback function if provided.
+ * @throws Error if the account is not found and no fallback function is provided.
+ */
 export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   id: string,
   getFallbackAccount?: () => T,

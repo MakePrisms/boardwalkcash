@@ -11,7 +11,6 @@ import {
   getCashuWallet,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
-import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
@@ -201,10 +200,9 @@ export class CashuReceiveQuoteService {
             .includes('outputs have already been signed before') ||
           error.message.toLowerCase().includes('mint quote already issued.'))
       ) {
-        const amountToRestore = sum(quote.outputAmounts);
         const { proofs } = await wallet.restore(
           quote.keysetCounter,
-          amountToRestore,
+          quote.outputAmounts.length,
           {
             keysetId: quote.keysetId,
           },

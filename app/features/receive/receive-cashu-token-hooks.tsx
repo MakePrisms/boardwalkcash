@@ -1,4 +1,4 @@
-import type { Proof, Token } from '@cashu/cashu-ts';
+import type { Token } from '@cashu/cashu-ts';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
@@ -9,15 +9,11 @@ import type {
 import {
   useAccount,
   useAccounts,
+  useAccountsCache,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { tokenToMoney } from '~/features/shared/cashu';
-import {
-  getP2PKPubkeyFromProofs,
-  getUnspentProofsFromToken,
-  isP2PKSecret,
-  isPlainSecret,
-} from '~/lib/cashu';
+import { getClaimableProofs, getUnspentProofsFromToken } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
@@ -49,20 +45,19 @@ type TokenQueryResult =
  * Takes a token and returns the account that the token is from.
  * If the account does not exist, we construct and return an account, but we do not store it in the database.
  */
-export function useGetCashuTokenSourceAccount(token: Token) {
+export function useCashuTokenSourceAccount(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
   const { data: allAccounts } = useAccounts({ type: 'cashu' });
   const existingAccount = allAccounts.find(
     (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
   );
 
-  if (existingAccount) {
-    return existingAccount;
-  }
-
   const { data } = useSuspenseQuery({
     queryKey: ['token-source-account', token.mint, tokenCurrency],
     queryFn: async (): Promise<ExtendedCashuAccount> => {
+      if (existingAccount) {
+        return existingAccount;
+      }
       const info = await getMintInfo(token.mint);
       const isTestMint = await checkIsTestMint(token.mint);
       return {
@@ -70,9 +65,9 @@ export function useGetCashuTokenSourceAccount(token: Token) {
         type: 'cashu',
         mintUrl: token.mint,
         createdAt: new Date().toISOString(),
-        name: info?.name ?? 'Unknown Mint',
+        name: info?.name ?? token.mint.replace('https://', ''),
         currency: tokenToMoney(token).currency,
-        isTestMint: isTestMint ?? false,
+        isTestMint: isTestMint,
         version: 0,
         keysetCounters: {},
         proofs: [],
@@ -86,34 +81,6 @@ export function useGetCashuTokenSourceAccount(token: Token) {
   return data;
 }
 
-const getClaimableProofs = (unspentProofs: Proof[], cashuPubKey: string) => {
-  let cannotClaimReason: string | undefined;
-  const claimableProofs = unspentProofs.filter((proof) => {
-    if (isPlainSecret(proof.secret)) {
-      return true;
-    }
-    if (!isP2PKSecret(proof.secret)) {
-      cannotClaimReason = 'This ecash contains an unknown spending condition.';
-      return false;
-    }
-    try {
-      const pubkey = getP2PKPubkeyFromProofs([proof]);
-      return pubkey === null || pubkey === cashuPubKey;
-    } catch {
-      console.warn('Failed to get pubkey from proof', proof);
-      return false;
-    }
-  });
-  if (claimableProofs.length === 0) {
-    return {
-      claimableProofs: null,
-      cannotClaimReason:
-        cannotClaimReason ?? 'You do not have permission to claim this ecash',
-    };
-  }
-  return { claimableProofs, cannotClaimReason: null };
-};
-
 /**
  * This hook is used to check which proofs in a token are already spent and which
  * proofs have spending conditions that this user can satisfy.
@@ -122,7 +89,7 @@ const getClaimableProofs = (unspentProofs: Proof[], cashuPubKey: string) => {
  * @returns A token with only proofs that can be claimed. If the token cannot be claimed,
  * the hook will return a reason why and a null token.
  */
-export function useGetClaimableToken({
+export function useTokenWithClaimableProofs({
   token,
   cashuPubKey,
 }: UseGetClaimableTokenProps) {
@@ -139,7 +106,7 @@ export function useGetClaimableToken({
 
       const { claimableProofs, cannotClaimReason } = getClaimableProofs(
         unspentProofs,
-        cashuPubKey,
+        [cashuPubKey],
       );
 
       return claimableProofs
@@ -155,10 +122,6 @@ export function useGetClaimableToken({
   return tokenData;
 }
 
-function isSameAccount(a: CashuAccount, b: CashuAccount) {
-  return a.mintUrl === b.mintUrl && a.currency === b.currency;
-}
-
 const getDefaultReceiveAccount = (
   selectableAccounts: CashuAccount[],
   sourceAccount: CashuAccount,
@@ -170,8 +133,8 @@ const getDefaultReceiveAccount = (
       ? sourceAccount
       : defaultAccount;
 
-  const matchingAccount = selectableAccounts.find((account) =>
-    isSameAccount(account, targetAccount),
+  const matchingAccount = selectableAccounts.find(
+    (a) => a.id === targetAccount.id,
   );
 
   // Fall back to source account if no match found
@@ -192,10 +155,7 @@ const getBadges = (
   if (account.mintUrl === sourceAccount.mintUrl) {
     badges.push('Source');
   }
-  if (
-    defaultAccount.type === 'cashu' &&
-    isSameAccount(account, defaultAccount)
-  ) {
+  if (defaultAccount.type === 'cashu' && account.id === defaultAccount.id) {
     badges.push('Default');
   }
   if (!allAccounts.some((a) => a.mintUrl === account.mintUrl)) {
@@ -205,18 +165,13 @@ const getBadges = (
   return badges;
 };
 
-/**
- * Returns a list of accounts that the user can select to receive the token.
- * If cross mint swaps are disabled because we can't make a lightning payment
- * from the source account, we only show the source account. Otherwise, we show
- * the source account and all other non-testnet cashu accounts.
- */
 const getSelectableAccounts = (
   sourceAccount: CashuAccount,
   isCrossMintSwapDisabled: boolean,
   accounts: CashuAccount[],
-) => {
-  return isCrossMintSwapDisabled
+  defaultAccount: Account,
+): CashuAccountWithBadges[] => {
+  const baseAccounts = isCrossMintSwapDisabled
     ? [sourceAccount]
     : [
         sourceAccount,
@@ -225,6 +180,11 @@ const getSelectableAccounts = (
             !account.isTestMint && account.mintUrl !== sourceAccount.mintUrl,
         ),
       ];
+
+  return baseAccounts.map((account) => ({
+    ...account,
+    badges: getBadges(account, accounts, sourceAccount, defaultAccount),
+  }));
 };
 
 /**
@@ -234,7 +194,9 @@ const getSelectableAccounts = (
 export function useReceiveCashuTokenAccounts(
   sourceAccount: ExtendedCashuAccount,
 ) {
-  const { data: accounts } = useAccounts({ type: 'cashu' });
+  const accountsCache = useAccountsCache();
+  const allAccounts = accountsCache.getAll() || [];
+  const accounts = allAccounts.filter((a) => a.type === 'cashu');
   const defaultAccount = useDefaultAccount();
 
   const isCrossMintSwapDisabled = sourceAccount.isTestMint;
@@ -242,6 +204,7 @@ export function useReceiveCashuTokenAccounts(
     sourceAccount,
     isCrossMintSwapDisabled,
     accounts,
+    defaultAccount,
   );
   const defaultReceiveAccount = getDefaultReceiveAccount(
     selectableAccounts,
@@ -258,19 +221,10 @@ export function useReceiveCashuTokenAccounts(
     () => sourceAccount,
   );
 
-  const accountWithBadges = selectableAccounts.map((a) => ({
-    ...a,
-    badges: getBadges(a, accounts, sourceAccount, defaultAccount),
-  }));
-
-  const isSourceAccountAdded = accounts.some((a) =>
-    isSameAccount(a, sourceAccount),
-  );
+  const isSourceAccountAdded = sourceAccount.id !== '';
 
   const setReceiveAccount = (account: CashuAccountWithBadges) => {
-    const isSelectable = selectableAccounts.some((a) =>
-      isSameAccount(a, account),
-    );
+    const isSelectable = selectableAccounts.some((a) => a.id === account.id);
     if (!isSelectable) {
       throw new Error('Account is not selectable');
     }
@@ -279,7 +233,7 @@ export function useReceiveCashuTokenAccounts(
   };
 
   return {
-    selectableAccounts: accountWithBadges,
+    selectableAccounts,
     receiveAccount,
     receiveAccountIsSource: receiveAccount.mintUrl === sourceAccount.mintUrl,
     isSourceAccountAdded,
@@ -309,7 +263,7 @@ export function useReceiveCashuToken({
     onFailed: () => onErrorRef.current?.(new Error('Failed to swap token')),
   });
 
-  const startClaimingTokenToAccount = async ({
+  const claimToken = async ({
     token,
     account,
   }: {
@@ -349,6 +303,6 @@ export function useReceiveCashuToken({
 
   return {
     status,
-    startClaimingTokenToAccount,
+    claimToken,
   };
 }

@@ -49,10 +49,10 @@ export class CashuTokenSwapService {
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
-    const fees = wallet.getFeesForProofs(token.proofs);
-    const amountToReceive = sumProofs(token.proofs) - fees;
+    const fee = wallet.getFeesForProofs(token.proofs);
+    const amountToReceive = sumProofs(token.proofs) - fee;
 
-    if (amountToReceive < 1) {
+    if (amountToReceive <= 0) {
       throw new Error('Token is too small to claim.');
     }
 
@@ -71,7 +71,7 @@ export class CashuTokenSwapService {
       keysetId: wallet.keysetId,
       keysetCounter: counter,
       outputAmounts,
-      fees,
+      fee,
       accountVersion: account.version,
     });
 

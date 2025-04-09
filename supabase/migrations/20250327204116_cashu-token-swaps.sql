@@ -90,8 +90,7 @@ begin
     input_amount,
     receive_amount,
     fee_amount,
-    state,
-    version
+    state
   ) values (
     p_token_hash,
     p_token_proofs,
@@ -105,8 +104,7 @@ begin
     p_input_amount,
     p_receive_amount,
     p_fee_amount,
-    'PENDING',
-    0
+    'PENDING'
   ) returning * into v_token_swap;
 
   return v_token_swap;
@@ -132,6 +130,10 @@ begin
 
   if v_token_swap is null then
     raise exception 'Token swap for token hash % not found', p_token_hash;
+  end if;
+
+  if v_token_swap.state != 'PENDING' then
+    raise exception 'Token swap for token hash % cannot be completed because it is not in PENDING state. Current state: %', p_token_hash, v_token_swap.state;
   end if;
 
   -- Update the account with optimistic concurrency

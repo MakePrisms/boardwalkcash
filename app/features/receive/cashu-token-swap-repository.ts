@@ -45,7 +45,7 @@ type CreateTokenSwap = {
   /**
    * The amount of the fee in the unit of the token.
    */
-  fees: number;
+  fee: number;
   /**
    * Cashu token being claimed
    */
@@ -79,7 +79,7 @@ export class CashuTokenSwapRepository {
       userId,
       accountId,
       keysetId,
-      fees,
+      fee,
       keysetCounter,
       outputAmounts,
       accountVersion,
@@ -102,8 +102,8 @@ export class CashuTokenSwapRepository {
       p_keyset_counter: keysetCounter,
       p_output_amounts: outputAmounts,
       p_input_amount: sum(outputAmounts),
-      p_receive_amount: sum(outputAmounts) - fees,
-      p_fee_amount: fees,
+      p_receive_amount: sum(outputAmounts) - fee,
+      p_fee_amount: fee,
       p_account_version: accountVersion,
     });
 
@@ -178,11 +178,10 @@ export class CashuTokenSwapRepository {
     userId: string,
     options?: Options,
   ): Promise<CashuTokenSwap[]> {
-    const query = this.db
-      .from('cashu_token_swaps')
-      .select()
-      .eq('user_id', userId)
-      .eq('state', 'PENDING');
+    const query = this.db.from('cashu_token_swaps').select().match({
+      user_id: userId,
+      state: 'PENDING',
+    });
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
