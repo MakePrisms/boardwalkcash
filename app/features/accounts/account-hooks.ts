@@ -16,6 +16,7 @@ import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
 import {
   type Account,
+  type AccountType,
   type CashuAccount,
   type ExtendedAccount,
   getAccountBalance,
@@ -273,30 +274,55 @@ export function useTrackAccounts() {
     onUpdated: (account) => accountCache.update(account),
   });
 }
-
-export function useAccounts(currency?: Currency) {
-  const userId = useUser((x) => x.id);
+export function useAccounts<T extends AccountType = AccountType>(select?: {
+  currency?: Currency;
+  type?: T;
+}) {
+  const user = useUser();
   const accountRepository = useAccountRepository();
 
   return useSuspenseQuery({
-    queryKey: [accountsQueryKey, userId],
-    queryFn: () => accountRepository.getAll(userId),
+    queryKey: [accountsQueryKey, user.id],
+    queryFn: () => accountRepository.getAll(user.id),
     staleTime: Number.POSITIVE_INFINITY,
     select: (data) => {
-      if (!currency) {
-        return data;
+      const extendedData = data.map((x) => ({
+        ...x,
+        isDefault: isDefaultAccount(user, x),
+      }));
+
+      if (!select) {
+        return extendedData as ExtendedAccount<T>[];
       }
-      return data.filter((x) => x.currency === currency);
+
+      const filteredData = extendedData.filter(
+        (account): account is ExtendedAccount<T> => {
+          if (select.currency && account.currency !== select.currency) {
+            return false;
+          }
+          if (select.type && account.type !== select.type) {
+            return false;
+          }
+          return true;
+        },
+      );
+
+      return filteredData;
     },
   });
 }
 
 export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   id: string,
+  getFallbackAccount?: () => T,
 ) {
   const { data: accounts } = useAccounts();
   const account = accounts.find((x) => x.id === id);
+
   if (!account) {
+    if (getFallbackAccount) {
+      return getFallbackAccount();
+    }
     throw new Error(`Account with id ${id} not found`);
   }
 
@@ -307,7 +333,7 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
 
 export function useDefaultAccount() {
   const defaultCurrency = useUser((x) => x.defaultCurrency);
-  const { data: accounts } = useAccounts(defaultCurrency);
+  const { data: accounts } = useAccounts({ currency: defaultCurrency });
 
   const defaultBtcAccountId = useUser((x) => x.defaultBtcAccountId);
   const defaultUsdccountId = useUser((x) => x.defaultUsdAccountId);
@@ -357,7 +383,7 @@ export function useAddCashuAccount() {
 }
 
 export function useBalance(currency: Currency) {
-  const { data: accounts } = useAccounts(currency);
+  const { data: accounts } = useAccounts({ currency });
   const balance = accounts.reduce(
     (acc, account) => {
       const accountBalance = getAccountBalance(account);

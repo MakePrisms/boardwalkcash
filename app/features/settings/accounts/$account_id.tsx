@@ -1,15 +1,16 @@
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import type { Account } from '~/features/accounts/account';
+import type {
+  Account,
+  ExtendedCashuAccount,
+} from '~/features/accounts/account';
 import { useAccount } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { Money } from '~/lib/money';
 
-function CashuAccount({
-  account,
-}: { account: Account & { type: 'cashu'; isDefault: boolean } }) {
+function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
   const { toast } = useToast();
   const setDefaultAccount = useSetDefaultAccount();
 

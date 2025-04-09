@@ -1,6 +1,6 @@
 import type { Proof, Token } from '@cashu/cashu-ts';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type {
   Account,
   CashuAccount,
@@ -19,6 +19,7 @@ import {
   isPlainSecret,
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
+import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import {
   useCreateCashuTokenSwap,
@@ -50,20 +51,18 @@ type TokenQueryResult =
  */
 export function useGetCashuTokenSourceAccount(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
-  const { data: allAccounts } = useAccounts();
-  const accounts: CashuAccount[] = allAccounts.filter(
-    (a) => a.type === 'cashu',
-  );
-  const existingAccount = accounts.find(
+  const { data: allAccounts } = useAccounts({ type: 'cashu' });
+  const existingAccount = allAccounts.find(
     (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
   );
+
   if (existingAccount) {
     return existingAccount;
   }
 
   const { data } = useSuspenseQuery({
     queryKey: ['token-source-account', token.mint, tokenCurrency],
-    queryFn: async (): Promise<CashuAccount> => {
+    queryFn: async (): Promise<ExtendedCashuAccount> => {
       const info = await getMintInfo(token.mint);
       const isTestMint = await checkIsTestMint(token.mint);
       return {
@@ -77,6 +76,7 @@ export function useGetCashuTokenSourceAccount(token: Token) {
         version: 0,
         keysetCounters: {},
         proofs: [],
+        isDefault: false,
       };
     },
     staleTime: 3 * 60 * 1000,
@@ -231,12 +231,12 @@ const getSelectableAccounts = (
  * Lets the user select an account to receive the token and returns data about the
  * selectable accounts based on the source account and the user's accounts in the database.
  */
-export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
-  const { data: allAccounts } = useAccounts();
+export function useReceiveCashuTokenAccounts(
+  sourceAccount: ExtendedCashuAccount,
+) {
+  const { data: accounts } = useAccounts({ type: 'cashu' });
   const defaultAccount = useDefaultAccount();
-  const accounts: CashuAccount[] = allAccounts.filter(
-    (a) => a.type === 'cashu',
-  );
+
   const isCrossMintSwapDisabled = sourceAccount.isTestMint;
   const selectableAccounts = getSelectableAccounts(
     sourceAccount,
@@ -253,7 +253,10 @@ export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
   const [receiveAccountId, setReceiveAccountId] = useState<string>(
     defaultReceiveAccount.id,
   );
-  const receiveAccount = useAccount<ExtendedCashuAccount>(receiveAccountId);
+  const receiveAccount = useAccount<ExtendedCashuAccount>(
+    receiveAccountId,
+    () => sourceAccount,
+  );
 
   const accountWithBadges = selectableAccounts.map((a) => ({
     ...a,
@@ -285,7 +288,7 @@ export function useReceiveCashuTokenAccounts(sourceAccount: CashuAccount) {
   };
 }
 
-type ClaimDestination = 'source' | 'other' | null;
+type ClaimStatus = 'IDLE' | 'CLAIMING' | 'SUCCESS' | 'ERROR';
 
 type UseReceiveCashuTokenProps = {
   onError?: (error: Error) => void;
@@ -294,19 +297,19 @@ type UseReceiveCashuTokenProps = {
 export function useReceiveCashuToken({
   onError,
 }: UseReceiveCashuTokenProps = {}) {
-  const onErrorRef = useRef(onError);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [activeClaimDestination, setActiveClaimDestination] =
-    useState<ClaimDestination>(null);
+  const onErrorRef = useLatest(onError);
 
-  const { mutateAsync: createSwap, data: swapData } = useCreateCashuTokenSwap();
+  const {
+    mutateAsync: createSwap,
+    data: swapData,
+    status: createSwapStatus,
+  } = useCreateCashuTokenSwap();
   const { status: swapStatus } = useTokenSwap({
     tokenHash: swapData?.tokenHash,
     onFailed: () => onErrorRef.current?.(new Error('Failed to swap token')),
-    onCompleted: () => setIsSuccess(true),
   });
 
-  const claimTokenToAcount = async ({
+  const startClaimingTokenToAccount = async ({
     token,
     account,
   }: {
@@ -317,16 +320,13 @@ export function useReceiveCashuToken({
       const isSourceMint = account.mintUrl === token.mint;
 
       if (isSourceMint) {
-        setActiveClaimDestination('source');
         await createSwap({ token, account });
       } else {
-        setActiveClaimDestination('other');
         // TODO: implement cross mint swap
         throw new Error('Claiming to other account types not implemented');
       }
     } catch (error) {
       console.error('Failed to claim token', error);
-      setActiveClaimDestination(null);
 
       onErrorRef.current?.(
         error instanceof Error ? error : new Error('An unknown error occurred'),
@@ -334,21 +334,21 @@ export function useReceiveCashuToken({
     }
   };
 
-  // Determine if claiming is in progress based on the active destination
-  const isClaiming = (() => {
-    if (activeClaimDestination === 'source') {
-      return ['PENDING', 'LOADING'].includes(swapStatus);
+  const status: ClaimStatus = (() => {
+    if (createSwapStatus === 'pending' || swapStatus === 'PENDING') {
+      return 'CLAIMING';
     }
-    if (activeClaimDestination === 'other') {
-      // TODO: Return loading state for cross mint method
-      return true;
+    if (swapStatus === 'COMPLETED') {
+      return 'SUCCESS';
     }
-    return false;
+    if (createSwapStatus === 'error' || swapStatus === 'FAILED') {
+      return 'ERROR';
+    }
+    return 'IDLE';
   })();
 
   return {
-    isClaiming,
-    isSuccess,
-    claimTokenToAcount,
+    status,
+    startClaimingTokenToAccount,
   };
 }

@@ -52,6 +52,10 @@ export class CashuTokenSwapService {
     const fees = wallet.getFeesForProofs(token.proofs);
     const amountToReceive = sumProofs(token.proofs) - fees;
 
+    if (amountToReceive < 1) {
+      throw new Error('Token is too small to claim.');
+    }
+
     const outputData = OutputData.createDeterministicData(
       amountToReceive,
       seed,
@@ -69,12 +73,6 @@ export class CashuTokenSwapService {
       outputAmounts,
       accountVersion: account.version,
     });
-
-    // QUESTION: should we check if the tokenSwap is already completed?
-    // I keep resetting the database and thus reusing the same counters.
-    // This means I'm never actually spending the token's proofs, I'm just restoring
-    // old proofs so then the tokenSwap is always completed, but this is only
-    // a dev problem. But should we throw an error if the tokenSwap is already completed?
 
     return tokenSwap;
   }

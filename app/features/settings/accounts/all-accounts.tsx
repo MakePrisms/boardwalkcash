@@ -9,7 +9,7 @@ import { useUser } from '~/features/user/user-hooks';
 import { type Currency, Money } from '~/lib/money';
 
 function CurrencyAccounts({ currency }: { currency: Currency }) {
-  const { data: accounts } = useAccounts(currency);
+  const { data: accounts } = useAccounts({ currency });
 
   return (
     <>
