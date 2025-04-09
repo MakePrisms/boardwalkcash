@@ -28,6 +28,11 @@ alter table "wallet"."cashu_token_swaps" add constraint "cashu_token_swaps_user_
 
 alter table "wallet"."cashu_token_swaps" validate constraint "cashu_token_swaps_user_id_fkey";
 
+-- ensure output_amounts has at least one element
+alter table "wallet"."cashu_token_swaps" add constraint "cashu_token_swaps_output_amounts_check" CHECK (array_length(output_amounts, 1) > 0) not valid;
+
+alter table "wallet"."cashu_token_swaps" validate constraint "cashu_token_swaps_output_amounts_check";
+
 set check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
@@ -40,7 +45,7 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
   p_keyset_id text,
   p_keyset_counter integer,
   p_output_amounts integer[],
-  p_amount integer,
+  p_amount numeric,
   p_account_version integer
 ) RETURNS wallet.cashu_token_swaps
  LANGUAGE plpgsql
@@ -197,3 +202,82 @@ using ((( SELECT auth.uid() AS uid) = user_id))
 with check ((( SELECT auth.uid() AS uid) = user_id));
 
 alter publication supabase_realtime add table wallet.cashu_token_swaps;
+
+-- Drop the number_of_blinded_messages column and add output_amounts column
+ALTER TABLE wallet.cashu_receive_quotes 
+DROP COLUMN IF EXISTS number_of_blinded_messages,
+ADD COLUMN output_amounts integer[];
+
+-- drop the old process_cashu_receive_quote_payment function because we changed the signature
+drop function if exists "wallet"."process_cashu_receive_quote_payment"(p_quote_id uuid, p_quote_version integer, p_keyset_id text, p_keyset_counter integer, p_number_of_blinded_messages smallint, p_account_version integer);
+
+-- Update the process_cashu_receive_quote_payment function to use the new output_amounts column
+CREATE OR REPLACE FUNCTION wallet.process_cashu_receive_quote_payment(p_quote_id uuid, p_quote_version integer, p_keyset_id text, p_keyset_counter integer, p_output_amounts integer[], p_account_version integer)
+ RETURNS wallet.cashu_receive_quote_payment_result
+ LANGUAGE plpgsql
+AS $function$
+declare
+  v_quote wallet.cashu_receive_quotes;
+  v_account wallet.accounts;
+  v_updated_counter integer;
+  v_updated_quote wallet.cashu_receive_quotes;
+  v_updated_account wallet.accounts;
+begin
+  -- Check if the quote is already PAID and if yes return the quote and account without doing any updates
+  select * into v_quote
+  from wallet.cashu_receive_quotes
+  where id = p_quote_id
+  for update;
+
+  if v_quote.state = 'PAID' then
+    select * into v_account
+    from wallet.accounts
+    where id = v_quote.account_id;
+
+    return (v_quote, v_account);
+  end if;
+
+  -- Calculate new counter
+  v_updated_counter := p_keyset_counter + array_length(p_output_amounts, 1);
+
+  -- Update the quote with optimistic concurrency
+  update wallet.cashu_receive_quotes q
+  set 
+    state = 'PAID',
+    keyset_id = p_keyset_id,
+    keyset_counter = p_keyset_counter,
+    output_amounts = p_output_amounts,
+    version = version + 1
+  where q.id = p_quote_id and q.version = p_quote_version
+  returning * into v_updated_quote;
+
+  if not found then
+    raise exception 'Concurrency error: Quote % was modified by another transaction. Expected version %, but found different one', p_quote_id, p_quote_version;
+  end if;
+
+  -- Update the account with optimistic concurrency
+  update wallet.accounts a
+  set 
+    details = jsonb_set(
+      details, 
+      array['keyset_counters', p_keyset_id], 
+      to_jsonb(v_updated_counter), 
+      true
+    ),
+    version = version + 1
+  where a.id = v_updated_quote.account_id and a.version = p_account_version
+  returning * into v_updated_account;
+
+  if not found then
+    raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', v_updated_quote.account_id, p_account_version;
+  end if;
+
+  return (v_updated_quote, v_updated_account);
+end;
+$function$
+;
+
+-- ensure output_amounts has at least one element when defined for receive quotes
+alter table "wallet"."cashu_receive_quotes" add constraint "cashu_receive_quotes_output_amounts_check" CHECK (output_amounts IS NULL OR array_length(output_amounts, 1) > 0) not valid;
+
+alter table "wallet"."cashu_receive_quotes" validate constraint "cashu_receive_quotes_output_amounts_check";

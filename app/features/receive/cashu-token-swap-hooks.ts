@@ -101,7 +101,6 @@ export function useCreateCashuTokenSwap() {
       id: 'create-cashu-token-swap',
     },
     mutationFn: async ({ token, account }: CreateProps) => {
-      console.log('triggering create swap for receiving account: ', account);
       return tokenSwapService.create({
         userId: userRef.current.id,
         token,

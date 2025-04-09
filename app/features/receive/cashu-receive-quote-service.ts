@@ -4,8 +4,14 @@ import {
   OutputData,
   type Proof,
 } from '@cashu/cashu-ts';
-import { CashuErrorCodes, getCashuUnit, getCashuWallet } from '~/lib/cashu';
+import {
+  CashuErrorCodes,
+  amountsFromOutputData,
+  getCashuUnit,
+  getCashuWallet,
+} from '~/lib/cashu';
 import type { Money } from '~/lib/money';
+import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
@@ -132,6 +138,7 @@ export class CashuReceiveQuoteService {
       counter,
       keys,
     );
+    const outputAmounts = amountsFromOutputData(outputData);
 
     const { updatedQuote, updatedAccount } =
       await this.cashuReceiveQuoteRepository.processPayment({
@@ -139,7 +146,7 @@ export class CashuReceiveQuoteService {
         quoteVersion: quote.version,
         keysetId: wallet.keysetId,
         keysetCounter: counter,
-        numberOfBlindedMessages: outputData.length,
+        outputAmounts,
         accountVersion: account.version,
       });
 
@@ -194,9 +201,10 @@ export class CashuReceiveQuoteService {
             .includes('outputs have already been signed before') ||
           error.message.toLowerCase().includes('mint quote already issued.'))
       ) {
+        const amountToRestore = sum(quote.outputAmounts);
         const { proofs } = await wallet.restore(
           quote.keysetCounter,
-          quote.numberOfBlindedMessages,
+          amountToRestore,
           {
             keysetId: quote.keysetId,
           },

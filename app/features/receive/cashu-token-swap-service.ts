@@ -6,6 +6,7 @@ import {
 } from '@cashu/cashu-ts';
 import {
   CashuErrorCodes,
+  amountsFromOutputData,
   getCashuUnit,
   getCashuWallet,
   sumProofs,
@@ -62,7 +63,7 @@ export class CashuTokenSwapService {
       counter,
       keys,
     );
-    const outputAmounts = outputData.map((o) => o.blindedMessage.amount);
+    const outputAmounts = amountsFromOutputData(outputData);
 
     const tokenSwap = await this.tokenSwapRepository.create({
       token,

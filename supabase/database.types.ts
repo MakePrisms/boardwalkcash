@@ -61,7 +61,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -79,7 +79,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
-          number_of_blinded_messages?: number | null
+          output_amounts?: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -97,7 +97,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
-          number_of_blinded_messages?: number | null
+          output_amounts?: number[] | null
           payment_request?: string
           quote_id?: string
           state?: string
@@ -255,7 +255,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -318,7 +318,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -333,7 +333,7 @@ export type Database = {
           p_quote_version: number
           p_keyset_id: string
           p_keyset_counter: number
-          p_number_of_blinded_messages: number
+          p_output_amounts: number[]
           p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
