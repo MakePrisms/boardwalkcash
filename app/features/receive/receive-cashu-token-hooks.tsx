@@ -9,7 +9,7 @@ import type {
 import {
   useAccount,
   useAccounts,
-  useAccountsCache,
+  useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { tokenToMoney } from '~/features/shared/cashu';
@@ -32,13 +32,13 @@ type UseGetClaimableTokenProps = {
 type TokenQueryResult =
   | {
       /** The token with only claimable proofs. Will be null if the token cannot be claimed */
-      claimableToken: null;
-      /** The reason why the token cannot be claimed. Will always be defined when claimableToken is null */
-      cannotClaimReason: string;
+      claimableToken: Token;
+      /** The reason why the token cannot be claimed. Will never be defined when claimableToken is not null. */
+      cannotClaimReason: never;
     }
   | {
-      claimableToken: Token;
-      cannotClaimReason: null;
+      claimableToken: null;
+      cannotClaimReason: string;
     };
 
 /**
@@ -112,7 +112,7 @@ export function useTokenWithClaimableProofs({
       return claimableProofs
         ? {
             claimableToken: { ...token, proofs: claimableProofs },
-            cannotClaimReason: null,
+            cannotClaimReason: undefined as never,
           }
         : { cannotClaimReason, claimableToken: null };
     },
@@ -194,9 +194,8 @@ const getSelectableAccounts = (
 export function useReceiveCashuTokenAccounts(
   sourceAccount: ExtendedCashuAccount,
 ) {
-  const accountsCache = useAccountsCache();
-  const allAccounts = accountsCache.getAll() || [];
-  const accounts = allAccounts.filter((a) => a.type === 'cashu');
+  const { data: accounts } = useAccounts({ type: 'cashu' });
+  const addCashuAccount = useAddCashuAccount();
   const defaultAccount = useDefaultAccount();
 
   const isCrossMintSwapDisabled = sourceAccount.isTestMint;
@@ -221,8 +220,6 @@ export function useReceiveCashuTokenAccounts(
     () => sourceAccount,
   );
 
-  const isSourceAccountAdded = sourceAccount.id !== '';
-
   const setReceiveAccount = (account: CashuAccountWithBadges) => {
     const isSelectable = selectableAccounts.some((a) => a.id === account.id);
     if (!isSelectable) {
@@ -232,13 +229,20 @@ export function useReceiveCashuTokenAccounts(
     setReceiveAccountId(account.id);
   };
 
+  const addAndSetReceiveAccount = async (
+    accountToAdd: CashuAccount,
+  ): Promise<CashuAccount> => {
+    const newAccount = await addCashuAccount(accountToAdd);
+    setReceiveAccountId(newAccount.id);
+    return newAccount;
+  };
+
   return {
     selectableAccounts,
     receiveAccount,
-    receiveAccountIsSource: receiveAccount.mintUrl === sourceAccount.mintUrl,
-    isSourceAccountAdded,
     isCrossMintSwapDisabled,
     setReceiveAccount,
+    addAndSetReceiveAccount,
   };
 }
 

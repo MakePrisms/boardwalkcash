@@ -8,7 +8,6 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { useToast } from '~/hooks/use-toast';
 import type { CashuAccount } from '../accounts/account';
 import { AccountSelector } from '../accounts/account-selector';
@@ -29,7 +28,6 @@ type Props = {
 export default function ReceiveToken({ token }: Props) {
   const [_, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
-  const addCashuAccount = useAddCashuAccount();
   const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
     token,
     cashuPubKey: // TODO: replace with user's pubkey from OS
@@ -39,11 +37,12 @@ export default function ReceiveToken({ token }: Props) {
   const {
     selectableAccounts,
     receiveAccount,
-    receiveAccountIsSource,
-    isSourceAccountAdded,
     isCrossMintSwapDisabled,
     setReceiveAccount,
+    addAndSetReceiveAccount,
   } = useReceiveCashuTokenAccounts(sourceAccount);
+
+  const isReceiveAccountAdded = receiveAccount.id !== '';
 
   const { status, claimToken } = useReceiveCashuToken({
     onError: (error) => {
@@ -62,9 +61,9 @@ export default function ReceiveToken({ token }: Props) {
 
     let account: CashuAccount = receiveAccount;
 
-    if (receiveAccount.id === '') {
+    if (!isReceiveAccountAdded) {
       try {
-        account = await addCashuAccount(receiveAccount);
+        account = await addAndSetReceiveAccount(receiveAccount);
       } catch (error) {
         console.error(error);
         return toast({
@@ -139,11 +138,7 @@ export default function ReceiveToken({ token }: Props) {
               className="min-w-[200px]"
               loading={status === 'CLAIMING'}
             >
-              {receiveAccountIsSource
-                ? isSourceAccountAdded
-                  ? 'Claim'
-                  : 'Add Mint and Claim'
-                : 'Claim'}
+              {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
             </Button>
           </div>
         )}

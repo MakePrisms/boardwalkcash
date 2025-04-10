@@ -325,6 +325,7 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   id: string,
   getFallbackAccount?: () => T,
 ) {
+  const user = useUser();
   const { data: accounts } = useAccounts();
   const account = accounts.find((x) => x.id === id);
 
@@ -334,8 +335,6 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
     }
     throw new Error(`Account with id ${id} not found`);
   }
-
-  const user = useUser();
 
   return { ...account, isDefault: isDefaultAccount(user, account) } as T;
 }
