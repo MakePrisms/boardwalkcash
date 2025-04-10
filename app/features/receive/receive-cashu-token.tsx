@@ -73,7 +73,7 @@ export default function ReceiveToken({ token }: Props) {
       }
     }
 
-    await claimToken({ token, account });
+    await claimToken({ token: claimableToken, account });
   };
 
   if (status === 'SUCCESS') {

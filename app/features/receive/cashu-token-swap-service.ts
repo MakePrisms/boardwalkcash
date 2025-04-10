@@ -140,8 +140,7 @@ export class CashuTokenSwapService {
           // so for earlier versions we need to check the message.
           error.message
             .toLowerCase()
-            .includes('outputs have already been signed before') ||
-          error.message.toLowerCase().includes('mint quote already issued'))
+            .includes('outputs have already been signed before'))
       ) {
         const { proofs } = await wallet.restore(
           tokenSwap.keysetCounter,
@@ -150,6 +149,21 @@ export class CashuTokenSwapService {
             keysetId: tokenSwap.keysetId,
           },
         );
+
+        if (
+          error.code === CashuErrorCodes.TOKEN_ALREADY_SPENT &&
+          proofs.length === 0
+        ) {
+          // This means some other wallet has claimed this token.
+          await this.tokenSwapRepository.fail({
+            tokenHash: tokenSwap.tokenHash,
+            version: tokenSwap.version,
+            reason: 'Token already claimed',
+          });
+
+          throw new Error('Token already claimed');
+        }
+
         // TODO: make sure these proofs are not already in our balance and that they are not spent
         return proofs;
       }

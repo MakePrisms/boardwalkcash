@@ -171,6 +171,53 @@ export class CashuTokenSwapRepository {
   }
 
   /**
+   * Updates the state of a token swap to FAILED.
+   */
+  async fail(
+    {
+      tokenHash,
+      reason,
+      version,
+    }: {
+      /**
+       * Hash of the token to be failed.
+       */
+      tokenHash: string;
+      /**
+       * Reason for the failure.
+       */
+      reason: string;
+      /**
+       * Version of the token swap as seen by the client. Used for optimistic concurrency control.
+       */
+      version: number;
+    },
+    options?: Options,
+  ): Promise<void> {
+    const query = this.db
+      .from('cashu_token_swaps')
+      .update({
+        state: 'FAILED',
+        error: reason,
+      })
+      .match({
+        token_hash: tokenHash,
+        version,
+      })
+      .select();
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+      throw new Error('Failed to fail token swap', { cause: error });
+    }
+  }
+
+  /**
    * Gets all pending token swaps for a given user.
    * @returns All token swaps in a PENDING state for the given user.
    */

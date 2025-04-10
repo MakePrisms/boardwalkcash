@@ -13,6 +13,7 @@ create table "wallet"."cashu_token_swaps" (
     "receive_amount" numeric not null,
     "fee_amount" numeric not null,
     "state" text not null default 'PENDING',
+    "error" text,
     "version" integer not null default 0
 );
 

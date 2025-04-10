@@ -127,6 +127,7 @@ export type Database = {
           account_id: string
           created_at: string
           currency: string
+          error: string | null
           fee_amount: number
           input_amount: number
           keyset_counter: number
@@ -144,6 +145,7 @@ export type Database = {
           account_id: string
           created_at?: string
           currency: string
+          error?: string | null
           fee_amount: number
           input_amount: number
           keyset_counter: number
@@ -161,6 +163,7 @@ export type Database = {
           account_id?: string
           created_at?: string
           currency?: string
+          error?: string | null
           fee_amount?: number
           input_amount?: number
           keyset_counter?: number
@@ -299,6 +302,7 @@ export type Database = {
           account_id: string
           created_at: string
           currency: string
+          error: string | null
           fee_amount: number
           input_amount: number
           keyset_counter: number
