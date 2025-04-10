@@ -62,9 +62,7 @@ export default function ReceiveToken({ token }: Props) {
 
     let account: CashuAccount = receiveAccount;
 
-    const isReceiveAccountAdded =
-      isSourceAccountAdded && receiveAccountIsSource;
-    if (!isReceiveAccountAdded) {
+    if (receiveAccount.id === '') {
       try {
         account = await addCashuAccount(receiveAccount);
       } catch (error) {
