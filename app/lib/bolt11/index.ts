@@ -1,16 +1,25 @@
 import bolt11Decoder, { type Section } from 'light-bolt11-decoder';
 
+export type DecodedBolt11 = {
+  amountMsat: number | undefined;
+  amountSat: number | undefined;
+  expiryUnixMs: number | undefined;
+  network: string | undefined;
+  description: string | undefined;
+};
+
 /**
  * Decodes a BOLT11 invoice
  * @param invoice invoice to decode
  */
-export const decodeBolt11 = (invoice: string) => {
+export const decodeBolt11 = (invoice: string): DecodedBolt11 => {
   const { sections } = bolt11Decoder.decode(invoice.replace(/^lightning:/, ''));
 
   const amountSection = findSection(sections, 'amount');
-  const amountSat = amountSection?.value
-    ? Number(amountSection.value) / 1000
+  const amountMsat = amountSection?.value
+    ? Number(amountSection.value)
     : undefined;
+  const amountSat = amountMsat ? amountMsat / 1000 : undefined;
 
   const expirySection = findSection(sections, 'expiry');
   const timestampSection = findSection(sections, 'timestamp');
@@ -29,19 +38,21 @@ export const decodeBolt11 = (invoice: string) => {
   const descriptionSection = findSection(sections, 'description');
   const description = descriptionSection?.value;
 
-  return { amountSat, expiryUnixMs, network, description };
+  return { amountMsat, amountSat, expiryUnixMs, network, description };
 };
 
 /**
  * Checks if a string is a valid BOLT11 invoice
  * @param invoice invoice to check
  */
-export const isBolt11Invoice = (invoice: string) => {
+export const validateBolt11Invoice = (
+  invoice: string,
+): { valid: true; decoded: DecodedBolt11 } | { valid: false } => {
   try {
-    decodeBolt11(invoice);
-    return true;
+    const decoded = decodeBolt11(invoice);
+    return { valid: true, decoded };
   } catch {
-    return false;
+    return { valid: false };
   }
 };
 

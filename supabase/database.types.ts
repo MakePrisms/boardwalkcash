@@ -122,6 +122,99 @@ export type Database = {
           },
         ]
       }
+      cashu_send_quotes: {
+        Row: {
+          account_id: string
+          amount_requested: number
+          amount_requested_in_msat: number
+          amount_spent: number | null
+          amount_to_send: number
+          created_at: string
+          currency: string
+          currency_requested: string
+          expires_at: string
+          failure_reason: string | null
+          fee_reserve: number
+          id: string
+          keyset_counter: number
+          keyset_id: string
+          number_of_change_outputs: number
+          payment_preimage: string | null
+          payment_request: string
+          proofs: string
+          quote_id: string
+          state: string
+          unit: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          account_id: string
+          amount_requested: number
+          amount_requested_in_msat: number
+          amount_spent?: number | null
+          amount_to_send: number
+          created_at?: string
+          currency: string
+          currency_requested: string
+          expires_at: string
+          failure_reason?: string | null
+          fee_reserve: number
+          id?: string
+          keyset_counter: number
+          keyset_id: string
+          number_of_change_outputs: number
+          payment_preimage?: string | null
+          payment_request: string
+          proofs: string
+          quote_id: string
+          state?: string
+          unit: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          account_id?: string
+          amount_requested?: number
+          amount_requested_in_msat?: number
+          amount_spent?: number | null
+          amount_to_send?: number
+          created_at?: string
+          currency?: string
+          currency_requested?: string
+          expires_at?: string
+          failure_reason?: string | null
+          fee_reserve?: number
+          id?: string
+          keyset_counter?: number
+          keyset_id?: string
+          number_of_change_outputs?: number
+          payment_preimage?: string | null
+          payment_request?: string
+          proofs?: string
+          quote_id?: string
+          state?: string
+          unit?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashu_send_quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_send_quotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cashu_token_swaps: {
         Row: {
           account_id: string
@@ -276,6 +369,17 @@ export type Database = {
           version: number
         }
       }
+      complete_cashu_send_quote: {
+        Args: {
+          p_quote_id: string
+          p_quote_version: number
+          p_payment_preimage: string
+          p_amount_spent: number
+          p_account_proofs: string
+          p_account_version: number
+        }
+        Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
+      }
       complete_cashu_token_swap: {
         Args: {
           p_token_hash: string
@@ -285,6 +389,29 @@ export type Database = {
           p_account_version: number
         }
         Returns: undefined
+      }
+      create_cashu_send_quote: {
+        Args: {
+          p_user_id: string
+          p_account_id: string
+          p_currency: string
+          p_unit: string
+          p_payment_request: string
+          p_expires_at: string
+          p_amount_requested: number
+          p_currency_requested: string
+          p_amount_requested_in_msat: number
+          p_amount_to_send: number
+          p_fee_reserve: number
+          p_quote_id: string
+          p_keyset_id: string
+          p_keyset_counter: number
+          p_number_of_change_outputs: number
+          p_proofs_to_send: string
+          p_account_version: number
+          p_proofs_to_keep: string
+        }
+        Returns: Database["wallet"]["CompositeTypes"]["create_cashu_send_quote_result"]
       }
       create_cashu_token_swap: {
         Args: {
@@ -345,6 +472,25 @@ export type Database = {
           version: number
         }
       }
+      expire_cashu_send_quote: {
+        Args: {
+          p_quote_id: string
+          p_quote_version: number
+          p_account_proofs: string
+          p_account_version: number
+        }
+        Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
+      }
+      fail_cashu_send_quote: {
+        Args: {
+          p_quote_id: string
+          p_failure_reason: string
+          p_quote_version: number
+          p_account_proofs: string
+          p_account_version: number
+        }
+        Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
+      }
       process_cashu_receive_quote_payment: {
         Args: {
           p_quote_id: string
@@ -373,6 +519,18 @@ export type Database = {
       cashu_receive_quote_payment_result: {
         updated_quote:
           | Database["wallet"]["Tables"]["cashu_receive_quotes"]["Row"]
+          | null
+        updated_account: Database["wallet"]["Tables"]["accounts"]["Row"] | null
+      }
+      create_cashu_send_quote_result: {
+        created_quote:
+          | Database["wallet"]["Tables"]["cashu_send_quotes"]["Row"]
+          | null
+        updated_account: Database["wallet"]["Tables"]["accounts"]["Row"] | null
+      }
+      update_cashu_send_quote_result: {
+        updated_quote:
+          | Database["wallet"]["Tables"]["cashu_send_quotes"]["Row"]
           | null
         updated_account: Database["wallet"]["Tables"]["accounts"]["Row"] | null
       }
