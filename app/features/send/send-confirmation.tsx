@@ -15,10 +15,16 @@ import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
 import type { PaymentRequest } from '~/features/send/send-store';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
+import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { crossMintSwap, getCrossMintQuotes } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import { getDefaultUnit } from '../shared/currencies';
+import {
+  useCashuSendQuote,
+  useCreateCashuSendQuote,
+  useInitiateCashuSendQuote,
+} from './cashu-send-quote-hooks';
 import { useSendStore } from './send-provider';
 
 const formatDestination = (destination: string) => {
@@ -81,39 +87,42 @@ export const PayBolt11Confirmation = ({
   account,
 }: PayBolt11ConfirmationProps) => {
   const { description } = decodeBolt11(bolt11);
+  const { toast } = useToast();
 
-  // create melt quote and estimate fee
-  const { mutate: createMeltQuote, data } = useMutation({
-    mutationFn: async () => {
-      const wallet = new CashuWallet(new CashuMint(account.mintUrl));
-      const meltQuote = await wallet.createMeltQuote(bolt11);
-      return {
-        fee: toMoney(meltQuote.fee_reserve, account.currency),
-        meltQuote,
-      };
+  const { mutate: createSendQuote, data, error } = useCreateCashuSendQuote();
+  const fee = data
+    ? toMoney(data.meltQuote.fee_reserve, account.currency)
+    : undefined;
+
+  const {
+    mutate: initiateSend,
+    data: { id: sendQuoteId } = {},
+  } = useInitiateCashuSendQuote({
+    onError: (error) => {
+      console.error('Error initiating send quote', { cause: error });
+      toast({
+        title: 'Error',
+        description: 'Failed to initiate send quote. Please try again.',
+      });
+    },
+  });
+  const { status } = useCashuSendQuote({
+    sendQuoteId: sendQuoteId,
+    onExpired: () => {
+      toast({
+        title: 'Send quote expired',
+        description: 'Please try again',
+      });
     },
   });
 
   useEffect(() => {
-    createMeltQuote();
-  }, [createMeltQuote]);
+    createSendQuote({ account, amount: inputAmount, paymentRequest: bolt11 });
+  }, [createSendQuote, bolt11, inputAmount, account]);
 
   const handleConfirm = async () => {
-    if (data?.meltQuote) {
-      const wallet = new CashuWallet(new CashuMint(account.mintUrl));
-      // TODO: coin selection
-      // 1. get proofs for the amount
-      //    - this might require a swap to get the correct denomination.
-      //    - If the mint supports NUT-08 (lightning fee return) then it should return change and we don't need to swap first.
-      //         - TODO: make sure this is true that if we don't do a swap first that we can get change even for large overpayments
-      // 2. melt proofs to pay invoice
-
-      const proofs: Proof[] = []; // TODO
-      const melt = await wallet.meltProofs(data.meltQuote, proofs, {
-        counter: undefined, // add for deterministic secrets
-      });
-      // 3. add change back to db
-      console.log('melt', melt);
+    if (data) {
+      initiateSend({ account, sendQuote: data });
     }
   };
 
@@ -121,11 +130,11 @@ export const PayBolt11Confirmation = ({
     () => [
       {
         label: 'Estimated fee',
-        value: data?.fee ? (
+        value: fee ? (
           <MoneyDisplay
             variant="secondary"
-            money={data.fee}
-            unit={getDefaultUnit(data.fee.currency)}
+            money={fee}
+            unit={getDefaultUnit(fee.currency)}
           />
         ) : (
           <Skeleton className="h-[33px] w-[20px]" />
@@ -134,8 +143,20 @@ export const PayBolt11Confirmation = ({
       { label: 'From', value: account.name },
       { label: 'Paying', value: formatDestination(bolt11) },
     ],
-    [data, account, bolt11],
+    [fee, account, bolt11],
   );
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  if (!data) {
+    return <div>Loading...</div>;
+  }
+
+  if (status === 'PAID') {
+    return <div>Send successful</div>;
+  }
 
   return (
     <BaseConfirmation amount={inputAmount} onConfirm={handleConfirm}>
@@ -398,7 +419,7 @@ const ConfirmationRow = ({
   return (
     <div className="flex items-center justify-between">
       <p className="text-muted-foreground">{label}</p>
-      <p>{value}</p>
+      <div>{value}</div>
     </div>
   );
 };

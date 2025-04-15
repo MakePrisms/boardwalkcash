@@ -20,6 +20,21 @@ type CashuReceiveQuotePaymentResult = {
   updated_account: BoardwalkDbAccount;
 };
 
+type CreateCashuSendQuoteResult = {
+  created_quote: BoardwalkDbCashuSendQuote;
+  updated_account: BoardwalkDbAccount;
+};
+
+type CompleteCashuSendQuoteResult = {
+  updated_quote: BoardwalkDbCashuSendQuote;
+  updated_account: BoardwalkDbAccount;
+};
+
+type ExpireCashuSendQuoteResult = {
+  updated_quote: BoardwalkDbCashuSendQuote;
+  updated_account: BoardwalkDbAccount;
+};
+
 // Use when you need to fix/improve generated types
 // See https://supabase.com/docs/guides/api/rest/generating-types#helper-types-for-tables-and-joins
 type Database = MergeDeep<
@@ -80,6 +95,23 @@ type Database = MergeDeep<
             unit?: CurrencyUnit;
           };
         };
+        cashu_send_quotes: {
+          Row: {
+            currency: Currency;
+            unit: CurrencyUnit;
+            currency_requested: Currency;
+          };
+          Insert: {
+            currency: Currency;
+            unit: CurrencyUnit;
+            currency_requested: Currency;
+          };
+          Update: {
+            currency?: Currency;
+            unit?: CurrencyUnit;
+            currency_requested?: Currency;
+          };
+        };
       };
       Functions: {
         upsert_user_with_accounts: {
@@ -96,9 +128,21 @@ type Database = MergeDeep<
         create_cashu_token_swap: {
           Returns: BoardwalkDbCashuTokenSwap;
         };
+        create_cashu_send_quote: {
+          Returns: CreateCashuSendQuoteResult;
+        };
+        complete_cashu_send_quote: {
+          Returns: CompleteCashuSendQuoteResult;
+        };
+        expire_cashu_send_quote: {
+          Returns: ExpireCashuSendQuoteResult;
+        };
       };
       CompositeTypes: {
         cashu_receive_quote_payment_result: CashuReceiveQuotePaymentResult;
+        create_cashu_send_quote_result: CreateCashuSendQuoteResult;
+        complete_cashu_send_quote_result: CompleteCashuSendQuoteResult;
+        expire_cashu_send_quote_result: ExpireCashuSendQuoteResult;
       };
     };
   }
@@ -128,3 +172,5 @@ export type BoardwalkDbCashuReceiveQuote =
   Database['wallet']['Tables']['cashu_receive_quotes']['Row'];
 export type BoardwalkDbCashuTokenSwap =
   Database['wallet']['Tables']['cashu_token_swaps']['Row'];
+export type BoardwalkDbCashuSendQuote =
+  Database['wallet']['Tables']['cashu_send_quotes']['Row'];

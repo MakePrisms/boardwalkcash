@@ -11,6 +11,7 @@ describe('decodeBolt11', () => {
   it('should decode the invoice', () => {
     const result = decodeBolt11(invoice);
     expect(result).toEqual({
+      amountMsat: 250000000,
       amountSat: 250000,
       expiryUnixMs: 1496314718000,
       network: 'bitcoin',
@@ -21,6 +22,7 @@ describe('decodeBolt11', () => {
   it('should decode a testnet invoice', () => {
     const result = decodeBolt11(testnetInvoice);
     expect(result).toEqual({
+      amountMsat: 2000000000,
       amountSat: 2000000,
       expiryUnixMs: undefined,
       network: 'testnet',
@@ -31,6 +33,7 @@ describe('decodeBolt11', () => {
   it('should decode an invoice with a `lightning` prefix', () => {
     const result = decodeBolt11(`lightning:${invoice}`);
     expect(result).toEqual({
+      amountMsat: 250000000,
       amountSat: 250000,
       expiryUnixMs: 1496314718000,
       network: 'bitcoin',

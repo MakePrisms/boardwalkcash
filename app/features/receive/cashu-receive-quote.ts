@@ -19,8 +19,17 @@ export type CashuReceiveQuote = {
    * Amount of the quote.
    */
   amount: Money;
+  /**
+   * Description of the receivequote.
+   */
   description?: string;
+  /**
+   * Date and time the receive quote was created in ISO 8601 format.
+   */
   createdAt: string;
+  /**
+   * Date and time the receive quote expires in ISO 8601 format.
+   */
   expiresAt: string;
   state: 'UNPAID' | 'EXPIRED' | 'PAID' | 'COMPLETED';
   /**
