@@ -62,6 +62,7 @@ export default {
       },
       animation: {
         shake: 'shake 0.2s ease-in-out',
+        slam: 'slam 0.4s ease-out both',
       },
       keyframes: {
         shake: {
@@ -69,6 +70,33 @@ export default {
           '25%': { transform: 'translateX(-5px)' },
           '50%': { transform: 'translateX(5px)' },
           '75%': { transform: 'translateX(-5px)' },
+        },
+        slam: {
+          '0%': {
+            transform: 'scale(1)',
+            letterSpacing: 'normal',
+            opacity: '1',
+          },
+          '25%': {
+            transform: 'scale(1.05)',
+            letterSpacing: '0.05em',
+            opacity: '0.9',
+          },
+          '50%': {
+            transform: 'scale(0.98)',
+            letterSpacing: '-0.02em',
+            opacity: '0.95',
+          },
+          '75%': {
+            transform: 'scale(1.02)',
+            letterSpacing: '0.02em',
+            opacity: '0.98',
+          },
+          '100%': {
+            transform: 'scale(1)',
+            letterSpacing: 'normal',
+            opacity: '1',
+          },
         },
       },
     },

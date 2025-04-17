@@ -13,6 +13,7 @@ export type UpdateUser = {
   defaultBtcAccountId?: string;
   defaultUsdAccountId?: string;
   defaultCurrency?: Currency;
+  username?: string;
 };
 
 type Options = {
@@ -70,6 +71,7 @@ export class UserRepository {
         default_btc_account_id: data.defaultBtcAccountId,
         default_usd_account_id: data.defaultUsdAccountId,
         default_currency: data.defaultCurrency,
+        username: data.username,
       })
       .eq('id', userId)
       .select();
@@ -158,6 +160,7 @@ export class UserRepository {
     if (dbUser.email) {
       return {
         id: dbUser.id,
+        username: dbUser.username,
         email: dbUser.email,
         emailVerified: dbUser.email_verified,
         createdAt: dbUser.created_at,
@@ -171,6 +174,7 @@ export class UserRepository {
 
     return {
       id: dbUser.id,
+      username: dbUser.username,
       emailVerified: dbUser.email_verified,
       createdAt: dbUser.created_at,
       updatedAt: dbUser.updated_at,

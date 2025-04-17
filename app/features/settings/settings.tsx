@@ -13,12 +13,12 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountTypeIcon } from '../accounts/account-icons';
 import { useAuthActions } from '../user/auth';
-
-const username = 'satoshi';
+import { useUser } from '../user/user-hooks';
 
 export default function Settings() {
   const { signOut } = useAuthActions();
   const defaultAccount = useDefaultAccount();
+  const username = useUser((s) => s.username);
 
   const handleShare = async () => {
     const data = {
