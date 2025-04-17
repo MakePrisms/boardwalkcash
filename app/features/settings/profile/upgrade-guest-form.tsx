@@ -60,6 +60,7 @@ export function UpgradeGuestForm() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="satoshi@nakamoto.com"
               aria-invalid={errors.email ? 'true' : 'false'}
               {...register('email', {
