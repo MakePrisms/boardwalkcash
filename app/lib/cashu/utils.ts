@@ -1,4 +1,9 @@
-import { CashuMint, CashuWallet, type MintKeyset } from '@cashu/cashu-ts';
+import {
+  CashuMint,
+  CashuWallet,
+  type MintKeyset,
+  type OutputData,
+} from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
@@ -71,4 +76,8 @@ export const getKeysets = async (
   unit: CurrencyUnit,
 ): Promise<Array<MintKeyset>> => {
   return getCashuWallet(mintUrl, { unit }).getKeySets();
+};
+
+export const amountsFromOutputData = (outputData: OutputData[]) => {
+  return outputData.map((output) => output.blindedMessage.amount);
 };

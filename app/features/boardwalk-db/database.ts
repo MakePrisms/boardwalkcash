@@ -66,6 +66,20 @@ type Database = MergeDeep<
             unit?: CurrencyUnit;
           };
         };
+        cashu_token_swaps: {
+          Row: {
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+          Insert: {
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+          Update: {
+            currency?: Currency;
+            unit?: CurrencyUnit;
+          };
+        };
       };
       Functions: {
         upsert_user_with_accounts: {
@@ -78,6 +92,9 @@ type Database = MergeDeep<
         };
         process_cashu_receive_quote_payment: {
           Returns: CashuReceiveQuotePaymentResult;
+        };
+        create_cashu_token_swap: {
+          Returns: BoardwalkDbCashuTokenSwap;
         };
       };
       CompositeTypes: {
@@ -109,3 +126,5 @@ export type BoardwalkDbAccount =
   Database['wallet']['Tables']['accounts']['Row'];
 export type BoardwalkDbCashuReceiveQuote =
   Database['wallet']['Tables']['cashu_receive_quotes']['Row'];
+export type BoardwalkDbCashuTokenSwap =
+  Database['wallet']['Tables']['cashu_token_swaps']['Row'];

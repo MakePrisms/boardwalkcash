@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
+import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
 import { useEncryption } from './encryption';
 
 function getCurrencyAndUnitFromToken(token: Token): {
@@ -63,9 +64,9 @@ export function useCashuCryptography(): CashuCryptography {
       const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
       if (seedPromise) return seedPromise;
 
-      const promise = getPrivateKeyBytes(`m/44'/0'/0'/0/0`).then((response) =>
-        hexToUint8Array(response.private_key),
-      );
+      const promise = getPrivateKeyBytes({
+        seed_phrase_derivation_path: getSeedPhraseDerivationPath('cashu', 12),
+      }).then((response) => hexToUint8Array(response.private_key));
 
       setSeedPromise(promise);
       return promise;

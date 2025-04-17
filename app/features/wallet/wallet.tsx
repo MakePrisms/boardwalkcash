@@ -4,6 +4,7 @@ import { useTrackAccounts } from '../accounts/account-hooks';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
+import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -48,6 +49,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
 
   useTrackAccounts();
   useTrackPendingCashuReceiveQuotes();
+  useTrackPendingCashuTokenSwaps();
 
   return children;
 };

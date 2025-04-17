@@ -1,10 +1,18 @@
 import type { Proof } from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
-import type { BoardwalkDb, BoardwalkDbAccount } from '../boardwalk-db/database';
+import {
+  type BoardwalkDb,
+  type BoardwalkDbAccount,
+  boardwalkDb,
+} from '../boardwalk-db/database';
+import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
-type AccountInput = DistributedOmit<Account, 'id' | 'createdAt' | 'version'> & {
+type AccountInput<T extends Account> = DistributedOmit<
+  T,
+  'id' | 'createdAt' | 'version'
+> & {
   userId: string;
 };
 
@@ -72,10 +80,10 @@ export class AccountRepository {
    * @param accountInput - The account to create.
    * @returns The created account.
    */
-  async create(
-    accountInput: AccountInput,
+  async create<T extends Account = Account>(
+    accountInput: AccountInput<T>,
     options?: Options,
-  ): Promise<Account> {
+  ): Promise<T> {
     const accountsToCreate = {
       name: accountInput.name,
       type: accountInput.type,
@@ -109,13 +117,13 @@ export class AccountRepository {
       throw new Error(message, { cause: error });
     }
 
-    return AccountRepository.toAccount(data, this.encryption.decrypt);
+    return AccountRepository.toAccount<T>(data, this.encryption.decrypt);
   }
 
-  static async toAccount(
+  static async toAccount<T extends Account = Account>(
     data: BoardwalkDbAccount,
     decryptData: Encryption['decrypt'],
-  ): Promise<Account> {
+  ): Promise<T> {
     const commonData = {
       id: data.id,
       name: data.name,
@@ -138,7 +146,7 @@ export class AccountRepository {
         isTestMint: details.is_test_mint,
         keysetCounters: details.keyset_counters,
         proofs: await decryptData<Proof[]>(details.proofs),
-      };
+      } as T;
     }
 
     if (data.type === 'nwc') {
@@ -147,9 +155,14 @@ export class AccountRepository {
         ...commonData,
         type: 'nwc',
         nwcUrl: details.nwc_url,
-      };
+      } as T;
     }
 
     throw new Error('Invalid account type');
   }
+}
+
+export function useAccountRepository() {
+  const encryption = useEncryption();
+  return new AccountRepository(boardwalkDb, encryption);
 }

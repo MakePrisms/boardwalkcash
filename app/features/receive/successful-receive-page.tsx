@@ -1,5 +1,10 @@
 import { CheckCircle } from 'lucide-react';
-import { ClosePageButton, PageContent, PageHeader } from '~/components/page';
+import {
+  ClosePageButton,
+  PageContent,
+  PageHeader,
+  PageHeaderTitle,
+} from '~/components/page';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import type { Money } from '~/lib/money';
 import type { Account } from '../accounts/account';
@@ -22,6 +27,9 @@ export function SuccessfulReceivePage({ amount, account }: Props) {
   return (
     <>
       <PageHeader>
+        <PageHeaderTitle>
+          {account.type === 'cashu' ? 'Receive Ecash' : 'Receive'}
+        </PageHeaderTitle>
         <ClosePageButton to="/" transition="slideDown" applyTo="oldView" />
       </PageHeader>
       <PageContent className="relative flex flex-col items-center gap-12">

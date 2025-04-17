@@ -4,7 +4,12 @@ import {
   OutputData,
   type Proof,
 } from '@cashu/cashu-ts';
-import { CashuErrorCodes, getCashuUnit, getCashuWallet } from '~/lib/cashu';
+import {
+  CashuErrorCodes,
+  amountsFromOutputData,
+  getCashuUnit,
+  getCashuWallet,
+} from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
@@ -132,6 +137,7 @@ export class CashuReceiveQuoteService {
       counter,
       keys,
     );
+    const outputAmounts = amountsFromOutputData(outputData);
 
     const { updatedQuote, updatedAccount } =
       await this.cashuReceiveQuoteRepository.processPayment({
@@ -139,7 +145,7 @@ export class CashuReceiveQuoteService {
         quoteVersion: quote.version,
         keysetId: wallet.keysetId,
         keysetCounter: counter,
-        numberOfBlindedMessages: outputData.length,
+        outputAmounts,
         accountVersion: account.version,
       });
 
@@ -194,19 +200,14 @@ export class CashuReceiveQuoteService {
             .includes('outputs have already been signed before') ||
           error.message.toLowerCase().includes('mint quote already issued.'))
       ) {
-        try {
-          const { proofs } = await wallet.restore(
-            quote.keysetCounter,
-            quote.numberOfBlindedMessages,
-            {
-              keysetId: quote.keysetId,
-            },
-          );
-          return proofs;
-        } catch (error) {
-          console.error(error);
-          throw error;
-        }
+        const { proofs } = await wallet.restore(
+          quote.keysetCounter,
+          quote.outputAmounts.length,
+          {
+            keysetId: quote.keysetId,
+          },
+        );
+        return proofs;
       }
       throw error;
     }

@@ -1,19 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { Proof } from '@cashu/cashu-ts';
-import { getP2PKPubkeyFromProofs, sumProofs } from './proof';
+import { getClaimableProofs, sumProofs } from './proof';
 
 const proofWithP2PKSecret: Proof = {
   amount: 1,
   secret:
     '["P2PK",{"nonce":"0","data":"0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7","tags":[["sigflag","SIG_INPUTS"]]}]',
-  C: '02698c4e2b5f9534cd0687d87513c759790cf829aa5739184a3e3735471fbda904',
-  id: '009a1f293253e41e',
-};
-
-const proof2WithDifferentPubkey: Proof = {
-  amount: 1,
-  secret:
-    '["P2PK",{"nonce":"0","data":"0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a8","tags":[["sigflag","SIG_INPUTS"]]}]',
   C: '02698c4e2b5f9534cd0687d87513c759790cf829aa5739184a3e3735471fbda904',
   id: '009a1f293253e41e',
 };
@@ -25,31 +17,66 @@ const proofWithPlainSecret: Proof = {
   id: '009a1f293253e41e',
 };
 
-describe('getP2PKPubkeyFromProofs', () => {
-  test('proof with P2PK secret should return the pubkey', () => {
-    expect(getP2PKPubkeyFromProofs([proofWithP2PKSecret])).toBe(
-      '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7',
+const unknownTypeProof: Proof = {
+  amount: 1,
+  secret: '["UNKNOWN_TYPE",{"some":"data"}]',
+  C: '02698c4e2b5f9534cd0687d87513c759790cf829aa5739184a3e3735471fbda904',
+  id: '009a1f293253e41e',
+};
+
+describe('getClaimableProofs', () => {
+  const pubkey =
+    '0249098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a7';
+  const differentPubkey =
+    '0349098aa8b9d2fbec49ff8598feb17b592b986e62319a4fa488a3dc36387157a8';
+
+  test('should return all proofs with plain secrets', () => {
+    const result = getClaimableProofs([proofWithPlainSecret], [pubkey]);
+    expect(result.claimableProofs).toHaveLength(1);
+    expect(result.cannotClaimReason).toBeNull();
+  });
+
+  test('should return proofs that match the pubkey', () => {
+    const result = getClaimableProofs([proofWithP2PKSecret], [pubkey]);
+    expect(result.claimableProofs).toHaveLength(1);
+    expect(result.cannotClaimReason).toBeNull();
+  });
+
+  test('should not return P2PK proofs with non-matching pubkeys', () => {
+    const result = getClaimableProofs([proofWithP2PKSecret], [differentPubkey]);
+    expect(result.claimableProofs).toBeNull();
+    expect(result.cannotClaimReason).toBe(
+      'You do not have permission to claim this ecash',
     );
   });
 
-  test('proofs with multiple pubkeys should throw', () => {
-    expect(() =>
-      getP2PKPubkeyFromProofs([proofWithP2PKSecret, proof2WithDifferentPubkey]),
-    ).toThrow();
+  test('should not allow claiming proofs with unknown spending conditions', () => {
+    const result = getClaimableProofs([unknownTypeProof], [pubkey]);
+    expect(result.claimableProofs).toBeNull();
+    expect(result.cannotClaimReason).toBe(
+      'This ecash contains invalid spending conditions.',
+    );
   });
 
-  test('an empty array should return null', () => {
-    expect(getP2PKPubkeyFromProofs([])).toBeNull();
+  test('should return both plain and matching P2PK proofs', () => {
+    const result = getClaimableProofs(
+      [proofWithPlainSecret, proofWithP2PKSecret],
+      [pubkey],
+    );
+    expect(result.claimableProofs).toHaveLength(2);
+    expect(result.cannotClaimReason).toBeNull();
   });
 
-  test('should throw if any proofs have a plain secret', () => {
-    expect(() =>
-      getP2PKPubkeyFromProofs([proofWithP2PKSecret, proofWithPlainSecret]),
-    ).toThrow('Secret is not a P2PK secret');
+  test('should not return any proofs if none are claimable', () => {
+    const result = getClaimableProofs([proofWithP2PKSecret], [differentPubkey]);
+    expect(result.claimableProofs).toBeNull();
+    expect(result.cannotClaimReason).toBe(
+      'You do not have permission to claim this ecash',
+    );
   });
 });
 
-describe('sumProofss', () => {
+describe('sumProofs', () => {
   test('should sum the amounts of a list of proofs', () => {
     expect(
       sumProofs([

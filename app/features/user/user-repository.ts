@@ -1,7 +1,12 @@
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
-import type { BoardwalkDb, BoardwalkDbUser } from '../boardwalk-db/database';
+import {
+  type BoardwalkDb,
+  type BoardwalkDbUser,
+  boardwalkDb,
+} from '../boardwalk-db/database';
+import { useEncryption } from '../shared/encryption';
 import type { User } from './user';
 
 export type UpdateUser = {
@@ -175,4 +180,9 @@ export class UserRepository {
       isGuest: true,
     };
   }
+}
+
+export function useUserRepository() {
+  const encryption = useEncryption();
+  return new UserRepository(boardwalkDb, encryption);
 }

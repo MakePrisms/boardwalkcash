@@ -61,7 +61,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -79,7 +79,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
-          number_of_blinded_messages?: number | null
+          output_amounts?: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -97,7 +97,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
-          number_of_blinded_messages?: number | null
+          output_amounts?: number[] | null
           payment_request?: string
           quote_id?: string
           state?: string
@@ -115,6 +115,75 @@ export type Database = {
           },
           {
             foreignKeyName: "cashu_receive_quotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cashu_token_swaps: {
+        Row: {
+          account_id: string
+          created_at: string
+          currency: string
+          fee_amount: number
+          input_amount: number
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          receive_amount: number
+          state: string
+          token_hash: string
+          token_proofs: string
+          unit: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          currency: string
+          fee_amount: number
+          input_amount: number
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          receive_amount: number
+          state?: string
+          token_hash: string
+          token_proofs: string
+          unit: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          currency?: string
+          fee_amount?: number
+          input_amount?: number
+          keyset_counter?: number
+          keyset_id?: string
+          output_amounts?: number[]
+          receive_amount?: number
+          state?: string
+          token_hash?: string
+          token_proofs?: string
+          unit?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashu_token_swaps_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_token_swaps_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -192,10 +261,53 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
+          unit: string
+          user_id: string
+          version: number
+        }
+      }
+      complete_cashu_token_swap: {
+        Args: {
+          p_token_hash: string
+          p_swap_version: number
+          p_proofs: Json
+          p_account_version: number
+        }
+        Returns: undefined
+      }
+      create_cashu_token_swap: {
+        Args: {
+          p_token_hash: string
+          p_token_proofs: string
+          p_account_id: string
+          p_user_id: string
+          p_currency: string
+          p_unit: string
+          p_keyset_id: string
+          p_keyset_counter: number
+          p_output_amounts: number[]
+          p_input_amount: number
+          p_receive_amount: number
+          p_fee_amount: number
+          p_account_version: number
+        }
+        Returns: {
+          account_id: string
+          created_at: string
+          currency: string
+          fee_amount: number
+          input_amount: number
+          keyset_counter: number
+          keyset_id: string
+          output_amounts: number[]
+          receive_amount: number
+          state: string
+          token_hash: string
+          token_proofs: string
           unit: string
           user_id: string
           version: number
@@ -216,7 +328,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
-          number_of_blinded_messages: number | null
+          output_amounts: number[] | null
           payment_request: string
           quote_id: string
           state: string
@@ -231,7 +343,7 @@ export type Database = {
           p_quote_version: number
           p_keyset_id: string
           p_keyset_counter: number
-          p_number_of_blinded_messages: number
+          p_output_amounts: number[]
           p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]

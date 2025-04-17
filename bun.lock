@@ -7,7 +7,7 @@
         "@cashu/cashu-ts": "2.4.1",
         "@cashu/crypto": "0.3.4",
         "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
-        "@opensecret/react": "1.0.1",
+        "@opensecret/react": "1.1.0",
         "@radix-ui/react-dialog": "1.1.6",
         "@radix-ui/react-dropdown-menu": "2.1.2",
         "@radix-ui/react-label": "2.1.1",
@@ -252,7 +252,7 @@
 
     "@npmcli/promise-spawn": ["@npmcli/promise-spawn@6.0.2", "", { "dependencies": { "which": "^3.0.0" } }, "sha512-gGq0NJkIGSwdbUt4yhdF8ZrmkGKVz9vAdVzpOfnom+V8PLSmSOVhZwbNvZZS1EYcJN5hzzKBxmmVVAInM6HQLg=="],
 
-    "@opensecret/react": ["@opensecret/react@1.0.1", "", { "dependencies": { "@peculiar/x509": "^1.12.2", "@stablelib/base64": "^2.0.0", "@stablelib/chacha20poly1305": "^2.0.0", "@stablelib/random": "^2.0.0", "cbor2": "^1.7.0", "tweetnacl": "^1.0.3", "zod": "^3.23.8" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-0fXgDnbfoYZ1ax0tdEzjcD9uzkIUKayYQFOAHJmKm+4uf6D1IL38SjCaGCZZAim0yTxVZTtJF+s1S9zU/Tg+Xg=="],
+    "@opensecret/react": ["@opensecret/react@1.1.0", "", { "dependencies": { "@peculiar/x509": "^1.12.2", "@stablelib/base64": "^2.0.0", "@stablelib/chacha20poly1305": "^2.0.0", "@stablelib/random": "^2.0.0", "cbor2": "^1.7.0", "tweetnacl": "^1.0.3", "zod": "^3.23.8" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-L2ncLPOWF9FjIIhVOUeEycIxpA5gX8j4Q2qkCGhtkVvzmpR3r0kwS6hJnsRYte1d8LDbEi+I3O1xYlMGqMIR3w=="],
 
     "@peculiar/asn1-cms": ["@peculiar/asn1-cms@2.3.15", "", { "dependencies": { "@peculiar/asn1-schema": "^2.3.15", "@peculiar/asn1-x509": "^2.3.15", "@peculiar/asn1-x509-attr": "^2.3.15", "asn1js": "^3.0.5", "tslib": "^2.8.1" } }, "sha512-B+DoudF+TCrxoJSTjjcY8Mmu+lbv8e7pXGWrhNp2/EGJp9EEcpzjBCar7puU57sGifyzaRVM03oD5L7t7PghQg=="],
 

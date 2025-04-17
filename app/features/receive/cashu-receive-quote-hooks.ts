@@ -221,7 +221,6 @@ const useOnMintQuoteStateChange = ({
   onPaid,
   onIssued,
 }: OnMintQuoteStateChangeProps) => {
-  const cashuCryptography = useCashuCryptography();
   const accountsCache = useAccountsCache();
 
   useQueries({
@@ -229,15 +228,12 @@ const useOnMintQuoteStateChange = ({
       queryKey: ['mint-quote', quote.id],
       queryFn: async () => {
         try {
-          const account = accountsCache.get(quote.accountId);
+          const account = await accountsCache.getLatest(quote.accountId);
           if (!account || account.type !== 'cashu') {
             throw new Error(`Account not found for id: ${quote.accountId}`);
           }
 
-          const seed = await cashuCryptography.getSeed();
-          const wallet = getCashuWallet(account.mintUrl, {
-            bip39seed: seed,
-          });
+          const wallet = getCashuWallet(account.mintUrl);
 
           const mintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
           const expiresAt = new Date(quote.expiresAt);

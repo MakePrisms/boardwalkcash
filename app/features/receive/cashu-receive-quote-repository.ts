@@ -155,7 +155,7 @@ export class CashuReceiveQuoteRepository {
       quoteVersion,
       keysetId,
       keysetCounter,
-      numberOfBlindedMessages,
+      outputAmounts,
       accountVersion,
     }: {
       /**
@@ -175,9 +175,9 @@ export class CashuReceiveQuoteRepository {
        */
       keysetCounter: number;
       /**
-       * Number of blinded messages generated for this quote.
+       * Amounts for each blinded message
        */
-      numberOfBlindedMessages: number;
+      outputAmounts: number[];
       /**
        * Version of the account as seen by the client. Used for optimistic concurrency control.
        */
@@ -193,7 +193,7 @@ export class CashuReceiveQuoteRepository {
       p_quote_version: quoteVersion,
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
-      p_number_of_blinded_messages: numberOfBlindedMessages,
+      p_output_amounts: outputAmounts,
       p_account_version: accountVersion,
     });
 
@@ -368,7 +368,7 @@ export class CashuReceiveQuoteRepository {
         state: decryptedData.state,
         keysetId: decryptedData.keyset_id ?? '',
         keysetCounter: decryptedData.keyset_counter ?? 0,
-        numberOfBlindedMessages: decryptedData.number_of_blinded_messages ?? 0,
+        outputAmounts: decryptedData.output_amounts ?? [],
       };
     }
 

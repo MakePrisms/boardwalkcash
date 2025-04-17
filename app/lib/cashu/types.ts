@@ -123,7 +123,15 @@ export type PlainSecret = string;
  * @see https://github.com/cashubtc/nuts/blob/main/10.md for NUT-10 secret format
  * @see https://github.com/cashubtc/nuts/blob/main/00.md for plain string secret format
  */
-export type ProofSecret = NUT10Secret | PlainSecret;
+export type ProofSecret =
+  | {
+      type: 'plain';
+      secret: PlainSecret;
+    }
+  | {
+      type: 'nut10';
+      secret: NUT10Secret;
+    };
 
 /**
  * A P2PK secret requires a valid signature for the given pubkey
