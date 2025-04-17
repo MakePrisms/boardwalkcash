@@ -8,3 +8,11 @@ export async function computeSHA256(message: string): Promise<string> {
     .join('');
   return hashHex;
 }
+
+export async function computeSHA256Bytes(
+  message: Uint8Array,
+): Promise<Uint8Array> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', message);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return new Uint8Array(hashArray);
+}

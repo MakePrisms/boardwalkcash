@@ -1,9 +1,11 @@
 import type { Token } from '@cashu/cashu-ts';
+import { mnemonicToSeedSync } from '@scure/bip39';
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
+import { useCryptography } from './cryptography';
 import { useEncryption } from './encryption';
 
 function getCurrencyAndUnitFromToken(token: Token): {
@@ -30,48 +32,85 @@ export function tokenToMoney(token: Token): Money {
   });
 }
 
-function hexToUint8Array(hex: string): Uint8Array {
-  const pairs = hex.match(/.{1,2}/g) || [];
-  return new Uint8Array(pairs.map((byte) => Number.parseInt(byte, 16)));
-}
-
 export type CashuCryptography = Pick<
   ReturnType<typeof useEncryption>,
   'encrypt' | 'decrypt'
-> & { getSeed: () => Promise<Uint8Array> };
+> & {
+  getSeed: () => Promise<Uint8Array>;
+  getLockingKey: () => Promise<string>;
+  signMessage: (message: Uint8Array) => Promise<string>;
+};
 
-type CashuSeedStore = {
+type CashuKeyStore = {
   seedPromise: ReturnType<
     ReturnType<typeof useCashuCryptography>['getSeed']
+  > | null;
+  lockingKeyPromise: ReturnType<
+    ReturnType<typeof useCashuCryptography>['getLockingKey']
   > | null;
   setSeedPromise: (
     promise: ReturnType<ReturnType<typeof useCashuCryptography>['getSeed']>,
   ) => void;
+  setLockingKeyPromise: (
+    promise: ReturnType<
+      ReturnType<typeof useCashuCryptography>['getLockingKey']
+    >,
+  ) => void;
 };
 
 // TODO: needs to be cleared when the user logs out
-const cashuSeedStore = create<CashuSeedStore>((set) => ({
+const cashuKeyStore = create<CashuKeyStore>((set) => ({
   seedPromise: null,
+  lockingKeyPromise: null,
   setSeedPromise: (promise) => set({ seedPromise: promise }),
+  setLockingKeyPromise: (promise) => set({ lockingKeyPromise: promise }),
 }));
 
 export function useCashuCryptography(): CashuCryptography {
-  const encryption = useEncryption();
-  const { getPrivateKeyBytes, encrypt, decrypt } = encryption;
+  const { encrypt, decrypt } = useEncryption();
+  const crypto = useCryptography();
 
   return useMemo(() => {
+    const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
+
     const getSeed = async () => {
-      const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
+      const { seedPromise, setSeedPromise } = cashuKeyStore.getState();
       if (seedPromise) return seedPromise;
 
-      const promise = getPrivateKeyBytes({
-        seed_phrase_derivation_path: getSeedPhraseDerivationPath('cashu', 12),
-      }).then((response) => hexToUint8Array(response.private_key));
+      const promise = crypto
+        .getMnemonic({
+          seed_phrase_derivation_path: seedDerivationPath,
+        })
+        .then((response) => mnemonicToSeedSync(response.mnemonic));
 
       setSeedPromise(promise);
       return promise;
     };
 
-    return { getSeed, encrypt, decrypt };
-  }, [getPrivateKeyBytes, encrypt, decrypt]);
+    // TODO: should probably have a way to get many keys
+    const getLockingKey = async () => {
+      const { lockingKeyPromise, setLockingKeyPromise } =
+        cashuKeyStore.getState();
+      if (lockingKeyPromise) return lockingKeyPromise;
+
+      const promise = crypto
+        .getPublicKey('schnorr', {
+          seed_phrase_derivation_path: seedDerivationPath,
+        })
+        .then((response) => `02${response.public_key}`); // Cashu uses 33 byte public keys
+
+      setLockingKeyPromise(promise);
+      return promise;
+    };
+
+    // TODO: if we can create various public keys, we need to specify which key to use to sign
+    const signMessage = async (message: Uint8Array) => {
+      const { signature } = await crypto.signMessage(message, 'schnorr', {
+        seed_phrase_derivation_path: seedDerivationPath,
+      });
+      return signature;
+    };
+
+    return { getSeed, getLockingKey, signMessage, encrypt, decrypt };
+  }, [crypto, encrypt, decrypt]);
 }
