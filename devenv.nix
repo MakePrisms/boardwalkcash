@@ -54,6 +54,12 @@
     entry = "bun run db:generate-types";
   };
   
+  pre-commit.hooks.typecheck = {
+    enable = true;
+    entry = "bun run typecheck";
+    pass_filenames = false;
+  };
+  
   pre-commit.hooks.biome = {
     enable = true;
     entry = "bun run fix:staged";

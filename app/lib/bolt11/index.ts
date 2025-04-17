@@ -26,7 +26,23 @@ export const decodeBolt11 = (invoice: string) => {
   const networkPrefix = networkSection?.bech32;
   const network = networkPrefix ? getNetwork(networkPrefix) : undefined;
 
-  return { amountSat, expiryUnixMs, network };
+  const descriptionSection = findSection(sections, 'description');
+  const description = descriptionSection?.value;
+
+  return { amountSat, expiryUnixMs, network, description };
+};
+
+/**
+ * Checks if a string is a valid BOLT11 invoice
+ * @param invoice invoice to check
+ */
+export const isBolt11Invoice = (invoice: string) => {
+  try {
+    decodeBolt11(invoice);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const findSection = <T extends Section['name']>(
