@@ -33,8 +33,8 @@ type TokenQueryResult =
   | {
       /** The token with only claimable proofs. Will be null if the token cannot be claimed */
       claimableToken: Token;
-      /** The reason why the token cannot be claimed. Will never be defined when claimableToken is not null. */
-      cannotClaimReason: never;
+      /** The reason why the token cannot be claimed. Will be null when the token is claimable. */
+      cannotClaimReason: null;
     }
   | {
       claimableToken: null;
@@ -58,8 +58,12 @@ export function useCashuTokenSourceAccount(token: Token) {
       if (existingAccount) {
         return existingAccount;
       }
-      const info = await getMintInfo(token.mint);
-      const isTestMint = await checkIsTestMint(token.mint);
+
+      const [info, isTestMint] = await Promise.all([
+        getMintInfo(token.mint),
+        checkIsTestMint(token.mint),
+      ]);
+
       return {
         id: '',
         type: 'cashu',
@@ -67,7 +71,7 @@ export function useCashuTokenSourceAccount(token: Token) {
         createdAt: new Date().toISOString(),
         name: info?.name ?? token.mint.replace('https://', ''),
         currency: tokenToMoney(token).currency,
-        isTestMint: isTestMint,
+        isTestMint,
         version: 0,
         keysetCounters: {},
         proofs: [],
@@ -112,7 +116,7 @@ export function useTokenWithClaimableProofs({
       return claimableProofs
         ? {
             claimableToken: { ...token, proofs: claimableProofs },
-            cannotClaimReason: undefined as never,
+            cannotClaimReason: null,
           }
         : { cannotClaimReason, claimableToken: null };
     },

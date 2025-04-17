@@ -22,7 +22,7 @@ export const proofToY = (proof: Proof): string => {
 type GetClaimableProofsResult =
   | {
       claimableProofs: Proof[];
-      cannotClaimReason: never;
+      cannotClaimReason: null;
     }
   | {
       claimableProofs: null;
@@ -52,6 +52,7 @@ export const getClaimableProofs = (
     const firstReason = claimabilityResults.find(
       (result) => result.reason,
     )?.reason;
+
     return {
       claimableProofs: null,
       cannotClaimReason:
@@ -60,7 +61,7 @@ export const getClaimableProofs = (
   }
 
   // Otherwise return the claimable proofs
-  return { claimableProofs, cannotClaimReason: undefined as never };
+  return { claimableProofs, cannotClaimReason: null };
 };
 
 const isProofClaimable = (proof: Proof, pubkeys: string[]) => {

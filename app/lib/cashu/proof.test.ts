@@ -33,13 +33,13 @@ describe('getClaimableProofs', () => {
   test('should return all proofs with plain secrets', () => {
     const result = getClaimableProofs([proofWithPlainSecret], [pubkey]);
     expect(result.claimableProofs).toHaveLength(1);
-    expect(result.cannotClaimReason).toBeUndefined();
+    expect(result.cannotClaimReason).toBeNull();
   });
 
   test('should return proofs that match the pubkey', () => {
     const result = getClaimableProofs([proofWithP2PKSecret], [pubkey]);
     expect(result.claimableProofs).toHaveLength(1);
-    expect(result.cannotClaimReason).toBeUndefined();
+    expect(result.cannotClaimReason).toBeNull();
   });
 
   test('should not return P2PK proofs with non-matching pubkeys', () => {
@@ -64,7 +64,7 @@ describe('getClaimableProofs', () => {
       [pubkey],
     );
     expect(result.claimableProofs).toHaveLength(2);
-    expect(result.cannotClaimReason).toBeUndefined();
+    expect(result.cannotClaimReason).toBeNull();
   });
 
   test('should not return any proofs if none are claimable', () => {
