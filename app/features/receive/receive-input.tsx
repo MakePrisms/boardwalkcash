@@ -24,15 +24,15 @@ import {
 import { useAccount, useAccounts } from '../accounts/account-hooks';
 import { useReceiveStore } from './receive-provider';
 
-type ConvertedMoneyToggleProps = {
+type ConvertedMoneySwitcherProps = {
   onSwitchInputCurrency: () => void;
   money?: Money;
 };
 
-const ConvertedMoneyToggle = ({
+const ConvertedMoneySwitcher = ({
   onSwitchInputCurrency,
   money,
-}: ConvertedMoneyToggleProps) => {
+}: ConvertedMoneySwitcherProps) => {
   if (!money) {
     return <Skeleton className="h-6 w-24" />;
   }
@@ -146,7 +146,7 @@ export default function ReceiveInput() {
           </div>
 
           {!exchangeRateError && (
-            <ConvertedMoneyToggle
+            <ConvertedMoneySwitcher
               onSwitchInputCurrency={switchInputCurrency}
               money={convertedValue}
             />
