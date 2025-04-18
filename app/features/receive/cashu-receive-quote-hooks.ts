@@ -16,7 +16,6 @@ import {
   type BoardwalkDbCashuReceiveQuote,
   boardwalkDb,
 } from '../boardwalk-db/database';
-import { useCashuCryptography } from '../shared/cashu';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -278,7 +277,6 @@ function useOnCashuReceiveQuoteChange({
   onCreated: (quote: CashuReceiveQuote) => void;
   onUpdated: (quote: CashuReceiveQuote) => void;
 }) {
-  const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
@@ -292,19 +290,15 @@ function useOnCashuReceiveQuoteChange({
           schema: 'wallet',
           table: 'cashu_receive_quotes',
         },
-        async (
+        (
           payload: RealtimePostgresChangesPayload<BoardwalkDbCashuReceiveQuote>,
         ) => {
           if (payload.eventType === 'INSERT') {
-            const addedQuote = await CashuReceiveQuoteRepository.toQuote(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
+            const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
             onCreatedRef.current(addedQuote);
           } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = await CashuReceiveQuoteRepository.toQuote(
+            const updatedQuote = CashuReceiveQuoteRepository.toQuote(
               payload.new,
-              cashuCryptography.decrypt,
             );
             onUpdatedRef.current(updatedQuote);
           }
@@ -315,7 +309,7 @@ function useOnCashuReceiveQuoteChange({
     return () => {
       channel.unsubscribe();
     };
-  }, [cashuCryptography]);
+  }, []);
 }
 
 export function useTrackPendingCashuReceiveQuotes() {
