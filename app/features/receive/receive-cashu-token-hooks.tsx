@@ -18,6 +18,10 @@ import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import {
+  useCashuReceiveQuote,
+  useCrossMintClaim,
+} from './cashu-receive-quote-hooks';
+import {
   useCreateCashuTokenSwap,
   useTokenSwap,
 } from './cashu-token-swap-hooks';
@@ -261,6 +265,7 @@ export function useReceiveCashuToken({
 }: UseReceiveCashuTokenProps = {}) {
   const onErrorRef = useLatest(onError);
 
+  // For receiving tokens to the source account
   const {
     mutateAsync: createSwap,
     data: swapData,
@@ -269,6 +274,16 @@ export function useReceiveCashuToken({
   const { status: swapStatus } = useTokenSwap({
     tokenHash: swapData?.tokenHash,
     onFailed: () => onErrorRef.current?.(new Error('Failed to swap token')),
+  });
+
+  // For receiving tokens to a different mint by making a lightning payment
+  const {
+    mutateAsync: crossMintClaim,
+    status: createCashuReceiveQuoteStatus,
+    data: cashuReceiveQuote,
+  } = useCrossMintClaim();
+  const { status: cashuReceiveQuoteStatus } = useCashuReceiveQuote({
+    quoteId: cashuReceiveQuote?.id,
   });
 
   const claimToken = async ({
@@ -284,8 +299,7 @@ export function useReceiveCashuToken({
       if (isSourceMint) {
         await createSwap({ token, account });
       } else {
-        // TODO: implement cross mint swap
-        throw new Error('Claiming to other account types not implemented');
+        await crossMintClaim({ token, account });
       }
     } catch (error) {
       console.error('Failed to claim token', error);
@@ -297,15 +311,28 @@ export function useReceiveCashuToken({
   };
 
   const status: ClaimStatus = (() => {
-    if (createSwapStatus === 'pending' || swapStatus === 'PENDING') {
+    if (
+      createSwapStatus === 'pending' ||
+      swapStatus === 'PENDING' ||
+      createCashuReceiveQuoteStatus === 'pending' ||
+      ['UNPAID', 'PAID'].includes(cashuReceiveQuoteStatus)
+    ) {
       return 'CLAIMING';
     }
-    if (swapStatus === 'COMPLETED') {
+
+    if (swapStatus === 'COMPLETED' || cashuReceiveQuoteStatus === 'COMPLETED') {
       return 'SUCCESS';
     }
-    if (createSwapStatus === 'error' || swapStatus === 'FAILED') {
+
+    if (
+      createSwapStatus === 'error' ||
+      swapStatus === 'FAILED' ||
+      createCashuReceiveQuoteStatus === 'error' ||
+      cashuReceiveQuoteStatus === 'EXPIRED'
+    ) {
       return 'ERROR';
     }
+
     return 'IDLE';
   })();
 
