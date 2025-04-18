@@ -3,16 +3,22 @@ import {
   MintOperationError,
   OutputData,
   type Proof,
+  type Token,
 } from '@cashu/cashu-ts';
 import {
   CashuErrorCodes,
   amountsFromOutputData,
   getCashuUnit,
   getCashuWallet,
+  getCrossMintQuotesForMaxAmount,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
-import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import {
+  type CashuCryptography,
+  tokenToMoney,
+  useCashuCryptography,
+} from '../shared/cashu';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   type CashuReceiveQuoteRepository,
@@ -26,10 +32,10 @@ export class CashuReceiveQuoteService {
   ) {}
 
   /**
-   * Creates a new cashu receive quote.
-   * @returns The created cashu receive quote.
+   * Creates a new cashu receive quote used for receiving via a bolt11 payment request.
+   * @returns The created cashu receive quote with the bolt11 invoice to pay.
    */
-  async create({
+  async createLightningQuote({
     userId,
     account,
     amount,
@@ -75,6 +81,65 @@ export class CashuReceiveQuoteService {
       state: mintQuoteResponse.state as CashuReceiveQuote['state'],
       paymentRequest: mintQuoteResponse.request,
     });
+
+    return cashuReceiveQuote;
+  }
+
+  /**
+   * Creates a new cashu receive quote and melts a token from a different mint to the destination account.
+   */
+  async createCashuTokenQuote({
+    userId,
+    token,
+    account,
+  }: {
+    /**
+     * The id of the user that will receive the money.
+     */
+    userId: string;
+    /**
+     * The token to melt.
+     */
+    token: Token;
+    /**
+     * The cashu account to which the token will be melted.
+     */
+    account: CashuAccount;
+  }): Promise<CashuReceiveQuote> {
+    const tokenAmount = tokenToMoney(token);
+    const fromCashuUnit = getCashuUnit(tokenAmount.currency);
+    const toCashuUnit = getCashuUnit(account.currency);
+
+    if (account.mintUrl === token.mint && fromCashuUnit === toCashuUnit) {
+      throw new Error('Must melt token to a different mint or currency');
+    }
+
+    const fromWallet = getCashuWallet(token.mint, {
+      unit: fromCashuUnit,
+    });
+    const toWallet = getCashuWallet(account.mintUrl, {
+      unit: toCashuUnit,
+    });
+
+    const quotes = await getCrossMintQuotesForMaxAmount({
+      source: fromWallet,
+      destination: toWallet,
+      requestedAmountToMelt: tokenAmount,
+    });
+
+    const expiresAt = new Date(quotes.mintQuote.expiry * 1000).toISOString();
+
+    const cashuReceiveQuote = await this.cashuReceiveQuoteRepository.create({
+      accountId: account.id,
+      userId,
+      amount: quotes.amountToMint,
+      quoteId: quotes.mintQuote.quote,
+      expiresAt,
+      state: quotes.mintQuote.state as CashuReceiveQuote['state'],
+      paymentRequest: quotes.mintQuote.request,
+    });
+
+    await fromWallet.meltProofs(quotes.meltQuote, token.proofs);
 
     return cashuReceiveQuote;
   }
