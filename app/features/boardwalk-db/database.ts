@@ -22,7 +22,7 @@ type CashuReceiveQuotePaymentResult = {
 
 // Use when you need to fix/improve generated types
 // See https://supabase.com/docs/guides/api/rest/generating-types#helper-types-for-tables-and-joins
-type Database = MergeDeep<
+export type Database = MergeDeep<
   DatabaseGenerated,
   {
     wallet: {

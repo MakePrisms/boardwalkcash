@@ -1,9 +1,10 @@
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
 import { jwtDecode } from 'jwt-decode';
 import { useCallback, useRef } from 'react';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
-import { computeSHA256 } from '~/lib/sha256';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { guestAccountStorage } from './guest-account-storage';
 
@@ -136,7 +137,7 @@ export const useAuthActions = (): AuthActions => {
 
   const requestPasswordReset = useCallback(async (email: string) => {
     const secret = await generateRandomPassword(20);
-    const hash = await computeSHA256(secret);
+    const hash = bytesToHex(sha256(secret));
     await requestPasswordResetRef.current(email, hash);
     return { email, secret };
   }, []);

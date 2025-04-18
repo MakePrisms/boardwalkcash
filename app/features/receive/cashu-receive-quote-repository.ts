@@ -280,7 +280,7 @@ export class CashuReceiveQuoteRepository {
    * @param id - The id of the cashu receive quote to get.
    * @returns The cashu receive quote.
    */
-  async get(id: string, options?: Options): Promise<CashuReceiveQuote> {
+  async get(id: string, options?: Options): Promise<CashuReceiveQuote | null> {
     const query = this.db.from('cashu_receive_quotes').select().eq('id', id);
 
     if (options?.abortSignal) {
@@ -290,6 +290,10 @@ export class CashuReceiveQuoteRepository {
     const { data, error } = await query.single();
 
     if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+
       throw new Error('Failed to get cashu receive quote', { cause: error });
     }
 

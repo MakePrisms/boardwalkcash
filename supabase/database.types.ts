@@ -193,6 +193,7 @@ export type Database = {
       }
       users: {
         Row: {
+          cashu_locking_xpub: string
           created_at: string
           default_btc_account_id: string | null
           default_currency: string
@@ -204,6 +205,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          cashu_locking_xpub: string
           created_at?: string
           default_btc_account_id?: string | null
           default_currency?: string
@@ -215,6 +217,7 @@ export type Database = {
           username: string
         }
         Update: {
+          cashu_locking_xpub?: string
           created_at?: string
           default_btc_account_id?: string | null
           default_currency?: string
@@ -351,15 +354,26 @@ export type Database = {
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
       }
-      upsert_user_with_accounts: {
-        Args: {
-          p_user_id: string
-          p_email: string
-          p_email_verified: boolean
-          p_accounts: Json[]
-        }
-        Returns: Json
-      }
+      upsert_user_with_accounts:
+        | {
+            Args: {
+              p_user_id: string
+              p_email: string
+              p_email_verified: boolean
+              p_accounts: Json[]
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_user_id: string
+              p_email: string
+              p_email_verified: boolean
+              p_accounts: Json[]
+              p_cashu_locking_xpub: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never

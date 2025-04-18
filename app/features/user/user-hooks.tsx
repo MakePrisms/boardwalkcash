@@ -60,12 +60,16 @@ export const useUpsertUser = () => {
 
   return useMutation({
     mutationKey: ['user-upsert'],
-    mutationFn: (user: AuthUser) =>
+    mutationFn: ({
+      user,
+      cashuLockingXpub,
+    }: { user: AuthUser; cashuLockingXpub: string }) =>
       userRepository.upsert({
         id: user.id,
         email: user.email,
         emailVerified: user.email_verified,
         accounts: [...defaultAccounts],
+        cashuLockingXpub,
       }),
     scope: {
       id: 'user-upsert',

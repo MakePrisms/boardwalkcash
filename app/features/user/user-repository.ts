@@ -1,6 +1,7 @@
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
+import { AccountRepository } from '../accounts/account-repository';
 import {
   type BoardwalkDb,
   type BoardwalkDbUser,
@@ -115,6 +116,10 @@ export class UserRepository {
         Account,
         'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters'
       >[];
+      /**
+       * The extended public key used for locking proofs and mint quotes.
+       */
+      cashuLockingXpub: string;
     },
     options?: Options,
   ): Promise<User> {
@@ -140,6 +145,7 @@ export class UserRepository {
       p_email: user.email ?? null,
       p_email_verified: user.emailVerified,
       p_accounts: accountsToAdd,
+      p_cashu_locking_xpub: user.cashuLockingXpub,
     });
 
     if (options?.abortSignal) {
@@ -156,6 +162,60 @@ export class UserRepository {
     return this.toUser(upsertedUser);
   }
 
+  async getByUsername(username: string) {
+    const { data, error } = await this.db
+      .from('users')
+      .select()
+      .eq('username', username)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // not found
+        return null;
+      }
+      throw new Error('Failed to get user by username', { cause: error });
+    }
+
+    return this.toUser(data);
+  }
+
+  async defaultAccount(userId: string, currency?: Currency) {
+    const { data, error } = await this.db
+      .from('users')
+      .select(`
+        *,
+        accounts:accounts!user_id(*)
+      `)
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw new Error('Failed to get user default account IDs', error);
+    }
+
+    const defaultBtcAccountId = data.default_btc_account_id;
+    const defaultUsdAccountId = data.default_usd_account_id;
+
+    if (!defaultBtcAccountId || !defaultUsdAccountId) {
+      throw new Error('No default account IDs found for user');
+    }
+
+    const accountCurrency = currency ?? data.default_currency;
+    const defaultAccountId =
+      accountCurrency === 'BTC' ? defaultBtcAccountId : defaultUsdAccountId;
+
+    const account = data.accounts.find(
+      (account) => account.id === defaultAccountId,
+    );
+
+    if (!account) {
+      throw new Error('No default account found for user');
+    }
+
+    return AccountRepository.toAccount(account, this.encryption.decrypt);
+  }
+
   private toUser(dbUser: BoardwalkDbUser): User {
     if (dbUser.email) {
       return {
@@ -165,6 +225,7 @@ export class UserRepository {
         emailVerified: dbUser.email_verified,
         createdAt: dbUser.created_at,
         updatedAt: dbUser.updated_at,
+        cashuLockingXpub: dbUser.cashu_locking_xpub,
         defaultBtcAccountId: dbUser.default_btc_account_id ?? '',
         defaultUsdAccountId: dbUser.default_usd_account_id ?? '',
         defaultCurrency: dbUser.default_currency,
@@ -182,6 +243,7 @@ export class UserRepository {
       defaultUsdAccountId: dbUser.default_usd_account_id ?? '',
       defaultCurrency: dbUser.default_currency,
       isGuest: true,
+      cashuLockingXpub: dbUser.cashu_locking_xpub,
     };
   }
 }

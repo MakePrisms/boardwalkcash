@@ -1,6 +1,7 @@
 import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
 import { Money } from '~/lib/money';
-import { computeSHA256 } from '~/lib/sha256';
 import { sum } from '~/lib/utils';
 import {
   type BoardwalkDb,
@@ -56,10 +57,10 @@ type CreateTokenSwap = {
   accountVersion: number;
 };
 
-function getTokenHash(token: Token | string): Promise<string> {
+function getTokenHash(token: Token | string): string {
   const encodedToken =
     typeof token === 'string' ? token : getEncodedToken(token);
-  return computeSHA256(encodedToken);
+  return bytesToHex(sha256(encodedToken));
 }
 
 export class CashuTokenSwapRepository {
@@ -88,7 +89,7 @@ export class CashuTokenSwapRepository {
   ): Promise<CashuTokenSwap> {
     const amount = tokenToMoney(token);
     const unit = getDefaultUnit(amount.currency);
-    const tokenHash = await getTokenHash(token);
+    const tokenHash = getTokenHash(token);
     const encryptedProofs = await this.encryption.encrypt(token.proofs);
 
     const query = this.db.rpc('create_cashu_token_swap', {

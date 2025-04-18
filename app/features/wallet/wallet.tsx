@@ -5,9 +5,9 @@ import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
+import { useCashuCryptography } from '../shared/cashu';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
-
 const useSetSupabseSession = (authUser: AuthUser) => {
   useEffect(() => {
     supabaseSessionStore.getState().setJwtPayload({ sub: authUser.id });
@@ -22,12 +22,15 @@ const useSetSupabseSession = (authUser: AuthUser) => {
  */
 const useUpsertBoardwalkUser = (authUser: AuthUser) => {
   const { data: user, mutate } = useUpsertUser();
+  const cashuCryptography = useCashuCryptography();
 
   useEffect(() => {
     if (authUser) {
-      mutate(authUser);
+      cashuCryptography.getLockingXpub().then((xpub) => {
+        mutate({ user: authUser, cashuLockingXpub: xpub });
+      });
     }
-  }, [authUser, mutate]);
+  }, [authUser, cashuCryptography, mutate]);
 
   return user ?? null;
 };

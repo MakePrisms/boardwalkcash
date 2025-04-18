@@ -5,6 +5,7 @@ import {
   type Proof,
   type SerializedBlindedMessage,
 } from '@cashu/cashu-ts';
+import { sha256 } from '@noble/hashes/sha256';
 import {
   CashuErrorCodes,
   amountsFromOutputData,
@@ -12,14 +13,20 @@ import {
   getCashuWallet,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
-import { computeSHA256Bytes } from '~/lib/sha256';
 import type { CashuAccount } from '../accounts/account';
-import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import {
+  type CashuCryptography,
+  derivePublicKey,
+  useCashuCryptography,
+} from '../shared/cashu';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   type CashuReceiveQuoteRepository,
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
+
+// TODO: we should derive new keys for each quote
+const CASHU_LOCKING_DERIVATION_PATH = 'm/0/0';
 
 export class CashuReceiveQuoteService {
   constructor(
@@ -60,11 +67,8 @@ export class CashuReceiveQuoteService {
       unit: cashuUnit,
     });
 
-    // TODO: NUT-20 says to use different public keys for each quote for privacy reasons
-    // We can't really do this for lightning address because we need OS to get the public key.
-    // Can an xpub be used to derive different public keys? We could store xpub on the user
-    // and then derive different public keys for each quote.
-    const lockingKey = await this.cryptography.getLockingKey();
+    const xpub = await this.cryptography.getLockingXpub();
+    const lockingKey = derivePublicKey(xpub, CASHU_LOCKING_DERIVATION_PATH);
 
     const mintQuoteResponse = await wallet.createLockedMintQuote(
       amount.toNumber(cashuUnit),
@@ -233,7 +237,10 @@ export class CashuReceiveQuoteService {
     blindedMessages: SerializedBlindedMessage[],
   ): Promise<string> {
     const message = await constructNUT20Message(quoteId, blindedMessages);
-    return this.cryptography.signMessage(message);
+    return this.cryptography.signMessage(
+      message,
+      CASHU_LOCKING_DERIVATION_PATH,
+    );
   }
 }
 
@@ -255,5 +262,5 @@ async function constructNUT20Message(
     message += blindedMessage.B_;
   }
   const msgbytes = new TextEncoder().encode(message);
-  return computeSHA256Bytes(msgbytes);
+  return sha256(msgbytes);
 }
