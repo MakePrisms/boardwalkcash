@@ -3,6 +3,7 @@ import {
   MintOperationError,
   OutputData,
   type Proof,
+  type SerializedBlindedMessage,
 } from '@cashu/cashu-ts';
 import {
   CashuErrorCodes,
@@ -58,8 +59,13 @@ export class CashuReceiveQuoteService {
       unit: cashuUnit,
     });
 
-    const mintQuoteResponse = await wallet.createMintQuote(
+    // TODO: NUT-20 says to use different public keys for each quote for privacy reasons
+    // Ideally we could get an xpub from OS and derive different public keys for each quote.
+    const lockingKey = await this.cryptography.getPublicKey();
+
+    const mintQuoteResponse = await wallet.createLockedMintQuote(
       amount.toNumber(cashuUnit),
+      lockingKey,
       description,
     );
 
@@ -176,16 +182,16 @@ export class CashuReceiveQuoteService {
     }
 
     try {
-      const cashuUnit = getCashuUnit(quote.amount.currency);
-      const proofs = await wallet.mintProofs(
-        quote.amount.toNumber(cashuUnit),
-        quote.quoteId,
-        {
-          keysetId: quote.keysetId,
-          outputData,
-        },
-      );
-      return proofs;
+      const keyset = await wallet.getKeys(quote.keysetId);
+      const blindedMessages = outputData.map((d) => d.blindedMessage);
+
+      const { signatures } = await wallet.mint.mint({
+        outputs: blindedMessages,
+        quote: quote.quoteId,
+        signature: await this.signMintQuote(quote.quoteId, blindedMessages),
+      });
+
+      return outputData.map((d, i) => d.toProof(signatures[i], keyset));
     } catch (error) {
       if (
         error instanceof MintOperationError &&
@@ -212,6 +218,20 @@ export class CashuReceiveQuoteService {
       throw error;
     }
   }
+
+  /**
+   * Concatenates the quote id and blinded messages, then signs hash.
+   * @param quoteId - The id of the quote this signature is for.
+   * @param blindedMessages - The blinded messages used for the outputs of the mint operation.
+   * @see https://github.com/cashubtc/nuts/blob/main/20.md
+   */
+  private async signMintQuote(
+    quoteId: string,
+    blindedMessages: SerializedBlindedMessage[],
+  ): Promise<string> {
+    const message = await constructNUT20Message(quoteId, blindedMessages);
+    return this.cryptography.signMessage(message);
+  }
 }
 
 export function useCashuReceiveQuoteService() {
@@ -221,4 +241,17 @@ export function useCashuReceiveQuoteService() {
     cryptography,
     cashuReceiveQuoteRepository,
   );
+}
+
+async function constructNUT20Message(
+  quote: string,
+  blindedMessages: Array<SerializedBlindedMessage>,
+): Promise<Uint8Array> {
+  let message = quote;
+  for (const blindedMessage of blindedMessages) {
+    message += blindedMessage.B_;
+  }
+  // NOTE: NUT20 message should be hashed, but OpenSecret does
+  // that in their signMessage function so we can't do it here.
+  return new TextEncoder().encode(message);
 }
