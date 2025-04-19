@@ -1,13 +1,12 @@
-import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
+import type { Proof, Token } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
-import { computeSHA256 } from '~/lib/sha256';
 import { sum } from '~/lib/utils';
 import {
   type BoardwalkDb,
   type BoardwalkDbCashuTokenSwap,
   boardwalkDb,
 } from '../boardwalk-db/database';
-import { tokenToMoney } from '../shared/cashu';
+import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuTokenSwap } from './cashu-token-swap';
@@ -55,12 +54,6 @@ type CreateTokenSwap = {
    */
   accountVersion: number;
 };
-
-function getTokenHash(token: Token | string): Promise<string> {
-  const encodedToken =
-    typeof token === 'string' ? token : getEncodedToken(token);
-  return computeSHA256(encodedToken);
-}
 
 export class CashuTokenSwapRepository {
   constructor(
@@ -114,6 +107,9 @@ export class CashuTokenSwapRepository {
     const { data, error } = await query.single();
 
     if (error) {
+      if (error.code === '23505') {
+        throw new Error('This token has already been claimed');
+      }
       throw new Error('Failed to create token swap', { cause: error });
     }
 
@@ -171,6 +167,53 @@ export class CashuTokenSwapRepository {
   }
 
   /**
+   * Updates the state of a token swap to FAILED.
+   */
+  async fail(
+    {
+      tokenHash,
+      reason,
+      version,
+    }: {
+      /**
+       * Hash of the token to be failed.
+       */
+      tokenHash: string;
+      /**
+       * Reason for the failure.
+       */
+      reason: string;
+      /**
+       * Version of the token swap as seen by the client. Used for optimistic concurrency control.
+       */
+      version: number;
+    },
+    options?: Options,
+  ): Promise<void> {
+    const query = this.db
+      .from('cashu_token_swaps')
+      .update({
+        state: 'FAILED',
+        failure_reason: reason,
+      })
+      .match({
+        token_hash: tokenHash,
+        version,
+      })
+      .select();
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+      throw new Error('Failed to fail token swap', { cause: error });
+    }
+  }
+
+  /**
    * Gets all pending token swaps for a given user.
    * @returns All token swaps in a PENDING state for the given user.
    */
@@ -198,6 +241,35 @@ export class CashuTokenSwapRepository {
         CashuTokenSwapRepository.toTokenSwap(item, this.encryption.decrypt),
       ),
     );
+  }
+
+  /**
+   * Gets a token swap by token hash.
+   * @returns The token swap.
+   * @throws Error if the token swap does not exist.
+   */
+  async get(
+    tokenHash: string,
+    options?: Options,
+  ): Promise<CashuTokenSwap | null> {
+    const query = this.db
+      .from('cashu_token_swaps')
+      .select()
+      .eq('token_hash', tokenHash);
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error('Failed to get token swap', { cause: error });
+    }
+
+    return data.length > 0
+      ? CashuTokenSwapRepository.toTokenSwap(data[0], this.encryption.decrypt)
+      : null;
   }
 
   static async toTokenSwap(

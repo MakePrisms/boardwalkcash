@@ -15,6 +15,7 @@ import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import {
   type CashuCryptography,
+  getTokenHash,
   tokenToMoney,
   useCashuCryptography,
 } from '../shared/cashu';
@@ -35,6 +36,17 @@ export class CashuTokenSwapService {
     token,
     account,
   }: { userId: string; token: Token; account: CashuAccount }) {
+    const existingSwap = await this.tokenSwapRepository.get(
+      await getTokenHash(token),
+    );
+
+    if (existingSwap) {
+      if (existingSwap.state === 'PENDING') {
+        return existingSwap;
+      }
+      throw new Error('You have already claimed this token');
+    }
+
     if (account.mintUrl !== token.mint) {
       throw new Error('Cannot swap a token to a different mint');
     }
@@ -103,15 +115,26 @@ export class CashuTokenSwapService {
       tokenSwap.outputAmounts,
     );
 
-    const newProofs = await this.swapProofs(wallet, tokenSwap, outputData);
-    const allProofs = [...account.proofs, ...newProofs];
+    try {
+      const newProofs = await this.swapProofs(wallet, tokenSwap, outputData);
+      const allProofs = [...account.proofs, ...newProofs];
 
-    await this.tokenSwapRepository.completeTokenSwap({
-      tokenHash: tokenSwap.tokenHash,
-      swapVersion: tokenSwap.version,
-      proofs: allProofs,
-      accountVersion: account.version,
-    });
+      await this.tokenSwapRepository.completeTokenSwap({
+        tokenHash: tokenSwap.tokenHash,
+        swapVersion: tokenSwap.version,
+        proofs: allProofs,
+        accountVersion: account.version,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TOKEN_ALREADY_CLAIMED') {
+        await this.tokenSwapRepository.fail({
+          tokenHash: tokenSwap.tokenHash,
+          version: tokenSwap.version,
+          reason: 'Token already claimed',
+        });
+      }
+      throw error;
+    }
   }
 
   private async swapProofs(
@@ -140,8 +163,7 @@ export class CashuTokenSwapService {
           // so for earlier versions we need to check the message.
           error.message
             .toLowerCase()
-            .includes('outputs have already been signed before') ||
-          error.message.toLowerCase().includes('mint quote already issued'))
+            .includes('outputs have already been signed before'))
       ) {
         const { proofs } = await wallet.restore(
           tokenSwap.keysetCounter,
@@ -150,6 +172,15 @@ export class CashuTokenSwapService {
             keysetId: tokenSwap.keysetId,
           },
         );
+
+        if (
+          error.code === CashuErrorCodes.TOKEN_ALREADY_SPENT &&
+          proofs.length === 0
+        ) {
+          // If token is spent and we could not restore proofs, then we know someone else has claimed this token.
+          throw new Error('TOKEN_ALREADY_CLAIMED');
+        }
+
         // TODO: make sure these proofs are not already in our balance and that they are not spent
         return proofs;
       }
