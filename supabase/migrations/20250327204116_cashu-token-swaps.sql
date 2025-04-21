@@ -114,6 +114,7 @@ $function$
 
 CREATE OR REPLACE FUNCTION wallet.complete_cashu_token_swap(
   p_token_hash text,
+  p_user_id uuid,
   p_swap_version integer,
   p_proofs jsonb,
   p_account_version integer
@@ -125,7 +126,7 @@ declare
 begin
   select * into v_token_swap
   from wallet.cashu_token_swaps
-  where token_hash = p_token_hash
+  where token_hash = p_token_hash and user_id = p_user_id 
   for update;
 
   if v_token_swap is null then
@@ -135,7 +136,7 @@ begin
   if v_token_swap.state != 'PENDING' then
     raise exception 'Token swap for token hash % cannot be completed because it is not in PENDING state. Current state: %', p_token_hash, v_token_swap.state;
   end if;
-
+  
   -- Update the account with optimistic concurrency
   update wallet.accounts
   set details = jsonb_set(details, '{proofs}', p_proofs, true),

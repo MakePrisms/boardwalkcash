@@ -1,13 +1,12 @@
-import { type Proof, type Token, getEncodedToken } from '@cashu/cashu-ts';
+import type { Proof, Token } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
-import { computeSHA256 } from '~/lib/sha256';
 import { sum } from '~/lib/utils';
 import {
   type BoardwalkDb,
   type BoardwalkDbCashuTokenSwap,
   boardwalkDb,
 } from '../boardwalk-db/database';
-import { tokenToMoney } from '../shared/cashu';
+import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuTokenSwap } from './cashu-token-swap';
@@ -55,12 +54,6 @@ type CreateTokenSwap = {
    */
   accountVersion: number;
 };
-
-function getTokenHash(token: Token | string): Promise<string> {
-  const encodedToken =
-    typeof token === 'string' ? token : getEncodedToken(token);
-  return computeSHA256(encodedToken);
-}
 
 export class CashuTokenSwapRepository {
   constructor(
@@ -114,6 +107,9 @@ export class CashuTokenSwapRepository {
     const { data, error } = await query.single();
 
     if (error) {
+      if (error.code === '23505') {
+        throw new Error('This token has already been claimed');
+      }
       throw new Error('Failed to create token swap', { cause: error });
     }
 
@@ -127,6 +123,7 @@ export class CashuTokenSwapRepository {
   async completeTokenSwap(
     {
       tokenHash,
+      userId,
       proofs,
       swapVersion,
       accountVersion,
@@ -135,6 +132,10 @@ export class CashuTokenSwapRepository {
        * Hash of the token that was claimed.
        */
       tokenHash: string;
+      /**
+       * ID of the user that is completing the token swap.
+       */
+      userId: string;
       /**
        * All proofs (existing and new) to be stored in the account.
        */
@@ -154,6 +155,7 @@ export class CashuTokenSwapRepository {
 
     const query = this.db.rpc('complete_cashu_token_swap', {
       p_token_hash: tokenHash,
+      p_user_id: userId,
       p_swap_version: swapVersion,
       p_proofs: encryptedProofs,
       p_account_version: accountVersion,
@@ -167,6 +169,66 @@ export class CashuTokenSwapRepository {
 
     if (error) {
       throw new Error('Failed to complete token claim', error);
+    }
+  }
+
+  /**
+   * Updates the state of a token swap to FAILED.
+   */
+  async fail(
+    {
+      tokenHash,
+      userId,
+      reason,
+      version,
+    }: {
+      /**
+       * Hash of the token to be failed.
+       */
+      tokenHash: string;
+      /**
+       * ID of the user that is failing the token swap.
+       */
+      userId: string;
+      /**
+       * Reason for the failure.
+       */
+      reason: string;
+      /**
+       * Version of the token swap as seen by the client. Used for optimistic concurrency control.
+       */
+      version: number;
+    },
+    options?: Options,
+  ): Promise<void> {
+    const query = this.db
+      .from('cashu_token_swaps')
+      .update({
+        state: 'FAILED',
+        failure_reason: reason,
+        version: version + 1,
+      })
+      .match({
+        token_hash: tokenHash,
+        version,
+        user_id: userId,
+      })
+      .select();
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      throw new Error('Failed to fail token swap', { cause: error });
+    }
+
+    if (!data) {
+      throw new Error(
+        `Concurrency error: Token swap ${tokenHash} was modified by another transaction. Expected version ${version}, but found different one.`,
+      );
     }
   }
 
