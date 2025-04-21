@@ -38,6 +38,7 @@ export class CashuTokenSwapService {
   }: { userId: string; token: Token; account: CashuAccount }) {
     const existingSwap = await this.tokenSwapRepository.get(
       await getTokenHash(token),
+      userId,
     );
 
     if (existingSwap) {

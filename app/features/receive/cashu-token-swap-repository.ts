@@ -250,12 +250,13 @@ export class CashuTokenSwapRepository {
    */
   async get(
     tokenHash: string,
+    userId: string,
     options?: Options,
   ): Promise<CashuTokenSwap | null> {
-    const query = this.db
-      .from('cashu_token_swaps')
-      .select()
-      .eq('token_hash', tokenHash);
+    const query = this.db.from('cashu_token_swaps').select().match({
+      token_hash: tokenHash,
+      user_id: userId,
+    });
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
