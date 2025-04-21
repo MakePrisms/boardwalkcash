@@ -120,8 +120,9 @@ export class CashuTokenSwapService {
           version: tokenSwap.version,
           reason: 'Token already claimed',
         });
+      } else {
+        throw error;
       }
-      throw error;
     }
   }
 
