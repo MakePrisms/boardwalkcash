@@ -195,6 +195,7 @@ export class CashuTokenSwapRepository {
       .update({
         state: 'FAILED',
         failure_reason: reason,
+        version: version + 1,
       })
       .match({
         token_hash: tokenHash,
@@ -206,10 +207,16 @@ export class CashuTokenSwapRepository {
       query.abortSignal(options.abortSignal);
     }
 
-    const { error } = await query;
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       throw new Error('Failed to fail token swap', { cause: error });
+    }
+
+    if (!data) {
+      throw new Error(
+        `Concurrency error: Token swap ${tokenHash} was modified by another transaction. Expected version ${version}, but found different one.`,
+      );
     }
   }
 
@@ -241,36 +248,6 @@ export class CashuTokenSwapRepository {
         CashuTokenSwapRepository.toTokenSwap(item, this.encryption.decrypt),
       ),
     );
-  }
-
-  /**
-   * Gets a token swap by token hash.
-   * @returns The token swap.
-   * @throws Error if the token swap does not exist.
-   */
-  async get(
-    tokenHash: string,
-    userId: string,
-    options?: Options,
-  ): Promise<CashuTokenSwap | null> {
-    const query = this.db.from('cashu_token_swaps').select().match({
-      token_hash: tokenHash,
-      user_id: userId,
-    });
-
-    if (options?.abortSignal) {
-      query.abortSignal(options.abortSignal);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error('Failed to get token swap', { cause: error });
-    }
-
-    return data.length > 0
-      ? CashuTokenSwapRepository.toTokenSwap(data[0], this.encryption.decrypt)
-      : null;
   }
 
   static async toTokenSwap(

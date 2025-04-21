@@ -15,7 +15,6 @@ import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import {
   type CashuCryptography,
-  getTokenHash,
   tokenToMoney,
   useCashuCryptography,
 } from '../shared/cashu';
@@ -36,18 +35,6 @@ export class CashuTokenSwapService {
     token,
     account,
   }: { userId: string; token: Token; account: CashuAccount }) {
-    const existingSwap = await this.tokenSwapRepository.get(
-      await getTokenHash(token),
-      userId,
-    );
-
-    if (existingSwap) {
-      if (existingSwap.state === 'PENDING') {
-        return existingSwap;
-      }
-      throw new Error('You have already claimed this token');
-    }
-
     if (account.mintUrl !== token.mint) {
       throw new Error('Cannot swap a token to a different mint');
     }
