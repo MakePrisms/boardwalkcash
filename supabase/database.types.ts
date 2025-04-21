@@ -279,6 +279,7 @@ export type Database = {
       complete_cashu_token_swap: {
         Args: {
           p_token_hash: string
+          p_user_id: string
           p_swap_version: number
           p_proofs: Json
           p_account_version: number

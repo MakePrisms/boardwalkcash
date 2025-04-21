@@ -123,6 +123,7 @@ export class CashuTokenSwapRepository {
   async completeTokenSwap(
     {
       tokenHash,
+      userId,
       proofs,
       swapVersion,
       accountVersion,
@@ -131,6 +132,10 @@ export class CashuTokenSwapRepository {
        * Hash of the token that was claimed.
        */
       tokenHash: string;
+      /**
+       * ID of the user that is completing the token swap.
+       */
+      userId: string;
       /**
        * All proofs (existing and new) to be stored in the account.
        */
@@ -150,6 +155,7 @@ export class CashuTokenSwapRepository {
 
     const query = this.db.rpc('complete_cashu_token_swap', {
       p_token_hash: tokenHash,
+      p_user_id: userId,
       p_swap_version: swapVersion,
       p_proofs: encryptedProofs,
       p_account_version: accountVersion,
@@ -172,6 +178,7 @@ export class CashuTokenSwapRepository {
   async fail(
     {
       tokenHash,
+      userId,
       reason,
       version,
     }: {
@@ -179,6 +186,10 @@ export class CashuTokenSwapRepository {
        * Hash of the token to be failed.
        */
       tokenHash: string;
+      /**
+       * ID of the user that is failing the token swap.
+       */
+      userId: string;
       /**
        * Reason for the failure.
        */
@@ -200,6 +211,7 @@ export class CashuTokenSwapRepository {
       .match({
         token_hash: tokenHash,
         version,
+        user_id: userId,
       })
       .select();
 

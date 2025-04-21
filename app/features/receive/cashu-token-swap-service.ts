@@ -109,6 +109,7 @@ export class CashuTokenSwapService {
 
       await this.tokenSwapRepository.completeTokenSwap({
         tokenHash: tokenSwap.tokenHash,
+        userId: tokenSwap.userId,
         swapVersion: tokenSwap.version,
         proofs: allProofs,
         accountVersion: account.version,
@@ -117,6 +118,7 @@ export class CashuTokenSwapService {
       if (error instanceof Error && error.message === 'TOKEN_ALREADY_CLAIMED') {
         await this.tokenSwapRepository.fail({
           tokenHash: tokenSwap.tokenHash,
+          userId: tokenSwap.userId,
           version: tokenSwap.version,
           reason: 'Token already claimed',
         });
