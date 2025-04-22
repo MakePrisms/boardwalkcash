@@ -114,7 +114,16 @@ the CI will check if the types are up to date and if not will not allow merging 
 To reset local database run `bun supabase db reset`. Note that this will delete any existing local data and run all
 migrations on clean db.
 
-Migrations are applied to hosted envs automatically by the Supabase platform.
+Migrations are applied to hosted envs automatically by the Supabase platform. You can track the migrations applied in the 
+Supabase dahsboard by going to the branches page and checking the logs for respective branch. If the migration fails for the
+feature branch you can reapply it by just resetting the branch. If it fails for the production you will need to resolve the issue and push migrations from your machine by doing:
+1. Switch to the production branch by running `git checkout master` and make sure you have the latest version by running `git pull origin master`.
+2. Run `bun supabase login` to login to Supabase dahsboard so CLI can access it.
+3. Run `bun supabase link` to link to the remote project. For this you will need database password. Ask other team members for current db password (the password can also be reset from the dashboard if needed).
+4. Run `bun supabase db push` to apply migrations to the remote database.
+
+Steps 2 and 3 can be skipped if you already logged in and linked the project before.
+
 
 ## Code style & formatting
 

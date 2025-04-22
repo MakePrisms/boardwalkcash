@@ -449,10 +449,7 @@ export type Database = {
         }
       }
       expire_cashu_receive_quote: {
-        Args: {
-          p_quote_id: string
-          p_quote_version: number
-        }
+        Args: { p_quote_id: string; p_quote_version: number }
         Returns: {
           account_id: string
           amount: number
