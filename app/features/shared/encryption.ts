@@ -29,11 +29,10 @@ function preprocessData(obj: unknown): unknown {
 }
 
 export const useEncryption = () => {
-  const { getPrivateKeyBytes, encryptData, decryptData } = useOpenSecret();
+  const { encryptData, decryptData } = useOpenSecret();
 
   return useMemo(() => {
     return {
-      getPrivateKeyBytes,
       encrypt: async <T = unknown>(
         data: T,
         keyOptions?: KeyOptions,
@@ -77,5 +76,5 @@ export const useEncryption = () => {
         }) as T;
       },
     };
-  }, [getPrivateKeyBytes, encryptData, decryptData]);
+  }, [encryptData, decryptData]);
 };

@@ -3,7 +3,9 @@ import {
   MintOperationError,
   OutputData,
   type Proof,
+  type SerializedBlindedMessage,
 } from '@cashu/cashu-ts';
+import { HARDENED_OFFSET } from '@scure/bip32';
 import {
   CashuErrorCodes,
   amountsFromOutputData,
@@ -13,11 +15,14 @@ import {
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import { derivePublicKey } from '../shared/cryptography';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   type CashuReceiveQuoteRepository,
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
+
+const BASE_CASHU_LOCKING_DERIVATION_PATH = "m/129372'/0'/0'";
 
 export class CashuReceiveQuoteService {
   constructor(
@@ -58,12 +63,23 @@ export class CashuReceiveQuoteService {
       unit: cashuUnit,
     });
 
-    const mintQuoteResponse = await wallet.createMintQuote(
+    const xpub = await this.cryptography.getXpub(
+      BASE_CASHU_LOCKING_DERIVATION_PATH,
+    );
+
+    const unhardenedIndex = Math.floor(
+      Math.random() * (HARDENED_OFFSET - 1),
+    ).toString();
+    const lockingKey = derivePublicKey(xpub, `m/${unhardenedIndex}`);
+
+    const mintQuoteResponse = await wallet.createLockedMintQuote(
       amount.toNumber(cashuUnit),
+      lockingKey,
       description,
     );
 
     const expiresAt = new Date(mintQuoteResponse.expiry * 1000).toISOString();
+    const fullLockingDerivationPath = `${BASE_CASHU_LOCKING_DERIVATION_PATH}/${unhardenedIndex}`;
 
     const cashuReceiveQuote = await this.cashuReceiveQuoteRepository.create({
       accountId: account.id,
@@ -74,6 +90,7 @@ export class CashuReceiveQuoteService {
       expiresAt,
       state: mintQuoteResponse.state as CashuReceiveQuote['state'],
       paymentRequest: mintQuoteResponse.request,
+      lockingDerivationPath: fullLockingDerivationPath,
     });
 
     return cashuReceiveQuote;
@@ -176,16 +193,25 @@ export class CashuReceiveQuoteService {
     }
 
     try {
-      const cashuUnit = getCashuUnit(quote.amount.currency);
-      const proofs = await wallet.mintProofs(
-        quote.amount.toNumber(cashuUnit),
+      const keyset = await wallet.getKeys(quote.keysetId);
+      const blindedMessages = outputData.map((d) => d.blindedMessage);
+
+      const message = await constructNUT20Message(
         quote.quoteId,
-        {
-          keysetId: quote.keysetId,
-          outputData,
-        },
+        blindedMessages,
       );
-      return proofs;
+      const signature = await this.cryptography.signMessage(
+        message,
+        quote.lockingDerivationPath,
+      );
+
+      const { signatures } = await wallet.mint.mint({
+        outputs: blindedMessages,
+        quote: quote.quoteId,
+        signature,
+      });
+
+      return outputData.map((d, i) => d.toProof(signatures[i], keyset));
     } catch (error) {
       if (
         error instanceof MintOperationError &&
@@ -221,4 +247,17 @@ export function useCashuReceiveQuoteService() {
     cryptography,
     cashuReceiveQuoteRepository,
   );
+}
+
+async function constructNUT20Message(
+  quote: string,
+  blindedMessages: Array<SerializedBlindedMessage>,
+): Promise<Uint8Array> {
+  let message = quote;
+  for (const blindedMessage of blindedMessages) {
+    message += blindedMessage.B_;
+  }
+  // NOTE: NUT20 message should be hashed, but OpenSecret does
+  // that in their signMessage function so we can't do it here.
+  return new TextEncoder().encode(message);
 }

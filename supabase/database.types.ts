@@ -61,6 +61,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
+          locking_derivation_path: string
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
@@ -79,6 +80,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
+          locking_derivation_path: string
           output_amounts?: number[] | null
           payment_request: string
           quote_id: string
@@ -97,6 +99,7 @@ export type Database = {
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
+          locking_derivation_path?: string
           output_amounts?: number[] | null
           payment_request?: string
           quote_id?: string
@@ -360,6 +363,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
+          locking_derivation_path: string
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
@@ -460,6 +464,7 @@ export type Database = {
           id: string
           keyset_counter: number | null
           keyset_id: string | null
+          locking_derivation_path: string
           output_amounts: number[] | null
           payment_request: string
           quote_id: string

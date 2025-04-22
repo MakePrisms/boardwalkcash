@@ -1,10 +1,13 @@
 import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import { HDKey } from '@scure/bip32';
+import { mnemonicToSeedSync } from '@scure/bip39';
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
+import { useCryptography } from './cryptography';
 import { useEncryption } from './encryption';
 
 function getCurrencyAndUnitFromToken(token: Token): {
@@ -31,15 +34,17 @@ export function tokenToMoney(token: Token): Money {
   });
 }
 
-function hexToUint8Array(hex: string): Uint8Array {
-  const pairs = hex.match(/.{1,2}/g) || [];
-  return new Uint8Array(pairs.map((byte) => Number.parseInt(byte, 16)));
-}
-
 export type CashuCryptography = Pick<
   ReturnType<typeof useEncryption>,
   'encrypt' | 'decrypt'
-> & { getSeed: () => Promise<Uint8Array> };
+> & {
+  getSeed: () => Promise<Uint8Array>;
+  getXpub: (derivationPath?: string) => Promise<string>;
+  signMessage: (
+    message: Uint8Array,
+    derivationPath?: string,
+  ) => Promise<string>;
+};
 
 type CashuSeedStore = {
   seedPromise: ReturnType<
@@ -57,24 +62,51 @@ const cashuSeedStore = create<CashuSeedStore>((set) => ({
 }));
 
 export function useCashuCryptography(): CashuCryptography {
-  const encryption = useEncryption();
-  const { getPrivateKeyBytes, encrypt, decrypt } = encryption;
+  const { encrypt, decrypt } = useEncryption();
+  const crypto = useCryptography();
 
   return useMemo(() => {
+    const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
+
     const getSeed = async () => {
       const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
       if (seedPromise) return seedPromise;
 
-      const promise = getPrivateKeyBytes({
-        seed_phrase_derivation_path: getSeedPhraseDerivationPath('cashu', 12),
-      }).then((response) => hexToUint8Array(response.private_key));
+      const promise = crypto
+        .getMnemonic({
+          seed_phrase_derivation_path: seedDerivationPath,
+        })
+        .then((response) => mnemonicToSeedSync(response.mnemonic));
 
       setSeedPromise(promise);
       return promise;
     };
 
-    return { getSeed, encrypt, decrypt };
-  }, [getPrivateKeyBytes, encrypt, decrypt]);
+    const getXpub = async (derivationPath?: string) => {
+      const seed = await getSeed();
+      const hdKey = HDKey.fromMasterSeed(seed);
+
+      if (derivationPath) {
+        const childKey = hdKey.derive(derivationPath);
+        return childKey.publicExtendedKey;
+      }
+
+      return hdKey.publicExtendedKey;
+    };
+
+    const signMessage = async (
+      message: Uint8Array,
+      derivationPath?: string,
+    ) => {
+      const { signature } = await crypto.signMessage(message, 'schnorr', {
+        seed_phrase_derivation_path: seedDerivationPath,
+        private_key_derivation_path: derivationPath,
+      });
+      return signature;
+    };
+
+    return { getSeed, signMessage, encrypt, decrypt, getXpub };
+  }, [crypto, encrypt, decrypt]);
 }
 
 export function getTokenHash(token: Token | string): Promise<string> {

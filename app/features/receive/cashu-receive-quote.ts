@@ -41,6 +41,13 @@ export type CashuReceiveQuote = {
    * Used for optimistic locking.
    */
   version: number;
+  /**
+   * BIP32 derivation path used for locking and signing the quote.
+   * This is the full path used to derive the locking key from the cashu seed.
+   * The last index is unhardened so that we can derive public keys without requiring the private key.
+   * @example "m/129372'/0'/0'/4321"
+   */
+  lockingDerivationPath: string;
 } & (
   | {
       state: 'UNPAID' | 'EXPIRED';
