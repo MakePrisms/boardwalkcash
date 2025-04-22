@@ -28,7 +28,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@cashu/cashu-ts": "2.4.1",
+    "@cashu/cashu-ts": "2.4.2",
     "@cashu/crypto": "0.3.4",
     "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
     "@opensecret/react": "1.1.0",

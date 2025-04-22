@@ -1,7 +1,7 @@
 import { type Token, decodePaymentRequest } from '@cashu/cashu-ts';
 import { create } from 'zustand';
 import type { Account } from '~/features/accounts/account';
-import { decodeBolt11, isBolt11Invoice } from '~/lib/bolt11';
+import { type DecodedBolt11, validateBolt11Invoice } from '~/lib/bolt11';
 import { isCashuPaymentRequest } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
@@ -40,8 +40,10 @@ type ValidateResult =
       unit: PaymentRequestUnit;
     };
 
-const validateBolt11 = (raw: string): ValidateResult => {
-  const { network, amountSat } = decodeBolt11(raw);
+const validateBolt11 = ({
+  network,
+  amountSat,
+}: DecodedBolt11): ValidateResult => {
   if (network !== 'bitcoin') {
     return {
       valid: false,
@@ -146,8 +148,9 @@ export const createSendStore = ({
     },
     setToken: (token) => set({ token }),
     setPaymentRequest: (raw) => {
-      if (isBolt11Invoice(raw)) {
-        const result = validateBolt11(raw);
+      const validationResult = validateBolt11Invoice(raw);
+      if (validationResult.valid) {
+        const result = validateBolt11(validationResult.decoded);
         if (!result.valid) {
           return result;
         }

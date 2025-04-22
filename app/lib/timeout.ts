@@ -2,7 +2,7 @@
 // See https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#maximum_delay_value
 const maxSetTimeoutDelay = 2 ** 31 - 1;
 
-type LongTimeout = {
+export type LongTimeout = {
   id: ReturnType<typeof setTimeout> | null; // Tracks the latest timeout ID
 };
 
