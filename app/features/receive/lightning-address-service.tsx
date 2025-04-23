@@ -1,4 +1,4 @@
-import { getCashuWallet } from '~/lib/cashu';
+import { getCashuWallet, getNut04DescriptionSupport } from '~/lib/cashu';
 import type {
   LNURLError,
   LNURLPayParams,
@@ -75,6 +75,23 @@ export class LightningAddressService {
         };
       }
 
+      const defaultAccount = await this.userRepository.defaultAccount(
+        user.id,
+        'BTC',
+      );
+
+      if (defaultAccount.type !== 'cashu') {
+        throw new Error(
+          `Account type not supported. Got ${defaultAccount.type}`,
+        );
+      }
+
+      const mintSupportsDescription = await getNut04DescriptionSupport(
+        defaultAccount.mintUrl,
+        'sat',
+      );
+
+      const commentAllowed = mintSupportsDescription ? 200 : 0;
       const callback = `${this.baseUrl}/api/lnurlp/callback/${user.id}`;
       const address = `${user.username}@${new URL(this.baseUrl).host}`;
       const metadata = JSON.stringify([
@@ -87,6 +104,7 @@ export class LightningAddressService {
         maxSendable: this.maxSendable.toNumber('msat'),
         minSendable: this.minSendable.toNumber('msat'),
         metadata,
+        commentAllowed,
         tag: 'payRequest',
       };
     } catch (error) {
@@ -104,7 +122,13 @@ export class LightningAddressService {
    */
   async handleLnurlpCallback(
     userId: string,
-    amount: Money<'BTC'>,
+    {
+      amount,
+      comment,
+    }: {
+      amount: Money<'BTC'>;
+      comment?: string | undefined;
+    },
   ): Promise<LNURLPayResult | LNURLError> {
     if (
       amount.lessThan(this.minSendable) ||
@@ -144,6 +168,7 @@ export class LightningAddressService {
         userId,
         account,
         amount: amount as Money,
+        description: comment,
       });
 
       return {
