@@ -214,13 +214,13 @@ export class CashuReceiveQuoteRepository {
       });
     }
 
-    const [updatedQuote, updatedAccount] = await Promise.all([
-      CashuReceiveQuoteRepository.toQuote(data.updated_quote),
-      AccountRepository.toAccount(
-        data.updated_account,
-        this.encryption.decrypt,
-      ),
-    ]);
+    const updatedQuote = CashuReceiveQuoteRepository.toQuote(
+      data.updated_quote,
+    );
+    const updatedAccount = await AccountRepository.toAccount(
+      data.updated_account,
+      this.encryption.decrypt,
+    );
 
     return {
       updatedQuote,

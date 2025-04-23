@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 export const useCryptography = () => {
   const {
+    // getPrivateKey returns a mnemonic (not a private key) that can derive the seed, so we rename it to getMnemonic
     getPrivateKey: getMnemonic,
     signMessage,
     getPublicKey,
