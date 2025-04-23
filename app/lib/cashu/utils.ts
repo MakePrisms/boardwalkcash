@@ -81,3 +81,27 @@ export const getKeysets = async (
 export const amountsFromOutputData = (outputData: OutputData[]) => {
   return outputData.map((output) => output.blindedMessage.amount);
 };
+
+/**
+ * Check if the mint signals that it supports invoice descriptions for minting.
+ *
+ * @param mintUrl - The URL of the mint
+ * @param unit - The unit to check support for
+ * @returns True if the mint supports invoice descriptions for minting
+ */
+export const getNut04DescriptionSupport = async (
+  mintUrl: string,
+  unit: 'sat' | 'usd',
+): Promise<boolean> => {
+  const mint = new CashuMint(mintUrl);
+  const nut4 = (await mint.getInfo()).nuts[4];
+  const satBolt11Method = nut4.methods.find(
+    (m) => m.unit === unit && m.method === 'bolt11',
+  );
+
+  // TODO: cashu-ts types are not up to date. See this issue for more details: https://github.com/cashubtc/cashu-ts/issues/293
+  return (
+    (satBolt11Method as unknown as { description?: boolean }).description ===
+    true
+  );
+};

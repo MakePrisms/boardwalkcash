@@ -11,7 +11,9 @@ import type { Route } from './+types/api.lnurlp.callback.$user_id';
 export async function loader({ request, params }: Route.LoaderArgs) {
   const userId = params.user_id;
 
-  const amountMsat = new URL(request.url).searchParams.get('amount');
+  const url = new URL(request.url);
+  const amountMsat = url.searchParams.get('amount');
+  const comment = url.searchParams.get('comment') ?? undefined;
 
   if (!amountMsat || Number.isNaN(Number(amountMsat))) {
     return new Response(
@@ -30,10 +32,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     boardwalkDbServiceRole,
   );
 
-  const response = await lightningAddressService.handleLnurlpCallback(
-    userId,
+  const response = await lightningAddressService.handleLnurlpCallback(userId, {
     amount,
-  );
+    comment: comment,
+  });
 
   return new Response(JSON.stringify(response), {
     headers: { 'Content-Type': 'application/json' },

@@ -31,6 +31,10 @@ export type LNURLPayParams = {
    * @example `[['text/plain', 'Pay to ${address}']]`
    */
   metadata: string;
+  /**
+   * The number of characters accepted for the comment query parameter on subsequent callback. (Should be interpreted as 0 if not provided).
+   */
+  commentAllowed?: number;
 };
 
 /** Response from the lnurlp callback */
