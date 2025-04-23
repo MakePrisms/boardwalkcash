@@ -24,12 +24,6 @@ const fakeCryptography: CashuCryptography = {
   signMessage: () => Promise.resolve(''),
 };
 
-const getOriginFromRequest = (request: Request) => {
-  const url = new URL(request.url);
-  const protocol = url.origin.includes('localhost') ? 'http' : url.protocol;
-  return `${protocol}://${url.host}`;
-};
-
 export class LightningAddressService {
   private baseUrl: string;
   private userRepository: UserRepository;
@@ -45,7 +39,7 @@ export class LightningAddressService {
       fakeCryptography,
     );
     this.accountRepository = new AccountRepository(db, fakeCryptography);
-    this.baseUrl = getOriginFromRequest(request);
+    this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
       amount: 1,
       currency: 'BTC',
@@ -134,7 +128,12 @@ export class LightningAddressService {
         this.cashuReceiveQuoteRepository,
       );
 
-      const account = await this.userRepository.defaultAccount(userId, 'BTC');
+      // We only support BTC for lightning address because we need to get invoices for the exact satoshi amount.
+      // Other currency accounts would require an exchange rate which will create a mismatch in amounts.
+      const account = await this.userRepository.getDefaultAccount(
+        userId,
+        'BTC',
+      );
 
       if (account.type !== 'cashu') {
         throw new Error(`Account type not supported. Got ${account.type}`);

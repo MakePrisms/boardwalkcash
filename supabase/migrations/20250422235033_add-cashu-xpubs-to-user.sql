@@ -1,5 +1,10 @@
+alter table "wallet"."users" add column "cashu_locking_xpub" text;
 
-alter table "wallet"."users" add column "cashu_locking_xpub" text not null;
+-- Set the default value to an empty string to avoid breaking existing data
+UPDATE "wallet"."users" SET "cashu_locking_xpub" = '';
+
+-- Make the column non-nullable
+ALTER TABLE "wallet"."users" ALTER COLUMN "cashu_locking_xpub" SET NOT NULL;
 
 CREATE UNIQUE INDEX users_cashu_locking_xpub_key ON wallet.users USING btree (cashu_locking_xpub);
 
@@ -11,9 +16,15 @@ drop function if exists "wallet"."upsert_user_with_accounts"(p_user_id uuid, p_e
 set check_function_bodies = off;
 
 -- update to include cashu_locking_xpub
-CREATE OR REPLACE FUNCTION wallet.upsert_user_with_accounts(p_user_id uuid, p_email text, p_email_verified boolean, p_accounts jsonb[], p_cashu_locking_xpub text)
- RETURNS jsonb
- LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION wallet.upsert_user_with_accounts(
+  p_user_id uuid,
+  p_email text,
+  p_email_verified boolean,
+  p_accounts jsonb[],
+  p_cashu_locking_xpub text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
 AS $function$declare
   result_user jsonb;
   existing_accounts jsonb;
@@ -28,8 +39,7 @@ begin
   values (p_user_id, p_email, p_email_verified, p_cashu_locking_xpub)
   on conflict (id) do update set
     email = coalesce(EXCLUDED.email, wallet.users.email),
-    email_verified = EXCLUDED.email_verified,
-    cashu_locking_xpub = coalesce(EXCLUDED.cashu_locking_xpub, wallet.users.cashu_locking_xpub);
+    email_verified = EXCLUDED.email_verified;
 
   -- Select and lock the user row
   select jsonb_build_object(

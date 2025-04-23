@@ -183,8 +183,9 @@ export class UserRepository {
 
   /**
    * Gets the user's default account. If currency is not provided, the default currency of the user is used.
+   * @returns The user's default account.
    */
-  async defaultAccount(userId: string, currency?: Currency) {
+  async getDefaultAccount(userId: string, currency?: Currency) {
     const { data, error } = await this.db
       .from('users')
       .select(`

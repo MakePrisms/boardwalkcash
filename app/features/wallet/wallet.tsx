@@ -6,10 +6,6 @@ import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
-import {
-  BASE_CASHU_LOCKING_DERIVATION_PATH,
-  useCashuCryptography,
-} from '../shared/cashu';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -27,17 +23,12 @@ const useSetSupabseSession = (authUser: AuthUser) => {
  */
 const useUpsertBoardwalkUser = (authUser: AuthUser) => {
   const { data: user, mutate } = useUpsertUser();
-  const cashuCryptography = useCashuCryptography();
 
   useEffect(() => {
     if (authUser) {
-      cashuCryptography
-        .getXpub(BASE_CASHU_LOCKING_DERIVATION_PATH)
-        .then((xpub) => {
-          mutate({ user: authUser, cashuLockingXpub: xpub });
-        });
+      mutate(authUser);
     }
-  }, [authUser, cashuCryptography, mutate]);
+  }, [authUser, mutate]);
 
   return user ?? null;
 };
