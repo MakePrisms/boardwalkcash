@@ -10,6 +10,8 @@ import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
 import { useCryptography } from './cryptography';
 import { useEncryption } from './encryption';
 
+export const BASE_CASHU_LOCKING_DERIVATION_PATH = "m/129372'/0'/0'";
+
 function getCurrencyAndUnitFromToken(token: Token): {
   currency: Currency;
   unit: CurrencyUnit;

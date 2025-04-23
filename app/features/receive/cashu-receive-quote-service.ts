@@ -14,15 +14,17 @@ import {
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
-import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import {
+  BASE_CASHU_LOCKING_DERIVATION_PATH,
+  type CashuCryptography,
+  useCashuCryptography,
+} from '../shared/cashu';
 import { derivePublicKey } from '../shared/cryptography';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   type CashuReceiveQuoteRepository,
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
-
-const BASE_CASHU_LOCKING_DERIVATION_PATH = "m/129372'/0'/0'";
 
 export class CashuReceiveQuoteService {
   constructor(

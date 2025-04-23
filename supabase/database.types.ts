@@ -292,6 +292,7 @@ export type Database = {
       }
       users: {
         Row: {
+          cashu_locking_xpub: string
           created_at: string
           default_btc_account_id: string | null
           default_currency: string
@@ -303,6 +304,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          cashu_locking_xpub: string
           created_at?: string
           default_btc_account_id?: string | null
           default_currency?: string
@@ -314,6 +316,7 @@ export type Database = {
           username: string
         }
         Update: {
+          cashu_locking_xpub?: string
           created_at?: string
           default_btc_account_id?: string | null
           default_currency?: string
@@ -510,6 +513,7 @@ export type Database = {
           p_email: string
           p_email_verified: boolean
           p_accounts: Json[]
+          p_cashu_locking_xpub: string
         }
         Returns: Json
       }
