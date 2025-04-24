@@ -53,6 +53,10 @@ type CreateQuote = {
    * State of the quote.
    */
   state: CashuReceiveQuote['state'];
+  /**
+   * The full BIP32 derivation path used to derive the public key for locking the cashu mint quote.
+   */
+  lockingDerivationPath: string;
 };
 
 export class CashuReceiveQuoteRepository {
@@ -75,10 +79,10 @@ export class CashuReceiveQuoteRepository {
       expiresAt,
       description,
       state,
+      lockingDerivationPath,
     }: CreateQuote,
     options?: Options,
   ): Promise<CashuReceiveQuote> {
-    const encryptedQuoteId = await this.encryption.encrypt(quoteId);
     const unit = getDefaultUnit(amount.currency);
 
     const query = this.db
@@ -89,11 +93,12 @@ export class CashuReceiveQuoteRepository {
         amount: amount.toNumber(unit),
         currency: amount.currency,
         unit,
-        quote_id: encryptedQuoteId,
+        quote_id: quoteId,
         payment_request: paymentRequest,
         expires_at: expiresAt,
         description,
         state,
+        locking_derivation_path: lockingDerivationPath,
       })
       .select();
 
@@ -107,7 +112,7 @@ export class CashuReceiveQuoteRepository {
       throw new Error('Failed to create cashu receive quote', { cause: error });
     }
 
-    return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
+    return CashuReceiveQuoteRepository.toQuote(data);
   }
 
   /**
@@ -209,16 +214,13 @@ export class CashuReceiveQuoteRepository {
       });
     }
 
-    const [updatedQuote, updatedAccount] = await Promise.all([
-      CashuReceiveQuoteRepository.toQuote(
-        data.updated_quote,
-        this.encryption.decrypt,
-      ),
-      AccountRepository.toAccount(
-        data.updated_account,
-        this.encryption.decrypt,
-      ),
-    ]);
+    const updatedQuote = CashuReceiveQuoteRepository.toQuote(
+      data.updated_quote,
+    );
+    const updatedAccount = await AccountRepository.toAccount(
+      data.updated_account,
+      this.encryption.decrypt,
+    );
 
     return {
       updatedQuote,
@@ -297,7 +299,7 @@ export class CashuReceiveQuoteRepository {
       throw new Error('Failed to get cashu receive quote', { cause: error });
     }
 
-    return CashuReceiveQuoteRepository.toQuote(data, this.encryption.decrypt);
+    return CashuReceiveQuoteRepository.toQuote(data);
   }
 
   /**
@@ -325,61 +327,46 @@ export class CashuReceiveQuoteRepository {
       throw new Error('Failed to get cashu receive quotes', { cause: error });
     }
 
-    return await Promise.all(
-      data.map(
-        async (data) =>
-          await CashuReceiveQuoteRepository.toQuote(
-            data,
-            this.encryption.decrypt,
-          ),
-      ),
-    );
+    return data.map((data) => CashuReceiveQuoteRepository.toQuote(data));
   }
 
-  static async toQuote(
-    data: BoardwalkDbCashuReceiveQuote,
-    decryptData: Encryption['decrypt'],
-  ): Promise<CashuReceiveQuote> {
-    const decryptedData = {
-      ...data,
-      quote_id: await decryptData<string>(data.quote_id),
-    };
-
+  static toQuote(data: BoardwalkDbCashuReceiveQuote): CashuReceiveQuote {
     const commonData = {
-      id: decryptedData.id,
-      userId: decryptedData.user_id,
-      accountId: decryptedData.account_id,
-      quoteId: decryptedData.quote_id,
+      id: data.id,
+      userId: data.user_id,
+      accountId: data.account_id,
+      quoteId: data.quote_id,
       amount: new Money({
-        amount: decryptedData.amount,
-        currency: decryptedData.currency,
-        unit: decryptedData.unit,
+        amount: data.amount,
+        currency: data.currency,
+        unit: data.unit,
       }),
-      description: decryptedData.description ?? undefined,
-      createdAt: decryptedData.created_at,
-      expiresAt: decryptedData.expires_at,
-      paymentRequest: decryptedData.payment_request,
-      version: decryptedData.version,
+      description: data.description ?? undefined,
+      createdAt: data.created_at,
+      expiresAt: data.expires_at,
+      paymentRequest: data.payment_request,
+      version: data.version,
+      lockingDerivationPath: data.locking_derivation_path,
     };
 
-    if (decryptedData.state === 'PAID' || decryptedData.state === 'COMPLETED') {
+    if (data.state === 'PAID' || data.state === 'COMPLETED') {
       return {
         ...commonData,
-        state: decryptedData.state,
-        keysetId: decryptedData.keyset_id ?? '',
-        keysetCounter: decryptedData.keyset_counter ?? 0,
-        outputAmounts: decryptedData.output_amounts ?? [],
+        state: data.state,
+        keysetId: data.keyset_id ?? '',
+        keysetCounter: data.keyset_counter ?? 0,
+        outputAmounts: data.output_amounts ?? [],
       };
     }
 
-    if (decryptedData.state === 'UNPAID' || decryptedData.state === 'EXPIRED') {
+    if (data.state === 'UNPAID' || data.state === 'EXPIRED') {
       return {
         ...commonData,
-        state: decryptedData.state,
+        state: data.state,
       };
     }
 
-    throw new Error(`Unexpected quote state ${decryptedData.state}`);
+    throw new Error(`Unexpected quote state ${data.state}`);
   }
 }
 
