@@ -6,6 +6,10 @@ import { type AuthUser, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { Account } from '../accounts/account';
+import {
+  BASE_CASHU_LOCKING_DERIVATION_PATH,
+  useCashuCryptography,
+} from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, useUserRepository } from './user-repository';
@@ -57,16 +61,23 @@ const defaultAccounts = [
 export const useUpsertUser = () => {
   const queryClient = useQueryClient();
   const userRepository = useUserRepository();
+  const cashuCryptography = useCashuCryptography();
 
   return useMutation({
     mutationKey: ['user-upsert'],
-    mutationFn: (user: AuthUser) =>
-      userRepository.upsert({
+    mutationFn: async (user: AuthUser) => {
+      const cashuLockingXpub = await cashuCryptography.getXpub(
+        BASE_CASHU_LOCKING_DERIVATION_PATH,
+      );
+
+      return userRepository.upsert({
         id: user.id,
         email: user.email,
         emailVerified: user.email_verified,
         accounts: [...defaultAccounts],
-      }),
+        cashuLockingXpub,
+      });
+    },
     scope: {
       id: 'user-upsert',
     },

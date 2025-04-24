@@ -10,6 +10,15 @@ import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
 import { useCryptography } from './cryptography';
 import { useEncryption } from './encryption';
 
+// Cashu-specific derivation path with hardnened indexes to derive public keys for
+// locking mint quotes and proofs. 129372 is UTF-8 for 🥜 (see NUT-13) and the other
+// 2 indexes are the coin type (0) and account (0) which can be changed to derive
+// different keys if needed. This path is "proprietary" and not part of any standard.
+// The index values are unimportant as long as they are hardened and remain constant.
+// DO NOT CHANGE THIS VALUE WITHOUT UPDATING USER'S XPUB IN THE DATABASE. IF THIS
+// IS NOT DONE, THEN WE WILL CREATE THE WRONG DERIVATION PATH WHEN GETTING PRIVATE KEYS.
+export const BASE_CASHU_LOCKING_DERIVATION_PATH = "m/129372'/0'/0'";
+
 function getCurrencyAndUnitFromToken(token: Token): {
   currency: Currency;
   unit: CurrencyUnit;
