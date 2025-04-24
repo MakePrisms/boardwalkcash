@@ -40,10 +40,7 @@ export type CashuCryptography = Pick<
 > & {
   getSeed: () => Promise<Uint8Array>;
   getXpub: (derivationPath?: string) => Promise<string>;
-  signMessage: (
-    message: Uint8Array,
-    derivationPath?: string,
-  ) => Promise<string>;
+  getPrivateKey: (derivationPath?: string) => Promise<string>;
 };
 
 type CashuSeedStore = {
@@ -94,18 +91,16 @@ export function useCashuCryptography(): CashuCryptography {
       return hdKey.publicExtendedKey;
     };
 
-    const signMessage = async (
-      message: Uint8Array,
-      derivationPath?: string,
-    ) => {
-      const { signature } = await crypto.signMessage(message, 'schnorr', {
-        seed_phrase_derivation_path: seedDerivationPath,
-        private_key_derivation_path: derivationPath,
-      });
-      return signature;
+    const getPrivateKey = async (derivationPath?: string) => {
+      return crypto
+        .getPrivateKeyBytes({
+          seed_phrase_derivation_path: seedDerivationPath,
+          private_key_derivation_path: derivationPath,
+        })
+        .then((response) => response.private_key);
     };
 
-    return { getSeed, signMessage, encrypt, decrypt, getXpub };
+    return { getSeed, getPrivateKey, encrypt, decrypt, getXpub };
   }, [crypto, encrypt, decrypt]);
 }
 

@@ -1,9 +1,9 @@
 import {
   type CashuWallet,
   MintOperationError,
+  MintQuoteState,
   OutputData,
   type Proof,
-  type SerializedBlindedMessage,
 } from '@cashu/cashu-ts';
 import { HARDENED_OFFSET } from '@scure/bip32';
 import {
@@ -193,25 +193,31 @@ export class CashuReceiveQuoteService {
     }
 
     try {
-      const keyset = await wallet.getKeys(quote.keysetId);
-      const blindedMessages = outputData.map((d) => d.blindedMessage);
+      const cashuUnit = getCashuUnit(quote.amount.currency);
 
-      const message = await constructNUT20Message(
-        quote.quoteId,
-        blindedMessages,
-      );
-      const signature = await this.cryptography.signMessage(
-        message,
+      const unlockingKey = await this.cryptography.getPrivateKey(
         quote.lockingDerivationPath,
       );
 
-      const { signatures } = await wallet.mint.mint({
-        outputs: blindedMessages,
-        quote: quote.quoteId,
-        signature,
-      });
+      const proofs = await wallet.mintProofs(
+        quote.amount.toNumber(cashuUnit),
+        // NOTE: cashu-ts makes us pass the mint quote response instead of just the quote id
+        // if we want to use the private key to create a signature. However, the implementation
+        // only ends up using the quote id.
+        {
+          quote: quote.quoteId,
+          request: quote.paymentRequest,
+          state: MintQuoteState.PAID,
+          expiry: Math.floor(new Date(quote.expiresAt).getTime() / 1000),
+        },
+        {
+          keysetId: quote.keysetId,
+          outputData,
+          privateKey: unlockingKey,
+        },
+      );
 
-      return outputData.map((d, i) => d.toProof(signatures[i], keyset));
+      return proofs;
     } catch (error) {
       if (
         error instanceof MintOperationError &&
@@ -247,17 +253,4 @@ export function useCashuReceiveQuoteService() {
     cryptography,
     cashuReceiveQuoteRepository,
   );
-}
-
-async function constructNUT20Message(
-  quote: string,
-  blindedMessages: Array<SerializedBlindedMessage>,
-): Promise<Uint8Array> {
-  let message = quote;
-  for (const blindedMessage of blindedMessages) {
-    message += blindedMessage.B_;
-  }
-  // NOTE: NUT20 message should be hashed, but OpenSecret does
-  // that in their signMessage function so we can't do it here.
-  return new TextEncoder().encode(message);
 }

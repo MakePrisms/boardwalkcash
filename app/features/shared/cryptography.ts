@@ -8,6 +8,7 @@ export const useCryptography = () => {
     getPrivateKey: getMnemonic,
     signMessage,
     getPublicKey,
+    getPrivateKeyBytes,
   } = useOpenSecret();
 
   return useMemo(() => {
@@ -15,8 +16,9 @@ export const useCryptography = () => {
       getMnemonic,
       signMessage,
       getPublicKey,
+      getPrivateKeyBytes,
     };
-  }, [getMnemonic, signMessage, getPublicKey]);
+  }, [getMnemonic, signMessage, getPublicKey, getPrivateKeyBytes]);
 };
 
 /**
