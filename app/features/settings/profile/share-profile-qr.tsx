@@ -1,9 +1,30 @@
+import { CopyIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { useState } from 'react';
 import { PageContent, PageFooter } from '~/components/page';
+import { Button } from '~/components/ui/button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
+import { useUser } from '~/features/user/user-hooks';
 
-export default function ProfileQR() {
-  // TODO: Get actual username and profile URL from user context
-  const username = 'username';
+export default function ShareProfileQR() {
+  const username = useUser((u) => u.username);
+  const [lightningAddress, setLightningAddress] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    // TODO: use loader to get domain like in app/routes/_protected.send.share.tsx which is used in app/features/send/share-cashu-token.tsx
+    const domain = window.location.host;
+    setLightningAddress(`${username}@${domain}`);
+  }, [username]);
+
+  const copyToClipboard = () => {
+    if (lightningAddress) {
+      navigator.clipboard.writeText(lightningAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <>
@@ -22,6 +43,25 @@ export default function ProfileQR() {
           <p className="text-center text-muted-foreground text-sm">
             Scan to view profile
           </p>
+          {lightningAddress && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 rounded-md bg-muted px-4 py-2">
+                <span className="text-sm">{lightningAddress}</span>
+                <Button
+                  className="h-8 w-8 p-0"
+                  onClick={copyToClipboard}
+                  size="sm"
+                  variant="ghost"
+                >
+                  {copied ? (
+                    <CheckIcon className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <CopyIcon className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </PageContent>
       <PageFooter>

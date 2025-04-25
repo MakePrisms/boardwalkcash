@@ -284,22 +284,22 @@ export class CashuReceiveQuoteRepository {
   /**
    * Gets the cashu receive quote with the given id.
    * @param id - The id of the cashu receive quote to get.
-   * @returns The cashu receive quote.
+   * @returns The cashu receive quote or null if it does not exist.
    */
-  async get(id: string, options?: Options): Promise<CashuReceiveQuote> {
+  async get(id: string, options?: Options): Promise<CashuReceiveQuote | null> {
     const query = this.db.from('cashu_receive_quotes').select().eq('id', id);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       throw new Error('Failed to get cashu receive quote', { cause: error });
     }
 
-    return CashuReceiveQuoteRepository.toQuote(data);
+    return data ? CashuReceiveQuoteRepository.toQuote(data) : null;
   }
 
   /**

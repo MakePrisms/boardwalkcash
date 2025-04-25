@@ -9,6 +9,7 @@ type CommonUserData = {
   defaultBtcAccountId: string;
   defaultUsdAccountId: string;
   defaultCurrency: Currency;
+  cashuLockingXpub: string;
 };
 
 export type FullUser = CommonUserData & {
