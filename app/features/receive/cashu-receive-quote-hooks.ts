@@ -185,7 +185,6 @@ const usePendingCashuReceiveQuotes = () => {
     queryFn: () => cashuReceiveQuoteRepository.getPending(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
-    initialData: [],
   });
 
   useOnCashuReceiveQuoteChange({
@@ -204,7 +203,7 @@ const usePendingCashuReceiveQuotes = () => {
     },
   });
 
-  return data;
+  return data ?? [];
 };
 
 type OnMintQuoteStateChangeProps = {
