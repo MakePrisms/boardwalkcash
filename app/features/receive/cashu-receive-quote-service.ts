@@ -93,6 +93,7 @@ export class CashuReceiveQuoteService {
       state: mintQuoteResponse.state as CashuReceiveQuote['state'],
       paymentRequest: mintQuoteResponse.request,
       lockingDerivationPath: fullLockingDerivationPath,
+      receiveType: 'LIGHTNING',
     });
 
     return cashuReceiveQuote;

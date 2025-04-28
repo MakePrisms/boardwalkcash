@@ -31,6 +31,16 @@ export type CashuReceiveQuote = {
    * Date and time the receive quote expires in ISO 8601 format.
    */
   expiresAt: string;
+  /**
+   * Type of the receive.
+   * LIGHTNING - The money is received via Lightning.
+   * TOKEN - The money is received as cashu token. Those proofs are then used to mint tokens for the receiver's account via Lightning.
+   *         Used for cross-account cashu token receives where the receiver chooses to claim a token to an account different from the mint/unit the token originated from, thus requiring a lightning payment.
+   */
+  type: 'LIGHTNING' | 'TOKEN';
+  /**
+   * State of the cashu receive quote.
+   */
   state: 'UNPAID' | 'EXPIRED' | 'PAID' | 'COMPLETED';
   /**
    * Payment request for the quote.
@@ -48,6 +58,10 @@ export type CashuReceiveQuote = {
    * @example "m/129372'/0'/0'/4321"
    */
   lockingDerivationPath: string;
+  /**
+   * ID of the corresponding transaction.
+   */
+  transactionId: string;
 } & (
   | {
       state: 'UNPAID' | 'EXPIRED';

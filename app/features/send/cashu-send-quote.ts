@@ -78,6 +78,10 @@ export type CashuSendQuote = {
    * Used for optimistic locking.
    */
   version: number;
+  /**
+   * ID of the corresponding transaction.
+   */
+  transactionId: string;
 } & (
   | {
       state: 'UNPAID' | 'PENDING' | 'EXPIRED';

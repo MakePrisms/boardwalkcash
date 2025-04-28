@@ -66,6 +66,8 @@ export type Database = {
           payment_request: string
           quote_id: string
           state: string
+          transaction_id: string
+          type: string
           unit: string
           user_id: string
           version: number
@@ -85,6 +87,8 @@ export type Database = {
           payment_request: string
           quote_id: string
           state: string
+          transaction_id: string
+          type: string
           unit: string
           user_id: string
           version?: number
@@ -104,6 +108,8 @@ export type Database = {
           payment_request?: string
           quote_id?: string
           state?: string
+          transaction_id?: string
+          type?: string
           unit?: string
           user_id?: string
           version?: number
@@ -114,6 +120,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_receive_quotes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
@@ -147,6 +160,7 @@ export type Database = {
           proofs: string
           quote_id: string
           state: string
+          transaction_id: string
           unit: string
           user_id: string
           version: number
@@ -172,6 +186,7 @@ export type Database = {
           proofs: string
           quote_id: string
           state?: string
+          transaction_id: string
           unit: string
           user_id: string
           version?: number
@@ -197,6 +212,7 @@ export type Database = {
           proofs?: string
           quote_id?: string
           state?: string
+          transaction_id?: string
           unit?: string
           user_id?: string
           version?: number
@@ -207,6 +223,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_send_quotes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
@@ -283,6 +306,66 @@ export type Database = {
           },
           {
             foreignKeyName: "cashu_token_swaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          direction: string
+          failed_at: string | null
+          id: string
+          pending_at: string | null
+          state: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency: string
+          direction: string
+          failed_at?: string | null
+          id?: string
+          pending_at?: string | null
+          state: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          direction?: string
+          failed_at?: string | null
+          id?: string
+          pending_at?: string | null
+          state?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -371,6 +454,8 @@ export type Database = {
           payment_request: string
           quote_id: string
           state: string
+          transaction_id: string
+          type: string
           unit: string
           user_id: string
           version: number
@@ -396,6 +481,43 @@ export type Database = {
           p_account_version: number
         }
         Returns: undefined
+      }
+      create_cashu_receive_quote: {
+        Args: {
+          p_user_id: string
+          p_account_id: string
+          p_amount: number
+          p_currency: string
+          p_unit: string
+          p_quote_id: string
+          p_payment_request: string
+          p_expires_at: string
+          p_state: string
+          p_locking_derivation_path: string
+          p_receive_type: string
+          p_description?: string
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          expires_at: string
+          id: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          locking_derivation_path: string
+          output_amounts: number[] | null
+          payment_request: string
+          quote_id: string
+          state: string
+          transaction_id: string
+          type: string
+          unit: string
+          user_id: string
+          version: number
+        }
       }
       create_cashu_send_quote: {
         Args: {
@@ -472,6 +594,8 @@ export type Database = {
           payment_request: string
           quote_id: string
           state: string
+          transaction_id: string
+          type: string
           unit: string
           user_id: string
           version: number
