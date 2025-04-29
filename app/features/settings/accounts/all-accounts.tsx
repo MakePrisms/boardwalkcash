@@ -1,33 +1,43 @@
 import { Plus } from 'lucide-react';
+import { MoneyDisplay } from '~/components/money-display';
 import { PageContent } from '~/components/page';
-import { Separator } from '~/components/ui/separator';
+import { Button } from '~/components/ui/button';
+import { Card } from '~/components/ui/card';
+import { ScrollArea } from '~/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { getAccountBalance } from '~/features/accounts/account';
 import { useAccounts } from '~/features/accounts/account-hooks';
-import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
+import { getDefaultUnit } from '~/features/shared/currencies';
 import { useUser } from '~/features/user/user-hooks';
-import { type Currency, Money } from '~/lib/money';
+import type { Currency } from '~/lib/money';
+import { LinkWithViewTransition } from '~/lib/transitions';
 
 function CurrencyAccounts({ currency }: { currency: Currency }) {
   const { data: accounts } = useAccounts({ currency });
+  const unit = getDefaultUnit(currency);
 
   return (
-    <>
+    <div className="space-y-3">
       {accounts.map((account) => (
-        <SettingsNavButton
+        <LinkWithViewTransition
           key={account.id}
           to={`/settings/accounts/${account.id}`}
+          transition="slideLeft"
+          applyTo="newView"
+          className="block"
         >
-          <p>{account.name}</p>
-          <p>
-            {new Money({
-              amount: 0, // TODO: see about balance
-              currency,
-            }).toLocaleString()}
-          </p>
-        </SettingsNavButton>
+          <Card className="flex items-center justify-between p-2 px-4 transition-colors hover:bg-muted/50">
+            <h3 className="font-medium">{account.name}</h3>
+            <MoneyDisplay
+              money={getAccountBalance(account)}
+              unit={unit}
+              variant="secondary"
+            />
+          </Card>
+        </LinkWithViewTransition>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -56,7 +66,7 @@ export default function AllAccounts() {
       />
       <PageContent>
         <Tabs defaultValue={defaultTab.value}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 bg-primary">
             {tabs.map((tab) => (
               <TabsTrigger value={tab.value} key={tab.value}>
                 {tab.title}
@@ -64,21 +74,27 @@ export default function AllAccounts() {
             ))}
           </TabsList>
           {tabs.map((tab) => (
-            <TabsContent value={tab.value} key={tab.value}>
-              <CurrencyAccounts currency={tab.value} />
+            <TabsContent value={tab.value} key={tab.value} className="mt-8">
+              <ScrollArea className="h-[calc(100vh-280px)]">
+                <CurrencyAccounts currency={tab.value} />
+              </ScrollArea>
             </TabsContent>
           ))}
         </Tabs>
-
-        <Separator />
-
-        <SettingsNavButton to="/settings/accounts/create">
-          <Plus />
-          <span>Add Account</span>
-        </SettingsNavButton>
-
-        <Separator />
       </PageContent>
+
+      <div className="fixed inset-x-0 bottom-16 flex justify-center">
+        <Button asChild size="lg">
+          <LinkWithViewTransition
+            to="/settings/accounts/create"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Plus size={18} />
+            <span>Add Account</span>
+          </LinkWithViewTransition>
+        </Button>
+      </div>
     </>
   );
 }
