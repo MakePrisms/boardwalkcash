@@ -89,6 +89,24 @@ type AuthActions = {
     plaintextSecret: string,
     newPassword: string,
   ) => Promise<void>;
+
+  /**
+   * Initiates a Google authentication flow
+   * Returns the auth URL to redirect the user to
+   */
+  initiateGoogleAuth: () => Promise<{
+    /**
+     * The auth URL to redirect the user to to perform the Google authentication flow
+     */
+    authUrl: string;
+  }>;
+
+  /**
+   * Handles the Google authentication callback
+   * @param code The code from the Google authentication callback
+   * @param state The state from the Google authentication callback
+   */
+  handleGoogleAuthCallback: (code: string, state: string) => Promise<void>;
 };
 
 /**
@@ -115,6 +133,19 @@ export const useAuthActions = (): AuthActions => {
   const signOutRef = useRef(openSecret.signOut);
   const requestPasswordResetRef = useRef(openSecret.requestPasswordReset);
   const confirmPasswordResetRef = useRef(openSecret.confirmPasswordReset);
+  const initiateGoogleAuthRef = useRef<AuthActions['initiateGoogleAuth']>();
+  if (!initiateGoogleAuthRef.current) {
+    initiateGoogleAuthRef.current = () =>
+      openSecret.initiateGoogleAuth('').then((response) => ({
+        authUrl: response.auth_url,
+      }));
+  }
+  const handleGoogleAuthCallbackRef =
+    useRef<AuthActions['handleGoogleAuthCallback']>();
+  if (!handleGoogleAuthCallbackRef.current) {
+    handleGoogleAuthCallbackRef.current = (code: string, state: string) =>
+      openSecret.handleGoogleCallback(code, state, '');
+  }
 
   const signUpGuest = useCallback(() => {
     const existingGuestAccount = guestAccountStorage.get();
@@ -153,6 +184,8 @@ export const useAuthActions = (): AuthActions => {
     signOut,
     requestPasswordReset,
     confirmPasswordReset: confirmPasswordResetRef.current,
+    initiateGoogleAuth: initiateGoogleAuthRef.current,
+    handleGoogleAuthCallback: handleGoogleAuthCallbackRef.current,
   };
 };
 

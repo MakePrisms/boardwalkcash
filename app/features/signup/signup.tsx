@@ -2,22 +2,40 @@ import { useState } from 'react';
 import { SignupOptions } from '~/features/signup/signup-options';
 import { SignupForm } from '~/features/signup/singup-form';
 import { useAuthActions } from '~/features/user/auth';
-import { toast } from '~/hooks/use-toast';
+import { useToast } from '~/hooks/use-toast';
+import { getErrorMessage } from '../shared/error';
 
 type SignupStep = 'pick-option' | 'signup-with-email';
 
 export function Signup() {
   const [step, setStep] = useState<SignupStep>('pick-option');
-  const { signUpGuest } = useAuthActions();
+  const { signUpGuest, initiateGoogleAuth } = useAuthActions();
+  const { toast } = useToast();
 
-  const handleGuestAccountSelected = async () => {
+  const handleSignupAsGuest = async () => {
     try {
       await signUpGuest();
-    } catch {
+    } catch (error) {
+      console.error('Failed to create guest account', { cause: error });
       toast({
         variant: 'destructive',
-        title: 'Error! Signup failed',
-        description: 'Please try again later or contact support',
+        title: 'Error! Guest signup failed',
+        description: getErrorMessage(error),
+      });
+    }
+  };
+
+  const handleSignupWithGoogle = async () => {
+    try {
+      const response = await initiateGoogleAuth();
+      console.debug('Initiate google signup response: ', response);
+      window.location.href = response.authUrl;
+    } catch (error) {
+      console.error('Failed to initiate google signup', { cause: error });
+      toast({
+        variant: 'destructive',
+        title: 'Error! Google signup failed',
+        description: getErrorMessage(error),
       });
     }
   };
@@ -29,9 +47,9 @@ export function Signup() {
           if (option === 'email') {
             setStep('signup-with-email');
           } else if (option === 'google') {
-            alert('Not implemented yet.');
-          } else {
-            await handleGuestAccountSelected();
+            await handleSignupWithGoogle();
+          } else if (option === 'guest') {
+            await handleSignupAsGuest();
           }
         }}
       />

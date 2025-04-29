@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
@@ -8,9 +9,23 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 
-type Props = { onSelect: (option: 'email' | 'google') => void };
+type Option = 'email' | 'google';
+type Props = { onSelect: (option: Option) => Promise<void> };
 
 export function LoginOptions({ onSelect }: Props) {
+  const [submitting, setSubmitting] = useState<Option | null>(null);
+
+  const handeSelect = async (option: Option) => {
+    if (submitting) return;
+
+    try {
+      setSubmitting(option);
+      await onSelect(option);
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
@@ -19,8 +34,18 @@ export function LoginOptions({ onSelect }: Props) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
-          <Button onClick={() => onSelect('email')}>Log in with Email</Button>
-          <Button onClick={() => onSelect('google')}>Log in with Google</Button>
+          <Button
+            onClick={() => handeSelect('email')}
+            loading={submitting === 'email'}
+          >
+            Log in with Email
+          </Button>
+          <Button
+            onClick={() => handeSelect('google')}
+            loading={submitting === 'google'}
+          >
+            Log in with Google
+          </Button>
         </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{' '}
