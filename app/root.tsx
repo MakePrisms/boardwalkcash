@@ -116,18 +116,27 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+const openSecretApiUrl = import.meta.env.VITE_OPEN_SECRET_API_URL ?? '';
+if (!openSecretApiUrl) {
+  throw new Error('VITE_OPEN_SECRET_API_URL is not set');
+}
+
+const openSecretClientId = import.meta.env.VITE_OPEN_SECRET_CLIENT_ID ?? '';
+if (!openSecretClientId) {
+  throw new Error('VITE_OPEN_SECRET_CLIENT_ID is not set');
+}
+
 export default function App() {
   const [queryClient] = useState(() => new QueryClient());
   const dehydratedState = useDehydratedState();
   useViewTransitionEffect();
 
-  // TODO: OpenSecretProvider apiUrl url to settings
   return (
     <QueryClientProvider client={queryClient}>
       <HydrationBoundary state={dehydratedState}>
         <OpenSecretProvider
-          apiUrl="https://enclave.trymaple.ai"
-          clientId="409b99a0-a153-4963-83c9-de9b378c858a"
+          apiUrl={openSecretApiUrl}
+          clientId={openSecretClientId}
         >
           <Outlet />
         </OpenSecretProvider>
