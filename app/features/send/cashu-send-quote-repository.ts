@@ -461,6 +461,7 @@ export class CashuSendQuoteRepository {
       keysetCounter: decryptedData.keyset_counter,
       numberOfChangeOutputs: decryptedData.number_of_change_outputs,
       version: decryptedData.version,
+      transactionId: decryptedData.transaction_id,
     };
 
     if (decryptedData.state === 'PAID') {

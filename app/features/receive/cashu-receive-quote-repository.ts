@@ -57,6 +57,13 @@ type CreateQuote = {
    * The full BIP32 derivation path used to derive the public key for locking the cashu mint quote.
    */
   lockingDerivationPath: string;
+  /**
+   * Type of the receive.
+   * LIGHTNING - The money is received via Lightning.
+   * TOKEN - The money is received as cashu token. Those proofs are then used to mint tokens for the receiver's account via Lightning.
+   *         Used for cross-account cashu token receives where the receiver chooses to claim a token to an account different from the mint/unit the token originated from, thus requiring a lightning payment.
+   */
+  receiveType: CashuReceiveQuote['type'];
 };
 
 export class CashuReceiveQuoteRepository {
@@ -80,27 +87,26 @@ export class CashuReceiveQuoteRepository {
       description,
       state,
       lockingDerivationPath,
+      receiveType,
     }: CreateQuote,
     options?: Options,
   ): Promise<CashuReceiveQuote> {
     const unit = getDefaultUnit(amount.currency);
 
-    const query = this.db
-      .from('cashu_receive_quotes')
-      .insert({
-        user_id: userId,
-        account_id: accountId,
-        amount: amount.toNumber(unit),
-        currency: amount.currency,
-        unit,
-        quote_id: quoteId,
-        payment_request: paymentRequest,
-        expires_at: expiresAt,
-        description,
-        state,
-        locking_derivation_path: lockingDerivationPath,
-      })
-      .select();
+    const query = this.db.rpc('create_cashu_receive_quote', {
+      p_user_id: userId,
+      p_account_id: accountId,
+      p_amount: amount.toNumber(unit),
+      p_currency: amount.currency,
+      p_unit: unit,
+      p_quote_id: quoteId,
+      p_payment_request: paymentRequest,
+      p_expires_at: expiresAt,
+      p_description: description,
+      p_state: state,
+      p_locking_derivation_path: lockingDerivationPath,
+      p_receive_type: receiveType,
+    });
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -347,6 +353,8 @@ export class CashuReceiveQuoteRepository {
       paymentRequest: data.payment_request,
       version: data.version,
       lockingDerivationPath: data.locking_derivation_path,
+      transactionId: data.transaction_id,
+      type: data.type as CashuReceiveQuote['type'],
     };
 
     if (data.state === 'PAID' || data.state === 'COMPLETED') {
