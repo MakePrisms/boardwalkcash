@@ -38,6 +38,10 @@ export type CashuTokenSwap = {
    * - FAILED: the swap failed
    */
   state: 'PENDING' | 'COMPLETED' | 'FAILED';
+  /**
+   * ID of the corresponding transaction
+   */
+  transactionId: string;
   /** Version of the token swap as seen by the client. Used for optimistic concurrency control. */
   version: number;
   /** Timestamp when the token swap was created */

@@ -256,6 +256,7 @@ export type Database = {
           state: string
           token_hash: string
           token_proofs: string
+          transaction_id: string
           unit: string
           user_id: string
           version: number
@@ -274,6 +275,7 @@ export type Database = {
           state?: string
           token_hash: string
           token_proofs: string
+          transaction_id: string
           unit: string
           user_id: string
           version?: number
@@ -292,6 +294,7 @@ export type Database = {
           state?: string
           token_hash?: string
           token_proofs?: string
+          transaction_id?: string
           unit?: string
           user_id?: string
           version?: number
@@ -302,6 +305,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_token_swaps_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
@@ -572,6 +582,7 @@ export type Database = {
           state: string
           token_hash: string
           token_proofs: string
+          transaction_id: string
           unit: string
           user_id: string
           version: number
@@ -619,6 +630,15 @@ export type Database = {
           p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
+      }
+      fail_cashu_token_swap: {
+        Args: {
+          p_token_hash: string
+          p_user_id: string
+          p_swap_version: number
+          p_failure_reason: string
+        }
+        Returns: undefined
       }
       process_cashu_receive_quote_payment: {
         Args: {

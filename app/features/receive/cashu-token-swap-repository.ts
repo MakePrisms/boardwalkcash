@@ -201,34 +201,21 @@ export class CashuTokenSwapRepository {
     },
     options?: Options,
   ): Promise<void> {
-    const query = this.db
-      .from('cashu_token_swaps')
-      .update({
-        state: 'FAILED',
-        failure_reason: reason,
-        version: version + 1,
-      })
-      .match({
-        token_hash: tokenHash,
-        version,
-        user_id: userId,
-      })
-      .select();
+    const query = this.db.rpc('fail_cashu_token_swap', {
+      p_token_hash: tokenHash,
+      p_user_id: userId,
+      p_swap_version: version,
+      p_failure_reason: reason,
+    });
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const { error } = await query;
 
     if (error) {
       throw new Error('Failed to fail token swap', { cause: error });
-    }
-
-    if (!data) {
-      throw new Error(
-        `Concurrency error: Token swap ${tokenHash} was modified by another transaction. Expected version ${version}, but found different one.`,
-      );
     }
   }
 
@@ -287,6 +274,7 @@ export class CashuTokenSwapRepository {
       createdAt: data.created_at,
       state: data.state as CashuTokenSwap['state'],
       version: data.version,
+      transactionId: data.transaction_id,
     };
   }
 }
