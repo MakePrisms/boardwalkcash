@@ -1,21 +1,17 @@
-import { ArrowDownRight, ArrowUpRight, Cog } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, ChartSpline, Cog } from 'lucide-react';
 import { useState } from 'react';
 import type { LinksFunction } from 'react-router';
 import boardwalkIcon192 from '~/assets/icon-192x192.png';
-import { MoneyDisplay } from '~/components/money-display';
-import {
-  Page,
-  PageContent,
-  PageFooter,
-  PageHeader,
-  PageHeaderTitle,
-} from '~/components/page';
+import { Page, PageContent, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import { useBalance } from '~/features/accounts/account-hooks';
+import { Skeleton } from '~/components/ui/skeleton';
+import {
+  useBalance,
+  useDefaultAccount,
+} from '~/features/accounts/account-hooks';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
-import { useTheme } from '~/features/theme';
-import { useAuthActions } from '~/features/user/auth';
+import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
 import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
@@ -26,61 +22,72 @@ export const links: LinksFunction = () => [
   { rel: 'preload', href: boardwalkIcon192, as: 'image' },
 ];
 
-export default function Index() {
-  const { signOut } = useAuthActions();
+const Price = () => {
   const [showSatsPerDollar, setShowSatsPerDollar] = useState(false);
-  const { theme, effectiveColorMode, colorMode, setColorMode } = useTheme();
   const { data: rates } = useExchangeRates(
     (['BTC-USD', 'USD-BTC'] as Ticker[]).sort(),
   );
 
+  if (!rates) return <Skeleton className="h-[24px] w-[81px]" />;
+
+  const moneyString = showSatsPerDollar
+    ? new Money({ amount: 1, currency: 'USD' })
+        .convert('BTC', rates['USD-BTC'])
+        .toLocaleString({ unit: 'sat' })
+    : new Money({ amount: rates['BTC-USD'], currency: 'USD' })
+        .toLocaleString({ unit: 'usd' })
+        .slice(0, -3);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
+      className="flex items-center gap-2"
+    >
+      {showSatsPerDollar && <ChartSpline size={16} className="animate-pulse" />}
+      <span className="font-medium">{moneyString}</span>
+      {!showSatsPerDollar && (
+        <ChartSpline size={16} className="animate-pulse" />
+      )}
+    </button>
+  );
+};
+
+export default function Index() {
   const balanceBTC = useBalance('BTC');
   const balanceUSD = useBalance('USD');
+  const defaultCurrency = useDefaultAccount().currency;
 
   return (
     <Page>
-      <PageHeader>
-        <PageHeaderTitle>
-          <button
-            type="button"
-            onClick={() => setShowSatsPerDollar(!showSatsPerDollar)}
-          >
-            {showSatsPerDollar && rates
-              ? new Money({ amount: 1, currency: 'USD' })
-                  .convert('BTC', rates['USD-BTC'])
-                  .toLocaleString({ unit: 'sat' })
-              : rates &&
-                new Money({
-                  amount: rates['BTC-USD'],
-                  currency: 'USD',
-                }).toLocaleString({ unit: 'usd' })}
-          </button>
-        </PageHeaderTitle>
+      <PageHeader className="z-10">
         <LinkWithViewTransition
           to="/settings"
           transition="slideLeft"
           applyTo="newView"
         >
-          <Cog />
+          <Cog className="text-muted-foreground" />
         </LinkWithViewTransition>
       </PageHeader>
 
-      <p className="text-center text-lg">Welcome to Boardwalk!</p>
+      <PageContent className="absolute inset-0 mx-auto flex flex-col items-center justify-center gap-24">
+        <div className="flex flex-col items-center gap-4">
+          <MoneyWithConvertedAmount
+            money={defaultCurrency === 'BTC' ? balanceBTC : balanceUSD}
+          />
+          <div className="my-1 h-0.5 w-16 rounded-full bg-muted" />
+          <Price />
+        </div>
 
-      <PageContent className="items-center justify-around">
-        {theme === 'usd' ? (
-          <MoneyDisplay money={balanceUSD} unit="usd" />
-        ) : (
-          <MoneyDisplay money={balanceBTC} unit="sat" />
-        )}
         <DefaultCurrencySwitcher />
-        <div className="grid grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-2 gap-10 pt-3">
           <LinkWithViewTransition
             to="/receive"
             transition="slideUp"
             applyTo="newView"
           >
-            <Button className="w-full text-lg">
+            <Button className="w-full py-6 text-lg">
               Receive <ArrowDownRight />
             </Button>
           </LinkWithViewTransition>
@@ -89,21 +96,13 @@ export default function Index() {
             transition="slideUp"
             applyTo="newView"
           >
-            <Button className="w-full text-lg">
+            <Button className="w-full py-6 text-lg">
               Send <ArrowUpRight />
             </Button>
           </LinkWithViewTransition>
         </div>
       </PageContent>
-      <PageFooter className="flex flex-row justify-around">
-        <Button
-          className="w-fit"
-          onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
-        >
-          {effectiveColorMode}
-        </Button>
-        <Button onClick={signOut}>Log Out</Button>
-      </PageFooter>
+
       <InstallPwaPrompt />
     </Page>
   );
