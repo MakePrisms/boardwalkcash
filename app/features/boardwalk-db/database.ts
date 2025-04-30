@@ -183,3 +183,5 @@ export type BoardwalkDbCashuSendQuote =
   Database['wallet']['Tables']['cashu_send_quotes']['Row'];
 export type BoardwalkDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
+export type BoardwalkDbContact =
+  Database['wallet']['Tables']['contacts']['Row'];
