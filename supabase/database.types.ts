@@ -326,6 +326,42 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_username_fkey"
+            columns: ["username"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["username"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -445,6 +481,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_not_self_contact: {
+        Args: { owner_id: string; contact_username: string }
+        Returns: boolean
+      }
       complete_cashu_receive_quote: {
         Args: {
           p_quote_id: string
@@ -645,6 +685,13 @@ export type Database = {
           p_failure_reason: string
         }
         Returns: undefined
+      }
+      find_contact_candidates: {
+        Args: { partial_username: string; current_user_id: string }
+        Returns: {
+          username: string
+          id: string
+        }[]
       }
       process_cashu_receive_quote_payment: {
         Args: {
