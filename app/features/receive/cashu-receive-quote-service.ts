@@ -4,6 +4,7 @@ import {
   MintQuoteState,
   OutputData,
   type Proof,
+  type Token,
 } from '@cashu/cashu-ts';
 import { HARDENED_OFFSET } from '@scure/bip32';
 import {
@@ -11,12 +12,14 @@ import {
   amountsFromOutputData,
   getCashuUnit,
   getCashuWallet,
+  getCrossMintQuotesWithinTargetAmount,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
   type CashuCryptography,
+  tokenToMoney,
   useCashuCryptography,
 } from '../shared/cashu';
 import { derivePublicKey } from '../shared/cryptography';
@@ -33,10 +36,10 @@ export class CashuReceiveQuoteService {
   ) {}
 
   /**
-   * Creates a new cashu receive quote.
-   * @returns The created cashu receive quote.
+   * Creates a new cashu receive quote used for receiving via a bolt11 payment request.
+   * @returns The created cashu receive quote with the bolt11 invoice to pay.
    */
-  async create({
+  async createLightningQuote({
     userId,
     account,
     amount,
@@ -65,23 +68,16 @@ export class CashuReceiveQuoteService {
       unit: cashuUnit,
     });
 
-    const xpub = await this.cryptography.getXpub(
-      BASE_CASHU_LOCKING_DERIVATION_PATH,
-    );
-
-    const unhardenedIndex = Math.floor(
-      Math.random() * (HARDENED_OFFSET - 1),
-    ).toString();
-    const lockingKey = derivePublicKey(xpub, `m/${unhardenedIndex}`);
+    const { lockingPublicKey, fullLockingDerivationPath } =
+      await this.deriveNut20LockingPublicKey();
 
     const mintQuoteResponse = await wallet.createLockedMintQuote(
       amount.toNumber(cashuUnit),
-      lockingKey,
+      lockingPublicKey,
       description,
     );
 
     const expiresAt = new Date(mintQuoteResponse.expiry * 1000).toISOString();
-    const fullLockingDerivationPath = `${BASE_CASHU_LOCKING_DERIVATION_PATH}/${unhardenedIndex}`;
 
     const cashuReceiveQuote = await this.cashuReceiveQuoteRepository.create({
       accountId: account.id,
@@ -95,6 +91,87 @@ export class CashuReceiveQuoteService {
       lockingDerivationPath: fullLockingDerivationPath,
       receiveType: 'LIGHTNING',
     });
+
+    return cashuReceiveQuote;
+  }
+
+  /**
+   * Claims a token from one mint to another by creating a new cashu receive quote and melting the token.
+   */
+  async meltTokenToCashuAccount({
+    userId,
+    token,
+    account,
+  }: {
+    /**
+     * The id of the user that will receive the money.
+     */
+    userId: string;
+    /**
+     * The token to melt.
+     */
+    token: Token;
+    /**
+     * The cashu account to which the token will be melted.
+     */
+    account: CashuAccount;
+  }): Promise<CashuReceiveQuote> {
+    const tokenAmount = tokenToMoney(token);
+    const fromCashuUnit = getCashuUnit(tokenAmount.currency);
+    const toCashuUnit = getCashuUnit(account.currency);
+
+    if (account.mintUrl === token.mint && fromCashuUnit === toCashuUnit) {
+      throw new Error(
+        'Must melt token to a different mint or currency than source',
+      );
+    }
+
+    const sourceWallet = getCashuWallet(token.mint, {
+      unit: fromCashuUnit,
+    });
+    const destinationWallet = getCashuWallet(account.mintUrl, {
+      unit: toCashuUnit,
+    });
+
+    const { lockingPublicKey, fullLockingDerivationPath } =
+      await this.deriveNut20LockingPublicKey();
+
+    const quotes = await getCrossMintQuotesWithinTargetAmount({
+      sourceWallet,
+      destinationWallet,
+      targetAmount: tokenAmount,
+      nut20LockingPublicKey: lockingPublicKey,
+    });
+
+    const expiresAt = new Date(quotes.mintQuote.expiry * 1000).toISOString();
+
+    const cashuReceiveQuote = await this.cashuReceiveQuoteRepository.create({
+      accountId: account.id,
+      userId,
+      amount: quotes.amountToMint,
+      quoteId: quotes.mintQuote.quote,
+      expiresAt,
+      state: quotes.mintQuote.state as CashuReceiveQuote['state'],
+      paymentRequest: quotes.mintQuote.request,
+      lockingDerivationPath: fullLockingDerivationPath,
+      receiveType: 'TOKEN',
+    });
+
+    try {
+      await sourceWallet.meltProofs(quotes.meltQuote, token.proofs);
+    } catch (error) {
+      if (
+        error instanceof MintOperationError &&
+        error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED
+      ) {
+        await this.cashuReceiveQuoteRepository.fail({
+          id: cashuReceiveQuote.id,
+          version: cashuReceiveQuote.version,
+          reason: error.message,
+        });
+      }
+      throw error;
+    }
 
     return cashuReceiveQuote;
   }
@@ -246,6 +323,23 @@ export class CashuReceiveQuoteService {
       }
       throw error;
     }
+  }
+
+  private async deriveNut20LockingPublicKey() {
+    const xpub = await this.cryptography.getXpub(
+      BASE_CASHU_LOCKING_DERIVATION_PATH,
+    );
+
+    const unhardenedIndex = Math.floor(
+      Math.random() * (HARDENED_OFFSET - 1),
+    ).toString();
+
+    const lockingKey = derivePublicKey(xpub, `m/${unhardenedIndex}`);
+
+    return {
+      lockingPublicKey: lockingKey,
+      fullLockingDerivationPath: `${BASE_CASHU_LOCKING_DERIVATION_PATH}/${unhardenedIndex}`,
+    };
   }
 }
 

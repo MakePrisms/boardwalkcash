@@ -17,10 +17,9 @@ import { getClaimableProofs, getUnspentProofsFromToken } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import {
-  useCreateCashuTokenSwap,
-  useTokenSwap,
-} from './cashu-token-swap-hooks';
+import { useTransaction } from '../transactions/transaction-hooks';
+import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
+import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -261,14 +260,22 @@ export function useReceiveCashuToken({
 }: UseReceiveCashuTokenProps = {}) {
   const onErrorRef = useLatest(onError);
 
+  // For receiving tokens to the source account
   const {
-    mutateAsync: createSwap,
+    mutateAsync: createCashuTokenSwap,
     data: swapData,
-    status: createSwapStatus,
+    status: createCashuTokenSwapStatus,
   } = useCreateCashuTokenSwap();
-  const { status: swapStatus } = useTokenSwap({
-    tokenHash: swapData?.tokenHash,
-    onFailed: () => onErrorRef.current?.(new Error('Failed to swap token')),
+
+  // For receiving tokens to a different mint by making a lightning payment
+  const {
+    mutateAsync: meltTokenToCashuAccount,
+    status: meltTokenToCashuAccountStatus,
+    data: cashuReceiveQuote,
+  } = useMeltTokenToCashuAccount();
+
+  const transaction = useTransaction({
+    transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
   });
 
   const claimToken = async ({
@@ -282,10 +289,9 @@ export function useReceiveCashuToken({
       const isSourceMint = account.mintUrl === token.mint;
 
       if (isSourceMint) {
-        await createSwap({ token, account });
+        await createCashuTokenSwap({ token, account });
       } else {
-        // TODO: implement cross mint swap
-        throw new Error('Claiming to other account types not implemented');
+        await meltTokenToCashuAccount({ token, account });
       }
     } catch (error) {
       console.error('Failed to claim token', error);
@@ -297,15 +303,36 @@ export function useReceiveCashuToken({
   };
 
   const status: ClaimStatus = (() => {
-    if (createSwapStatus === 'pending' || swapStatus === 'PENDING') {
+    const isCreatingTransaction =
+      createCashuTokenSwapStatus === 'pending' ||
+      meltTokenToCashuAccountStatus === 'pending';
+
+    if (isCreatingTransaction) {
       return 'CLAIMING';
     }
-    if (swapStatus === 'COMPLETED') {
-      return 'SUCCESS';
-    }
-    if (createSwapStatus === 'error' || swapStatus === 'FAILED') {
+
+    const creationFailed =
+      createCashuTokenSwapStatus === 'error' ||
+      meltTokenToCashuAccountStatus === 'error';
+
+    if (creationFailed) {
       return 'ERROR';
     }
+
+    if (transaction) {
+      if (transaction.state === 'DRAFT' || transaction.state === 'PENDING') {
+        return 'CLAIMING';
+      }
+
+      if (transaction.state === 'COMPLETED') {
+        return 'SUCCESS';
+      }
+
+      if (transaction.state === 'FAILED') {
+        return 'ERROR';
+      }
+    }
+
     return 'IDLE';
   })();
 

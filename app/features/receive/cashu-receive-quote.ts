@@ -41,7 +41,7 @@ export type CashuReceiveQuote = {
   /**
    * State of the cashu receive quote.
    */
-  state: 'UNPAID' | 'EXPIRED' | 'PAID' | 'COMPLETED';
+  state: 'UNPAID' | 'EXPIRED' | 'PAID' | 'COMPLETED' | 'FAILED';
   /**
    * Payment request for the quote.
    */
@@ -80,5 +80,12 @@ export type CashuReceiveQuote = {
        * Amounts for each blinded message
        */
       outputAmounts: number[];
+    }
+  | {
+      state: 'FAILED';
+      /**
+       * Reason this quote was failed.
+       */
+      failureReason: string;
     }
 );

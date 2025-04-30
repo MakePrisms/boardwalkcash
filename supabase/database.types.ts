@@ -58,6 +58,7 @@ export type Database = {
           currency: string
           description: string | null
           expires_at: string
+          failure_reason: string | null
           id: string
           keyset_counter: number | null
           keyset_id: string | null
@@ -79,6 +80,7 @@ export type Database = {
           currency: string
           description?: string | null
           expires_at: string
+          failure_reason?: string | null
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
@@ -100,6 +102,7 @@ export type Database = {
           currency?: string
           description?: string | null
           expires_at?: string
+          failure_reason?: string | null
           id?: string
           keyset_counter?: number | null
           keyset_id?: string | null
@@ -456,6 +459,7 @@ export type Database = {
           currency: string
           description: string | null
           expires_at: string
+          failure_reason: string | null
           id: string
           keyset_counter: number | null
           keyset_id: string | null
@@ -514,6 +518,7 @@ export type Database = {
           currency: string
           description: string | null
           expires_at: string
+          failure_reason: string | null
           id: string
           keyset_counter: number | null
           keyset_id: string | null
@@ -597,6 +602,7 @@ export type Database = {
           currency: string
           description: string | null
           expires_at: string
+          failure_reason: string | null
           id: string
           keyset_counter: number | null
           keyset_id: string | null

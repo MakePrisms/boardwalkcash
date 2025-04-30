@@ -21,8 +21,23 @@ const currencyToUnit: {
   USD: 'cent',
 };
 
+const cashuProtocolUnitToCurrency: {
+  [key in 'sat' | 'usd']: Currency;
+} = {
+  sat: 'BTC',
+  usd: 'USD',
+};
+
 export const getCashuUnit = (currency: Currency) => {
   return currencyToUnit[currency];
+};
+
+export const getWalletCurrency = (wallet: CashuWallet) => {
+  const unit = wallet.unit as keyof typeof cashuProtocolUnitToCurrency;
+  if (!cashuProtocolUnitToCurrency[unit]) {
+    throw new Error(`Unsupported cashu wallet unit: ${unit}`);
+  }
+  return cashuProtocolUnitToCurrency[unit];
 };
 
 export const getCashuWallet = (
