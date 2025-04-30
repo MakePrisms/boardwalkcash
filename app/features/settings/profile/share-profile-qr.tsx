@@ -1,7 +1,7 @@
 import { CopyIcon } from 'lucide-react';
 import { CheckIcon } from 'lucide-react';
-import { useEffect } from 'react';
 import { useState } from 'react';
+import { useRouteLoaderData } from 'react-router';
 import { PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
@@ -9,14 +9,10 @@ import { useUser } from '~/features/user/user-hooks';
 
 export default function ShareProfileQR() {
   const username = useUser((u) => u.username);
-  const [lightningAddress, setLightningAddress] = useState('');
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    // TODO: use loader to get domain like in app/routes/_protected.send.share.tsx which is used in app/features/send/share-cashu-token.tsx
-    const domain = window.location.host;
-    setLightningAddress(`${username}@${domain}`);
-  }, [username]);
+  const { domain } = useRouteLoaderData('root') as { domain: string };
+  const lightningAddress = `${username}@${domain}`;
 
   const copyToClipboard = () => {
     if (lightningAddress) {
