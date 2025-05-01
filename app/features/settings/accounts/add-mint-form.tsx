@@ -190,7 +190,12 @@ const nutValidations: NutValidation[] = [
   },
   {
     nut: 20,
-    validate: (info) => validateGenericNut(info, 20, 'signed mint quotes'),
+    validate: (info) =>
+      validateGenericNut(
+        info,
+        20,
+        'Mint does not support signed mint quotes (NUT-20)',
+      ),
   },
 ];
 

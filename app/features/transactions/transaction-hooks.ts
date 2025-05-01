@@ -12,18 +12,16 @@ import {
   useTransactionRepository,
 } from './transaction-repository';
 
+/**
+ * Hook to get a transaction by id and listen for updates.
+ * @returns the transaction or undefined if no transaction id is provided or the transaction is being fetched
+ */
 export function useTransaction({
   transactionId,
-  onCompleted,
-  onFailed,
 }: {
   transactionId?: string;
-  onCompleted?: () => void;
-  onFailed?: () => void;
 }) {
   const enabled = !!transactionId;
-  const onCompletedRef = useLatest(onCompleted);
-  const onFailedRef = useLatest(onFailed);
   const queryClient = useQueryClient();
   const transactionRepository = useTransactionRepository();
 
@@ -43,16 +41,6 @@ export function useTransaction({
       );
     },
   });
-
-  useEffect(() => {
-    if (!transaction) return;
-
-    if (transaction.state === 'COMPLETED') {
-      onCompletedRef.current?.();
-    } else if (transaction.state === 'FAILED') {
-      onFailedRef.current?.();
-    }
-  }, [transaction]);
 
   return transaction;
 }
@@ -74,7 +62,7 @@ function useOnTransactionChange({
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'wallet',
           table: 'transactions',
           filter: `id=eq.${transactionId}`,
