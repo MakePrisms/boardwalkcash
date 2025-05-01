@@ -1,10 +1,3 @@
-import {
-  Page,
-  PageBackButton,
-  PageContent,
-  PageHeader,
-  PageHeaderTitle,
-} from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import {
   CreateCashuTokenConfirmation,
@@ -28,6 +21,7 @@ export default function SendConfirmationPage() {
   const sendAccount = useSendStore((s) => s.account);
   const sendAmount = useSendStore((s) => s.amount);
   const paymentRequest = useSendStore((s) => s.paymentRequest);
+  const lud16 = useSendStore((s) => s.lud16);
 
   if (!sendAccount || !sendAmount) {
     return <Redirect to="/send" logMessage="Missing send amount or account" />;
@@ -51,6 +45,7 @@ export default function SendConfirmationPage() {
       return (
         <PayBolt11Confirmation
           bolt11={paymentRequest.raw}
+          lud16={lud16}
           inputAmount={sendAmount}
           account={sendAccount}
         />
@@ -61,15 +56,5 @@ export default function SendConfirmationPage() {
     );
   };
 
-  return (
-    <Page>
-      <PageHeader>
-        <PageBackButton to="/send" transition="slideDown" applyTo="oldView" />
-        <PageHeaderTitle>Confirm Payment</PageHeaderTitle>
-      </PageHeader>
-      <PageContent className="flex flex-col items-center gap-4">
-        {renderPageContent()}
-      </PageContent>
-    </Page>
-  );
+  return renderPageContent();
 }

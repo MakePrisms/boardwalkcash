@@ -5,6 +5,7 @@ import { type DecodedBolt11, validateBolt11Invoice } from '~/lib/bolt11';
 import { isCashuPaymentRequest } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
+import type { Contact } from '../contacts/contact';
 
 type PaymentRequestUnit = 'sat' | 'cent';
 
@@ -109,6 +110,14 @@ export type SendState<T extends Currency = Currency> = {
   paymentRequest: PaymentRequest | null;
   /** The token being sent */
   token: Token | null;
+  /** The lud16 to pay */
+  lud16: string | null;
+  /** The contact to pay */
+  contact: Contact | null;
+  /** Set the lud16 to pay */
+  setLud16: (lud16: string | null) => void;
+  /** Set the contact to pay */
+  setContact: (contact: Contact | null) => void;
   /** Set the token being sent */
   setToken: (token: Token | null) => void;
   /** Set the account to send funds from */
@@ -136,6 +145,10 @@ export const createSendStore = ({
     amount: initialAmount,
     paymentRequest: null,
     token: null,
+    lud16: null,
+    contact: null,
+    setLud16: (lud16) => set({ lud16 }),
+    setContact: (contact) => set({ contact }),
     setAccount: (account) => set({ account, amount: null }),
     setAmount: (amount) => {
       const { account } = get();
