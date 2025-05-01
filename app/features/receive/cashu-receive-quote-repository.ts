@@ -156,6 +156,56 @@ export class CashuReceiveQuoteRepository {
     }
   }
 
+  async fail(
+    {
+      id,
+      version,
+      reason,
+    }: {
+      /**
+       * ID of the cashu receive quote.
+       */
+      id: string;
+      /**
+       * Version of the cashu receive quote as seen by the client. Used for optimistic concurrency control.
+       */
+      version: number;
+      /**
+       * Reason for the failure.
+       */
+      reason: string;
+    },
+    options?: Options,
+  ): Promise<void> {
+    const query = this.db
+      .from('cashu_receive_quotes')
+      .update({
+        state: 'FAILED',
+        version: version + 1,
+        failure_reason: reason,
+      })
+      .match({
+        id,
+        version,
+      });
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      throw new Error('Failed to fail cashu receive quote', { cause: error });
+    }
+
+    if (!data) {
+      throw new Error(
+        `Concurrency error: Cashu receive quote was modified by another transaction. Expected version ${version}, but found different one.`,
+      );
+    }
+  }
+
   /**
    * Processes the payment of the cashu receive quote with the given id.
    * Marks the quote as paid and updates the related data. It also updates the account counter for the keyset.
@@ -371,6 +421,14 @@ export class CashuReceiveQuoteRepository {
       return {
         ...commonData,
         state: data.state,
+      };
+    }
+
+    if (data.state === 'FAILED') {
+      return {
+        ...commonData,
+        state: data.state,
+        failureReason: data.failure_reason ?? '',
       };
     }
 

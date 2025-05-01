@@ -1,7 +1,5 @@
 import {
-  CashuMint,
   type PaymentRequest as CashuPaymentRequest,
-  CashuWallet,
   type Proof,
   decodePaymentRequest,
 } from '@cashu/cashu-ts';
@@ -17,7 +15,6 @@ import type { PaymentRequest } from '~/features/send/send-store';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
-import { crossMintSwap, getCrossMintQuotes } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import { getDefaultUnit } from '../shared/currencies';
 import {
@@ -283,7 +280,6 @@ export const PayCashuRequestConfirmation = ({
   paymentRequest: PaymentRequest & { type: 'cashu' };
   account: CashuAccount;
 }) => {
-  const sendUnit = getDefaultUnit(account.currency);
   const decoded = decodePaymentRequest(paymentRequest.raw);
   decoded.description =
     decoded.description ?? 'This is a test to make sure the UI looks good';
@@ -297,29 +293,9 @@ export const PayCashuRequestConfirmation = ({
   const { mutate, data } = useMutation({
     mutationFn: async () => {
       if (needsCrossMintSwap) {
-        // get quotes to estimate the fee
-        const quotes = await getCrossMintQuotes(
-          new CashuWallet(new CashuMint(account.mintUrl)),
-          new CashuWallet(new CashuMint(sendToMintUrl)),
-          // TODO: plug in proofs we have available
-          amount.toNumber(sendUnit) + 20, // this is num proofs available, if its greater than the amount, then we can get quotes for the exact amount.
-          amount.toNumber(sendUnit),
-        );
-        const amountToMint = toMoney(quotes.meltQuote.amount, account.currency);
-        if (!amountToMint.equals(amount)) {
-          // we should be able to prevent this from happening, just put here for now
-          // to make sure everything is working
-          throw new Error('Amount to mint does not match amount requested');
-        }
-        // TODO: check account balance with amount + fee
-        return {
-          quotes,
-          fee: toMoney(quotes.meltQuote.fee_reserve, account.currency),
-        };
+        throw new Error('Not implemented');
       }
-      // TODO: cashu swap fees - here no craoss mint swap is needed,
-      // but creating the token will incur a fee if we swap for the correct denomintation
-      // WE should be able to calclulate the fee for the swap based on the fees_ppk specified in mint's keyset we are using
+
       return {
         quotes: undefined,
         fee: Money.zero(account.currency),
@@ -343,23 +319,9 @@ export const PayCashuRequestConfirmation = ({
       if (!data?.quotes) {
         throw new Error('Trying to swap, but cross mint quotes are not loaded');
       }
-      // we will need amount + fee in proofs to pay the mint quote
-      const _proofAmtRequired = toMoney(
-        data.quotes.meltQuote.amount + data.quotes.meltQuote.fee_reserve,
-        account.currency,
-      );
 
-      const proofsToSwap: Proof[] = []; // TODO: create proofs from account for proofAmtRequired
-
-      // swap the proofs to the mint in the payment request
-      const { newProofs, change: _ } = await crossMintSwap(
-        new CashuWallet(new CashuMint(account.mintUrl)),
-        new CashuWallet(new CashuMint(sendToMintUrl)),
-        proofsToSwap,
-        data.quotes,
-      );
-      // TODO: handle change (add to db)
-      proofs = newProofs;
+      // TODO: swap the proofs to the mint in the payment request to get the proofs
+      proofs = [];
     } else {
       // create proofs from same mint
       proofs = []; // TODO: create proofs from account for amount

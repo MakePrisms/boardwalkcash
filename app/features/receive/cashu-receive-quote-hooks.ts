@@ -1,3 +1,4 @@
+import type { Token } from '@cashu/cashu-ts';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type QueryClient,
@@ -99,7 +100,7 @@ export function useCreateCashuReceiveQuote() {
       id: 'create-cashu-receive-quote',
     },
     mutationFn: ({ account, amount, description }: CreateProps) =>
-      cashuReceiveQuoteService.create({
+      cashuReceiveQuoteService.createLightningQuote({
         userId: userRef.current.id,
         account,
         amount,
@@ -109,6 +110,28 @@ export function useCreateCashuReceiveQuote() {
       cashuReceiveQuoteCache.add(data);
     },
     retry: 1,
+  });
+}
+
+export function useMeltTokenToCashuAccount() {
+  const userRef = useUserRef();
+  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
+  const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
+
+  return useMutation({
+    mutationKey: ['melt-token-to-cashu-account'],
+    scope: {
+      id: 'melt-token-to-cashu-account',
+    },
+    mutationFn: ({ token, account }: { token: Token; account: CashuAccount }) =>
+      cashuReceiveQuoteService.meltTokenToCashuAccount({
+        userId: userRef.current.id,
+        token,
+        account,
+      }),
+    onSuccess: (data) => {
+      cashuReceiveQuoteCache.add(data);
+    },
   });
 }
 

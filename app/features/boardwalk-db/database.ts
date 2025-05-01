@@ -3,6 +3,7 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
@@ -107,6 +108,15 @@ export type Database = MergeDeep<
             currency_requested?: Currency;
           };
         };
+        transactions: {
+          Row: {
+            currency: Currency;
+            unit: CurrencyUnit;
+            direction: Transaction['direction'];
+            type: Transaction['type'];
+            state: Transaction['state'];
+          };
+        };
       };
       Functions: {
         upsert_user_with_accounts: {
@@ -171,3 +181,5 @@ export type BoardwalkDbCashuTokenSwap =
   Database['wallet']['Tables']['cashu_token_swaps']['Row'];
 export type BoardwalkDbCashuSendQuote =
   Database['wallet']['Tables']['cashu_send_quotes']['Row'];
+export type BoardwalkDbTransaction =
+  Database['wallet']['Tables']['transactions']['Row'];
