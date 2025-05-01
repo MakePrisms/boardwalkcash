@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { LoginResponse, UserResponse } from '@opensecret/react';
 import { expect, test } from './fixtures';
+import { expectHomePage } from './helpers';
 import {
   createAccessToken,
   createRefreshToken,
@@ -45,7 +46,7 @@ test('login with email', async ({ page, openSecretApiMock }) => {
 
   await page.getByRole('button', { name: 'Login' }).click();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('login with email validation works', async ({
@@ -108,7 +109,7 @@ test('login with email validation works', async ({
 
   await page.getByRole('button', { name: 'Login' }).click();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('signup as guest performs login as guest if the guest account was already created on the machine', async ({
@@ -162,13 +163,15 @@ test('signup as guest performs login as guest if the guest account was already c
 
   await page.getByRole('button', { name: 'Create wallet as Guest' }).click();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
+
+  await page.getByLabel('Settings').click();
 
   // Sometimes Playwright has issues on some browsers if you perform action which triggers a redirect while the
   // current page load has not been completely done yet. See https://github.com/microsoft/playwright/issues/20749
   await page.waitForLoadState('networkidle');
 
-  await page.getByRole('button', { name: 'Log Out' }).click();
+  await page.getByRole('button', { name: 'Sign Out' }).click();
 
   await expect(page.getByText('Sign Up')).toBeVisible();
 
@@ -180,7 +183,7 @@ test('signup as guest performs login as guest if the guest account was already c
 
   await page.getByRole('button', { name: 'Create wallet as Guest' }).click();
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('cannot access login page if already logged in', async ({
@@ -189,7 +192,7 @@ test('cannot access login page if already logged in', async ({
 }) => {
   await setupAuth(fullUser);
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 
   // Sometimes Playwright has issues on some browsers if you perform action which triggers a redirect while the
   // current page load has not been completely done yet. See https://github.com/microsoft/playwright/issues/20749
@@ -197,7 +200,7 @@ test('cannot access login page if already logged in', async ({
 
   await page.goto('/login');
 
-  await expect(page.getByText('Welcome to Boardwalk!')).toBeVisible();
+  await expectHomePage(page);
 });
 
 test('forgot password flow', async ({
