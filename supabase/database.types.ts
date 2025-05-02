@@ -686,6 +686,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      find_user_profiles_by_partial_username: {
+        Args: { partial_username: string; current_user_id: string }
+        Returns: {
+          username: string
+          id: string
+        }[]
+      }
       process_cashu_receive_quote_payment: {
         Args: {
           p_quote_id: string
@@ -696,13 +703,6 @@ export type Database = {
           p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
-      }
-      search_users_by_partial_username: {
-        Args: { partial_username: string }
-        Returns: {
-          username: string
-          id: string
-        }[]
       }
       upsert_user_with_accounts: {
         Args: {

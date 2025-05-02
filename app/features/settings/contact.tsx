@@ -1,8 +1,9 @@
 import { ArrowUpRight, Share, Trash2 } from 'lucide-react';
-import { useNavigate, useRouteLoaderData } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { canShare, shareContent } from '~/lib/share';
 import { ContactAvatar } from '../contacts/contact-avatar';
@@ -10,7 +11,7 @@ import { useContact, useDeleteContact } from '../contacts/contact-hooks';
 import { SettingsViewHeader } from './ui/settings-view-header';
 
 export function SingleContact({ contactId }: { contactId: string }) {
-  const { origin } = useRouteLoaderData('root') as { origin: string };
+  const { origin } = useLocationData();
   const [_, copyToClipboard] = useCopyToClipboard();
   const navigate = useNavigate();
   const { toast } = useToast();

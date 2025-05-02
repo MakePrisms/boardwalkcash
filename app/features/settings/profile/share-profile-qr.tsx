@@ -1,17 +1,17 @@
 import { CopyIcon } from 'lucide-react';
 import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useRouteLoaderData } from 'react-router';
 import { PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
 import { useUser } from '~/features/user/user-hooks';
+import useLocationData from '~/hooks/use-location';
 
 export default function ShareProfileQR() {
   const username = useUser((u) => u.username);
   const [copied, setCopied] = useState(false);
+  const { domain } = useLocationData();
 
-  const { domain } = useRouteLoaderData('root') as { domain: string };
   const lightningAddress = `${username}@${domain}`;
 
   const copyToClipboard = () => {

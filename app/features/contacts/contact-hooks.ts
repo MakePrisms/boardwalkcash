@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import type { PublicUser } from '../user/user';
+import { useMemo } from 'react';
 import { useUserRef } from '../user/user-hooks';
 import type { Contact } from './contact';
 import { useContactRepository } from './contact-repository';
@@ -68,16 +67,30 @@ export function useContactsCache() {
   );
 }
 
+type UseContactsOptions = {
+  filterFn?: (contact: Contact) => boolean;
+};
+
 /**
- * Hook for listing all contacts for the current user
+ * Hook for listing contacts for the current user with optional filtering
  */
-export function useContacts() {
+export function useContacts(options?: UseContactsOptions) {
   const userRef = useUserRef();
   const contactRepository = useContactRepository();
+  const { filterFn } = options || {};
+
   const { data: contacts } = useSuspenseQuery({
     queryKey: [contactsQueryKey, userRef.current.id],
-    queryFn: () => contactRepository.getAll(userRef.current.id),
-    staleTime: Number.POSITIVE_INFINITY,
+    queryFn: async () => {
+      const allContacts = await contactRepository.getAll(userRef.current.id);
+
+      if (!filterFn) {
+        return allContacts;
+      }
+
+      return allContacts.filter(filterFn);
+    },
+    staleTime: 30 * 1000, // 30 seconds
   });
 
   return contacts;
@@ -119,8 +132,7 @@ export function useDeleteContact() {
 
   const { mutateAsync: deleteContact } = useMutation({
     mutationKey: ['delete-contact', userRef.current.id],
-    mutationFn: (contactId: string) =>
-      contactRepository.delete(contactId, userRef.current.id),
+    mutationFn: (contactId: string) => contactRepository.delete(contactId),
     onSuccess: (_, contactId) => {
       contactsCache.remove(contactId);
     },
@@ -130,38 +142,20 @@ export function useDeleteContact() {
 }
 
 /**
- * Hook for searching users by partial username
- * @returns The list of public user data that matches the partial username, and a setter for the search query
- *
- * This hook maintains previous search results while a new search is loading,
- * providing a smoother user experience during searches. When the search query
- * changes, it will fetch new results while returning the previous results until
- * the new search completes.
+ * @param query - The search query string
+ * @return the query response containing any user profiles that match the query
  */
-export function useSearchUsers() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [previousResults, setPreviousResults] = useState<PublicUser[]>([]);
+export function useSearchUserProfiles(query: string) {
   const contactRepository = useContactRepository();
+  const userRef = useUserRef();
 
-  const {
-    data: results = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['search-users', searchQuery],
+  return useQuery({
+    queryKey: ['search-user-profiles', query],
     queryFn: async ({ queryKey }) => {
       const [, search] = queryKey;
-      if (!search.trim()) return [];
-      const newResults = await contactRepository.searchUsers(search);
-      setPreviousResults(newResults);
-      return newResults;
+      return contactRepository.searchUserProfiles(search, userRef.current.id);
     },
-    staleTime: 1000 * 30, // 30 seconds
+    initialData: [],
+    staleTime: 1000 * 5,
   });
-
-  return {
-    results: isLoading ? previousResults : results,
-    error,
-    setSearchQuery,
-  };
 }

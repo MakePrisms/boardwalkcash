@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION wallet.search_users_by_partial_username(partial_username text)
+CREATE OR REPLACE FUNCTION wallet.find_user_profiles_by_partial_username(partial_username text, current_user_id uuid)
 RETURNS TABLE (username text, id uuid) 
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -12,12 +12,17 @@ BEGIN
   SELECT u.username, u.id
   FROM wallet.users u 
   WHERE u.username ILIKE partial_username || '%'
+    AND u.id != current_user_id
+    AND NOT EXISTS (
+      SELECT 1 
+      FROM wallet.contacts c 
+      WHERE c.owner_id = current_user_id AND c.username = u.username
+    )
   ORDER BY u.username ASC;
 END;
 $$;
 
---  QUESTION: should we only allow this for authenticated users?
-GRANT EXECUTE ON FUNCTION wallet.search_users_by_partial_username TO anon;
+GRANT EXECUTE ON FUNCTION wallet.find_user_profiles_by_partial_username TO authenticated;
 
 create table "wallet"."contacts" (
     "id" uuid default gen_random_uuid() not null,
@@ -41,26 +46,14 @@ alter table "wallet"."contacts" add constraint "contacts_username_fkey" FOREIGN 
 
 alter table "wallet"."contacts" validate constraint "contacts_username_fkey";
 
--- TODO: see about making no self referencing contacts a policy. 
--- Damian was having issues with it, the check was not being enforced.
--- 
---  This is the policy I was trying:
--- 
--- CREATE POLICY prevent_self_contact_insert ON wallet.contacts
--- FOR INSERT
--- TO authenticated
--- WITH CHECK (
---     username IS NULL OR username <> (SELECT u.username FROM wallet.users u WHERE u.id = auth.uid())
--- );
--- 
--- CREATE POLICY prevent_self_contact_update ON wallet.contacts
--- FOR UPDATE
--- TO authenticated
--- WITH CHECK (
---     username IS NULL OR username <> (SELECT u.username FROM wallet.users u WHERE u.id = auth.uid())
--- );
--- 
--- using this function instead of a policy works.
+-- Create index on users.username to optimize ILIKE queries and sorting
+CREATE INDEX IF NOT EXISTS idx_users_username ON wallet.users USING btree (username);
+
+-- Create composite index on contacts(owner_id, username) to optimize the NOT EXISTS subquery
+CREATE INDEX IF NOT EXISTS idx_contacts_owner_username ON wallet.contacts USING btree (owner_id, username);
+
+
+-- check that the contact is not the user themselves
 CREATE OR REPLACE FUNCTION wallet.check_not_self_contact(owner_id uuid, contact_username text)
 RETURNS boolean AS $$
 BEGIN
@@ -70,7 +63,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql;
-
 
 ALTER TABLE wallet.contacts
 ADD CONSTRAINT prevent_self_contact
@@ -126,7 +118,7 @@ grant truncate on table "wallet"."contacts" to "service_role";
 
 grant update on table "wallet"."contacts" to "service_role";
 
-create policy "users_can_crud_their_contacts"
+create policy "Enable CRUD for contacts based on owner_id"
 on "wallet"."contacts"
 as permissive
 for all

@@ -3,7 +3,6 @@ import { AlertCircle, Banknote, Link } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect } from 'react';
 import { useState } from 'react';
-import { useRouteLoaderData } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { PageContent } from '~/components/page';
 import {
@@ -13,6 +12,7 @@ import {
   CarouselItem,
 } from '~/components/ui/carousel';
 import { Skeleton } from '~/components/ui/skeleton';
+import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import type { Money } from '~/lib/money';
@@ -153,7 +153,7 @@ type Props = {
 export function ShareCashuToken({ token, amount }: Props) {
   const { toast } = useToast();
   const { current, scrollToIndex, setApi } = useCarousel();
-  const { origin } = useRouteLoaderData('root') as { origin: string };
+  const { origin } = useLocationData();
   const [, copyToClipboard] = useCopyToClipboard();
 
   const encodedToken = getEncodedToken(token);

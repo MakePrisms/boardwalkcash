@@ -3,7 +3,7 @@ import {
   type BoardwalkDbContact,
   boardwalkDb,
 } from '../boardwalk-db/database';
-import type { PublicUser } from '../user/user';
+import type { UserProfile } from '../user/user';
 import type { Contact } from './contact';
 
 type CreateContact = {
@@ -17,7 +17,7 @@ export class ContactRepository {
   constructor(private readonly db: BoardwalkDb) {}
 
   async get(contactId: string) {
-    const query = this.db.from('contacts').select('*').eq('id', contactId);
+    const query = this.db.from('contacts').select().eq('id', contactId);
 
     const { data, error } = await query.single();
 
@@ -90,18 +90,12 @@ export class ContactRepository {
   /**
    * Deletes a contact
    * @param contactId - The ID of the contact to delete
-   * @param ownerId - The ID of the owner (for verification)
    */
   async delete(
     contactId: string,
-    ownerId: string,
     options?: { abortSignal?: AbortSignal },
   ): Promise<void> {
-    const query = this.db
-      .from('contacts')
-      .delete()
-      .eq('id', contactId)
-      .eq('owner_id', ownerId);
+    const query = this.db.from('contacts').delete().eq('id', contactId);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -115,19 +109,24 @@ export class ContactRepository {
   }
 
   /**
-   * Search for users by partial username
+   * Search for user profiles by partial username
    * @param query - The partial username to search for
-   * @returns Array of user suggestions
+   * @param currentUserId - The ID of the current user
+   * @returns Array of user profiles
    */
-  async searchUsers(
+  async searchUserProfiles(
     query: string,
+    currentUserId: string,
     options?: { abortSignal?: AbortSignal; sort?: 'desc' | 'asc' },
-  ): Promise<PublicUser[]> {
-    if (query.length < 3) {
+  ): Promise<UserProfile[]> {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 3) {
       return [];
     }
-    const rpcQuery = this.db.rpc('search_users_by_partial_username', {
-      partial_username: query,
+
+    const rpcQuery = this.db.rpc('find_user_profiles_by_partial_username', {
+      partial_username: trimmedQuery,
+      current_user_id: currentUserId,
     });
 
     if (options?.abortSignal) {

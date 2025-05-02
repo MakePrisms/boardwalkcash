@@ -11,28 +11,16 @@ import {
 import { useToast } from '~/hooks/use-toast';
 import { SearchBar } from '../../components/search-bar';
 import { getErrorMessage } from '../shared/error';
-import type { PublicUser } from '../user/user';
-import { useUser } from '../user/user-hooks';
+import type { UserProfile } from '../user/user';
 import { ContactAvatar } from './contact-avatar';
-import { useContacts, useCreateContact, useSearchUsers } from './contact-hooks';
+import { useCreateContact, useSearchUserProfiles } from './contact-hooks';
 
 export function AddContactDrawer() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const createContact = useCreateContact();
-  const { results, setSearchQuery } = useSearchUsers();
-  const existingContacts = useContacts();
-  const currentUser = useUser();
-
-  // Filter out contacts that are already in the user's contact list
-  // and also filter out the user's own profile
-  const filteredResults = results.filter((contact) => {
-    const isExistingContact = existingContacts.some(
-      (existingContact) => contact.username === existingContact.username,
-    );
-    const isCurrentUser = contact.username === currentUser.username;
-    return !isExistingContact && !isCurrentUser;
-  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const { data: results } = useSearchUserProfiles(searchQuery);
 
   const handleAddContact = async (username: string) => {
     try {
@@ -64,10 +52,7 @@ export function AddContactDrawer() {
         </DrawerHeader>
         <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3 px-4 sm:px-0">
           <SearchBar onSearch={setSearchQuery} placeholder="satoshi" />
-          <SearchResults
-            results={filteredResults}
-            onAddContact={handleAddContact}
-          />
+          <SearchResults results={results} onAddContact={handleAddContact} />
         </div>
       </DrawerContent>
     </Drawer>
@@ -77,10 +62,10 @@ function SearchResults({
   results,
   onAddContact,
 }: {
-  results: PublicUser[];
+  results: UserProfile[];
   onAddContact: (username: string) => Promise<void>;
 }) {
-  const [selectedContact, setSelectedContact] = useState<PublicUser | null>(
+  const [selectedContact, setSelectedContact] = useState<UserProfile | null>(
     null,
   );
 

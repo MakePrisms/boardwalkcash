@@ -6,12 +6,12 @@ import { SearchBar } from '../../components/search-bar';
 import { useContacts } from '../contacts/contact-hooks';
 
 export default function Contacts() {
-  const contacts = useContacts();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredContacts = contacts.filter((contact) =>
-    contact.username.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const contacts = useContacts({
+    filterFn: (contact) =>
+      contact.username.toLowerCase().includes(searchQuery.toLowerCase()),
+  });
 
   return (
     <>
@@ -32,7 +32,7 @@ export default function Contacts() {
           debounceTime={0}
         />
 
-        <ContactsList contacts={filteredContacts} />
+        <ContactsList contacts={contacts} />
       </PageContent>
     </>
   );
