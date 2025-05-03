@@ -13,6 +13,12 @@ type CreateContact = {
   username: string;
 };
 
+export type PaginatedResult<T> = {
+  data: T[];
+  hasMore: boolean;
+  total?: number;
+};
+
 export class ContactRepository {
   constructor(private readonly db: BoardwalkDb) {}
 
@@ -29,31 +35,48 @@ export class ContactRepository {
   }
 
   /**
-   * Gets all contacts for a user
+   * Gets all contacts for a user with pagination support
    * @param ownerId - The ID of the user whose contacts to fetch
-   * @returns Array of contacts
+   * @param options - Optional parameters including pagination and abort signal
+   * @returns Object containing contacts array and hasMore flag
    */
   async getAll(
     ownerId: string,
-    options?: { abortSignal?: AbortSignal },
-  ): Promise<Contact[]> {
+    options?: {
+      abortSignal?: AbortSignal;
+      page?: number;
+      pageSize?: number;
+    },
+  ): Promise<PaginatedResult<Contact>> {
+    const page = options?.page ?? 0;
+    const pageSize = options?.pageSize ?? 20;
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
     const query = this.db
       .from('contacts')
-      .select()
+      .select('*', { count: 'exact' })
       .eq('owner_id', ownerId)
-      .order('username', { ascending: true }); // sort alphabetically
+      .order('username', { ascending: true })
+      .range(from, to);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
 
     if (error) {
       throw new Error('Failed to get contacts', error);
     }
 
-    return data.map(ContactRepository.toContact);
+    const hasMore = count ? from + data.length < count : false;
+
+    return {
+      data: data.map(ContactRepository.toContact),
+      hasMore,
+      total: count ?? undefined,
+    };
   }
 
   /**

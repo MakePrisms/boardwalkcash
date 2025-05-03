@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -69,39 +69,83 @@ export function useContactsCache() {
 
 type UseContactsOptions = {
   filterFn?: (contact: Contact) => boolean;
+  pageSize?: number;
+  initialData?: Contact[];
 };
 
 /**
- * Hook for listing contacts for the current user with optional filtering
+ * Hook for listing contacts for the current user with pagination and optional filtering
  */
 export function useContacts(options?: UseContactsOptions) {
   const userRef = useUserRef();
   const contactRepository = useContactRepository();
-  const { filterFn } = options || {};
+  const { filterFn, pageSize = 20 } = options || {};
 
-  const { data: contacts } = useSuspenseQuery({
-    queryKey: [contactsQueryKey, userRef.current.id],
-    queryFn: async () => {
-      const allContacts = await contactRepository.getAll(userRef.current.id);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
+    useInfiniteQuery({
+      queryKey: [contactsQueryKey, userRef.current.id, pageSize],
+      queryFn: async ({ pageParam = 0 }) => {
+        const result = await contactRepository.getAll(userRef.current.id, {
+          page: pageParam,
+          pageSize,
+        });
 
-      if (!filterFn) {
-        return allContacts;
-      }
+        if (filterFn) {
+          result.data = result.data.filter(filterFn);
+        }
 
-      return allContacts.filter(filterFn);
-    },
-    staleTime: 30 * 1000, // 30 seconds
-  });
+        return result;
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, _, lastPageParam) => {
+        return lastPage.hasMore ? lastPageParam + 1 : undefined;
+      },
+      staleTime: 3 * 1000,
+    });
 
-  return contacts;
+  // Flatten all pages into a single contacts array
+  // TODO: Check if we maintian all past pages too
+  const contacts = data?.pages.flatMap((page) => page.data) || [];
+
+  return {
+    contacts,
+    fetchNextPage,
+    hasNextPage,
+    isLoading: status === 'pending',
+    isFetchingNextPage,
+  };
 }
 
 export function useContact(contactId: string) {
-  const contacts = useContacts();
-  const contact = contacts.find((contact) => contact.id === contactId);
-  if (!contact) {
+  const contactRepository = useContactRepository();
+  const { contacts: cachedContacts } = useContacts({
+    filterFn: (contact) => contact.id === contactId,
+  });
+
+  const cachedContact = cachedContacts[0] ?? null;
+
+  // If not found in cache, fetch it directly
+  const { data: fetchedContact, isLoading } = useQuery({
+    queryKey: [contactsQueryKey, 'single', contactId],
+    queryFn: () => contactRepository.get(contactId),
+    // Only run this query if the contact isn't in the cache
+    enabled: !cachedContact,
+  });
+
+  const contact = cachedContact || fetchedContact;
+
+  // If contact isn't available and we're still loading, throw an error
+  if (!contact && !isLoading) {
     throw new Error('Contact not found');
   }
+
+  // If we're loading, throw a promise to suspend
+  if (!contact && isLoading) {
+    throw new Promise(() => {
+      /* This will suspend until data is available */
+    });
+  }
+
   return contact;
 }
 

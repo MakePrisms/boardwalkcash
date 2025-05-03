@@ -8,9 +8,16 @@ import { useContacts } from '../contacts/contact-hooks';
 export default function Contacts() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const contacts = useContacts({
+  const {
+    contacts,
+    hasNextPage,
+    fetchNextPage,
+    isLoading,
+    isFetchingNextPage,
+  } = useContacts({
     filterFn: (contact) =>
       contact.username.toLowerCase().includes(searchQuery.toLowerCase()),
+    pageSize: 20, // Load 20 contacts per page
   });
 
   return (
@@ -32,7 +39,13 @@ export default function Contacts() {
           debounceTime={0}
         />
 
-        <ContactsList contacts={contacts} />
+        <ContactsList
+          contacts={contacts}
+          hasMore={hasNextPage}
+          isLoading={isLoading}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
+        />
       </PageContent>
     </>
   );
