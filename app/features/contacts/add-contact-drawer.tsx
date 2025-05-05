@@ -13,14 +13,14 @@ import { SearchBar } from '../../components/search-bar';
 import { getErrorMessage } from '../shared/error';
 import type { UserProfile } from '../user/user';
 import { ContactAvatar } from './contact-avatar';
-import { useCreateContact, useSearchUserProfiles } from './contact-hooks';
+import { useCreateContact, useFindContactCandidates } from './contact-hooks';
 
 export function AddContactDrawer() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const createContact = useCreateContact();
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: results } = useSearchUserProfiles(searchQuery);
+  const { data: results } = useFindContactCandidates(searchQuery);
 
   const handleAddContact = async (username: string) => {
     try {

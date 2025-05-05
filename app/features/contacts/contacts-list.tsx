@@ -4,10 +4,9 @@ import { ContactAvatar } from './contact-avatar';
 
 type ContactsListProps = {
   contacts: Contact[];
-  onClick?: (contact: Contact) => void;
 };
 
-export function ContactsList({ contacts, onClick }: ContactsListProps) {
+export function ContactsList({ contacts }: ContactsListProps) {
   const hasContacts = contacts.length > 0;
 
   return (
@@ -18,18 +17,15 @@ export function ContactsList({ contacts, onClick }: ContactsListProps) {
             key={contact.id}
             className=" flex items-center rounded-lg transition-colors"
           >
-            {onClick ? (
-              <button
-                className="flex w-full items-center gap-3"
-                onClick={() => onClick?.(contact)}
-                type="button"
-              >
-                <ContactAvatar username={contact.username} size="sm" />
-                <span className="font-medium">{contact.username}</span>
-              </button>
-            ) : (
-              <ContactListItem contact={contact} />
-            )}
+            <LinkWithViewTransition
+              to={`/settings/contacts/${contact.id}`}
+              transition="slideLeft"
+              applyTo="oldView"
+              className="flex w-full items-center gap-3"
+            >
+              <ContactAvatar username={contact.username} size="sm" />
+              <span className="font-medium">{contact.username}</span>
+            </LinkWithViewTransition>{' '}
           </div>
         ))
       ) : (
@@ -38,19 +34,5 @@ export function ContactsList({ contacts, onClick }: ContactsListProps) {
         </div>
       )}
     </div>
-  );
-}
-
-function ContactListItem({ contact }: { contact: Contact }) {
-  return (
-    <LinkWithViewTransition
-      to={`/settings/contacts/${contact.id}`}
-      transition="slideLeft"
-      applyTo="oldView"
-      className="flex w-full items-center gap-3"
-    >
-      <ContactAvatar username={contact.username} size="sm" />
-      <span className="font-medium">{contact.username}</span>
-    </LinkWithViewTransition>
   );
 }

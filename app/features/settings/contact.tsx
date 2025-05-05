@@ -1,4 +1,4 @@
-import { ArrowUpRight, Share, Trash2 } from 'lucide-react';
+import { Share, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import { PageContent } from '~/components/page';
@@ -6,23 +6,23 @@ import { Button } from '~/components/ui/button';
 import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { canShare, shareContent } from '~/lib/share';
+import type { Contact } from '../contacts/contact';
 import { ContactAvatar } from '../contacts/contact-avatar';
-import { useContact, useDeleteContact } from '../contacts/contact-hooks';
+import { useDeleteContact } from '../contacts/contact-hooks';
 import { SettingsViewHeader } from './ui/settings-view-header';
 
-export function SingleContact({ contactId }: { contactId: string }) {
+export function SingleContact({ contact }: { contact: Contact }) {
   const { origin } = useLocationData();
   const [_, copyToClipboard] = useCopyToClipboard();
   const navigate = useNavigate();
   const { toast } = useToast();
   const deleteContact = useDeleteContact();
-  const contact = useContact(contactId);
 
   const profileUrl = `${origin}/${contact?.username}`;
 
   const handleDelete = async () => {
     try {
-      await deleteContact(contactId);
+      await deleteContact(contact.id);
       toast({
         title: 'Contact deleted',
         description: contact?.username,
@@ -95,10 +95,6 @@ export function SingleContact({ contactId }: { contactId: string }) {
             >
               <Trash2 className="mr-2 h-5 w-5" />
               Remove Contact
-            </Button>
-            <Button size="lg" className="w-fit">
-              Send
-              <ArrowUpRight className=" h-5 w-5" />
             </Button>
           </div>
         </div>

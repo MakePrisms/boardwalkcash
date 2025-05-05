@@ -109,12 +109,12 @@ export class ContactRepository {
   }
 
   /**
-   * Search for user profiles by partial username
+   * Search for user profiles by partial username, excluding existing contacts
    * @param query - The partial username to search for
    * @param currentUserId - The ID of the current user
-   * @returns Array of user profiles
+   * @returns Array of user profiles that are not already contacts of the current user
    */
-  async searchUserProfiles(
+  async findContactCandidates(
     query: string,
     currentUserId: string,
     options?: { abortSignal?: AbortSignal; sort?: 'desc' | 'asc' },
@@ -124,7 +124,7 @@ export class ContactRepository {
       return [];
     }
 
-    const rpcQuery = this.db.rpc('find_user_profiles_by_partial_username', {
+    const rpcQuery = this.db.rpc('find_contact_candidates', {
       partial_username: trimmedQuery,
       current_user_id: currentUserId,
     });

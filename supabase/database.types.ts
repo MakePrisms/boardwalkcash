@@ -686,7 +686,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      find_user_profiles_by_partial_username: {
+      find_contact_candidates: {
         Args: { partial_username: string; current_user_id: string }
         Returns: {
           username: string

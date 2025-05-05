@@ -1,10 +1,14 @@
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useLatest } from '~/lib/use-latest';
+import type { BoardwalkDbContact } from '../boardwalk-db/database';
+import { boardwalkDb } from '../boardwalk-db/database';
 import { useUserRef } from '../user/user-hooks';
 import type { Contact } from './contact';
-import { useContactRepository } from './contact-repository';
+import { ContactRepository, useContactRepository } from './contact-repository';
 
 const contactsQueryKey = 'contacts';
 
@@ -77,6 +81,8 @@ type UseContactsOptions = {
 export function useContacts(options?: UseContactsOptions) {
   const userRef = useUserRef();
   const contactRepository = useContactRepository();
+  const contactsCache = useContactsCache();
+
   const { filterFn } = options || {};
 
   const { data: contacts } = useSuspenseQuery({
@@ -90,7 +96,12 @@ export function useContacts(options?: UseContactsOptions) {
 
       return allContacts.filter(filterFn);
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+  useOnContactsChange({
+    onCreated: (contact) => contactsCache.add(contact),
+    onDeleted: (contactId) => contactsCache.remove(contactId),
   });
 
   return contacts;
@@ -100,14 +111,13 @@ export function useContact(contactId: string) {
   const contacts = useContacts();
   const contact = contacts.find((contact) => contact.id === contactId);
   if (!contact) {
-    throw new Error('Contact not found');
+    return null;
   }
   return contact;
 }
 
 export function useCreateContact() {
   const userRef = useUserRef();
-  const contactsCache = useContactsCache();
   const contactRepository = useContactRepository();
 
   const { mutateAsync: createContact } = useMutation({
@@ -117,9 +127,6 @@ export function useCreateContact() {
         ownerId: userRef.current.id,
         username,
       }),
-    onSuccess: (newContact) => {
-      contactsCache.add(newContact);
-    },
   });
 
   return createContact;
@@ -127,15 +134,11 @@ export function useCreateContact() {
 
 export function useDeleteContact() {
   const userRef = useUserRef();
-  const contactsCache = useContactsCache();
   const contactRepository = useContactRepository();
 
   const { mutateAsync: deleteContact } = useMutation({
     mutationKey: ['delete-contact', userRef.current.id],
     mutationFn: (contactId: string) => contactRepository.delete(contactId),
-    onSuccess: (_, contactId) => {
-      contactsCache.remove(contactId);
-    },
   });
 
   return deleteContact;
@@ -145,7 +148,7 @@ export function useDeleteContact() {
  * @param query - The search query string
  * @return the query response containing any user profiles that match the query
  */
-export function useSearchUserProfiles(query: string) {
+export function useFindContactCandidates(query: string) {
   const contactRepository = useContactRepository();
   const userRef = useUserRef();
 
@@ -153,9 +156,51 @@ export function useSearchUserProfiles(query: string) {
     queryKey: ['search-user-profiles', query],
     queryFn: async ({ queryKey }) => {
       const [, search] = queryKey;
-      return contactRepository.searchUserProfiles(search, userRef.current.id);
+      return contactRepository.findContactCandidates(
+        search,
+        userRef.current.id,
+      );
     },
     initialData: [],
     staleTime: 1000 * 5,
   });
+}
+
+function useOnContactsChange({
+  onCreated,
+  onDeleted,
+}: {
+  onCreated: (contact: Contact) => void;
+  onDeleted: (contactId: string) => void;
+}) {
+  const onCreatedRef = useLatest(onCreated);
+  const onDeletedRef = useLatest(onDeleted);
+
+  useEffect(() => {
+    const channel = boardwalkDb
+      .channel('contacts')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'wallet',
+          table: 'contacts',
+        },
+        (payload: RealtimePostgresChangesPayload<BoardwalkDbContact>) => {
+          console.log('onContactsChange', payload);
+          if (payload.eventType === 'INSERT') {
+            const newContact = ContactRepository.toContact(payload.new);
+            onCreatedRef.current(newContact);
+          } else if (payload.eventType === 'DELETE') {
+            if (!payload.old.id) return;
+            onDeletedRef.current(payload.old.id);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, []);
 }

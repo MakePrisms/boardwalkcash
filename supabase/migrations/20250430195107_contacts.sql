@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION wallet.find_user_profiles_by_partial_username(partial_username text, current_user_id uuid)
+CREATE OR REPLACE FUNCTION wallet.find_contact_candidates(partial_username text, current_user_id uuid)
 RETURNS TABLE (username text, id uuid) 
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -22,7 +22,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION wallet.find_user_profiles_by_partial_username TO authenticated;
+GRANT EXECUTE ON FUNCTION wallet.find_contact_candidates TO authenticated;
 
 create table "wallet"."contacts" (
     "id" uuid default gen_random_uuid() not null,
