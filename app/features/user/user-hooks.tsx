@@ -98,7 +98,7 @@ export const useUpgradeGuestToFullAccount = (): ((
   password: string,
 ) => Promise<void>) => {
   const userRef = useUserRef();
-  const { signUpGuest } = useOpenSecret();
+  const { convertGuestToUserAccount } = useOpenSecret();
 
   const { mutateAsync } = useMutation({
     mutationKey: ['upgrade-guest-to-full-account'],
@@ -107,7 +107,10 @@ export const useUpgradeGuestToFullAccount = (): ((
         throw new Error('User already has a full account');
       }
 
-      return signUpGuest(variables.email, variables.password).then(() => {
+      return convertGuestToUserAccount(
+        variables.email,
+        variables.password,
+      ).then(() => {
         guestAccountStorage.clear();
       });
     },
