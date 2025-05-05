@@ -34,6 +34,8 @@ create table "wallet"."contacts" (
 
 alter table "wallet"."contacts" enable row level security;
 
+alter publication supabase_realtime add table wallet.contacts;
+
 CREATE UNIQUE INDEX contacts_pkey ON wallet.contacts USING btree (id);
 
 alter table "wallet"."contacts" add constraint "contacts_pkey" PRIMARY KEY using index "contacts_pkey";
