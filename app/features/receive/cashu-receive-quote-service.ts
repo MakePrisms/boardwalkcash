@@ -227,14 +227,17 @@ export class CashuReceiveQuoteService {
 
     const keysetId = quote.state === 'PAID' ? quote.keysetId : undefined;
     const keys = await wallet.getKeys(keysetId);
-    const counter = account.keysetCounters[wallet.keysetId] ?? 0;
+    const counter =
+      quote.state === 'PAID'
+        ? quote.keysetCounter
+        : (account.keysetCounters[wallet.keysetId] ?? 0);
+
     const outputData = OutputData.createDeterministicData(
       quote.amount.toNumber(cashuUnit),
       seed,
       counter,
       keys,
     );
-    const outputAmounts = amountsFromOutputData(outputData);
 
     const { updatedQuote, updatedAccount } =
       await this.cashuReceiveQuoteRepository.processPayment({
@@ -242,7 +245,7 @@ export class CashuReceiveQuoteService {
         quoteVersion: quote.version,
         keysetId: wallet.keysetId,
         keysetCounter: counter,
-        outputAmounts,
+        outputAmounts: amountsFromOutputData(outputData),
         accountVersion: account.version,
       });
 
