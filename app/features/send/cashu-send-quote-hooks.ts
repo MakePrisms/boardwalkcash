@@ -386,6 +386,8 @@ function useOnMeltQuoteStateChange({
   useEffect(() => {
     if (sendQuotes.length === 0) return;
 
+    let cleanup: (() => void) | undefined;
+
     const subcribeToMeltQuoteUpdates = async (quotes: CashuSendQuote[]) => {
       const quotesByMint = quotes.reduce<Record<string, string[]>>(
         (acc, quote) => {
@@ -424,7 +426,13 @@ function useOnMeltQuoteStateChange({
       };
     };
 
-    subcribeToMeltQuoteUpdates(sendQuotes);
+    subcribeToMeltQuoteUpdates(sendQuotes).then((cleanupFn) => {
+      cleanup = cleanupFn;
+    });
+
+    return () => {
+      cleanup?.();
+    };
   }, [sendQuotes, accountsCache, handleMeltQuoteUpdate]);
 
   useEffect(() => {

@@ -371,7 +371,7 @@ export class CashuReceiveQuoteRepository {
       .from('cashu_receive_quotes')
       .select()
       .eq('user_id', userId)
-      .in('state', ['UNPAID', 'EXPIRED']);
+      .eq('state', 'UNPAID');
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
