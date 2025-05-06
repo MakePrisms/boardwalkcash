@@ -19,9 +19,10 @@ import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
 import type { PaymentRequest } from '~/features/send/send-store';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
-import { useToast } from '~/hooks/use-toast';
+import { toast, useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { type Currency, Money } from '~/lib/money';
+import { LoadingScreen } from '../loading/LoadingScreen';
 import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
 import {
@@ -29,6 +30,12 @@ import {
   useCreateCashuSendQuote,
   useInitiateCashuSendQuote,
 } from './cashu-send-quote-hooks';
+import type { CashuSendSwap } from './cashu-send-swap';
+import {
+  useCashuSendSwap,
+  useCreateCashuSendSwap,
+  useEstimateCashuSendSwapFee,
+} from './cashu-send-swap-hooks';
 import { useSendStore } from './send-provider';
 import { SuccessfulSendPage } from './succesful-send-page';
 
@@ -257,24 +264,60 @@ export const CreateCashuTokenConfirmation = ({
   amount,
   account,
 }: CreateCashuTokenConfirmationProps) => {
-  // here we are sending a token, so we may need to swap to create the token
-  // swapping will incur fees
-  const fee = Money.zero(amount.currency);
   const setToken = useSendStore((state) => state.setToken);
   const navigate = useNavigate();
 
-  const handleConfirm = async () => {
-    setToken({
-      mint: account.mintUrl,
-      proofs: [], // TODO
-      unit: getDefaultUnit(amount.currency),
-      memo: '',
-    });
-    navigate('/send/share');
-  };
+  const {
+    mutate: estimateFee,
+    error: estimateFeeError,
+    data: fee,
+  } = useEstimateCashuSendSwapFee();
+
+  const {
+    data: createSwapData,
+    isPending: isCreateSwapPending,
+    mutate: createCashuSendSwap,
+  } = useCreateCashuSendSwap({
+    onError: (error) => {
+      console.error('Error creating cashu send swap', { cause: error });
+      toast({
+        title: 'Error',
+        description: 'Failed to create cashu send swap. Please try again.',
+      });
+    },
+  });
+
+  const swap = useCashuSendSwap({
+    id: createSwapData?.id,
+    onReady: (swap: CashuSendSwap) => {
+      if (!swap.proofsToSend) {
+        throw new Error('No proofs to send');
+      }
+      setToken({
+        mint: account.mintUrl,
+        proofs: swap.proofsToSend,
+        unit: amount.currency === 'BTC' ? 'sat' : 'usd',
+      });
+      navigate('/send/share');
+    },
+  });
+
+  useEffect(() => {
+    estimateFee({ accountId: account.id, amount });
+  }, [estimateFee, account, amount]);
 
   const confirmationRowData = useMemo(
     () => [
+      {
+        label: 'Recipient gets',
+        value: (
+          <MoneyDisplay
+            variant="secondary"
+            money={amount}
+            unit={getDefaultUnit(amount.currency)}
+          />
+        ),
+      },
       {
         label: 'Estimated fee',
         value: fee ? (
@@ -288,13 +331,22 @@ export const CreateCashuTokenConfirmation = ({
         ),
       },
       { label: 'From', value: account.name },
-      { label: 'Sending', value: 'eCash Token' },
+      { label: 'Sending', value: 'ecash' },
     ],
-    [fee, account],
+    [fee, account, amount],
   );
 
+  if (!fee && !estimateFeeError) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <BaseConfirmation amount={amount} onConfirm={handleConfirm}>
+    <BaseConfirmation
+      amount={fee ? amount.add(fee) : amount}
+      onConfirm={() => createCashuSendSwap({ accountId: account.id, amount })}
+      error={estimateFeeError ? getErrorMessage(estimateFeeError) : undefined}
+      isConfirming={isCreateSwapPending || swap?.status === 'SWAPPING'}
+    >
       {confirmationRowData.map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
