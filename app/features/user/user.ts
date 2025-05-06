@@ -23,6 +23,8 @@ export type GuestUser = CommonUserData & {
 
 export type User = FullUser | GuestUser;
 
+export type PublicUser = Pick<User, 'id' | 'username'>;
+
 export function shouldVerifyEmail(user: User): user is FullUser {
   return !user.isGuest && !user.emailVerified;
 }

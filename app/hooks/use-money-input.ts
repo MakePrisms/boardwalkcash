@@ -100,6 +100,10 @@ export function useMoneyInput({
       })
     : undefined;
 
+  const bitcoinInputMoney = [inputMoney, convertedMoney].find(
+    (item) => item?.currency === 'BTC',
+  ) as Money<'BTC'> | undefined;
+
   useEffect(() => {
     if (rates) {
       setState((current) => {
@@ -261,6 +265,7 @@ export function useMoneyInput({
     maxInputDecimals,
     inputValue: inputMoney,
     convertedValue: convertedMoney,
+    bitcoinInputValue: bitcoinInputMoney,
     handleNumberInput,
     switchInputCurrency,
     exchangeRateError,
