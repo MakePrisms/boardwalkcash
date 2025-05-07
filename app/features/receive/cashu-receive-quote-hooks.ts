@@ -8,13 +8,14 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type Query,
   type QueryClient,
+  type UseQueryResult,
   useMutation,
   useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import { getCashuWallet, getWalletCurrency } from '~/lib/cashu';
+import { type MintInfo, getCashuWallet, getWalletCurrency } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
   type LongTimeout,
@@ -282,13 +283,13 @@ const usePendingCashuReceiveQuotes = () => {
   return data ?? [];
 };
 
-const checkIfMintSupportsWebSocketsForMintQuotes = async (
+const checkIfMintSupportsWebSocketsForMintQuotes = (
   mintUrl: string,
+  mintInfo: MintInfo,
   currency: string,
-): Promise<boolean> => {
+): boolean => {
   const wallet = getCashuWallet(mintUrl);
   const walletCurrency = getWalletCurrency(wallet);
-  const mintInfo = await wallet.getMintInfo();
   const nut17Info = mintInfo.isSupported(17);
   const params = nut17Info.params ?? [];
   const supportsWebSocketsForMintQuotes =
@@ -319,7 +320,7 @@ const useTrackMintQuotesWithPolling = ({
 }: TrackMintQuotesWithPollingProps) => {
   useQueries({
     queries: quotes.map((quote) => ({
-      queryKey: ['check-mint-quote', quote.quoteId],
+      queryKey: ['mint-quote', quote.quoteId],
       queryFn: async () => {
         try {
           const account = await getCashuAccount(quote.accountId);
@@ -434,51 +435,109 @@ const useTrackMintQuotesWithWebSocket = ({
   }, [quotesByMint, onUpdate, getCashuAccount]);
 };
 
+type MintInfoQueryResult = UseQueryResult<
+  {
+    mintUrl: string;
+    mintInfo: MintInfo | null;
+  },
+  Error
+>;
+
 const usePartitionQuotesByStateCheckType = ({
   quotes,
-  getCashuAccount,
+  accountsCache,
 }: {
   quotes: CashuReceiveQuote[];
-  getCashuAccount: (accountId: string) => Promise<CashuAccount>;
+  accountsCache: ReturnType<typeof useAccountsCache>;
 }) => {
-  const { data } = useQuery({
-    queryKey: ['quotes-partition-by-state-check-type', quotes],
-    queryFn: async () => {
-      const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
-      const quotesToPoll: CashuReceiveQuote[] = [];
-
-      const promises = quotes.map(async (quote) => {
-        const account = await getCashuAccount(quote.accountId);
-
-        const supportsSocketForMintQuotes =
-          await checkIfMintSupportsWebSocketsForMintQuotes(
-            account.mintUrl,
-            account.currency,
-          );
-
-        if (supportsSocketForMintQuotes) {
-          quotesToSubscribeTo[account.mintUrl] = (
-            quotesToSubscribeTo[account.mintUrl] ?? []
-          ).concat(quote);
-        } else {
-          quotesToPoll.push(quote);
-        }
-      });
-
-      await Promise.all(promises);
-
-      return {
-        quotesToSubscribeTo,
-        quotesToPoll,
-      };
+  const getCashuAccount = useCallback(
+    (accountId: string) => {
+      const account = accountsCache.get(accountId);
+      if (!account || account.type !== 'cashu') {
+        throw new Error(`Cashu account not found for id: ${accountId}`);
+      }
+      return account;
     },
-    initialData: {
-      quotesToSubscribeTo: {},
-      quotesToPoll: [],
+    [accountsCache],
+  );
+
+  const mintUrls = useMemo(() => {
+    const distinctAccountIds = [...new Set(quotes.map((q) => q.accountId))];
+    const accounts = distinctAccountIds.map(getCashuAccount);
+    return [...new Set(accounts.map((x) => x.mintUrl))];
+  }, [quotes, getCashuAccount]);
+
+  const mintQueryResults = useQueries({
+    queries: mintUrls.map((mintUrl) => ({
+      queryKey: ['mint-info', mintUrl],
+      queryFn: async () => {
+        const wallet = getCashuWallet(mintUrl);
+        const mintInfo = await wallet.getMintInfo();
+        return { mintUrl, mintInfo };
+      },
+      placeholderData: {
+        mintUrl,
+        mintInfo: null,
+      },
+      staleTime: 30 * 60 * 1000,
+    })),
+    combine: (results: MintInfoQueryResult[]) => {
+      return results.reduce((acc, curr) => {
+        if (!curr.data) {
+          // Should never happen because we have placeholder data.
+          throw new Error('Data is missing in mint info query result');
+        }
+        acc.set(curr.data.mintUrl, curr);
+        return acc;
+      }, new Map<string, MintInfoQueryResult>());
     },
   });
 
-  return data;
+  return useMemo(() => {
+    const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
+    const quotesToPoll: CashuReceiveQuote[] = [];
+
+    quotes.forEach((quote) => {
+      const account = getCashuAccount(quote.accountId);
+      const mintInfoQueryResult = mintQueryResults.get(account.mintUrl);
+
+      if (!mintInfoQueryResult) {
+        console.warn(`Mint info not found for ${account.mintUrl}`, {
+          accountId: account.id,
+        });
+        return;
+      }
+
+      if (mintInfoQueryResult.isError) {
+        console.warn(`Fetching mint info failed for ${account.mintUrl}`, {
+          accountId: account.id,
+          error: mintInfoQueryResult.error,
+        });
+        return;
+      }
+
+      const mintInfo = mintInfoQueryResult.data?.mintInfo;
+      if (!mintInfo) {
+        // Data not loaded yet for the mint
+        return;
+      }
+
+      const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
+        account.mintUrl,
+        mintInfo,
+        account.currency,
+      );
+
+      if (mintSupportsWebSockets) {
+        const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
+        quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
+      } else {
+        quotesToPoll.push(quote);
+      }
+    });
+
+    return { quotesToSubscribeTo, quotesToPoll };
+  }, [mintQueryResults, quotes, getCashuAccount]);
 };
 
 type OnMintQuoteStateChangeProps = {
@@ -555,7 +614,7 @@ const useOnMintQuoteStateChange = ({
   const { quotesToSubscribeTo, quotesToPoll } =
     usePartitionQuotesByStateCheckType({
       quotes,
-      getCashuAccount,
+      accountsCache,
     });
 
   useTrackMintQuotesWithWebSocket({

@@ -371,7 +371,7 @@ export class CashuReceiveQuoteRepository {
       .from('cashu_receive_quotes')
       .select()
       .eq('user_id', userId)
-      .eq('state', 'UNPAID');
+      .in('state', ['UNPAID', 'PAID']);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
