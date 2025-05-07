@@ -3,6 +3,8 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { CashuSendSwap } from '../send/cashu-send-swap';
+import type { SerializedOutputData } from '../send/cashu-send-swap-repository';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
@@ -28,6 +30,16 @@ type CreateCashuSendQuoteResult = {
 
 type UpdateCashuSendQuoteResult = {
   updated_quote: BoardwalkDbCashuSendQuote;
+  updated_account: BoardwalkDbAccount;
+};
+
+export type CreateCashuSendSwapResult = {
+  created_swap: BoardwalkDbCashuSendSwap;
+  updated_account: BoardwalkDbAccount;
+};
+
+export type CompleteCashuSendSwapResult = {
+  updated_swap: BoardwalkDbCashuSendSwap;
   updated_account: BoardwalkDbAccount;
 };
 
@@ -108,6 +120,15 @@ export type Database = MergeDeep<
             currency_requested?: Currency;
           };
         };
+        cashu_send_swaps: {
+          Row: {
+            keep_output_data: SerializedOutputData[];
+            send_output_data: SerializedOutputData[];
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+        };
         transactions: {
           Row: {
             currency: Currency;
@@ -145,11 +166,19 @@ export type Database = MergeDeep<
         fail_cashu_send_quote: {
           Returns: UpdateCashuSendQuoteResult;
         };
+        create_cashu_send_swap: {
+          Returns: CreateCashuSendSwapResult;
+        };
+        complete_cashu_send_swap: {
+          Returns: CompleteCashuSendSwapResult;
+        };
       };
       CompositeTypes: {
         cashu_receive_quote_payment_result: CashuReceiveQuotePaymentResult;
         create_cashu_send_quote_result: CreateCashuSendQuoteResult;
         update_cashu_send_quote_result: UpdateCashuSendQuoteResult;
+        create_cashu_send_swap_result: CreateCashuSendSwapResult;
+        complete_cashu_send_swap_result: CompleteCashuSendSwapResult;
       };
     };
   }
@@ -185,3 +214,5 @@ export type BoardwalkDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
 export type BoardwalkDbContact =
   Database['wallet']['Tables']['contacts']['Row'];
+export type BoardwalkDbCashuSendSwap =
+  Database['wallet']['Tables']['cashu_send_swaps']['Row'];

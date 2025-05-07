@@ -14,7 +14,7 @@ export const getLNURLPayParams = async (
     return { status: 'ERROR', reason: 'Invalid lightning address' };
   }
   // QUESTION: I put http because of localhost. Is there a way to get around this?
-  return ky.get(`http://${domain}/.well-known/lnurlp/${username}`).json();
+  return ky.get(`https://${domain}/.well-known/lnurlp/${username}`).json();
 };
 
 /**
