@@ -15,7 +15,12 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import { type MintInfo, getCashuWallet, getWalletCurrency } from '~/lib/cashu';
+import {
+  type MintInfo,
+  getCashuUnit,
+  getCashuWallet,
+  getWalletCurrency,
+} from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
   type LongTimeout,
@@ -310,6 +315,25 @@ type TrackMintQuotesWithPollingProps = {
   onFetched: (mintQuoteResponse: MintQuoteResponse) => void;
 };
 
+const checkMintQuote = async (
+  account: CashuAccount,
+  quote: CashuReceiveQuote,
+): Promise<MintQuoteResponse> => {
+  const cashuUnit = getCashuUnit(quote.amount.currency);
+  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+
+  const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
+
+  return {
+    ...partialMintQuoteResponse,
+    // Amount and unit were added to the response later and some mints might still not be setting them atm so temporily we set them from the values we stored in the cashu receive quote.
+    // See https://github.com/cashubtc/nuts/commit/e7112cd4ebfe14f0aaffa48cbdb5bd60fc450c51 and https://github.com/cashubtc/cashu-ts/pull/275/files#diff-820f0c31c07f61cf1b853d8a028670f0530af7965d60ec1853b048b626ae46ad
+    // for more details. This can be removed once all the mints are updated and cashu-ts is updated.
+    amount: partialMintQuoteResponse.amount ?? quote.amount.toNumber(cashuUnit),
+    unit: wallet.unit,
+  };
+};
+
 /**
  * Polls the state of the provided mint quotes.
  */
@@ -324,9 +348,8 @@ const useTrackMintQuotesWithPolling = ({
       queryFn: async () => {
         try {
           const account = await getCashuAccount(quote.accountId);
-          const wallet = getCashuWallet(account.mintUrl);
+          const mintQuoteResponse = await checkMintQuote(account, quote);
 
-          const mintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
           onFetched(mintQuoteResponse);
 
           return mintQuoteResponse;
@@ -421,8 +444,7 @@ const useTrackMintQuotesWithWebSocket = ({
         new Date(receiveQuote.expiresAt).getTime() - Date.now();
       const quoteTimeout = setLongTimeout(async () => {
         const account = await getCashuAccount(receiveQuote.accountId);
-        const wallet = getCashuWallet(account.mintUrl);
-        const mintQuote = await wallet.checkMintQuote(receiveQuote.quoteId);
+        const mintQuote = await checkMintQuote(account, receiveQuote);
 
         return onUpdate(mintQuote);
       }, msUntilExpiration);
@@ -438,10 +460,21 @@ const useTrackMintQuotesWithWebSocket = ({
 type MintInfoQueryResult = UseQueryResult<
   {
     mintUrl: string;
-    mintInfo: MintInfo | null;
+    mintInfo: MintInfo;
   },
   Error
 >;
+
+const combineMintInfoQueryResults = (results: MintInfoQueryResult[]) => {
+  const map = results.reduce((acc, curr) => {
+    if (curr.data) {
+      acc.set(curr.data.mintUrl, curr);
+    }
+    return acc;
+  }, new Map<string, MintInfoQueryResult>());
+
+  return map.size > 0 ? map : null;
+};
 
 const usePartitionQuotesByStateCheckType = ({
   quotes,
@@ -475,66 +508,56 @@ const usePartitionQuotesByStateCheckType = ({
         const mintInfo = await wallet.getMintInfo();
         return { mintUrl, mintInfo };
       },
-      placeholderData: {
-        mintUrl,
-        mintInfo: null,
-      },
       staleTime: 30 * 60 * 1000,
     })),
-    combine: (results: MintInfoQueryResult[]) => {
-      return results.reduce((acc, curr) => {
-        if (!curr.data) {
-          // Should never happen because we have placeholder data.
-          throw new Error('Data is missing in mint info query result');
-        }
-        acc.set(curr.data.mintUrl, curr);
-        return acc;
-      }, new Map<string, MintInfoQueryResult>());
-    },
+    combine: combineMintInfoQueryResults,
   });
 
   return useMemo(() => {
     const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
     const quotesToPoll: CashuReceiveQuote[] = [];
 
-    quotes.forEach((quote) => {
-      const account = getCashuAccount(quote.accountId);
-      const mintInfoQueryResult = mintQueryResults.get(account.mintUrl);
+    if (mintQueryResults) {
+      quotes.forEach((quote) => {
+        const account = getCashuAccount(quote.accountId);
+        const mintInfoQueryResult = mintQueryResults.get(account.mintUrl);
 
-      if (!mintInfoQueryResult) {
-        console.warn(`Mint info not found for ${account.mintUrl}`, {
-          accountId: account.id,
-        });
-        return;
-      }
+        if (!mintInfoQueryResult) {
+          console.warn(`Mint info not found for ${account.mintUrl}`, {
+            accountId: account.id,
+          });
+          return;
+        }
 
-      if (mintInfoQueryResult.isError) {
-        console.warn(`Fetching mint info failed for ${account.mintUrl}`, {
-          accountId: account.id,
-          error: mintInfoQueryResult.error,
-        });
-        return;
-      }
+        if (mintInfoQueryResult.isError) {
+          console.warn(`Fetching mint info failed for ${account.mintUrl}`, {
+            accountId: account.id,
+            error: mintInfoQueryResult.error,
+          });
+          return;
+        }
 
-      const mintInfo = mintInfoQueryResult.data?.mintInfo;
-      if (!mintInfo) {
-        // Data not loaded yet for the mint
-        return;
-      }
+        const mintInfo = mintInfoQueryResult.data?.mintInfo;
+        if (!mintInfo) {
+          // Data not loaded yet for the mint
+          return;
+        }
 
-      const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
-        account.mintUrl,
-        mintInfo,
-        account.currency,
-      );
+        const mintSupportsWebSockets =
+          checkIfMintSupportsWebSocketsForMintQuotes(
+            account.mintUrl,
+            mintInfo,
+            account.currency,
+          );
 
-      if (mintSupportsWebSockets) {
-        const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
-        quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
-      } else {
-        quotesToPoll.push(quote);
-      }
-    });
+        if (mintSupportsWebSockets) {
+          const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
+          quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
+        } else {
+          quotesToPoll.push(quote);
+        }
+      });
+    }
 
     return { quotesToSubscribeTo, quotesToPoll };
   }, [mintQueryResults, quotes, getCashuAccount]);
