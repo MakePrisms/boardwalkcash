@@ -277,13 +277,14 @@ export class CashuReceiveQuoteService {
 
     try {
       const cashuUnit = getCashuUnit(quote.amount.currency);
+      const amount = quote.amount.toNumber(cashuUnit);
 
       const unlockingKey = await this.cryptography.getPrivateKey(
         quote.lockingDerivationPath,
       );
 
       const proofs = await wallet.mintProofs(
-        quote.amount.toNumber(cashuUnit),
+        amount,
         // NOTE: cashu-ts makes us pass the mint quote response instead of just the quote id
         // if we want to use the private key to create a signature. However, the implementation
         // only ends up using the quote id.
@@ -292,6 +293,8 @@ export class CashuReceiveQuoteService {
           request: quote.paymentRequest,
           state: MintQuoteState.PAID,
           expiry: Math.floor(new Date(quote.expiresAt).getTime() / 1000),
+          amount,
+          unit: wallet.unit,
         },
         {
           keysetId: quote.keysetId,

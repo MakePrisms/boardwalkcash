@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo } from 'react';
-import { CashuErrorCodes, getCashuWallet } from '~/lib/cashu';
+import { CashuErrorCodes, getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
   type LongTimeout,
@@ -319,6 +319,25 @@ type OnMeltQuoteStateChangeProps = {
   ) => void;
 };
 
+const checkMeltQuote = async (
+  account: CashuAccount,
+  quote: CashuSendQuote,
+): Promise<MeltQuoteResponse> => {
+  const cashuUnit = getCashuUnit(quote.amountToSend.currency);
+  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+
+  const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);
+
+  return {
+    ...partialMeltQuoteResponse,
+    // Amount and unit were added to the response later and some mints might still not be setting them atm so temporily we set them from the values we stored in the cashu receive quote.
+    // See https://github.com/cashubtc/nuts/commit/e7112cd4ebfe14f0aaffa48cbdb5bd60fc450c51 and https://github.com/cashubtc/cashu-ts/pull/275/files#diff-820f0c31c07f61cf1b853d8a028670f0530af7965d60ec1853b048b626ae46ad
+    // for more details.
+    request: partialMeltQuoteResponse.request ?? quote.paymentRequest,
+    unit: wallet.unit,
+  };
+};
+
 function useOnMeltQuoteStateChange({
   sendQuotes,
   onUnpaid,
@@ -451,8 +470,7 @@ function useOnMeltQuoteStateChange({
           throw new Error(`Account not found for id: ${sendQuote.accountId}`);
         }
 
-        const wallet = getCashuWallet(account.mintUrl);
-        const meltQuote = await wallet.checkMeltQuote(sendQuote.quoteId);
+        const meltQuote = await checkMeltQuote(account, sendQuote);
 
         return handleMeltQuoteUpdate(meltQuote);
       }, msUntilExpiration);
