@@ -268,6 +268,9 @@ function useOnAccountChange({
 }
 
 export function useTrackAccounts() {
+  // Makes sure the accounts are loaded in the cache.
+  useAccounts();
+
   const accountCache = useAccountsCache();
 
   useOnAccountChange({
