@@ -260,7 +260,7 @@ export class CashuSendQuoteService {
     }
 
     if (!meltQuote.payment_preimage) {
-      throw new Error('Payment preimage is missing on the melt quote');
+      console.warn('Payment preimage is missing on the melt quote');
     }
 
     const cashuUnit = getCashuUnit(account.currency);
@@ -299,7 +299,7 @@ export class CashuSendQuoteService {
     return this.cashuSendRepository.complete({
       quoteId: sendQuote.id,
       quoteVersion: sendQuote.version,
-      paymentPreimage: meltQuote.payment_preimage,
+      paymentPreimage: meltQuote.payment_preimage ?? '',
       amountSpent,
       accountProofs: updatedAccountProofs,
       accountVersion: account.version,

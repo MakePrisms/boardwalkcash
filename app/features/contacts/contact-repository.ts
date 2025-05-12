@@ -1,3 +1,4 @@
+import useLocationData from '~/hooks/use-location';
 import {
   type BoardwalkDb,
   type BoardwalkDbContact,
@@ -14,7 +15,10 @@ type CreateContact = {
 };
 
 export class ContactRepository {
-  constructor(private readonly db: BoardwalkDb) {}
+  constructor(
+    private readonly db: BoardwalkDb,
+    private readonly domain: string,
+  ) {}
 
   async get(contactId: string) {
     const query = this.db.from('contacts').select().eq('id', contactId);
@@ -25,7 +29,7 @@ export class ContactRepository {
       throw new Error('Failed to get contact', error);
     }
 
-    return ContactRepository.toContact(data);
+    return ContactRepository.toContact(data, this.domain);
   }
 
   /**
@@ -54,7 +58,9 @@ export class ContactRepository {
       throw new Error('Failed to get contacts', error);
     }
 
-    return data.map(ContactRepository.toContact);
+    return data.map((contact) =>
+      ContactRepository.toContact(contact, this.domain),
+    );
   }
 
   /**
@@ -85,7 +91,7 @@ export class ContactRepository {
       throw new Error('Failed to create contact', error);
     }
 
-    return ContactRepository.toContact(data);
+    return ContactRepository.toContact(data, this.domain);
   }
 
   /**
@@ -146,16 +152,18 @@ export class ContactRepository {
   /**
    * Converts a database contact record to a Contact object
    */
-  static toContact(dbContact: BoardwalkDbContact): Contact {
+  static toContact(dbContact: BoardwalkDbContact, domain: string): Contact {
     return {
       id: dbContact.id,
       createdAt: dbContact.created_at,
       ownerId: dbContact.owner_id,
       username: dbContact.username ?? '',
+      lud16: `${dbContact.username}@${domain}`,
     };
   }
 }
 
 export function useContactRepository() {
-  return new ContactRepository(boardwalkDb);
+  const { domain } = useLocationData();
+  return new ContactRepository(boardwalkDb, domain);
 }

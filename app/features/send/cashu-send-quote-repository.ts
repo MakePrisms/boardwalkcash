@@ -115,19 +115,20 @@ export class CashuSendQuoteRepository {
       this.encryption.encrypt(proofsToSend),
       this.encryption.encrypt(proofsToKeep),
     ]);
+    const unit = getDefaultUnit(amountToSend.currency);
 
     const query = this.db.rpc('create_cashu_send_quote', {
       p_user_id: userId,
       p_account_id: accountId,
       p_currency: amountToSend.currency,
-      p_unit: getDefaultUnit(amountToSend.currency),
+      p_unit: unit,
       p_payment_request: paymentRequest,
       p_expires_at: expiresAt,
-      p_amount_requested: amountRequested.amount().toNumber(),
+      p_amount_requested: amountRequested.toNumber(unit),
       p_currency_requested: amountRequested.currency,
       p_amount_requested_in_msat: amountRequestedInMsat,
-      p_amount_to_send: amountToSend.amount().toNumber(),
-      p_fee_reserve: feeReserve.amount().toNumber(),
+      p_amount_to_send: amountToSend.toNumber(unit),
+      p_fee_reserve: feeReserve.toNumber(unit),
       p_quote_id: quoteId,
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
@@ -199,7 +200,9 @@ export class CashuSendQuoteRepository {
     const query = this.db.rpc('complete_cashu_send_quote', {
       p_quote_id: quoteId,
       p_payment_preimage: paymentPreimage,
-      p_amount_spent: amountSpent.amount().toNumber(),
+      p_amount_spent: amountSpent.toNumber(
+        getDefaultUnit(amountSpent.currency),
+      ),
       p_quote_version: quoteVersion,
       p_account_proofs: encryptedAccountProofs,
       p_account_version: accountVersion,
