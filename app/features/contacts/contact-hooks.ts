@@ -3,6 +3,7 @@ import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
+import useLocationData from '~/hooks/use-location';
 import { useLatest } from '~/lib/use-latest';
 import type { AgicashDbContact } from '../agicash-db/database';
 import { agicashDb } from '../agicash-db/database';
@@ -162,6 +163,7 @@ function useOnContactsChange({
 }) {
   const onCreatedRef = useLatest(onCreated);
   const onDeletedRef = useLatest(onDeleted);
+  const { domain } = useLocationData();
 
   useEffect(() => {
     const channel = agicashDb
@@ -174,9 +176,8 @@ function useOnContactsChange({
           table: 'contacts',
         },
         (payload: RealtimePostgresChangesPayload<AgicashDbContact>) => {
-          console.log('onContactsChange', payload);
           if (payload.eventType === 'INSERT') {
-            const newContact = ContactRepository.toContact(payload.new);
+            const newContact = ContactRepository.toContact(payload.new, domain);
             onCreatedRef.current(newContact);
           } else if (payload.eventType === 'DELETE') {
             if (!payload.old.id) return;
@@ -189,5 +190,5 @@ function useOnContactsChange({
     return () => {
       channel.unsubscribe();
     };
-  }, []);
+  }, [domain]);
 }
