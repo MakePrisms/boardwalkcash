@@ -10,6 +10,17 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
+type Cursor = {
+  createdAt: string;
+  id: string;
+} | null;
+
+type ListOptions = Options & {
+  userId: string;
+  cursor?: Cursor;
+  pageSize?: number;
+};
+
 export class TransactionRepository {
   constructor(private db: BoardwalkDb) {}
 
@@ -27,6 +38,51 @@ export class TransactionRepository {
     }
 
     return TransactionRepository.toTransaction(data);
+  }
+
+  async list({
+    userId,
+    cursor = null,
+    pageSize = 25,
+    abortSignal,
+  }: ListOptions) {
+    let query = this.db
+      .from('transactions')
+      .select()
+      .eq('user_id', userId)
+      .in('state', ['PENDING', 'COMPLETED'])
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(pageSize);
+
+    if (cursor) {
+      query = query.or(
+        `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+      );
+    }
+
+    if (abortSignal) {
+      query = query.abortSignal(abortSignal);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error('Failed to list transactions', { cause: error });
+    }
+
+    const transactions = data.map(TransactionRepository.toTransaction);
+    const lastTransaction = transactions[transactions.length - 1];
+
+    return {
+      transactions,
+      nextCursor: lastTransaction
+        ? {
+            createdAt: lastTransaction.createdAt,
+            id: lastTransaction.id,
+          }
+        : null,
+    };
   }
 
   static toTransaction(data: BoardwalkDbTransaction): Transaction {
