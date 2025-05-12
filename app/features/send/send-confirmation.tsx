@@ -4,9 +4,15 @@ import {
   decodePaymentRequest,
 } from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
+import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { MoneyDisplay } from '~/components/money-display';
+import { PageHeaderTitle } from '~/components/page';
+import { PageBackButton } from '~/components/page';
+import { PageHeader } from '~/components/page';
+import { Page } from '~/components/page';
+import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
@@ -17,12 +23,14 @@ import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { type Currency, Money } from '~/lib/money';
 import { getDefaultUnit } from '../shared/currencies';
+import { getErrorMessage } from '../shared/error';
 import {
   useCashuSendQuote,
   useCreateCashuSendQuote,
   useInitiateCashuSendQuote,
 } from './cashu-send-quote-hooks';
 import { useSendStore } from './send-provider';
+import { SuccessfulSendPage } from './succesful-send-page';
 
 const formatDestination = (destination: string) => {
   if (destination && destination.length > 20) {
@@ -39,6 +47,18 @@ const toMoney = (amount: number, currency: Currency): Money => {
   });
 };
 
+const ConfirmationRow = ({
+  label,
+  value,
+}: { label: string; value: string | React.ReactNode }) => {
+  return (
+    <div className="flex items-center justify-between">
+      <p className="text-muted-foreground">{label}</p>
+      <div>{value}</div>
+    </div>
+  );
+};
+
 /**
  * Base confirmation component that displays the amount, the confirmation rows, and a confirm button
  */
@@ -46,19 +66,52 @@ const BaseConfirmation = ({
   amount,
   onConfirm,
   children,
-}: { amount: Money; children: React.ReactNode; onConfirm: () => void }) => {
+  disabled,
+  isConfirming,
+  error,
+}: {
+  amount: Money;
+  children: React.ReactNode;
+  onConfirm: () => void;
+  disabled?: boolean;
+  isConfirming?: boolean;
+  error?: string;
+}) => {
   return (
-    <>
-      <MoneyWithConvertedAmount money={amount} />
-      <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
-        <Card className="m-4 w-full">
-          <CardContent className="flex flex-col gap-6">{children}</CardContent>
-        </Card>
-      </div>
-      <div className="z-10 mt-auto mb-28">
-        <Button onClick={onConfirm}>Confirm</Button>
-      </div>
-    </>
+    <Page>
+      <PageHeader className="z-10">
+        <PageBackButton to="/send" transition="slideDown" applyTo="oldView" />
+        <PageHeaderTitle>Confirm Payment</PageHeaderTitle>
+      </PageHeader>
+      <PageContent className="flex flex-col items-center gap-4">
+        <MoneyWithConvertedAmount money={amount} />
+        <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
+          <Card className="m-4 w-full">
+            <CardContent className="flex flex-col gap-6 pt-6">
+              {error ? (
+                <div className="flex flex-col items-center justify-center gap-2 p-4">
+                  <AlertCircle className="h-8 w-8 text-foreground" />
+                  <p className="text-center text-muted-foreground text-sm">
+                    {error}
+                  </p>
+                </div>
+              ) : (
+                children
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <div className="z-10 mt-auto mb-28">
+          <Button
+            onClick={onConfirm}
+            loading={isConfirming}
+            disabled={disabled || !!error}
+          >
+            Confirm
+          </Button>
+        </div>
+      </PageContent>
+    </Page>
   );
 };
 
@@ -69,6 +122,8 @@ type PayBolt11ConfirmationProps = {
   inputAmount: Money;
   /** The account to send from */
   account: CashuAccount;
+  /** The lud16 that was used to create the bolt11 invoice. This is only used to display the lud16 in the confirmation. */
+  lud16?: string | null;
 };
 
 /**
@@ -82,6 +137,7 @@ export const PayBolt11Confirmation = ({
   bolt11,
   inputAmount,
   account,
+  lud16,
 }: PayBolt11ConfirmationProps) => {
   const { description } = decodeBolt11(bolt11);
   const { toast } = useToast();
@@ -93,6 +149,7 @@ export const PayBolt11Confirmation = ({
 
   const {
     mutate: initiateSend,
+    status: initiateSendStatus,
     data: { id: sendQuoteId } = {},
   } = useInitiateCashuSendQuote({
     onError: (error) => {
@@ -103,7 +160,7 @@ export const PayBolt11Confirmation = ({
       });
     },
   });
-  const { status } = useCashuSendQuote({
+  const { quote } = useCashuSendQuote({
     sendQuoteId: sendQuoteId,
     onExpired: () => {
       toast({
@@ -138,25 +195,34 @@ export const PayBolt11Confirmation = ({
         ),
       },
       { label: 'From', value: account.name },
-      { label: 'Paying', value: formatDestination(bolt11) },
+      { label: 'Paying', value: formatDestination(lud16 ?? bolt11) },
     ],
-    [fee, account, bolt11],
+    [fee, account, bolt11, lud16],
   );
 
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-
-  if (!data) {
-    return <div>Loading...</div>;
-  }
-
-  if (status === 'PAID') {
-    return <div>Send successful</div>;
+  if (quote?.state === 'PAID') {
+    return (
+      <SuccessfulSendPage
+        amount={quote.amountToSend}
+        account={account}
+        destination={formatDestination(bolt11)}
+        feesPaid={quote.amountSpent.subtract(quote.amountToSend)}
+      />
+    );
   }
 
   return (
-    <BaseConfirmation amount={inputAmount} onConfirm={handleConfirm}>
+    <BaseConfirmation
+      amount={inputAmount}
+      onConfirm={handleConfirm}
+      isConfirming={
+        initiateSendStatus === 'pending' ||
+        quote?.state === 'UNPAID' ||
+        quote?.state === 'PENDING'
+      }
+      disabled={!data}
+      error={error ? getErrorMessage(error) : undefined}
+    >
       {confirmationRowData.map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
@@ -371,17 +437,5 @@ export const PayCashuRequestConfirmation = ({
         </p>
       )}
     </BaseConfirmation>
-  );
-};
-
-const ConfirmationRow = ({
-  label,
-  value,
-}: { label: string; value: string | React.ReactNode }) => {
-  return (
-    <div className="flex items-center justify-between">
-      <p className="text-muted-foreground">{label}</p>
-      <div>{value}</div>
-    </div>
   );
 };
