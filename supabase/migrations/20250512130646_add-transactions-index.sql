@@ -1,0 +1,1 @@
+create index idx_transactions_user_id_state_created_at_desc_id_desc on wallet.transactions using btree (user_id, state, created_at desc, id desc) where state in ('PENDING','COMPLETED');

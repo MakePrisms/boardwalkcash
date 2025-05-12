@@ -64,6 +64,9 @@ export default function Settings() {
           Appearance
         </SettingsNavButton>
         <SettingsNavButton to="/settings/contacts">Contacts</SettingsNavButton>
+        <SettingsNavButton to="/settings/transactions">
+          Transaction history
+        </SettingsNavButton>
 
         <Separator />
 
