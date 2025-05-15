@@ -38,6 +38,7 @@ export default function EditableUsername() {
     handleSubmit,
     watch,
     formState: { errors },
+    setValue,
   } = useForm<FormValues>({
     defaultValues: {
       username: user.username,
@@ -85,6 +86,11 @@ export default function EditableUsername() {
                 // biome-ignore lint/a11y/noAutofocus: the rule is for accessibility reasons, but for this case it makes sense to autofocus so that the user is editing as soon as they click the edit button
                 autoFocus
                 spellCheck="false"
+                autoCapitalize="none"
+                onChange={(e) => {
+                  const lowercaseValue = e.target.value.toLowerCase();
+                  setValue('username', lowercaseValue);
+                }}
               />
             </div>
             <button type="submit">

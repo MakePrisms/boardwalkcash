@@ -45,15 +45,15 @@ const defaultAccounts = [
   {
     type: 'cashu',
     currency: 'USD',
-    name: 'Default USD Account',
+    name: 'Voltz Mint',
     mintUrl: 'https://mint.lnvoltz.com/',
     isTestMint: false,
   },
   {
     type: 'cashu',
     currency: 'BTC',
-    name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
+    name: 'Minibits Mint',
+    mintUrl: 'https://mint.minibits.cash/Bitcoin',
     isTestMint: false,
   },
 ] as const;

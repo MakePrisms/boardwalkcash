@@ -17,6 +17,7 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from 'react-router';
+import agicashLoadingLogo from '~/assets/agicash-loading-logo.png';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -34,7 +35,6 @@ import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
-
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
   { rel: 'stylesheet', href: transitionStyles },
@@ -52,6 +52,8 @@ export const links: LinksFunction = () => [
     rel: 'stylesheet',
     href: 'https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400..700&family=Teko:wght@300..700&display=swap',
   },
+  // This logo is used for the loading screen and prefetched here to avoid a flash while loading
+  { rel: 'preload', href: agicashLoadingLogo, as: 'image' },
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
