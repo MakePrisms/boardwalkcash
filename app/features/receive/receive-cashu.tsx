@@ -16,6 +16,7 @@ import {
 } from '~/components/ui/carousel';
 import type { CashuAccount } from '~/features/accounts/account';
 import { useToast } from '~/hooks/use-toast';
+import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
@@ -31,7 +32,7 @@ type CashuRequestItemProps = {
 };
 
 function CashuRequestCarouselItem({ account, amount }: CashuRequestItemProps) {
-  const cashuUnit = account.currency === 'USD' ? 'usd' : 'sat';
+  const cashuUnit = getCashuProtocolUnit(account.currency);
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
   // TODO: this should come from some hook that does a similar thing to the mint quote hook
