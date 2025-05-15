@@ -244,6 +244,100 @@ export type Database = {
           },
         ]
       }
+      cashu_send_swaps: {
+        Row: {
+          account_id: string
+          amount_requested: number
+          amount_to_send: number
+          created_at: string
+          currency: string
+          id: string
+          input_amount: number
+          input_proofs: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          mint_url: string
+          output_data: string | null
+          proofs_to_send: string | null
+          receive_swap_fee: number
+          send_swap_fee: number
+          state: string
+          token_hash: string | null
+          transaction_id: string
+          unit: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          account_id: string
+          amount_requested: number
+          amount_to_send: number
+          created_at?: string
+          currency: string
+          id?: string
+          input_amount: number
+          input_proofs: string
+          keyset_counter?: number | null
+          keyset_id?: string | null
+          mint_url: string
+          output_data?: string | null
+          proofs_to_send?: string | null
+          receive_swap_fee: number
+          send_swap_fee: number
+          state: string
+          token_hash?: string | null
+          transaction_id: string
+          unit: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          account_id?: string
+          amount_requested?: number
+          amount_to_send?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          input_amount?: number
+          input_proofs?: string
+          keyset_counter?: number | null
+          keyset_id?: string | null
+          mint_url?: string
+          output_data?: string | null
+          proofs_to_send?: string | null
+          receive_swap_fee?: number
+          send_swap_fee?: number
+          state?: string
+          token_hash?: string | null
+          transaction_id?: string
+          unit?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashu_send_swaps_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_send_swaps_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_send_swaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cashu_token_swaps: {
         Row: {
           account_id: string
@@ -526,6 +620,39 @@ export type Database = {
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
+      complete_cashu_send_swap: {
+        Args: {
+          p_swap_id: string
+          p_swap_version: number
+          p_account_version: number
+          p_proofs_to_send: string
+          p_account_proofs: Json
+          p_token_hash: string
+        }
+        Returns: {
+          account_id: string
+          amount_requested: number
+          amount_to_send: number
+          created_at: string
+          currency: string
+          id: string
+          input_amount: number
+          input_proofs: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          mint_url: string
+          output_data: string | null
+          proofs_to_send: string | null
+          receive_swap_fee: number
+          send_swap_fee: number
+          state: string
+          token_hash: string | null
+          transaction_id: string
+          unit: string
+          user_id: string
+          version: number
+        }
+      }
       complete_cashu_token_swap: {
         Args: {
           p_token_hash: string
@@ -596,6 +723,53 @@ export type Database = {
           p_proofs_to_keep: string
         }
         Returns: Database["wallet"]["CompositeTypes"]["create_cashu_send_quote_result"]
+      }
+      create_cashu_send_swap: {
+        Args: {
+          p_user_id: string
+          p_account_id: string
+          p_amount_requested: number
+          p_amount_to_send: number
+          p_input_proofs: string
+          p_account_proofs: string
+          p_currency: string
+          p_mint_url: string
+          p_unit: string
+          p_state: string
+          p_account_version: number
+          p_input_amount: number
+          p_send_swap_fee: number
+          p_receive_swap_fee: number
+          p_keyset_id?: string
+          p_keyset_counter?: number
+          p_updated_keyset_counter?: number
+          p_token_hash?: string
+          p_output_data?: string
+          p_proofs_to_send?: string
+        }
+        Returns: {
+          account_id: string
+          amount_requested: number
+          amount_to_send: number
+          created_at: string
+          currency: string
+          id: string
+          input_amount: number
+          input_proofs: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          mint_url: string
+          output_data: string | null
+          proofs_to_send: string | null
+          receive_swap_fee: number
+          send_swap_fee: number
+          state: string
+          token_hash: string | null
+          transaction_id: string
+          unit: string
+          user_id: string
+          version: number
+        }
       }
       create_cashu_token_swap: {
         Args: {
@@ -692,6 +866,32 @@ export type Database = {
           username: string
           id: string
         }[]
+      }
+      mark_cashu_send_swap_completed: {
+        Args: { p_swap_id: string; p_swap_version: number }
+        Returns: {
+          account_id: string
+          amount_requested: number
+          amount_to_send: number
+          created_at: string
+          currency: string
+          id: string
+          input_amount: number
+          input_proofs: string
+          keyset_counter: number | null
+          keyset_id: string | null
+          mint_url: string
+          output_data: string | null
+          proofs_to_send: string | null
+          receive_swap_fee: number
+          send_swap_fee: number
+          state: string
+          token_hash: string | null
+          transaction_id: string
+          unit: string
+          user_id: string
+          version: number
+        }
       }
       process_cashu_receive_quote_payment: {
         Args: {

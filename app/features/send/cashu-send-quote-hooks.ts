@@ -499,8 +499,11 @@ export function useTrackUnresolvedCashuSendQuotes() {
           .catch((error) => {
             if (
               error instanceof MintOperationError &&
-              error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED
+              (error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED ||
+                // TODO: we are getting this error because of this issue  https://github.com/MakePrisms/boardwalkcash/issues/371
+                error.message.includes('not enough inputs provided for melt'))
             ) {
+              //TODO: this gets called and concurrency error on the account update happens, I think when there are multiple quotes from same account to fail
               return cashuSendService.failSendQuote(
                 account,
                 send,

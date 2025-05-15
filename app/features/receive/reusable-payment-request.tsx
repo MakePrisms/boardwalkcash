@@ -9,6 +9,7 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { Account } from '../accounts/account';
 
@@ -51,7 +52,7 @@ export default function ReusablePaymentRequest({
   let paymentRequest: string;
   if (account.type === 'cashu') {
     paymentRequest = getCashuRequest(account, {
-      unit: account.currency === 'USD' ? 'usd' : 'sat',
+      unit: getCashuProtocolUnit(account.currency),
       description: 'test',
     }).toEncodedRequest();
   } else {

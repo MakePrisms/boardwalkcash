@@ -3,6 +3,8 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { CashuSendSwap } from '../send/cashu-send-swap';
+import type { SerializedOutputData } from '../send/cashu-send-swap-repository';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
@@ -108,6 +110,15 @@ export type Database = MergeDeep<
             currency_requested?: Currency;
           };
         };
+        cashu_send_swaps: {
+          Row: {
+            keep_output_data: SerializedOutputData[];
+            send_output_data: SerializedOutputData[];
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+        };
         transactions: {
           Row: {
             currency: Currency;
@@ -144,6 +155,15 @@ export type Database = MergeDeep<
         };
         fail_cashu_send_quote: {
           Returns: UpdateCashuSendQuoteResult;
+        };
+        create_cashu_send_swap: {
+          Returns: BoardwalkDbCashuSendSwap;
+        };
+        complete_cashu_send_swap: {
+          Returns: BoardwalkDbCashuSendSwap;
+        };
+        mark_cashu_send_swap_completed: {
+          Returns: BoardwalkDbCashuSendSwap;
         };
       };
       CompositeTypes: {
@@ -185,3 +205,5 @@ export type BoardwalkDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
 export type BoardwalkDbContact =
   Database['wallet']['Tables']['contacts']['Row'];
+export type BoardwalkDbCashuSendSwap =
+  Database['wallet']['Tables']['cashu_send_swaps']['Row'];
