@@ -44,15 +44,29 @@ export const useUser = <TData = User>(
 const defaultAccounts = [
   {
     type: 'cashu',
+    currency: 'BTC',
+    name: 'Testnut ₿',
+    mintUrl: 'https://testnut.cashu.space',
+    isTestMint: true,
+  },
+  {
+    type: 'cashu',
     currency: 'USD',
-    name: 'Default USD Account',
+    name: '$ Testnut',
+    mintUrl: 'https://testnut.cashu.space',
+    isTestMint: true,
+  },
+  {
+    type: 'cashu',
+    currency: 'USD',
+    name: '$ LNVOLTZ',
     mintUrl: 'https://mint.lnvoltz.com/',
     isTestMint: false,
   },
   {
     type: 'cashu',
     currency: 'BTC',
-    name: 'Default BTC Account',
+    name: 'LNVOLTZ ₿',
     mintUrl: 'https://mint.lnvoltz.com/',
     isTestMint: false,
   },
