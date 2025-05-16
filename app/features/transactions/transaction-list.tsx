@@ -147,6 +147,7 @@ function useFilteredTransactions(transactions: Transaction[]) {
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
+
   const pendingTransactions = transactions.filter((t) => t.state === 'PENDING');
   const todayTransactions = transactions.filter(
     (t) =>
@@ -215,7 +216,9 @@ export function TransactionList() {
     todayTransactions,
     thisWeekTransactions,
     olderTransactions,
-  } = useFilteredTransactions(allTransactions);
+  } = useFilteredTransactions(
+    allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  );
 
   return (
     <div>
