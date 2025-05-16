@@ -41,6 +41,7 @@ import {
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
 import { useCashuReceiveQuoteService } from './cashu-receive-quote-service';
+import { useToast } from '~/hooks/use-toast';
 
 type CreateProps = {
   account: CashuAccount;
@@ -343,6 +344,8 @@ const useTrackMintQuotesWithPolling = ({
   getCashuAccount,
   onFetched,
 }: TrackMintQuotesWithPollingProps) => {
+  const { toast } = useToast();
+
   useQueries({
     queries: quotes.map((quote) => ({
       queryKey: ['mint-quote', quote.quoteId],
@@ -368,6 +371,11 @@ const useTrackMintQuotesWithPolling = ({
           error instanceof HttpResponseError && error.status === 429;
 
         if (isRateLimitError) {
+          toast({
+            title: 'Rate limit exceeded',
+            description: 'Close the app for a while and try again',
+            variant: 'destructive',
+          });
           return 60 * 1000;
         }
 
