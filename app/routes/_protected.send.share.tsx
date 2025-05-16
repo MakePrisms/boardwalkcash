@@ -9,7 +9,7 @@ import { useSendStore } from '~/features/send';
 import { ShareCashuToken } from '~/features/send/share-cashu-token';
 
 export default function SendShare() {
-  const token = useSendStore((state) => state.token);
+  const token = useSendStore((state) => state.cashuToken);
   const amount = useSendStore((state) => state.amount);
 
   if (!amount || !token) {

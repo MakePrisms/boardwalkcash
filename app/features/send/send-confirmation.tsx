@@ -17,11 +17,10 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
-import type { PaymentRequest } from '~/features/send/send-store';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
-import { type Currency, Money } from '~/lib/money';
+import { Money } from '~/lib/money';
 import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
 import {
@@ -37,14 +36,6 @@ const formatDestination = (destination: string) => {
     return `${destination.slice(0, 5)}...${destination.slice(-5)}`;
   }
   return destination;
-};
-
-const toMoney = (amount: number, currency: Currency): Money => {
-  return new Money({
-    amount,
-    currency,
-    unit: getDefaultUnit(currency),
-  });
 };
 
 const ConfirmationRow = ({
@@ -122,8 +113,8 @@ type PayBolt11ConfirmationProps = {
   inputAmount: Money;
   /** The account to send from */
   account: CashuAccount;
-  /** The lud16 that was used to create the bolt11 invoice. This is only used to display the lud16 in the confirmation. */
-  lud16?: string | null;
+  /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
+  displayDestination: string;
 };
 
 /**
@@ -137,15 +128,13 @@ export const PayBolt11Confirmation = ({
   bolt11,
   inputAmount,
   account,
-  lud16,
+  displayDestination,
 }: PayBolt11ConfirmationProps) => {
   const { description } = decodeBolt11(bolt11);
   const { toast } = useToast();
 
   const { mutate: createSendQuote, data, error } = useCreateCashuSendQuote();
-  const fee = data
-    ? toMoney(data.meltQuote.fee_reserve, account.currency)
-    : undefined;
+  const fee = data?.feeReserve;
 
   const {
     mutate: initiateSend,
@@ -160,6 +149,7 @@ export const PayBolt11Confirmation = ({
       });
     },
   });
+
   const { quote } = useCashuSendQuote({
     sendQuoteId: sendQuoteId,
     onExpired: () => {
@@ -195,9 +185,9 @@ export const PayBolt11Confirmation = ({
         ),
       },
       { label: 'From', value: account.name },
-      { label: 'Paying', value: formatDestination(lud16 ?? bolt11) },
+      { label: 'Paying', value: formatDestination(displayDestination) },
     ],
-    [fee, account, bolt11, lud16],
+    [fee, account, displayDestination],
   );
 
   if (quote?.state === 'PAID') {
@@ -213,7 +203,7 @@ export const PayBolt11Confirmation = ({
 
   return (
     <BaseConfirmation
-      amount={inputAmount}
+      amount={data?.totalAmountToSend ?? inputAmount}
       onConfirm={handleConfirm}
       isConfirming={
         initiateSendStatus === 'pending' ||
@@ -260,11 +250,11 @@ export const CreateCashuTokenConfirmation = ({
   // here we are sending a token, so we may need to swap to create the token
   // swapping will incur fees
   const fee = Money.zero(amount.currency);
-  const setToken = useSendStore((state) => state.setToken);
+  const setCashuToken = useSendStore((state) => state.setCashuToken);
   const navigate = useNavigate();
 
   const handleConfirm = async () => {
-    setToken({
+    setCashuToken({
       mint: account.mintUrl,
       proofs: [], // TODO
       unit: getDefaultUnit(amount.currency),
@@ -343,10 +333,10 @@ export const PayCashuRequestConfirmation = ({
   account,
 }: {
   amount: Money;
-  paymentRequest: PaymentRequest & { type: 'cashu' };
+  paymentRequest: string;
   account: CashuAccount;
 }) => {
-  const decoded = decodePaymentRequest(paymentRequest.raw);
+  const decoded = decodePaymentRequest(paymentRequest);
   decoded.description =
     decoded.description ?? 'This is a test to make sure the UI looks good';
 
@@ -420,7 +410,7 @@ export const PayCashuRequestConfirmation = ({
           sendToMintUrl.replace('https://', '').replace('http://', ''),
         ),
       },
-      { label: 'Paying', value: formatDestination(paymentRequest.raw) },
+      { label: 'Paying', value: formatDestination(paymentRequest) },
     ],
     [data, account, sendToMintUrl, paymentRequest],
   );

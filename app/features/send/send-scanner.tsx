@@ -37,15 +37,15 @@ export default function SendScanner() {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
 
-  const setPaymentRequest = useSendStore((state) => state.setPaymentRequest);
-  const setSendAmount = useSendStore((state) => state.setAmount);
+  const selectDestination = useSendStore((state) => state.selectDestination);
+  const confirm = useSendStore((state) => state.confirm);
   const sendAccount = useSendStore((state) => state.account);
 
   const convert = useConverter(sendAccount);
 
-  const handleDecode = (input: string) => {
-    const result = setPaymentRequest(input);
-    if (!result.valid) {
+  const handleDecode = async (input: string) => {
+    const result = await selectDestination(input);
+    if (!result.success) {
       const { error } = result;
       // TODO: implement this https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2024690976
       return toast({
@@ -55,7 +55,7 @@ export default function SendScanner() {
       });
     }
 
-    const { amount } = result;
+    const { amount } = result.data;
 
     if (!amount) {
       // we enforce bolt11s to have an amount, but cashu requests don't need an amount
@@ -70,7 +70,7 @@ export default function SendScanner() {
 
     // TODO: do we need this conversion? See this discussion https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2049445764
     const sendAmount = convert(amount);
-    setSendAmount(sendAmount);
+    await confirm(amount, sendAmount);
 
     return navigate('/send/confirm', {
       applyTo: 'newView',

@@ -45,7 +45,7 @@ export const decodeBolt11 = (invoice: string): DecodedBolt11 => {
  * Checks if a string is a valid BOLT11 invoice
  * @param invoice invoice to check
  */
-export const validateBolt11Invoice = (
+export const parseBolt11Invoice = (
   invoice: string,
 ): { valid: true; decoded: DecodedBolt11 } | { valid: false } => {
   try {

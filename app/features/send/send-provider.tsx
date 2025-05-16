@@ -6,8 +6,8 @@ import {
 } from 'react';
 import { useStore } from 'zustand';
 import type { Account } from '~/features/accounts/account';
-import type { SendState, SendStore } from './send-store';
-import { createSendStore } from './send-store';
+import { type SendState, type SendStore, createSendStore } from './send-store';
+import { useGetInvoiceFromLud16 } from './use-get-invoice-from-lud16';
 
 const SendContext = createContext<SendStore | null>(null);
 
@@ -17,10 +17,12 @@ type Props = PropsWithChildren<{
 }>;
 
 export const SendProvider = ({ children, initialAccount }: Props) => {
+  const { mutateAsync: getInvoiceFromLud16 } = useGetInvoiceFromLud16();
+
   const [store] = useState(() =>
     createSendStore({
       initialAccount,
-      initialAmount: null,
+      getInvoiceFromLud16,
     }),
   );
 
