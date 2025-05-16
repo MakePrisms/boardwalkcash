@@ -1,10 +1,5 @@
 import { Edit, QrCode, Share } from 'lucide-react';
-import {
-  ClosePageButton,
-  PageContent,
-  PageFooter,
-  PageHeader,
-} from '~/components/page';
+import { ClosePageButton, PageContent, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
@@ -69,12 +64,6 @@ export default function Settings() {
 
         <Button onClick={signOut}>Sign Out</Button>
       </PageContent>
-
-      <PageFooter>
-        <div className="text-sidebar-foreground/70 text-xs">
-          Insert terms and conditions here
-        </div>
-      </PageFooter>
     </>
   );
 }

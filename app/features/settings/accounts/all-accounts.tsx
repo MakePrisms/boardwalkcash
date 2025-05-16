@@ -1,39 +1,45 @@
 import { Plus } from 'lucide-react';
-import { MoneyDisplay } from '~/components/money-display';
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { getAccountBalance } from '~/features/accounts/account';
+import { AccountBalance } from '~/features/accounts/account-balance';
 import { useAccounts } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { getDefaultUnit } from '~/features/shared/currencies';
 import { useUser } from '~/features/user/user-hooks';
 import type { Currency } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
 function CurrencyAccounts({ currency }: { currency: Currency }) {
   const { data: accounts } = useAccounts({ currency });
-  const unit = getDefaultUnit(currency);
+  
+  // Sort accounts to show default accounts first
+  const sortedAccounts = [...accounts].sort((a, b) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return 0;
+  });
 
   return (
     <div className="space-y-3">
-      {accounts.map((account) => (
+      {sortedAccounts.map((account) => (
         <LinkWithViewTransition
           key={account.id}
           to={`/settings/accounts/${account.id}`}
           transition="slideLeft"
           applyTo="newView"
-          className="block"
+          className='relative block'
         >
-          <Card className="flex items-center justify-between p-2 px-4 transition-colors hover:bg-muted/50">
-            <h3 className="font-medium">{account.name}</h3>
-            <MoneyDisplay
-              money={getAccountBalance(account)}
-              unit={unit}
-              variant="secondary"
-            />
+          <Card className='flex items-center justify-between p-2 px-4 pr-8 transition-colors hover:bg-muted/50'>
+            {account.isDefault && (
+              <RadioGroup value={account.id} className='absolute top-3 right-2 z-10'>
+                <RadioGroupItem value={account.id} />
+              </RadioGroup>
+            )}
+            <h3>{account.name}</h3>
+            <AccountBalance account={account} />
           </Card>
         </LinkWithViewTransition>
       ))}

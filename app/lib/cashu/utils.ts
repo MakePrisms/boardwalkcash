@@ -28,8 +28,19 @@ const cashuProtocolUnitToCurrency: {
   usd: 'USD',
 };
 
+const currencyToCashuProtocolUnit: {
+  [K in Currency]: keyof typeof cashuProtocolUnitToCurrency;
+} = {
+  BTC: 'sat',
+  USD: 'usd',
+};
+
 export const getCashuUnit = (currency: Currency) => {
   return currencyToUnit[currency];
+};
+
+export const getCashuProtocolUnit = (currency: Currency) => {
+  return currencyToCashuProtocolUnit[currency];
 };
 
 export const getWalletCurrency = (wallet: CashuWallet) => {

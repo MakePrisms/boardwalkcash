@@ -168,8 +168,8 @@ export const loader = ({ request }: Route.LoaderArgs) => {
 
   const manifest: WebAppManifest = {
     id: '/',
-    short_name: 'Boardwalk',
-    name: 'Boardwalk',
+    short_name: 'Agicash',
+    name: 'Agicash',
     description: 'The easiest way to send and receive bitcoin.',
     start_url: '/',
     scope: '/',

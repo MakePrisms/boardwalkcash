@@ -5,6 +5,7 @@ import { type DecodedBolt11, validateBolt11Invoice } from '~/lib/bolt11';
 import { isCashuPaymentRequest } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
+import type { Contact } from '../contacts/contact';
 
 type PaymentRequestUnit = 'sat' | 'cent';
 
@@ -109,6 +110,16 @@ export type SendState<T extends Currency = Currency> = {
   paymentRequest: PaymentRequest | null;
   /** The token being sent */
   token: Token | null;
+  /** The contact to pay */
+  contact: Contact | null;
+  /** The lud16 to pay */
+  lud16: string | null;
+  /** The destination to display in the UI */
+  destination: null | string;
+  /** Set the contact to pay */
+  setContact: (contact: Contact) => void;
+  /** Set the lud16 to pay */
+  setLud16: (lud16: string) => void;
   /** Set the token being sent */
   setToken: (token: Token | null) => void;
   /** Set the account to send funds from */
@@ -121,7 +132,7 @@ export type SendState<T extends Currency = Currency> = {
    */
   setPaymentRequest: (raw: string) => ValidateResult;
   /** Clear the payment request */
-  clearPaymentRequest: () => void;
+  clearDestinations: () => void;
 };
 
 export const createSendStore = ({
@@ -136,6 +147,12 @@ export const createSendStore = ({
     amount: initialAmount,
     paymentRequest: null,
     token: null,
+    lud16: null,
+    contact: null,
+    destination: null,
+    setContact: (contact) =>
+      set({ contact, lud16: contact.lud16, destination: contact.username }),
+    setLud16: (lud16) => set({ lud16, destination: lud16 }),
     setAccount: (account) => set({ account, amount: null }),
     setAmount: (amount) => {
       const { account } = get();
@@ -154,7 +171,12 @@ export const createSendStore = ({
         if (!result.valid) {
           return result;
         }
-        set({ paymentRequest: { type: 'bolt11', raw, unit: result.unit } });
+        const destination =
+          get().destination ?? `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+        set({
+          paymentRequest: { type: 'bolt11', raw, unit: result.unit },
+          destination,
+        });
         return result;
       }
 
@@ -163,7 +185,12 @@ export const createSendStore = ({
         if (!result.valid) {
           return result;
         }
-        set({ paymentRequest: { type: 'cashu', raw, unit: result.unit } });
+        const destination =
+          get().destination ?? `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+        set({
+          paymentRequest: { type: 'cashu', raw, unit: result.unit },
+          destination,
+        });
         return result;
       }
 
@@ -173,7 +200,13 @@ export const createSendStore = ({
           'Only Lightning invoices and Cashu payment requests are supported',
       };
     },
-    clearPaymentRequest: () => set({ paymentRequest: null }),
+    clearDestinations: () =>
+      set({
+        contact: null,
+        lud16: null,
+        destination: null,
+        paymentRequest: null,
+      }),
   }));
 };
 

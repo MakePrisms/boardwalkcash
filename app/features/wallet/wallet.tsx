@@ -2,10 +2,11 @@ import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
 import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
-import { LoadingScreen } from '../loading/LoadingScreen';
+import { AppLoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
+import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -52,6 +53,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
   useTrackPendingCashuReceiveQuotes();
   useTrackPendingCashuTokenSwaps();
   useTrackUnresolvedCashuSendQuotes();
+  useTrackUnresolvedCashuSendSwaps();
 
   return children;
 };
@@ -78,11 +80,11 @@ export const WalletSetup = ({ authUser, children }: Props) => {
   const setupCompleted = useSetupWallet(authUser);
 
   if (!setupCompleted) {
-    return <LoadingScreen />;
+    return <AppLoadingScreen />;
   }
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<AppLoadingScreen />}>
       <Wallet>{children}</Wallet>
     </Suspense>
   );

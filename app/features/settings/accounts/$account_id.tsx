@@ -1,5 +1,11 @@
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from '~/components/ui/card';
+import { Badge } from '~/components/ui/badge';
 import type {
   Account,
   ExtendedCashuAccount,
@@ -9,6 +15,7 @@ import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header'
 import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { Money } from '~/lib/money';
+import { AccountBalance } from '~/features/accounts/account-balance';
 
 function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
   const { toast } = useToast();
@@ -25,23 +32,35 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
       });
     }
   };
-
   return (
-    <div>
-      <p>Account type: {account.type}</p>
-      <p>Currency: {account.currency}</p>
-      <p>Mint URL: {account.mintUrl}</p>
-      <p>
-        {/* TODO: see about balance */}
-        Balance:{' '}
-        {new Money({ amount: 0, currency: account.currency }).toLocaleString()}
-      </p>
-      {account.isDefault ? (
-        <p>Default account</p>
-      ) : (
-        <Button onClick={makeDefault}>Make default</Button>
+    <Card className="w-full">
+      <CardContent className="space-y-3">
+        <div className='flex items-center justify-between'>
+          <span className='text-muted-foreground text-sm'>Account type</span>
+          <div className='flex items-center gap-2'>
+            <Badge variant="outline">{account.type}</Badge>
+            {account.isDefault && <Badge variant="outline">Default</Badge>}
+          </div>
+        </div>
+        <div className='flex items-center justify-between'>
+          <span className='text-muted-foreground text-sm'>Currency</span>
+          <span>{account.currency}</span>
+        </div>
+        <div className='flex items-center justify-between'>
+          <span className='text-muted-foreground text-sm'>Mint URL</span>
+          <span className='max-w-[60%] truncate text-right text-sm'>{account.mintUrl.replace('https://', '').replace('http://', '')}</span>
+        </div>
+        <div className='flex items-center justify-between pt-2'>
+          <span className='text-muted-foreground text-sm'>Balance</span>
+          <AccountBalance account={account} />
+        </div>
+      </CardContent>
+      {!account.isDefault && (
+        <CardFooter className="justify-end">
+          <Button onClick={makeDefault}>Make default</Button>
+        </CardFooter>
       )}
-    </div>
+    </Card>
   );
 }
 

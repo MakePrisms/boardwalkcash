@@ -403,7 +403,12 @@ export function AddMintForm() {
         </p>
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="self-end">
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="self-end"
+        loading={isSubmitting}
+      >
         Add
       </Button>
     </form>

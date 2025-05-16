@@ -8,8 +8,8 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '~/components/ui/drawer';
-import { getDefaultUnit } from '../shared/currencies';
-import { type Account, getAccountBalance } from './account';
+import type { Account } from './account';
+import { AccountBalance } from './account-balance';
 import { AccountTypeIcon } from './account-icons';
 
 export type AccountWithBadges<T extends Account = Account> = T & {
@@ -18,16 +18,13 @@ export type AccountWithBadges<T extends Account = Account> = T & {
 };
 
 function AccountItem({ account }: { account: AccountWithBadges }) {
-  const balance = getAccountBalance(account);
   return (
     <div className="flex w-full items-center gap-4 px-3 py-4">
       <AccountTypeIcon type={account.type} />
       <div className="flex w-full flex-col justify-between gap-2 text-start">
         <span className="font-medium">{account.name}</span>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {balance.toLocaleString({ unit: getDefaultUnit(account.currency) })}
-          </span>
+          <AccountBalance account={account} />
           {account.badges && (
             <div className="flex gap-2">
               {account.badges.map((badge) => (

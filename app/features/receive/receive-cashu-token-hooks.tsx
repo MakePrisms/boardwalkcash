@@ -48,7 +48,9 @@ export function useCashuTokenSourceAccount(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
   const { data: allAccounts } = useAccounts({ type: 'cashu' });
   const existingAccount = allAccounts.find(
-    (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
+    (a) =>
+      a.mintUrl.replace(/\/$/, '') === token.mint.replace(/\/$/, '') &&
+      a.currency === tokenCurrency,
   );
 
   const { data } = useSuspenseQuery({
@@ -155,13 +157,21 @@ const getBadges = (
   if (sourceAccount.isTestMint) {
     badges.push('Test Mint');
   }
-  if (account.mintUrl === sourceAccount.mintUrl) {
+  if (
+    account.mintUrl.replace(/\/$/, '') ===
+    sourceAccount.mintUrl.replace(/\/$/, '')
+  ) {
     badges.push('Source');
   }
   if (defaultAccount.type === 'cashu' && account.id === defaultAccount.id) {
     badges.push('Default');
   }
-  if (!allAccounts.some((a) => a.mintUrl === account.mintUrl)) {
+  if (
+    !allAccounts.some(
+      (a) =>
+        a.mintUrl.replace(/\/$/, '') === account.mintUrl.replace(/\/$/, ''),
+    )
+  ) {
     badges.push('Unknown');
   }
 
@@ -180,7 +190,9 @@ const getSelectableAccounts = (
         sourceAccount,
         ...accounts.filter(
           (account) =>
-            !account.isTestMint && account.mintUrl !== sourceAccount.mintUrl,
+            !account.isTestMint &&
+            account.mintUrl.replace(/\/$/, '') !==
+              sourceAccount.mintUrl.replace(/\/$/, ''),
         ),
       ];
 
