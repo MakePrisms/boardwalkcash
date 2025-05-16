@@ -34,9 +34,7 @@ import { AddContactDrawer, ContactsList } from '../contacts';
 import type { Contact } from '../contacts/contact';
 import { useContacts } from '../contacts/contact-hooks';
 import { getDefaultUnit } from '../shared/currencies';
-import { getErrorMessage } from '../shared/error';
 import { useSendStore } from './send-provider';
-import { useGetInvoiceFromLud16 } from './use-get-invoice-from-lud16';
 
 type ConvertedMoneySwitcherProps = {
   onSwitchInputCurrency: () => void;
@@ -75,20 +73,16 @@ export function SendInput() {
   const { animationClass: shakeAnimationClass, start: startShakeAnimation } =
     useAnimation({ name: 'shake' });
   const { data: accounts } = useAccounts();
-  const { mutateAsync: getInvoiceFromLud16 } = useGetInvoiceFromLud16();
-  const [isContinuing, setIsContinuing] = useState(false);
 
   const sendAmount = useSendStore((s) => s.amount);
   const sendAccount = useSendStore((s) => s.account);
+  const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
   const sendCurrencyUnit = getDefaultUnit(sendAccount.currency);
-  const lud16 = useSendStore((s) => s.lud16);
-  const destination = useSendStore((s) => s.destination);
-  const setSendAmount = useSendStore((s) => s.setAmount);
-  const setSendAccount = useSendStore((s) => s.setAccount);
-  const setPaymentRequest = useSendStore((s) => s.setPaymentRequest);
-  const setLud16 = useSendStore((s) => s.setLud16);
-  const setContact = useSendStore((s) => s.setContact);
-  const clearDestinations = useSendStore((s) => s.clearDestinations);
+  const displayDestination = useSendStore((s) => s.displayDestination);
+  const selectDestination = useSendStore((s) => s.selectDestination);
+  const clearDestination = useSendStore((s) => s.clearDestination);
+  const confirm = useSendStore((s) => s.confirm);
+  const status = useSendStore((s) => s.status);
 
   const {
     rawInputValue,
@@ -99,55 +93,31 @@ export function SendInput() {
     handleNumberInput,
     switchInputCurrency,
     setInputValue,
-    getInputValue,
   } = useMoneyInput({
     initialRawInputValue: sendAmount?.toString(sendCurrencyUnit) || '0',
     initialInputCurrency: sendAccount.currency,
     initialOtherCurrency: sendAccount.currency === 'BTC' ? 'USD' : 'BTC',
   });
 
-  const handleContinue = async () => {
-    setIsContinuing(true);
-    if (inputValue.currency === sendAccount.currency) {
-      setSendAmount(inputValue);
-    } else {
-      if (!convertedValue) {
-        // Can't happen because when there is no converted value, the toggle will not be shown so input currency and receive currency must be the same
-        return;
-      }
-      setSendAmount(convertedValue);
-    }
-
-    if (lud16) {
-      const bitcoinInputValue = getInputValue('BTC');
-
-      try {
-        const bolt11 = await getInvoiceFromLud16({
-          lud16,
-          amount: bitcoinInputValue,
-        });
-        setPaymentRequest(bolt11);
-      } catch (error) {
-        toast({
-          title: 'Error getting invoice from Lightning Address',
-          description: getErrorMessage(error),
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    setIsContinuing(false);
-
-    if (sendAccount.type === 'cashu') {
-      return navigate('/send/confirm', {
-        applyTo: 'newView',
-        transition: 'slideUp',
+  const handleContinue = async (inputValue: Money, convertedValue: Money) => {
+    if (sendAccount.type !== 'cashu') {
+      toast({
+        title: 'Not implemented',
+        description: 'Only sends from the cashu accounts are supported',
+        variant: 'destructive',
       });
+      return;
     }
-    toast({
-      title: 'Not implemented',
-      variant: 'destructive',
+
+    if (inputValue.isZero()) {
+      return;
+    }
+
+    await confirm(inputValue, convertedValue);
+
+    return navigate('/send/confirm', {
+      applyTo: 'newView',
+      transition: 'slideUp',
     });
   };
 
@@ -158,58 +128,33 @@ export function SendInput() {
       return;
     }
 
-    if (await isValidLightningAddress(input)) {
-      setLud16(input);
-      return;
-    }
+    const result = await selectDestination(input);
 
-    const result = setPaymentRequest(input);
-    if (!result.valid) {
-      const { error } = result;
+    if (!result.success) {
       return toast({
         title: 'Invalid input',
-        description: error,
+        description: result.error,
         variant: 'destructive',
       });
     }
 
-    const { amount, unit, currency } = result;
+    const {
+      data: { amount },
+    } = result;
 
-    if (!amount && inputValue.isZero()) {
-      // we enforce bolt11s to have an amount, but cashu requests don't need an amount
-      // if the setPaymentRequest validation passes, that means the user just needs
-      // to enter an amount then click continue. In the future bolt11s can be amountless
-      // in cashu and other account types can handle amountless bolt11s
-      return;
-    }
     if (amount) {
-      // NOTE: I had to make this return these value so that we could set the sendAmount
-      // in this same function.The goal here is:
-      // 1. to update the input value displayed to the user
-      // 2. to handle conversion logic if the payment request is in a different currency than the send account
+      const defaultUnit = getDefaultUnit(amount.currency);
       const { newInputValue, newConvertedValue } = setInputValue(
-        amount.toString(unit),
-        currency,
+        amount.toString(defaultUnit),
+        amount.currency,
       );
 
-      if (currency === sendAccount.currency) {
-        setSendAmount(newInputValue);
-      } else {
-        if (!newConvertedValue) {
-          // this shouldn't happen as long as exchange rate is loaded
-          return;
-        }
-        setSendAmount(newConvertedValue);
-      }
-
-      return navigate('/send/confirm', {
-        applyTo: 'newView',
-        transition: 'slideUp',
-      });
+      // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
+      return handleContinue(newInputValue, newConvertedValue!);
     }
 
-    // no amount, but input value not zero so we can continue after setting the payment request
-    return handleContinue();
+    // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
+    return handleContinue(inputValue, convertedValue!);
   };
 
   return (
@@ -238,11 +183,11 @@ export function SendInput() {
         </div>
 
         <div className="flex h-[24px] items-center justify-center gap-4">
-          {destination && (
+          {displayDestination && (
             <>
-              <p>{destination}</p>
+              <p>{displayDestination}</p>
               <X
-                onClick={clearDestinations}
+                onClick={clearDestination}
                 className="h-4 w-4 cursor-pointer"
               />
             </>
@@ -254,7 +199,7 @@ export function SendInput() {
             accounts={accounts}
             selectedAccount={sendAccount}
             onSelect={(account) => {
-              setSendAccount(account);
+              selectSourceAccount(account);
               if (account.currency !== inputValue.currency) {
                 switchInputCurrency();
               }
@@ -278,17 +223,22 @@ export function SendInput() {
               </LinkWithViewTransition>
 
               <SelectContactOrLud16Drawer
-                onSelectContact={setContact}
-                onSelectLud16={setLud16}
+                onSelectContact={(contact) => {
+                  selectDestination(contact.lud16);
+                }}
+                onSelectLud16={(lnAddress) => {
+                  selectDestination(lnAddress);
+                }}
               />
             </div>
             <div />
 
             <div className="flex items-center justify-end">
               <Button
-                onClick={handleContinue}
+                // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
+                onClick={() => handleContinue(inputValue, convertedValue!)}
                 disabled={inputValue.isZero()}
-                loading={isContinuing}
+                loading={status === 'confirming'}
               >
                 Continue
               </Button>

@@ -4,7 +4,7 @@ import {
   OutputData,
 } from '@cashu/cashu-ts';
 import type { Big } from 'big.js';
-import { validateBolt11Invoice } from '~/lib/bolt11';
+import { parseBolt11Invoice } from '~/lib/bolt11';
 import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
@@ -55,7 +55,7 @@ export class CashuSendQuoteService {
     amount,
     exchangeRate,
   }: GetLightningQuoteOptions) {
-    const bolt11ValidationResult = validateBolt11Invoice(paymentRequest);
+    const bolt11ValidationResult = parseBolt11Invoice(paymentRequest);
     if (!bolt11ValidationResult.valid) {
       throw new Error('Invalid lightning invoice');
     }
@@ -101,12 +101,25 @@ export class CashuSendQuoteService {
     });
 
     const meltQuote = await wallet.createMeltQuote(paymentRequest);
+    const feeReserve = new Money({
+      amount: meltQuote.fee_reserve,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const amountToSend = new Money({
+      amount: meltQuote.amount,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
 
     return {
       paymentRequest,
       amountRequested: amount ?? (amountRequestedInBtc as Money<Currency>),
       amountRequestedInBtc,
       meltQuote,
+      feeReserve,
+      amountToSend,
+      totalAmountToSend: amountToSend.add(feeReserve),
     };
   }
 

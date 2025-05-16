@@ -1,19 +1,16 @@
-import { type Token, decodePaymentRequest } from '@cashu/cashu-ts';
+import type {
+  PaymentRequest as CashuPaymentRequest,
+  Token,
+} from '@cashu/cashu-ts';
 import { create } from 'zustand';
 import type { Account } from '~/features/accounts/account';
-import { type DecodedBolt11, validateBolt11Invoice } from '~/lib/bolt11';
-import { isCashuPaymentRequest } from '~/lib/cashu';
+import { type DecodedBolt11, parseBolt11Invoice } from '~/lib/bolt11';
+import { parseCashuPaymentRequest } from '~/lib/cashu';
+import { getLNURLPayParams, isLNURLError } from '~/lib/lnurl';
+import {} from '~/lib/lnurl/types';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
-import type { Contact } from '../contacts/contact';
-
-type PaymentRequestUnit = 'sat' | 'cent';
-
-export type PaymentRequest = {
-  type: 'bolt11' | 'cashu';
-  raw: string;
-  unit: PaymentRequestUnit;
-};
+import { buildEmailValidator } from '~/lib/validation';
 
 const getAppCurrencyAndUnitFromCashuUnit = (
   unit: string,
@@ -23,7 +20,8 @@ const getAppCurrencyAndUnitFromCashuUnit = (
   switch (unit) {
     case 'sat':
       return { currency: 'BTC', unit: 'sat' };
-    case 'cent':
+    // TODO: Damien doesn't cashu call this unit usd?
+    case 'usd':
       return { currency: 'USD', unit: 'cent' };
   }
   throw new Error(`Invalid Cashu unit ${unit}`);
@@ -38,7 +36,7 @@ type ValidateResult =
       valid: true;
       amount: Money<Currency> | null;
       currency: Currency;
-      unit: PaymentRequestUnit;
+      unit: 'sat' | 'cent';
     };
 
 const validateBolt11 = ({
@@ -72,9 +70,8 @@ const validateBolt11 = ({
   };
 };
 
-const validateCashuRequest = (raw: string): ValidateResult => {
-  const decoded = decodePaymentRequest(raw);
-  if (!decoded.unit) {
+const validateCashuRequest = (request: CashuPaymentRequest): ValidateResult => {
+  if (!request.unit) {
     // QUESTION: by spec, unit is optional, but if we don't enforce it then we jsut have to assume sats. Should we enforce it?
     return {
       valid: false,
@@ -82,13 +79,13 @@ const validateCashuRequest = (raw: string): ValidateResult => {
     };
   }
 
-  const { currency, unit } = getAppCurrencyAndUnitFromCashuUnit(decoded.unit);
+  const { currency, unit } = getAppCurrencyAndUnitFromCashuUnit(request.unit);
 
   return {
     valid: true,
-    amount: decoded.amount
+    amount: request.amount
       ? new Money({
-          amount: decoded.amount,
+          amount: request.amount,
           currency,
           unit,
         })
@@ -98,115 +95,174 @@ const validateCashuRequest = (raw: string): ValidateResult => {
   };
 };
 
-export type SendState<T extends Currency = Currency> = {
-  /** The account to send funds from */
+type SendType =
+  | 'CASHU_TOKEN'
+  | 'CASHU_PAYMENT_REQUEST'
+  | 'BOLT11_INVOICE'
+  | 'LN_ADDRESS';
+
+type DecodedDestination = {
+  type: SendType;
+  amount?: Money | null;
+};
+
+export type SendState = {
+  status: 'idle' | 'confirming';
+  amount: Money | null;
   account: Account;
-  /** The amount to send in the account's currency */
-  amount: Money<T> | null;
-  /**
-   * The current payment request being processed.
-   * If null it either means the user has not yet entered a payment request or we are sending and ecash token.
-   */
-  paymentRequest: PaymentRequest | null;
-  /** The token being sent */
-  token: Token | null;
-  /** The contact to pay */
-  contact: Contact | null;
-  /** The lud16 to pay */
-  lud16: string | null;
-  /** The destination to display in the UI */
-  destination: null | string;
-  /** Set the contact to pay */
-  setContact: (contact: Contact) => void;
-  /** Set the lud16 to pay */
-  setLud16: (lud16: string) => void;
-  /** Set the token being sent */
-  setToken: (token: Token | null) => void;
-  /** Set the account to send funds from */
-  setAccount: (account: Account) => void;
-  /** Set the amount to send in the account's currency */
-  setAmount: (amount: Money<T>) => void;
-  /**
-   * Set the payment request being processed.
-   * This will validate the payment request and return an error instead of setting the payment request if it is invalid.
-   */
-  setPaymentRequest: (raw: string) => ValidateResult;
-  /** Clear the payment request */
-  clearDestinations: () => void;
+  sendType: SendType | null;
+  destination: string | null;
+  displayDestination: string | null;
+  selectSourceAccount: (account: Account) => void;
+  selectDestination: (
+    destination: string,
+  ) => Promise<
+    | { success: true; data: DecodedDestination }
+    | { success: false; error: string }
+  >;
+  clearDestination: () => void;
+  confirm: (amount: Money, convertedAmount: Money) => Promise<void>;
+  cashuToken: Token | null;
+  setCashuToken: (token: Token) => void;
+};
+
+const isValidLightningAddress = async (address: string) => {
+  try {
+    const params = await getLNURLPayParams(address);
+    return !isLNURLError(params);
+  } catch {
+    return false;
+  }
+};
+
+const validateLightningAddressFormat = buildEmailValidator(
+  'Invalid lightning address',
+);
+
+const pickAmountCurrencyByAccount = (amounts: Money[], account: Account) => {
+  const amount = amounts.find((amount) => amount.currency === account.currency);
+  if (!amount) {
+    throw new Error(
+      `Amount that matches the currency of the account (${account.currency}) was not found`,
+    );
+  }
+  return amount;
 };
 
 export const createSendStore = ({
   initialAccount,
-  initialAmount,
+  getInvoiceFromLud16,
 }: {
   initialAccount: Account;
-  initialAmount: Money | null;
+  getInvoiceFromLud16: (params: {
+    lud16: string;
+    amount: Money<'BTC'>;
+  }) => Promise<string>;
 }) => {
-  return create<SendState>((set, get) => ({
+  return create<SendState>()((set, get) => ({
+    status: 'idle',
+    amount: null,
     account: initialAccount,
-    amount: initialAmount,
-    paymentRequest: null,
-    token: null,
-    lud16: null,
-    contact: null,
+    sendType: 'CASHU_TOKEN',
     destination: null,
-    setContact: (contact) =>
-      set({ contact, lud16: contact.lud16, destination: contact.username }),
-    setLud16: (lud16) => set({ lud16, destination: lud16 }),
-    setAccount: (account) => set({ account, amount: null }),
-    setAmount: (amount) => {
-      const { account } = get();
-      if (amount.currency !== account.currency) {
-        throw new Error(
-          `Amount currency (${amount.currency}) must match account currency (${account.currency})`,
-        );
-      }
-      set({ amount });
+    displayDestination: null,
+    cashuToken: null,
+    selectSourceAccount(account: Account) {
+      set({ account });
     },
-    setToken: (token) => set({ token }),
-    setPaymentRequest: (raw) => {
-      const validationResult = validateBolt11Invoice(raw);
-      if (validationResult.valid) {
-        const result = validateBolt11(validationResult.decoded);
-        if (!result.valid) {
-          return result;
+    async selectDestination(destination: string) {
+      const isLnAddressFormat = validateLightningAddressFormat(destination);
+      if (isLnAddressFormat === true) {
+        const isValidLnAddress = await isValidLightningAddress(destination);
+        if (!isValidLnAddress) {
+          return { success: false, error: 'Invalid lightning address' };
         }
-        const destination =
-          get().destination ?? `${raw.slice(0, 6)}...${raw.slice(-4)}`;
-        set({
-          paymentRequest: { type: 'bolt11', raw, unit: result.unit },
-          destination,
-        });
-        return result;
+
+        set({ sendType: 'LN_ADDRESS', displayDestination: destination });
+        return { success: true, data: { type: 'LN_ADDRESS' } };
       }
 
-      if (isCashuPaymentRequest(raw)) {
-        const result = validateCashuRequest(raw);
+      const bolt11ParseResult = parseBolt11Invoice(destination);
+      if (bolt11ParseResult.valid) {
+        const invoice = bolt11ParseResult.decoded;
+        const result = validateBolt11(invoice);
         if (!result.valid) {
-          return result;
+          return { success: false, error: result.error };
         }
-        const destination =
-          get().destination ?? `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+
         set({
-          paymentRequest: { type: 'cashu', raw, unit: result.unit },
+          sendType: 'BOLT11_INVOICE',
           destination,
+          displayDestination: `${destination.slice(0, 6)}...${destination.slice(-4)}`,
         });
-        return result;
+        return {
+          success: true,
+          data: { type: 'BOLT11_INVOICE', amount: result.amount },
+        };
+      }
+
+      const cashuRequestParseResult = parseCashuPaymentRequest(destination);
+      if (cashuRequestParseResult.valid) {
+        const result = validateCashuRequest(cashuRequestParseResult.decoded);
+        if (!result.valid) {
+          return { success: false, error: result.error };
+        }
+
+        set({
+          sendType: 'CASHU_PAYMENT_REQUEST',
+          destination,
+          displayDestination: `${destination.slice(0, 6)}...${destination.slice(-4)}`,
+        });
+        return {
+          success: true,
+          data: { type: 'CASHU_PAYMENT_REQUEST', amount: result.amount },
+        };
       }
 
       return {
-        valid: false,
+        success: false,
         error:
-          'Only Lightning invoices and Cashu payment requests are supported',
+          'Invalid destination. Must be lightning address, bolt11 invoice or cashu payment request',
       };
     },
-    clearDestinations: () =>
+    clearDestination: () =>
       set({
-        contact: null,
-        lud16: null,
         destination: null,
-        paymentRequest: null,
+        displayDestination: null,
+        sendType: 'CASHU_TOKEN',
       }),
+    async confirm(amount: Money, convertedAmount: Money) {
+      set({ status: 'confirming', amount });
+      const { account, sendType, displayDestination } = get();
+
+      if (sendType === 'LN_ADDRESS') {
+        if (!displayDestination) {
+          throw new Error('Destination is required');
+        }
+        const bitcoinInputValue = (
+          amount.currency === 'BTC' ? amount : convertedAmount
+        ) as Money<'BTC'>;
+        const bolt11 = await getInvoiceFromLud16({
+          lud16: displayDestination,
+          amount: bitcoinInputValue,
+        });
+        set({ destination: bolt11 });
+      }
+
+      const amountToSend = pickAmountCurrencyByAccount(
+        [amount, convertedAmount],
+        account,
+      );
+      set({ amount: amountToSend, status: 'idle' });
+    },
+    setCashuToken: (token: Token) => {
+      if (get().sendType !== 'CASHU_TOKEN') {
+        throw new Error(
+          'Cannot set cashu token if send type is not CASHU_TOKEN',
+        );
+      }
+      set({ cashuToken: token });
+    },
   }));
 };
 

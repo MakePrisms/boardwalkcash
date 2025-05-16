@@ -6,4 +6,3 @@ export {
 } from './send-confirmation';
 export { SendInput } from './send-input';
 export { ShareCashuToken } from './share-cashu-token';
-export type { PaymentRequest } from './send-store';
