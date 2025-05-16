@@ -206,11 +206,16 @@ const currencyDataMap: CurrencyDataMap = {
   },
 };
 
-const getCurrencyBaseUnit = <T extends Currency>(currency: T) => {
+const getCurrencyData = <T extends Currency>(currency: T) => {
   const currencyData = currencyDataMap[currency];
   if (!currencyData) {
     throw new Error(`Unsupported currency: ${currency}`);
   }
+  return currencyData;
+};
+
+const getCurrencyBaseUnit = <T extends Currency>(currency: T) => {
+  const currencyData = getCurrencyData(currency);
   const baseUnit = currencyData.units.find(
     (x) => x.name === currencyData.baseUnit,
   );
@@ -218,6 +223,15 @@ const getCurrencyBaseUnit = <T extends Currency>(currency: T) => {
     throw new Error(`Misconfigured currency: ${currency}`);
   }
   return baseUnit;
+};
+
+const getCurrencyMinUnit = <T extends Currency>(currency: T) => {
+  const currencyData = getCurrencyData(currency);
+  const minUnit = currencyData.units.sort((a, b) => a.factor.cmp(b.factor))[0];
+  if (!minUnit) {
+    throw new Error(`Misconfigured currency: ${currency}`);
+  }
+  return minUnit;
 };
 
 export class Money<T extends Currency = Currency> {
@@ -303,6 +317,20 @@ export class Money<T extends Currency = Currency> {
 
   static zero(currency: Currency): Money {
     return new Money({ amount: 0, currency });
+  }
+
+  /**
+   * Create a money object with the minimum amount for the given currency and unit.
+   * @param currency The currency to create the money object for.
+   * @param unit The unit to create the money object for. If not provided, the base unit for the currency is used.
+   * @returns A money object with the minimum amount for the given currency and unit.
+   */
+  static createMinAmount<T extends Currency>(
+    currency: T,
+    unit?: CurrencyUnit<T>,
+  ): Money<T> {
+    const unitToUse = unit ?? getCurrencyMinUnit(currency).name;
+    return new Money({ amount: 1, currency, unit: unitToUse });
   }
 
   get currency(): T {
