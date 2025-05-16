@@ -1,6 +1,9 @@
 import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
-import { AppLoadingScreen, LoadingScreen } from '~/features/loading/LoadingScreen';
+import {
+  AppLoadingScreen,
+  LoadingScreen,
+} from '~/features/loading/LoadingScreen';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { WalletSetup } from '~/features/wallet/wallet';
 

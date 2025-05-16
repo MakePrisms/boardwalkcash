@@ -360,6 +360,7 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
+          type: string | null
           unit: string
           user_id: string
           version: number
@@ -379,6 +380,7 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
+          type?: string | null
           unit: string
           user_id: string
           version?: number
@@ -398,6 +400,7 @@ export type Database = {
           token_hash?: string
           token_proofs?: string
           transaction_id?: string
+          type?: string | null
           unit?: string
           user_id?: string
           version?: number
@@ -772,6 +775,7 @@ export type Database = {
           p_receive_amount: number
           p_fee_amount: number
           p_account_version: number
+          p_type: string
         }
         Returns: {
           account_id: string
@@ -788,6 +792,7 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
+          type: string | null
           unit: string
           user_id: string
           version: number

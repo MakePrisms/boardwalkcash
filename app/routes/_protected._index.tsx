@@ -1,8 +1,14 @@
-import { ArrowDownRight, ArrowUpRight, ChartSpline, Cog } from 'lucide-react';
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChartSpline,
+  Clock,
+  Cog,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { LinksFunction } from 'react-router';
 import boardwalkIcon192 from '~/assets/icon-192x192.png';
-import { Page, PageContent, PageHeader } from '~/components/page';
+import { Page, PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import {
@@ -60,15 +66,22 @@ export default function Index() {
 
   return (
     <Page>
-      <PageHeader className="z-10">
+      <header className="z-10 flex w-full items-center justify-end gap-4 pr-4">
+        <LinkWithViewTransition
+          to="/transactions"
+          transition="slideLeft"
+          applyTo="newView"
+        >
+          <Clock />
+        </LinkWithViewTransition>
         <LinkWithViewTransition
           to="/settings"
           transition="slideLeft"
           applyTo="newView"
         >
-          <Cog className="text-muted-foreground" />
+          <Cog />
         </LinkWithViewTransition>
-      </PageHeader>
+      </header>
 
       <PageContent className="absolute inset-0 mx-auto flex flex-col items-center justify-center gap-24">
         <div className="flex flex-col items-center gap-4">

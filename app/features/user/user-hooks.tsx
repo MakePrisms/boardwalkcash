@@ -46,7 +46,7 @@ const defaultAccounts = [
     type: 'cashu',
     currency: 'USD',
     name: 'Voltz Mint',
-    mintUrl: 'https://mint.lnvoltz.com/',
+    mintUrl: 'https://mint.lnvoltz.com',
     isTestMint: false,
   },
   {

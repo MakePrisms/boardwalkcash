@@ -3,6 +3,7 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { CashuTokenSwap } from '../receive/cashu-token-swap';
 import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { SerializedOutputData } from '../send/cashu-send-swap-repository';
 import type { Transaction } from '../transactions/transaction';
@@ -83,10 +84,12 @@ export type Database = MergeDeep<
           Row: {
             currency: Currency;
             unit: CurrencyUnit;
+            type: CashuTokenSwap['type'];
           };
           Insert: {
             currency: Currency;
             unit: CurrencyUnit;
+            type: CashuTokenSwap['type'];
           };
           Update: {
             currency?: Currency;

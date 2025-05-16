@@ -1,6 +1,12 @@
-import type { Proof, ProofState, Token } from '@cashu/cashu-ts';
+import {
+  HttpResponseError,
+  type Proof,
+  type ProofState,
+  type Token,
+} from '@cashu/cashu-ts';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
+  type Query,
   type QueryClient,
   useMutation,
   useQueries,
@@ -9,7 +15,8 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { getCashuProtocolUnit, getCashuWallet } from '~/lib/cashu';
+import { useToast } from '~/hooks/use-toast';
+import { getCashuProtocolUnit, getCashuWallet, proofToY } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
@@ -216,6 +223,7 @@ export function useCancelCashuSendSwap() {
           proofs: swap.proofsToSend,
           unit: getCashuProtocolUnit(swap.currency),
         },
+        type: 'CANCEL_CASHU_SEND_SWAP',
       });
 
       return swap;
@@ -300,9 +308,11 @@ export function useUnresolvedCashuSendSwaps() {
 
   useOnCashuSendSwapChange({
     onCreated: (swap) => {
+      console.log('SWAP CREATED', swap);
       unresolvedSwapsCache.add(swap);
     },
     onUpdated: (swap) => {
+      console.log('SWAP UPDATED', swap);
       cashuSendSwapCache.updateIfExists(swap);
 
       if (['DRAFT', 'PENDING'].includes(swap.state)) {
@@ -342,6 +352,11 @@ type UseCashuSendSwapResponse =
       status: 'PENDING' | 'COMPLETED';
       swap: CashuSendSwap;
       token: Token;
+    }
+  | {
+      status: 'CANCELLED' | 'FAILED';
+      swap: CashuSendSwap;
+      token?: undefined;
     };
 
 export function useCashuSendSwap({
@@ -391,6 +406,13 @@ export function useCashuSendSwap({
     };
   }
 
+  if (data.state === 'CANCELLED' || data.state === 'FAILED') {
+    return {
+      status: data.state,
+      swap: data,
+    };
+  }
+
   throw new Error(`Got unexpected swap state: ${data.state}`);
 }
 
@@ -402,6 +424,7 @@ type OnProofStateChangeProps = {
 function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
   const accountsCache = useAccountsCache();
   const onSpentRef = useLatest(onSpent);
+  const { toast } = useToast();
 
   // collect proof updates for each swap
   const proofUpdatesRef = useRef<
@@ -443,54 +466,124 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
     [swaps, accountsCache],
   );
 
-  useEffect(() => {
-    if (swaps.length === 0) return;
-
-    const subscribeToProofStateUpdates = async (
-      swaps: OnProofStateChangeProps['swaps'],
-    ) => {
-      const swapsByMint = swaps.reduce<
-        Record<string, OnProofStateChangeProps['swaps']>
-      >((acc, swap) => {
-        const account = accountsCache.get(swap.accountId);
-        if (!account || account.type !== 'cashu') {
-          throw new Error(`Cashu account not found for id: ${swap.accountId}`);
-        }
-        const existing = acc[account.mintUrl] ?? [];
-        acc[account.mintUrl] = existing.concat(swap);
+  // Group swaps by mint URL for efficient querying
+  const swapsByMint = useMemo(() => {
+    return swaps.reduce<
+      Record<string, (CashuSendSwap & { state: 'PENDING' })[]>
+    >((acc, swap) => {
+      const account = accountsCache.get(swap.accountId);
+      if (!account || account.type !== 'cashu') {
+        console.error(`Cashu account not found for id: ${swap.accountId}`);
         return acc;
-      }, {});
+      }
+      const existing = acc[account.mintUrl] ?? [];
+      acc[account.mintUrl] = existing.concat(swap);
+      return acc;
+    }, {});
+  }, [swaps, accountsCache]);
 
-      const subscriptionPromises = Object.entries(swapsByMint).map(
-        ([mintUrl, swaps]) => {
-          const wallet = getCashuWallet(mintUrl);
-          const proofs = swaps.flatMap((swap) => swap.proofsToSend);
+  // Use queries to check proof states for each mint
+  useQueries({
+    queries: Object.entries(swapsByMint).map(([mintUrl, mintSwaps]) => ({
+      queryKey: [
+        'check-proof-states',
+        mintUrl,
+        mintSwaps.map((swap) => swap.id).join('-'),
+      ],
+      queryFn: async () => {
+        const wallet = getCashuWallet(mintUrl);
+        const proofsBySwap = mintSwaps.map((swap) => ({
+          swapId: swap.id,
+          proofs: swap.proofsToSend,
+        }));
+        // Check state of all proofs for this mint
+        const allProofs = proofsBySwap.flatMap((item) => item.proofs);
+        const proofStates = await wallet.checkProofsStates(allProofs);
 
-          console.debug(
-            `subscribing to proof state updates for mint: ${mintUrl}`,
-            proofs,
+        // Process each proof state update
+        for (const proofState of proofStates) {
+          const matchingProof = allProofs.find(
+            (p) => proofToY(p) === proofState.Y,
           );
+          console.log('matchingProof', matchingProof);
+          if (matchingProof) {
+            await handleProofStateUpdate({
+              ...proofState,
+              proof: matchingProof,
+            });
+          }
+        }
 
-          return wallet.onProofStateUpdates(
-            proofs,
-            handleProofStateUpdate,
-            (error) =>
-              console.error('Swap updates socket error', {
-                cause: error,
-              }),
-          );
-        },
-      );
+        return proofStates;
+      },
+      gcTime: 0,
+      staleTime: 0,
+      retry: 0,
+      refetchInterval: (query: Query) => {
+        const error = query.state.error;
+        const isRateLimitError =
+          error instanceof HttpResponseError && error.status === 429;
 
-      const subscriptionCancellers = await Promise.all(subscriptionPromises);
+        if (isRateLimitError) {
+          toast({
+            title: 'Rate limit exceeded',
+            description:
+              'Ecash state will not be updated until the rate limit is reset',
+            variant: 'destructive',
+          });
+          return 60 * 1000;
+        }
 
-      return () => {
-        subscriptionCancellers.forEach((cancel) => cancel());
-      };
-    };
+        return 3 * 1000;
+      },
+      refetchIntervalInBackground: true,
+    })),
+  });
 
-    subscribeToProofStateUpdates(swaps);
-  }, [swaps, accountsCache, handleProofStateUpdate]);
+  // TODO: Original implementation with websocket that is not working because of the rate limit
+  // useEffect(() => {
+  //   if (swaps.length === 0) return;
+
+  //   const subscribeToProofStateUpdates = async (
+  //     swaps: OnProofStateChangeProps['swaps'],
+  //   ) => {
+  //     const swapsByMint = swaps.reduce<
+  //       Record<string, OnProofStateChangeProps['swaps']>
+  //     >((acc, swap) => {
+  //       const account = accountsCache.get(swap.accountId);
+  //       if (!account || account.type !== 'cashu') {
+  //         throw new Error(`Cashu account not found for id: ${swap.accountId}`);
+  //       }
+  //       const existing = acc[account.mintUrl] ?? [];
+  //       acc[account.mintUrl] = existing.concat(swap);
+  //       return acc;
+  //     }, {});
+
+  //     const subscriptionPromises = Object.entries(swapsByMint).map(
+  //       ([mintUrl, swaps]) => {
+  //         const wallet = getCashuWallet(mintUrl);
+  //         const proofs = swaps.flatMap((swap) => swap.proofsToSend);
+
+  //         return wallet.onProofStateUpdates(
+  //           proofs,
+  //           handleProofStateUpdate,
+  //           (error) =>
+  //             console.error('Swap updates socket error', {
+  //               cause: error,
+  //             }),
+  //         );
+  //       },
+  //     );
+
+  //     const subscriptionCancellers = await Promise.all(subscriptionPromises);
+
+  //     return () => {
+  //       subscriptionCancellers.forEach((cancel) => cancel());
+  //     };
+  //   };
+
+  //   subscribeToProofStateUpdates(swaps);
+  // }, [swaps, accountsCache, handleProofStateUpdate]);
 }
 
 export function useTrackUnresolvedCashuSendSwaps() {

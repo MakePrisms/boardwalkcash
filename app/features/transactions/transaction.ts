@@ -25,7 +25,7 @@ export type Transaction = {
    * - COMPLETED: The transaction has been completed.
    * - FAILED: The transaction has failed.
    */
-  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED';
+  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   /**
    * ID of the account that the transaction was sent from or received to.
    * For SEND transactions, it is the account that the transaction was sent from.

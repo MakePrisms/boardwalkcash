@@ -400,6 +400,13 @@ export class CashuSendSwapRepository {
       };
     }
 
+    if (data.state === 'CANCELLED') {
+      return {
+        ...commonData,
+        state: 'CANCELLED',
+      };
+    }
+
     throw new Error(`Unexpected swap state ${data.state}`);
   }
 }

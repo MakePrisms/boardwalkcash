@@ -67,8 +67,10 @@ export type CashuSendSwap = {
    * we have only taken the inputProofs from the account
    * - PENDING: There are proofs to send and the swap is waiting for the proofsToSend to be spent.
    * - COMPLETED: The proofsToSend have been spent.
+   * - FAILED: The swap failed.
+   * - CANCELLED: The swap was cancelled and money was returned to the account.
    */
-  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED';
+  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   /**
    * The version of the swap used for optimistic locking.
    */
@@ -120,5 +122,8 @@ export type CashuSendSwap = {
   | {
       state: 'FAILED';
       failureReason: string;
+    }
+  | {
+      state: 'CANCELLED';
     }
 );
