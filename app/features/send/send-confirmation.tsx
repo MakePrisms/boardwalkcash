@@ -337,7 +337,7 @@ export const CreateCashuTokenConfirmation = ({
   }
 
   if (status === 'PENDING') {
-    return <ShareCashuToken token={token} amount={amount} />;
+    return <ShareCashuToken token={token} amount={fee ? amount.add(fee) : amount} />;
   }
 
   if (status === 'COMPLETED') {

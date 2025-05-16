@@ -293,6 +293,7 @@ const checkIfMintSupportsWebSocketsForMintQuotes = (
   mintInfo: MintInfo,
   currency: string,
 ): boolean => {
+  return false;
   const wallet = getCashuWallet(mintUrl);
   const walletCurrency = getWalletCurrency(wallet);
   const nut17Info = mintInfo.isSupported(17);
