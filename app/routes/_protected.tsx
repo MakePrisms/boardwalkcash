@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
-import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import { AppLoadingScreen, LoadingScreen } from '~/features/loading/LoadingScreen';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { WalletSetup } from '~/features/wallet/wallet';
 
@@ -56,7 +56,7 @@ export default function ProtectedRoute() {
   }
 
   if (!isLoggedIn) {
-    return <LoadingScreen />;
+    return <AppLoadingScreen />;
   }
 
   return (
