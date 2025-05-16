@@ -2,7 +2,12 @@ import agicashLoadingLogo from '~/assets/agicash-loading-logo.png';
 export function AppLoadingScreen() {
   return (
     <div className="fixed inset-0 flex items-center justify-center">
-      <img src={agicashLoadingLogo} alt="Agicash Loading Logo" width={250} className='mb-10'/>
+      <img
+        src={agicashLoadingLogo}
+        alt="Agicash Loading Logo"
+        width={250}
+        className="mb-10"
+      />
     </div>
   );
 }
