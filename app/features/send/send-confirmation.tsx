@@ -61,7 +61,7 @@ const BaseConfirmation = ({
   isConfirming,
   error,
 }: {
-  amount: Money;
+  amount?: Money;
   children: React.ReactNode;
   onConfirm: () => void;
   disabled?: boolean;
@@ -75,7 +75,11 @@ const BaseConfirmation = ({
         <PageHeaderTitle>Confirm Payment</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center gap-4">
-        <MoneyWithConvertedAmount money={amount} />
+        {amount ? (
+          <MoneyWithConvertedAmount money={amount} />
+        ) : (
+          <Skeleton className="h-[116px] w-32" />
+        )}
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           <Card className="m-4 w-full">
             <CardContent className="flex flex-col gap-6 pt-6">
@@ -181,7 +185,7 @@ export const PayBolt11Confirmation = ({
             unit={getDefaultUnit(fee.currency)}
           />
         ) : (
-          <Skeleton className="h-[33px] w-[20px]" />
+          <Skeleton className="h-[33px] w-[40px]" />
         ),
       },
       { label: 'From', value: account.name },
@@ -203,7 +207,7 @@ export const PayBolt11Confirmation = ({
 
   return (
     <BaseConfirmation
-      amount={data?.totalAmountToSend ?? inputAmount}
+      amount={data?.totalAmountToSend}
       onConfirm={handleConfirm}
       isConfirming={
         initiateSendStatus === 'pending' ||
