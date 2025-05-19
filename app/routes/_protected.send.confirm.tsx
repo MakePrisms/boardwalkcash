@@ -37,7 +37,7 @@ export default function SendConfirmationPage() {
     );
   }
 
-  if (['BOLT11_INVOICE', 'LN_ADDRESS'].includes(sendType)) {
+  if (['BOLT11_INVOICE', 'LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
     if (!destination || !displayDestination) {
       return <Redirect to="/send" logMessage="Missing destination data" />;
     }
