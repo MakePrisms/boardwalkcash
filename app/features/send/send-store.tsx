@@ -11,6 +11,7 @@ import {} from '~/lib/lnurl/types';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
 import { buildEmailValidator } from '~/lib/validation';
+import { type Contact, isContact } from '../contacts/contact';
 
 const getAppCurrencyAndUnitFromCashuUnit = (
   unit: string,
@@ -20,7 +21,6 @@ const getAppCurrencyAndUnitFromCashuUnit = (
   switch (unit) {
     case 'sat':
       return { currency: 'BTC', unit: 'sat' };
-    // TODO: Damien doesn't cashu call this unit usd?
     case 'usd':
       return { currency: 'USD', unit: 'cent' };
   }
@@ -99,7 +99,8 @@ type SendType =
   | 'CASHU_TOKEN'
   | 'CASHU_PAYMENT_REQUEST'
   | 'BOLT11_INVOICE'
-  | 'LN_ADDRESS';
+  | 'LN_ADDRESS'
+  | 'AGICASH_CONTACT';
 
 type DecodedDestination = {
   type: SendType;
@@ -115,7 +116,7 @@ export type SendState = {
   displayDestination: string | null;
   selectSourceAccount: (account: Account) => void;
   selectDestination: (
-    destination: string,
+    destination: string | Contact,
   ) => Promise<
     | { success: true; data: DecodedDestination }
     | { success: false; error: string }
@@ -170,7 +171,16 @@ export const createSendStore = ({
     selectSourceAccount(account: Account) {
       set({ account });
     },
-    async selectDestination(destination: string) {
+    async selectDestination(destination: string | Contact) {
+      if (isContact(destination)) {
+        set({
+          sendType: 'AGICASH_CONTACT',
+          destination: destination.lud16,
+          displayDestination: destination.username,
+        });
+        return { success: true, data: { type: 'AGICASH_CONTACT' } };
+      }
+
       const isLnAddressFormat = validateLightningAddressFormat(destination);
       if (isLnAddressFormat === true) {
         const isValidLnAddress = await isValidLightningAddress(destination);

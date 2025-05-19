@@ -75,9 +75,11 @@ export function SendInput() {
   const { data: accounts } = useAccounts();
 
   const sendAmount = useSendStore((s) => s.amount);
+  const sendAmountCurrencyUnit = sendAmount
+    ? getDefaultUnit(sendAmount.currency)
+    : undefined;
   const sendAccount = useSendStore((s) => s.account);
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
-  const sendCurrencyUnit = getDefaultUnit(sendAccount.currency);
   const displayDestination = useSendStore((s) => s.displayDestination);
   const selectDestination = useSendStore((s) => s.selectDestination);
   const clearDestination = useSendStore((s) => s.clearDestination);
@@ -94,9 +96,10 @@ export function SendInput() {
     switchInputCurrency,
     setInputValue,
   } = useMoneyInput({
-    initialRawInputValue: sendAmount?.toString(sendCurrencyUnit) || '0',
-    initialInputCurrency: sendAccount.currency,
-    initialOtherCurrency: sendAccount.currency === 'BTC' ? 'USD' : 'BTC',
+    initialRawInputValue: sendAmount?.toString(sendAmountCurrencyUnit) || '0',
+    initialInputCurrency: sendAmount?.currency ?? sendAccount.currency,
+    initialOtherCurrency:
+      (sendAmount?.currency ?? sendAccount.currency) === 'BTC' ? 'USD' : 'BTC',
   });
 
   const handleContinue = async (inputValue: Money, convertedValue: Money) => {
@@ -224,7 +227,7 @@ export function SendInput() {
 
               <SelectContactOrLud16Drawer
                 onSelectContact={(contact) => {
-                  selectDestination(contact.lud16);
+                  selectDestination(contact);
                 }}
                 onSelectLud16={(lnAddress) => {
                   selectDestination(lnAddress);
