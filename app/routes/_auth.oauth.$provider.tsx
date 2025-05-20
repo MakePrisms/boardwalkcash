@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router';
-import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import { AppLoadingScreen } from '~/features/loading/LoadingScreen';
 import { getErrorMessage } from '~/features/shared/error';
 import { useAuthActions } from '~/features/user/auth';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
@@ -59,5 +59,5 @@ export default function OAuthCallback({
     handleCallback();
   }, [provider, searchParams, handleGoogleAuthCallback, navigate, toast]);
 
-  return <LoadingScreen />;
+  return <AppLoadingScreen />;
 }

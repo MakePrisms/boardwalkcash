@@ -1,6 +1,9 @@
 import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
-import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import {
+  AppLoadingScreen,
+  LoadingScreen,
+} from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
 
 export default function AuthRoute() {
@@ -15,7 +18,7 @@ export default function AuthRoute() {
   });
 
   if (loading) {
-    return <LoadingScreen />;
+    return <AppLoadingScreen />;
   }
 
   if (isLoggedIn) {
