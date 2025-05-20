@@ -41,7 +41,7 @@ export function SingleContact({ contact }: { contact: Contact }) {
   const handleShare = async () => {
     if (canShare()) {
       const data = {
-        title: `${contact.username}'s Boardwalk`,
+        title: `${contact.username}'s Agicash`,
         url: profileUrl,
       };
       await shareContent(data);

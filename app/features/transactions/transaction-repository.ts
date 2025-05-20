@@ -1,9 +1,9 @@
 import { Money } from '~/lib/money';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbTransaction,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbTransaction,
+  agicashDb,
+} from '../agicash-db/database';
 import type { Transaction } from './transaction';
 
 type Options = {
@@ -11,7 +11,7 @@ type Options = {
 };
 
 export class TransactionRepository {
-  constructor(private db: BoardwalkDb) {}
+  constructor(private db: AgicashDb) {}
 
   async get(transactionId: string, options?: Options) {
     const query = this.db.from('transactions').select().eq('id', transactionId);
@@ -29,7 +29,7 @@ export class TransactionRepository {
     return TransactionRepository.toTransaction(data);
   }
 
-  static toTransaction(data: BoardwalkDbTransaction): Transaction {
+  static toTransaction(data: AgicashDbTransaction): Transaction {
     return {
       id: data.id,
       userId: data.user_id,
@@ -50,5 +50,5 @@ export class TransactionRepository {
 }
 
 export function useTransactionRepository() {
-  return new TransactionRepository(boardwalkDb);
+  return new TransactionRepository(agicashDb);
 }

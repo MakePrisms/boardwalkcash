@@ -1,5 +1,5 @@
 name: 'Setup Environment'
-description: 'Sets up Boardwalk development environment'
+description: 'Sets up Agicash development environment'
 runs:
   using: composite
   steps:

@@ -2,10 +2,10 @@ import type { Proof } from '@cashu/cashu-ts';
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbAccount,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbAccount,
+  agicashDb,
+} from '../agicash-db/database';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
@@ -27,7 +27,7 @@ type Encryption = {
 
 export class AccountRepository {
   constructor(
-    private readonly db: BoardwalkDb,
+    private readonly db: AgicashDb,
     private readonly encryption: Encryption,
   ) {}
 
@@ -121,7 +121,7 @@ export class AccountRepository {
   }
 
   static async toAccount<T extends Account = Account>(
-    data: BoardwalkDbAccount,
+    data: AgicashDbAccount,
     decryptData: Encryption['decrypt'],
   ): Promise<T> {
     const commonData = {
@@ -164,5 +164,5 @@ export class AccountRepository {
 
 export function useAccountRepository() {
   const encryption = useEncryption();
-  return new AccountRepository(boardwalkDb, encryption);
+  return new AccountRepository(agicashDb, encryption);
 }

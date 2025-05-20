@@ -1,4 +1,4 @@
-# Boardwalkcash
+# Agicash
 
 This app is using [Remix](https://remix.run/docs) framework, but it is hosted on a custom [Express](https://expressjs.com/) server. However, currently Express
 server is only used when running locally. When deployed to Vercel, Express server is not used.

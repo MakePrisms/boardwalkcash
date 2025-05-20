@@ -7,7 +7,7 @@ export type CashuReceiveQuote = {
    */
   userId: string;
   /**
-   * ID of the Boardwalk account that the quote belongs to.
+   * ID of the Agicash account that the quote belongs to.
    */
   accountId: string;
   /**

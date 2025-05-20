@@ -3,10 +3,10 @@ import type {
   RealtimePostgresChangesPayload,
 } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { boardwalkDb } from '~/features/boardwalk-db/database';
+import { agicashDb } from '~/features/agicash-db/database';
 import { useUser } from '~/features/user/user-hooks';
 
-const accountsQuery = boardwalkDb.from('accounts').select();
+const accountsQuery = agicashDb.from('accounts').select();
 type Accounts = QueryData<typeof accountsQuery>;
 type Account = Accounts[number];
 
@@ -32,7 +32,7 @@ export default function Demo() {
   }, [user.id]);
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('accounts')
       .on(
         'postgres_changes',

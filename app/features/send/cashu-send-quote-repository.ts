@@ -1,10 +1,10 @@
 import type { Proof } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbCashuSendQuote,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbCashuSendQuote,
+  agicashDb,
+} from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuSendQuote } from './cashu-send-quote';
@@ -83,7 +83,7 @@ type CreateSendQuote = {
 
 export class CashuSendQuoteRepository {
   constructor(
-    private readonly db: BoardwalkDb,
+    private readonly db: AgicashDb,
     private readonly encryption: Encryption,
   ) {}
 
@@ -425,7 +425,7 @@ export class CashuSendQuoteRepository {
   }
 
   static async toSend(
-    data: BoardwalkDbCashuSendQuote,
+    data: AgicashDbCashuSendQuote,
     decryptData: Encryption['decrypt'],
   ): Promise<CashuSendQuote> {
     const decryptedData = {
@@ -502,5 +502,5 @@ export class CashuSendQuoteRepository {
 
 export function useCashuSendQuoteRepository() {
   const encryption = useEncryption();
-  return new CashuSendQuoteRepository(boardwalkDb, encryption);
+  return new CashuSendQuoteRepository(agicashDb, encryption);
 }

@@ -2,9 +2,9 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import {
-  type BoardwalkDbTransaction,
-  boardwalkDb,
-} from '~/features/boardwalk-db/database';
+  type AgicashDbTransaction,
+  agicashDb,
+} from '~/features/agicash-db/database';
 import { useLatest } from '~/lib/use-latest';
 import type { Transaction } from './transaction';
 import {
@@ -57,7 +57,7 @@ function useOnTransactionChange({
   useEffect(() => {
     if (!transactionId) return;
 
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('transactions')
       .on(
         'postgres_changes',
@@ -67,7 +67,7 @@ function useOnTransactionChange({
           table: 'transactions',
           filter: `id=eq.${transactionId}`,
         },
-        (payload: RealtimePostgresChangesPayload<BoardwalkDbTransaction>) => {
+        (payload: RealtimePostgresChangesPayload<AgicashDbTransaction>) => {
           if (payload.eventType === 'UPDATE') {
             const updatedTransaction = TransactionRepository.toTransaction(
               payload.new,

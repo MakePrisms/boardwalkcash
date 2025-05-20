@@ -78,13 +78,13 @@ export default function InstallPwaInstructionsDialog({
           <div className="flex items-start gap-4">
             <img
               src={icon}
-              alt="Boardwalk icon"
+              alt="Agicash icon"
               className="h-16 w-16 rounded-lg"
             />
             <div className="flex h-full flex-col items-start justify-between">
-              <DialogTitle className="text-left">Boardwalk</DialogTitle>
+              <DialogTitle className="text-left">Agicash</DialogTitle>
               <DialogDescription className="text-left">
-                Install Boardwalk to your home screen for the best experience.
+                Install Agicash to your home screen for the best experience.
               </DialogDescription>
             </div>
           </div>

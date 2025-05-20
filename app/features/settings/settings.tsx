@@ -22,7 +22,7 @@ export default function Settings() {
 
   const handleShare = async () => {
     const data = {
-      title: `${username}'s Boardwalk`,
+      title: `${username}'s Agicash`,
       url: `https://boardwalkcash.com/${username}`,
     };
     await shareContent(data);

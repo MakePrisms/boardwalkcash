@@ -4,8 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useLatest } from '~/lib/use-latest';
-import type { BoardwalkDbContact } from '../boardwalk-db/database';
-import { boardwalkDb } from '../boardwalk-db/database';
+import type { AgicashDbContact } from '../agicash-db/database';
+import { agicashDb } from '../agicash-db/database';
 import { useUserRef } from '../user/user-hooks';
 import type { Contact } from './contact';
 import { ContactRepository, useContactRepository } from './contact-repository';
@@ -164,7 +164,7 @@ function useOnContactsChange({
   const onDeletedRef = useLatest(onDeleted);
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('contacts')
       .on(
         'postgres_changes',
@@ -173,7 +173,7 @@ function useOnContactsChange({
           schema: 'wallet',
           table: 'contacts',
         },
-        (payload: RealtimePostgresChangesPayload<BoardwalkDbContact>) => {
+        (payload: RealtimePostgresChangesPayload<AgicashDbContact>) => {
           console.log('onContactsChange', payload);
           if (payload.eventType === 'INSERT') {
             const newContact = ContactRepository.toContact(payload.new);

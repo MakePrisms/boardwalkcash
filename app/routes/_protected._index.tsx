@@ -1,7 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, ChartSpline, Cog } from 'lucide-react';
 import { useState } from 'react';
 import type { LinksFunction } from 'react-router';
-import boardwalkIcon192 from '~/assets/icon-192x192.png';
+import agicashIcon192 from '~/assets/icon-192x192.png';
 import { Page, PageContent, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
@@ -19,7 +19,7 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 
 export const links: LinksFunction = () => [
   // This icon is used in the PWA dialog and prefetched here to avoid a flash while loading
-  { rel: 'preload', href: boardwalkIcon192, as: 'image' },
+  { rel: 'preload', href: agicashIcon192, as: 'image' },
 ];
 
 const Price = () => {

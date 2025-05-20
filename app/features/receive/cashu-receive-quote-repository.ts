@@ -3,10 +3,10 @@ import { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbCashuReceiveQuote,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbCashuReceiveQuote,
+  agicashDb,
+} from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
@@ -68,7 +68,7 @@ type CreateQuote = {
 
 export class CashuReceiveQuoteRepository {
   constructor(
-    private readonly db: BoardwalkDb,
+    private readonly db: AgicashDb,
     private readonly encryption: Encryption,
   ) {}
 
@@ -386,7 +386,7 @@ export class CashuReceiveQuoteRepository {
     return data.map((data) => CashuReceiveQuoteRepository.toQuote(data));
   }
 
-  static toQuote(data: BoardwalkDbCashuReceiveQuote): CashuReceiveQuote {
+  static toQuote(data: AgicashDbCashuReceiveQuote): CashuReceiveQuote {
     const commonData = {
       id: data.id,
       userId: data.user_id,
@@ -438,5 +438,5 @@ export class CashuReceiveQuoteRepository {
 
 export function useCashuReceiveQuoteRepository() {
   const encryption = useEncryption();
-  return new CashuReceiveQuoteRepository(boardwalkDb, encryption);
+  return new CashuReceiveQuoteRepository(agicashDb, encryption);
 }

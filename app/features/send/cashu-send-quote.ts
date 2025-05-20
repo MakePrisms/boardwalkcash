@@ -16,7 +16,7 @@ export type CashuSendQuote = {
    */
   userId: string;
   /**
-   * ID of the Boardwalk account to send from.
+   * ID of the Agicash account to send from.
    */
   accountId: string;
   /**

@@ -11,7 +11,7 @@ import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
-import { type BoardwalkDbAccount, boardwalkDb } from '../boardwalk-db/database';
+import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
@@ -229,7 +229,7 @@ function useOnAccountChange({
   const accountCache = useAccountsCache();
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('accounts')
       .on(
         'postgres_changes',
@@ -238,7 +238,7 @@ function useOnAccountChange({
           schema: 'wallet',
           table: 'accounts',
         },
-        async (payload: RealtimePostgresChangesPayload<BoardwalkDbAccount>) => {
+        async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
           if (payload.eventType === 'INSERT') {
             const addedAccount = await AccountRepository.toAccount(
               payload.new,

@@ -11,7 +11,7 @@ if (!supabaseServiceRoleKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
 }
 
-export const boardwalkDbServiceRole = createClient<Database>(
+export const agicashDbServiceRole = createClient<Database>(
   supabaseUrl,
   supabaseServiceRoleKey,
   {
