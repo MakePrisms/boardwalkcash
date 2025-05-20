@@ -1,6 +1,7 @@
 import { Delete } from 'lucide-react';
 import { useEffect } from 'react';
 import { getLocaleDecimalSeparator } from '~/lib/locale';
+import { Button } from './ui/button';
 
 const buttons = [
   '1',
@@ -25,16 +26,14 @@ const isValidButton = (button: string): button is NumpadButton => {
 
 type NumpadButtonProps = React.ComponentProps<'button'>;
 
-const NumpadButton = ({ onClick, children, ...props }: NumpadButtonProps) => {
+const NumpadButton = ({ onClick, children }: NumpadButtonProps) => {
   return (
-    <button
-      type="button"
+    <Button
       onClick={onClick}
-      className="flex w-full cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-gray-100 px-6 py-2 font-semibold text-2xl text-gray-800 transition-all active:scale-95 dark:border-gray-500 dark:bg-gray-600 dark:text-gray-100"
-      {...props}
+      className="flex h-full w-full cursor-pointer items-center justify-center px-6 text-xl transition-all active:scale-95"
     >
       {children}
-    </button>
+    </Button>
   );
 };
 

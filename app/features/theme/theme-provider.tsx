@@ -93,7 +93,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   const effectiveColorMode =
-    colorMode === 'system' ? (systemColorMode ? 'dark' : 'light') : colorMode;
+    colorMode === 'system' ? systemColorMode : colorMode;
 
   // Save cookies on first load if they don't exist
   useEffect(() => {
