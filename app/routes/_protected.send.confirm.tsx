@@ -12,7 +12,7 @@ export default function SendConfirmationPage() {
   const sendType = useSendStore((s) => s.sendType);
   const destination = useSendStore((s) => s.destination);
   const displayDestination = useSendStore((s) => s.displayDestination);
-
+  const quote = useSendStore((s) => s.quote);
   if (!sendAmount || !sendType || !sendAccount) {
     return <Redirect to="/send" logMessage="Missing send data" />;
   }
@@ -38,16 +38,16 @@ export default function SendConfirmationPage() {
   }
 
   if (['BOLT11_INVOICE', 'LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
-    if (!destination || !displayDestination) {
+    if (!destination || !displayDestination || !quote) {
       return <Redirect to="/send" logMessage="Missing destination data" />;
     }
 
     return (
       <PayBolt11Confirmation
-        bolt11={destination}
+        quote={quote}
         displayDestination={displayDestination}
-        inputAmount={sendAmount}
         account={sendAccount}
+        destination={destination}
       />
     );
   }
