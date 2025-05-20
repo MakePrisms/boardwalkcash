@@ -23,7 +23,7 @@ import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
 import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
-import { getLNURLPayParams, isLNURLError } from '~/lib/lnurl';
+import { buildLightningAddressValidator } from '~/lib/lnurl';
 import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
 import {
@@ -75,16 +75,18 @@ export function SendInput() {
   const { data: accounts } = useAccounts();
 
   const sendAmount = useSendStore((s) => s.amount);
-  const sendAmountCurrencyUnit = sendAmount
-    ? getDefaultUnit(sendAmount.currency)
-    : undefined;
   const sendAccount = useSendStore((s) => s.account);
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
   const displayDestination = useSendStore((s) => s.displayDestination);
   const selectDestination = useSendStore((s) => s.selectDestination);
   const clearDestination = useSendStore((s) => s.clearDestination);
-  const confirm = useSendStore((s) => s.confirm);
+  const getQuote = useSendStore((s) => s.getQuote);
   const status = useSendStore((s) => s.status);
+
+  const sendAmountCurrencyUnit = sendAmount
+    ? getDefaultUnit(sendAmount.currency)
+    : undefined;
+  const initialInputCurrency = sendAmount?.currency ?? sendAccount.currency;
 
   const {
     rawInputValue,
@@ -97,12 +99,14 @@ export function SendInput() {
     setInputValue,
   } = useMoneyInput({
     initialRawInputValue: sendAmount?.toString(sendAmountCurrencyUnit) || '0',
-    initialInputCurrency: sendAmount?.currency ?? sendAccount.currency,
-    initialOtherCurrency:
-      (sendAmount?.currency ?? sendAccount.currency) === 'BTC' ? 'USD' : 'BTC',
+    initialInputCurrency: initialInputCurrency,
+    initialOtherCurrency: initialInputCurrency === 'BTC' ? 'USD' : 'BTC',
   });
 
-  const handleContinue = async (inputValue: Money, convertedValue: Money) => {
+  const handleContinue = async (
+    inputValue: Money,
+    convertedValue: Money | undefined,
+  ) => {
     if (sendAccount.type !== 'cashu') {
       toast({
         title: 'Not implemented',
@@ -116,15 +120,21 @@ export function SendInput() {
       return;
     }
 
-    await confirm(inputValue, convertedValue);
+    const result = await getQuote(inputValue, convertedValue);
+    if (!result.success) {
+      return toast({
+        title: 'Error',
+        description: 'Failed to get a send quote. Please try again',
+        variant: 'destructive',
+      });
+    }
 
-    return navigate('/send/confirm', {
+    navigate('/send/confirm', {
       applyTo: 'newView',
       transition: 'slideUp',
     });
   };
 
-  // User can paste a bolt11, lightning address, or cashu request
   const handlePaste = async () => {
     const input = await readClipboard();
     if (!input) {
@@ -145,19 +155,18 @@ export function SendInput() {
       data: { amount },
     } = result;
 
+    let latestInputValue = inputValue;
+    let latestConvertedValue = convertedValue;
+
     if (amount) {
       const defaultUnit = getDefaultUnit(amount.currency);
-      const { newInputValue, newConvertedValue } = setInputValue(
-        amount.toString(defaultUnit),
-        amount.currency,
-      );
-
-      // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
-      return handleContinue(newInputValue, newConvertedValue!);
+      ({
+        newInputValue: latestInputValue,
+        newConvertedValue: latestConvertedValue,
+      } = setInputValue(amount.toString(defaultUnit), amount.currency));
     }
 
-    // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
-    return handleContinue(inputValue, convertedValue!);
+    return handleContinue(latestInputValue, latestConvertedValue);
   };
 
   return (
@@ -238,10 +247,9 @@ export function SendInput() {
 
             <div className="flex items-center justify-end">
               <Button
-                // biome-ignore lint/style/noNonNullAssertion: TODO: see how avoid this !
-                onClick={() => handleContinue(inputValue, convertedValue!)}
+                onClick={() => handleContinue(inputValue, convertedValue)}
                 disabled={inputValue.isZero()}
-                loading={status === 'confirming'}
+                loading={status === 'quoting'}
               >
                 Continue
               </Button>
@@ -260,22 +268,15 @@ export function SendInput() {
   );
 }
 
-const isValidLightningAddress = async (address: string) => {
-  if (!address.includes('@') || !address.includes('.')) {
-    return false;
-  }
-  try {
-    const params = await getLNURLPayParams(address);
-    return !isLNURLError(params);
-  } catch {
-    return false;
-  }
-};
-
 type SelectContactOrLud16DrawerProps = {
   onSelectContact: (contact: Contact) => void;
   onSelectLud16: (lightningAddress: string) => void;
 };
+
+const validateLightningAddress = buildLightningAddressValidator({
+  message: 'Invalid lightning address',
+  allowLocalhost: import.meta.env.MODE === 'development',
+});
 
 function SelectContactOrLud16Drawer({
   onSelectContact,
@@ -297,7 +298,8 @@ function SelectContactOrLud16Drawer({
   };
 
   const handleCustomSelect = async (selection: string) => {
-    if (await isValidLightningAddress(selection)) {
+    const result = await validateLightningAddress(selection);
+    if (result === true) {
       onSelectLud16(selection);
     } else {
       return toast({

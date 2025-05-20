@@ -3,16 +3,17 @@ import {
   CreateCashuTokenConfirmation,
   PayBolt11Confirmation,
   PayCashuRequestConfirmation,
-  useSendStore,
 } from '~/features/send';
+import { useSendStore } from '~/features/send';
 
 export default function SendConfirmationPage() {
-  const sendAccount = useSendStore((s) => s.account);
-  const sendAmount = useSendStore((s) => s.amount);
-  const sendType = useSendStore((s) => s.sendType);
-  const destination = useSendStore((s) => s.destination);
-  const displayDestination = useSendStore((s) => s.displayDestination);
-  const quote = useSendStore((s) => s.quote);
+  const sendAccount = useSendStore((state) => state.account);
+  const sendAmount = useSendStore((state) => state.amount);
+  const sendType = useSendStore((state) => state.sendType);
+  const destination = useSendStore((state) => state.destination);
+  const displayDestination = useSendStore((state) => state.displayDestination);
+  const quote = useSendStore((state) => state.quote);
+
   if (!sendAmount || !sendType || !sendAccount) {
     return <Redirect to="/send" logMessage="Missing send data" />;
   }

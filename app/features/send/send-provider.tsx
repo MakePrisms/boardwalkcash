@@ -17,7 +17,7 @@ type Props = PropsWithChildren<{
   initialAccount: Account;
 }>;
 
-export const SendProvider = ({ children, initialAccount }: Props) => {
+export const SendProvider = ({ initialAccount, children }: Props) => {
   const { mutateAsync: getInvoiceFromLud16 } = useGetInvoiceFromLud16();
   const { mutateAsync: createCashuSendQuote } = useCreateCashuSendQuote();
 
