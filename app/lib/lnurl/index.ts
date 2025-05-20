@@ -1,5 +1,6 @@
 import ky from 'ky';
 import type { Money } from '../money';
+import { buildEmailValidator } from '../validation';
 import type { LNURLError, LNURLPayParams, LNURLPayResult } from './types';
 
 export const isLNURLError = (obj: unknown): obj is LNURLError => {
@@ -75,6 +76,57 @@ export const getInvoiceFromLud16 = async (
       error instanceof Error ? error.message : 'Failed to get invoice';
     return { status: 'ERROR', reason: msg };
   }
+};
+
+export const isValidLightningAddress = async (address: string) => {
+  try {
+    const params = await getLNURLPayParams(address);
+    return !isLNURLError(params);
+  } catch {
+    return false;
+  }
+};
+
+export const buildLightningAddressFormatValidator = ({
+  message,
+  allowLocalhost = false,
+}: {
+  message: string;
+  allowLocalhost?: boolean;
+}) => {
+  const validateLightningAddressFormat = buildEmailValidator(message);
+  return (value: string | null | undefined): string | boolean => {
+    if (value && allowLocalhost) {
+      const localhostRegex = /^[a-zA-Z0-9._%+-]+@localhost(:\d+)?$/;
+      if (localhostRegex.test(value)) {
+        return true;
+      }
+    }
+
+    return validateLightningAddressFormat(value);
+  };
+};
+
+export const buildLightningAddressValidator = (props: {
+  message: string;
+  allowLocalhost?: boolean;
+}) => {
+  const validateLightningAddressFormat =
+    buildLightningAddressFormatValidator(props);
+
+  return async (
+    value: string | null | undefined,
+  ): Promise<string | boolean> => {
+    const isValidFormat = validateLightningAddressFormat(value);
+
+    if (isValidFormat !== true || !value) {
+      return isValidFormat;
+    }
+
+    const isAddressValid = await isValidLightningAddress(value);
+
+    return !isAddressValid ? props.message : true;
+  };
 };
 
 export type { LNURLPayResult, LNURLError };
