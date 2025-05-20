@@ -7,11 +7,14 @@ import type { Account } from '~/features/accounts/account';
 import { type DecodedBolt11, parseBolt11Invoice } from '~/lib/bolt11';
 import { parseCashuPaymentRequest } from '~/lib/cashu';
 import { getLNURLPayParams, isLNURLError } from '~/lib/lnurl';
-import {} from '~/lib/lnurl/types';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
 import { buildEmailValidator } from '~/lib/validation';
 import { type Contact, isContact } from '../contacts/contact';
+import type {
+  CashuLightningQuote,
+  GetCashuLightningQuoteOptions,
+} from './cashu-send-quote-service';
 
 const getAppCurrencyAndUnitFromCashuUnit = (
   unit: string,
@@ -111,9 +114,10 @@ export type SendState = {
   status: 'idle' | 'confirming';
   amount: Money | null;
   account: Account;
-  sendType: SendType | null;
+  sendType: SendType;
   destination: string | null;
   displayDestination: string | null;
+  quote: CashuLightningQuote | null;
   selectSourceAccount: (account: Account) => void;
   selectDestination: (
     destination: string | Contact,
@@ -153,12 +157,16 @@ const pickAmountCurrencyByAccount = (amounts: Money[], account: Account) => {
 export const createSendStore = ({
   initialAccount,
   getInvoiceFromLud16,
+  createCashuSendQuote,
 }: {
   initialAccount: Account;
   getInvoiceFromLud16: (params: {
     lud16: string;
     amount: Money<'BTC'>;
   }) => Promise<string>;
+  createCashuSendQuote: (
+    params: GetCashuLightningQuoteOptions,
+  ) => Promise<CashuLightningQuote>;
 }) => {
   return create<SendState>()((set, get) => ({
     status: 'idle',
@@ -168,6 +176,7 @@ export const createSendStore = ({
     destination: null,
     displayDestination: null,
     cashuToken: null,
+    quote: null,
     selectSourceAccount(account: Account) {
       set({ account });
     },
@@ -188,7 +197,11 @@ export const createSendStore = ({
           return { success: false, error: 'Invalid lightning address' };
         }
 
-        set({ sendType: 'LN_ADDRESS', displayDestination: destination });
+        set({
+          sendType: 'LN_ADDRESS',
+          destination,
+          displayDestination: destination,
+        });
         return { success: true, data: { type: 'LN_ADDRESS' } };
       }
 
@@ -243,20 +256,42 @@ export const createSendStore = ({
       }),
     async confirm(amount: Money, convertedAmount: Money) {
       set({ status: 'confirming', amount });
-      const { account, sendType, displayDestination } = get();
+      const { account, sendType } = get();
 
-      if (sendType === 'LN_ADDRESS') {
-        if (!displayDestination) {
+      if (['LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
+        const { destination } = get();
+        if (!destination) {
           throw new Error('Destination is required');
         }
         const bitcoinInputValue = (
           amount.currency === 'BTC' ? amount : convertedAmount
         ) as Money<'BTC'>;
         const bolt11 = await getInvoiceFromLud16({
-          lud16: displayDestination,
+          lud16: destination,
           amount: bitcoinInputValue,
         });
         set({ destination: bolt11 });
+      }
+
+      if (
+        ['BOLT11_INVOICE', 'LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)
+      ) {
+        if (account.type !== 'cashu') {
+          throw new Error('Not implemented. Account is not a cashu account');
+        }
+
+        const { destination } = get();
+
+        if (!destination) {
+          throw new Error('Destination is required');
+        }
+
+        const quote = await createCashuSendQuote({
+          account,
+          paymentRequest: destination,
+          amount,
+        });
+        set({ quote });
       }
 
       const amountToSend = pickAmountCurrencyByAccount(

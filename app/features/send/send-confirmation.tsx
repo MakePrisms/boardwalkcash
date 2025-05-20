@@ -22,12 +22,11 @@ import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { Money } from '~/lib/money';
 import { getDefaultUnit } from '../shared/currencies';
-import { getErrorMessage } from '../shared/error';
 import {
   useCashuSendQuote,
-  useCreateCashuSendQuote,
   useInitiateCashuSendQuote,
 } from './cashu-send-quote-hooks';
+import type { CashuLightningQuote } from './cashu-send-quote-service';
 import { useSendStore } from './send-provider';
 import { SuccessfulSendPage } from './succesful-send-page';
 
@@ -61,7 +60,7 @@ const BaseConfirmation = ({
   isConfirming,
   error,
 }: {
-  amount?: Money;
+  amount: Money;
   children: React.ReactNode;
   onConfirm: () => void;
   disabled?: boolean;
@@ -75,11 +74,7 @@ const BaseConfirmation = ({
         <PageHeaderTitle>Confirm Payment</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center gap-4">
-        {amount ? (
-          <MoneyWithConvertedAmount money={amount} />
-        ) : (
-          <Skeleton className="h-[116px] w-32" />
-        )}
+        <MoneyWithConvertedAmount money={amount} />
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           <Card className="m-4 w-full">
             <CardContent className="flex flex-col gap-6 pt-6">
@@ -112,13 +107,13 @@ const BaseConfirmation = ({
 
 type PayBolt11ConfirmationProps = {
   /** The bolt11 invoice to pay */
-  bolt11: string;
-  /** The amount the user inputted or the amount matching their send account*/
-  inputAmount: Money;
+  destination: string;
   /** The account to send from */
   account: CashuAccount;
   /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
   displayDestination: string;
+  /** The quote to display in the UI. */
+  quote: CashuLightningQuote;
 };
 
 /**
@@ -129,16 +124,15 @@ type PayBolt11ConfirmationProps = {
  * Then, once proofs are create we give them to the mint to melt.
  */
 export const PayBolt11Confirmation = ({
-  bolt11,
-  inputAmount,
+  destination,
   account,
   displayDestination,
+  quote: data,
 }: PayBolt11ConfirmationProps) => {
-  const { description } = decodeBolt11(bolt11);
+  const { description } = decodeBolt11(destination);
   const { toast } = useToast();
 
-  const { mutate: createSendQuote, data, error } = useCreateCashuSendQuote();
-  const fee = data?.feeReserve;
+  const fee = data.feeReserve;
 
   const {
     mutate: initiateSend,
@@ -164,10 +158,6 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  useEffect(() => {
-    createSendQuote({ account, amount: inputAmount, paymentRequest: bolt11 });
-  }, [createSendQuote, bolt11, inputAmount, account]);
-
   const handleConfirm = async () => {
     if (data) {
       initiateSend({ account, sendQuote: data });
@@ -178,14 +168,12 @@ export const PayBolt11Confirmation = ({
     () => [
       {
         label: 'Estimated fee',
-        value: fee ? (
+        value: (
           <MoneyDisplay
             variant="secondary"
             money={fee}
             unit={getDefaultUnit(fee.currency)}
           />
-        ) : (
-          <Skeleton className="h-[33px] w-[40px]" />
         ),
       },
       { label: 'From', value: account.name },
@@ -199,7 +187,7 @@ export const PayBolt11Confirmation = ({
       <SuccessfulSendPage
         amount={quote.amountToSend}
         account={account}
-        destination={formatDestination(bolt11)}
+        destination={formatDestination(destination)}
         feesPaid={quote.amountSpent.subtract(quote.amountToSend)}
       />
     );
@@ -215,7 +203,6 @@ export const PayBolt11Confirmation = ({
         quote?.state === 'PENDING'
       }
       disabled={!data}
-      error={error ? getErrorMessage(error) : undefined}
     >
       {confirmationRowData.map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />

@@ -15,7 +15,7 @@ import {
   useCashuSendQuoteRepository,
 } from './cashu-send-quote-repository';
 
-type GetLightningQuoteOptions = {
+export type GetCashuLightningQuoteOptions = {
   /**
    * The account to send the money from.
    */
@@ -36,6 +36,37 @@ type GetLightningQuoteOptions = {
   exchangeRate?: Big;
 };
 
+export type CashuLightningQuote = {
+  /**
+   * The payment request to pay.
+   */
+  paymentRequest: string;
+  /**
+   * The amount requested.
+   */
+  amountRequested: Money;
+  /**
+   * The amount requested in BTC.
+   */
+  amountRequestedInBtc: Money<'BTC'>;
+  /**
+   * The mint's melt quote.
+   */
+  meltQuote: MeltQuoteResponse;
+  /**
+   * The maximum fee that will be charged for the send.
+   */
+  feeReserve: Money;
+  /**
+   * The amount to send.
+   */
+  amountToSend: Money;
+  /**
+   * The total amount to send (amount to send + fee reserve).
+   */
+  totalAmountToSend: Money;
+};
+
 export type SendQuoteRequest = {
   paymentRequest: string;
   amountRequested: Money;
@@ -54,7 +85,7 @@ export class CashuSendQuoteService {
     paymentRequest,
     amount,
     exchangeRate,
-  }: GetLightningQuoteOptions) {
+  }: GetCashuLightningQuoteOptions): Promise<CashuLightningQuote> {
     const bolt11ValidationResult = parseBolt11Invoice(paymentRequest);
     if (!bolt11ValidationResult.valid) {
       throw new Error('Invalid lightning invoice');
