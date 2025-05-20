@@ -40,7 +40,7 @@ const formatDestination = (destination: string) => {
 const ConfirmationRow = ({
   label,
   value,
-}: { label: string; value: string | React.ReactNode }) => {
+}: { label: string; value: React.ReactNode }) => {
   return (
     <div className="flex items-center justify-between">
       <p className="text-muted-foreground">{label}</p>
@@ -56,15 +56,13 @@ const BaseConfirmation = ({
   amount,
   onConfirm,
   children,
-  disabled,
-  isConfirming,
+  loading,
   error,
 }: {
   amount: Money;
   children: React.ReactNode;
   onConfirm: () => void;
-  disabled?: boolean;
-  isConfirming?: boolean;
+  loading?: boolean;
   error?: string;
 }) => {
   return (
@@ -92,11 +90,7 @@ const BaseConfirmation = ({
           </Card>
         </div>
         <div className="z-10 mt-auto mb-28">
-          <Button
-            onClick={onConfirm}
-            loading={isConfirming}
-            disabled={disabled || !!error}
-          >
+          <Button onClick={onConfirm} loading={loading} disabled={!!error}>
             Confirm
           </Button>
         </div>
@@ -127,12 +121,9 @@ export const PayBolt11Confirmation = ({
   destination,
   account,
   displayDestination,
-  quote: data,
+  quote: bolt11Quote,
 }: PayBolt11ConfirmationProps) => {
-  const { description } = decodeBolt11(destination);
   const { toast } = useToast();
-
-  const fee = data.feeReserve;
 
   const {
     mutate: initiateSend,
@@ -158,30 +149,7 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  const handleConfirm = async () => {
-    if (data) {
-      initiateSend({ account, sendQuote: data });
-    }
-  };
-
-  const confirmationRowData = useMemo(
-    () => [
-      {
-        label: 'Estimated fee',
-        value: (
-          <MoneyDisplay
-            variant="secondary"
-            money={fee}
-            unit={getDefaultUnit(fee.currency)}
-          />
-        ),
-      },
-      { label: 'From', value: account.name },
-      { label: 'Paying', value: formatDestination(displayDestination) },
-    ],
-    [fee, account, displayDestination],
-  );
-
+  // TODO: what if the state is failed? are we handling that atm?
   if (quote?.state === 'PAID') {
     return (
       <SuccessfulSendPage
@@ -193,16 +161,34 @@ export const PayBolt11Confirmation = ({
     );
   }
 
+  const handleConfirm = () => initiateSend({ account, sendQuote: bolt11Quote });
+
+  const paymentInProgress =
+    initiateSendStatus === 'pending' ||
+    ['UNPAID', 'PENDING'].includes(quote?.state ?? '');
+  const { description } = decodeBolt11(destination);
+  const fee = bolt11Quote.feeReserve;
+
+  const confirmationRowData = [
+    {
+      label: 'Estimated fee',
+      value: (
+        <MoneyDisplay
+          variant="secondary"
+          money={fee}
+          unit={getDefaultUnit(fee.currency)}
+        />
+      ),
+    },
+    { label: 'From', value: account.name },
+    { label: 'Paying', value: formatDestination(displayDestination) },
+  ];
+
   return (
     <BaseConfirmation
-      amount={data?.totalAmountToSend}
+      amount={bolt11Quote.totalAmountToSend}
       onConfirm={handleConfirm}
-      isConfirming={
-        initiateSendStatus === 'pending' ||
-        quote?.state === 'UNPAID' ||
-        quote?.state === 'PENDING'
-      }
-      disabled={!data}
+      loading={paymentInProgress}
     >
       {confirmationRowData.map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
@@ -380,31 +366,28 @@ export const PayCashuRequestConfirmation = ({
     console.log('proofs', proofs);
   };
 
-  const confirmationRowData = useMemo(
-    () => [
-      {
-        label: 'Estimated fee',
-        value: data?.fee ? (
-          <MoneyDisplay
-            variant="secondary"
-            money={data.fee}
-            unit={getDefaultUnit(data.fee.currency)}
-          />
-        ) : (
-          <Skeleton className="h-[33px] w-[20px]" />
-        ),
-      },
-      { label: 'From', value: account.name },
-      {
-        label: 'To',
-        value: formatDestination(
-          sendToMintUrl.replace('https://', '').replace('http://', ''),
-        ),
-      },
-      { label: 'Paying', value: formatDestination(paymentRequest) },
-    ],
-    [data, account, sendToMintUrl, paymentRequest],
-  );
+  const confirmationRowData = [
+    {
+      label: 'Estimated fee',
+      value: data?.fee ? (
+        <MoneyDisplay
+          variant="secondary"
+          money={data.fee}
+          unit={getDefaultUnit(data.fee.currency)}
+        />
+      ) : (
+        <Skeleton className="h-[33px] w-[20px]" />
+      ),
+    },
+    { label: 'From', value: account.name },
+    {
+      label: 'To',
+      value: formatDestination(
+        sendToMintUrl.replace('https://', '').replace('http://', ''),
+      ),
+    },
+    { label: 'Paying', value: formatDestination(paymentRequest) },
+  ];
 
   return (
     <BaseConfirmation amount={amount} onConfirm={handleConfirm}>

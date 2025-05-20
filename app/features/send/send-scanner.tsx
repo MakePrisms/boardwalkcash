@@ -37,31 +37,27 @@ export default function SendScanner() {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
 
-  const selectDestination = useSendStore((state) => state.selectDestination);
-  const confirm = useSendStore((state) => state.confirm);
   const sendAccount = useSendStore((state) => state.account);
+  const selectDestination = useSendStore((state) => state.selectDestination);
+  const getQuote = useSendStore((state) => state.getQuote);
 
   const convert = useConverter(sendAccount);
 
   const handleDecode = async (input: string) => {
-    const result = await selectDestination(input);
-    if (!result.success) {
-      const { error } = result;
+    const selectDestinationResult = await selectDestination(input);
+    if (!selectDestinationResult.success) {
       // TODO: implement this https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2024690976
       return toast({
         title: 'Invalid input',
-        description: error,
+        description: selectDestinationResult.error,
         variant: 'destructive',
       });
     }
 
-    const { amount } = result.data;
+    const { amount } = selectDestinationResult.data;
 
     if (!amount) {
-      // we enforce bolt11s to have an amount, but cashu requests don't need an amount
-      // if the setPaymentRequest validation passes, that means the user just needs
-      // to enter an amount then click continue. In the future bolt11s can be amountless
-      // in cashu and other account types can handle amountless bolt11s
+      // Navigate to send input to enter the amount
       return navigate('/send', {
         applyTo: 'oldView',
         transition: 'slideDown',
@@ -70,9 +66,17 @@ export default function SendScanner() {
 
     // TODO: do we need this conversion? See this discussion https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2049445764
     const sendAmount = convert(amount);
-    await confirm(amount, sendAmount);
+    const getQuoteResult = await getQuote(amount, sendAmount);
 
-    return navigate('/send/confirm', {
+    if (!getQuoteResult.success) {
+      return toast({
+        title: 'Error',
+        description: 'Failed to get a send quote. Please try again',
+        variant: 'destructive',
+      });
+    }
+
+    navigate('/send/confirm', {
       applyTo: 'newView',
       transition: 'slideUp',
     });
