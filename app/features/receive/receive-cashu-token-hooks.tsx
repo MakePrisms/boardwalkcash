@@ -7,7 +7,6 @@ import type {
   ExtendedCashuAccount,
 } from '~/features/accounts/account';
 import {
-  useAccount,
   useAccounts,
   useAddCashuAccount,
   useDefaultAccount,
@@ -20,6 +19,13 @@ import type { AccountWithBadges } from '../accounts/account-selector';
 import { useTransaction } from '../transactions/transaction-hooks';
 import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
 import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
+
+const areMintUrlsEqual = (a: string, b: string) => {
+  return (
+    a.toLowerCase().replace(/\/+$/, '').trim() ===
+    b.toLowerCase().replace(/\/+$/, '').trim()
+  );
+};
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -48,7 +54,8 @@ export function useCashuTokenSourceAccount(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
   const { data: allAccounts } = useAccounts({ type: 'cashu' });
   const existingAccount = allAccounts.find(
-    (a) => a.mintUrl === token.mint && a.currency === tokenCurrency,
+    (a) =>
+      areMintUrlsEqual(a.mintUrl, token.mint) && a.currency === tokenCurrency,
   );
 
   const { data } = useSuspenseQuery({
@@ -155,13 +162,13 @@ const getBadges = (
   if (sourceAccount.isTestMint) {
     badges.push('Test Mint');
   }
-  if (account.mintUrl === sourceAccount.mintUrl) {
+  if (account.id === sourceAccount.id) {
     badges.push('Source');
   }
-  if (defaultAccount.type === 'cashu' && account.id === defaultAccount.id) {
+  if (account.id === defaultAccount.id) {
     badges.push('Default');
   }
-  if (!allAccounts.some((a) => a.mintUrl === account.mintUrl)) {
+  if (!allAccounts.some((a) => areMintUrlsEqual(a.mintUrl, account.mintUrl))) {
     badges.push('Unknown');
   }
 
@@ -179,8 +186,7 @@ const getSelectableAccounts = (
     : [
         sourceAccount,
         ...accounts.filter(
-          (account) =>
-            !account.isTestMint && account.mintUrl !== sourceAccount.mintUrl,
+          (account) => !account.isTestMint && account.id !== sourceAccount.id,
         ),
       ];
 
@@ -218,10 +224,9 @@ export function useReceiveCashuTokenAccounts(
   const [receiveAccountId, setReceiveAccountId] = useState<string>(
     defaultReceiveAccount.id,
   );
-  const receiveAccount = useAccount<ExtendedCashuAccount>(
-    receiveAccountId,
-    () => sourceAccount,
-  );
+  const receiveAccount =
+    selectableAccounts.find((account) => account.id === receiveAccountId) ??
+    defaultReceiveAccount;
 
   const setReceiveAccount = (account: CashuAccountWithBadges) => {
     const isSelectable = selectableAccounts.some((a) => a.id === account.id);
@@ -286,7 +291,7 @@ export function useReceiveCashuToken({
     account: CashuAccount;
   }) => {
     try {
-      const isSourceMint = account.mintUrl === token.mint;
+      const isSourceMint = areMintUrlsEqual(account.mintUrl, token.mint);
 
       if (isSourceMint) {
         await createCashuTokenSwap({ token, account });
