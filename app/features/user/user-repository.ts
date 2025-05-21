@@ -3,10 +3,10 @@ import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbUser,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbUser,
+  agicashDb,
+} from '../agicash-db/database';
 import { useEncryption } from '../shared/encryption';
 import type { User } from './user';
 
@@ -28,7 +28,7 @@ type Encryption = {
 
 export class UserRepository {
   constructor(
-    private readonly db: BoardwalkDb,
+    private readonly db: AgicashDb,
     private readonly encryption: Encryption,
   ) {}
 
@@ -218,7 +218,7 @@ export class UserRepository {
     return AccountRepository.toAccount(account, this.encryption.decrypt);
   }
 
-  private toUser(dbUser: BoardwalkDbUser): User {
+  private toUser(dbUser: AgicashDbUser): User {
     if (dbUser.email) {
       return {
         id: dbUser.id,
@@ -252,5 +252,5 @@ export class UserRepository {
 
 export function useUserRepository() {
   const encryption = useEncryption();
-  return new UserRepository(boardwalkDb, encryption);
+  return new UserRepository(agicashDb, encryption);
 }

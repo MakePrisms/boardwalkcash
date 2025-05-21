@@ -7,7 +7,7 @@ import type {
 } from '~/lib/lnurl/types';
 import { Money } from '~/lib/money';
 import { AccountRepository } from '../accounts/account-repository';
-import type { BoardwalkDb } from '../boardwalk-db/database';
+import type { AgicashDb } from '../agicash-db/database';
 import type { CashuCryptography } from '../shared/cashu';
 import { UserRepository } from '../user/user-repository';
 import { CashuReceiveQuoteRepository } from './cashu-receive-quote-repository';
@@ -37,7 +37,7 @@ export class LightningAddressService {
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
 
-  constructor(request: Request, db: BoardwalkDb) {
+  constructor(request: Request, db: AgicashDb) {
     this.userRepository = new UserRepository(db, this.cryptography);
     this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
       db,

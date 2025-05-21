@@ -4,7 +4,7 @@ import { useCallback, useRef } from 'react';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
-import { supabaseSessionStore } from '../boardwalk-db/supabse-session-store';
+import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
 import { guestAccountStorage } from './guest-account-storage';
 
 export type AuthUser = UserResponse['user'];

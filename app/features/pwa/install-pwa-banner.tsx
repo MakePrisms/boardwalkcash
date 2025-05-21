@@ -69,7 +69,7 @@ export default function InstallPwaBanner({
     >
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">
-          Install Boardwalk for the best experience.
+          Install Agicash for the best experience.
         </p>
         <div className="flex gap-4">
           <Button variant="outline" size="sm" onClick={handleDismiss}>

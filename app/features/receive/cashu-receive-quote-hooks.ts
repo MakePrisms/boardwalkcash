@@ -31,9 +31,9 @@ import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import { useAccountsCache } from '../accounts/account-hooks';
 import {
-  type BoardwalkDbCashuReceiveQuote,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDbCashuReceiveQuote,
+  agicashDb,
+} from '../agicash-db/database';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -221,7 +221,7 @@ function useOnCashuReceiveQuoteChange({
   const onUpdatedRef = useLatest(onUpdated);
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('cashu-receive-quotes')
       .on(
         'postgres_changes',
@@ -231,7 +231,7 @@ function useOnCashuReceiveQuoteChange({
           table: 'cashu_receive_quotes',
         },
         (
-          payload: RealtimePostgresChangesPayload<BoardwalkDbCashuReceiveQuote>,
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>,
         ) => {
           if (payload.eventType === 'INSERT') {
             const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);

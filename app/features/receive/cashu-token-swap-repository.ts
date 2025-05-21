@@ -2,10 +2,10 @@ import type { Proof, Token } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
 import { sum } from '~/lib/utils';
 import {
-  type BoardwalkDb,
-  type BoardwalkDbCashuTokenSwap,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDb,
+  type AgicashDbCashuTokenSwap,
+  agicashDb,
+} from '../agicash-db/database';
 import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
@@ -57,7 +57,7 @@ type CreateTokenSwap = {
 
 export class CashuTokenSwapRepository {
   constructor(
-    private readonly db: BoardwalkDb,
+    private readonly db: AgicashDb,
     private readonly encryption: Encryption,
   ) {}
 
@@ -250,7 +250,7 @@ export class CashuTokenSwapRepository {
   }
 
   static async toTokenSwap(
-    data: BoardwalkDbCashuTokenSwap,
+    data: AgicashDbCashuTokenSwap,
     decryptData: Encryption['decrypt'],
   ): Promise<CashuTokenSwap> {
     const decryptedData = {
@@ -281,5 +281,5 @@ export class CashuTokenSwapRepository {
 
 export function useCashuTokenSwapRepository() {
   const encryption = useEncryption();
-  return new CashuTokenSwapRepository(boardwalkDb, encryption);
+  return new CashuTokenSwapRepository(agicashDb, encryption);
 }

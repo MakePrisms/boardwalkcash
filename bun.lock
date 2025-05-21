@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "boardwalkcash",
+      "name": "agicash",
       "dependencies": {
         "@cashu/cashu-ts": "2.5.2",
         "@cashu/crypto": "0.3.4",

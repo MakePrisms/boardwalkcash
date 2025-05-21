@@ -17,18 +17,18 @@ if (!supabaseAnonKey) {
 }
 
 type CashuReceiveQuotePaymentResult = {
-  updated_quote: BoardwalkDbCashuReceiveQuote;
-  updated_account: BoardwalkDbAccount;
+  updated_quote: AgicashDbCashuReceiveQuote;
+  updated_account: AgicashDbAccount;
 };
 
 type CreateCashuSendQuoteResult = {
-  created_quote: BoardwalkDbCashuSendQuote;
-  updated_account: BoardwalkDbAccount;
+  created_quote: AgicashDbCashuSendQuote;
+  updated_account: AgicashDbAccount;
 };
 
 type UpdateCashuSendQuoteResult = {
-  updated_quote: BoardwalkDbCashuSendQuote;
-  updated_account: BoardwalkDbAccount;
+  updated_quote: AgicashDbCashuSendQuote;
+  updated_account: AgicashDbAccount;
 };
 
 // Use when you need to fix/improve generated types
@@ -123,15 +123,15 @@ export type Database = MergeDeep<
           Args: {
             p_email: string | null;
           };
-          Returns: BoardwalkDbUser & {
-            accounts: BoardwalkDbAccount[];
+          Returns: AgicashDbUser & {
+            accounts: AgicashDbAccount[];
           };
         };
         process_cashu_receive_quote_payment: {
           Returns: CashuReceiveQuotePaymentResult;
         };
         create_cashu_token_swap: {
-          Returns: BoardwalkDbCashuTokenSwap;
+          Returns: AgicashDbCashuTokenSwap;
         };
         create_cashu_send_quote: {
           Returns: CreateCashuSendQuoteResult;
@@ -155,33 +155,27 @@ export type Database = MergeDeep<
   }
 >;
 
-export const boardwalkDb = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    accessToken: () =>
-      supabaseSessionStore
-        .getState()
-        .getJwtWithRefresh()
-        .then((jwt) => jwt ?? ''),
-    db: {
-      schema: 'wallet',
-    },
+export const agicashDb = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  accessToken: () =>
+    supabaseSessionStore
+      .getState()
+      .getJwtWithRefresh()
+      .then((jwt) => jwt ?? ''),
+  db: {
+    schema: 'wallet',
   },
-);
+});
 
-export type BoardwalkDb = typeof boardwalkDb;
+export type AgicashDb = typeof agicashDb;
 
-export type BoardwalkDbUser = Database['wallet']['Tables']['users']['Row'];
-export type BoardwalkDbAccount =
-  Database['wallet']['Tables']['accounts']['Row'];
-export type BoardwalkDbCashuReceiveQuote =
+export type AgicashDbUser = Database['wallet']['Tables']['users']['Row'];
+export type AgicashDbAccount = Database['wallet']['Tables']['accounts']['Row'];
+export type AgicashDbCashuReceiveQuote =
   Database['wallet']['Tables']['cashu_receive_quotes']['Row'];
-export type BoardwalkDbCashuTokenSwap =
+export type AgicashDbCashuTokenSwap =
   Database['wallet']['Tables']['cashu_token_swaps']['Row'];
-export type BoardwalkDbCashuSendQuote =
+export type AgicashDbCashuSendQuote =
   Database['wallet']['Tables']['cashu_send_quotes']['Row'];
-export type BoardwalkDbTransaction =
+export type AgicashDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
-export type BoardwalkDbContact =
-  Database['wallet']['Tables']['contacts']['Row'];
+export type AgicashDbContact = Database['wallet']['Tables']['contacts']['Row'];

@@ -12,9 +12,9 @@ import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import { useAccountsCache } from '../accounts/account-hooks';
 import {
-  type BoardwalkDbCashuTokenSwap,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDbCashuTokenSwap,
+  agicashDb,
+} from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuTokenSwap } from './cashu-token-swap';
@@ -201,7 +201,7 @@ function useOnCashuTokenSwapChange({
   const onUpdatedRef = useLatest(onUpdated);
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('cashu-token-swaps')
       .on(
         'postgres_changes',
@@ -211,7 +211,7 @@ function useOnCashuTokenSwapChange({
           table: 'cashu_token_swaps',
         },
         async (
-          payload: RealtimePostgresChangesPayload<BoardwalkDbCashuTokenSwap>,
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuTokenSwap>,
         ) => {
           if (payload.eventType === 'INSERT') {
             const swap = await CashuTokenSwapRepository.toTokenSwap(

@@ -19,9 +19,9 @@ import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import { useAccountsCache } from '../accounts/account-hooks';
 import {
-  type BoardwalkDbCashuSendQuote,
-  boardwalkDb,
-} from '../boardwalk-db/database';
+  type AgicashDbCashuSendQuote,
+  agicashDb,
+} from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
@@ -225,7 +225,7 @@ function useOnCashuSendQuoteChange({
   const onUpdatedRef = useLatest(onUpdated);
 
   useEffect(() => {
-    const channel = boardwalkDb
+    const channel = agicashDb
       .channel('cashu-send-quotes')
       .on(
         'postgres_changes',
@@ -235,7 +235,7 @@ function useOnCashuSendQuoteChange({
           table: 'cashu_send_quotes',
         },
         async (
-          payload: RealtimePostgresChangesPayload<BoardwalkDbCashuSendQuote>,
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
         ) => {
           if (payload.eventType === 'INSERT') {
             const addedQuote = await CashuSendQuoteRepository.toSend(

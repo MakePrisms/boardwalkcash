@@ -3,7 +3,7 @@
  * defined by LUD 06: https://github.com/lnurl/luds/blob/luds/06.md
  */
 
-import { boardwalkDbServiceRole } from '~/features/boardwalk-db/database.server';
+import { agicashDbServiceRole } from '~/features/agicash-db/database.server';
 import { LightningAddressService } from '~/features/receive/lightning-address-service';
 import { Money } from '~/lib/money';
 import type { Route } from './+types/api.lnurlp.callback.$user_id';
@@ -27,7 +27,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const lightningAddressService = new LightningAddressService(
     request,
-    boardwalkDbServiceRole,
+    agicashDbServiceRole,
   );
 
   const response = await lightningAddressService.handleLnurlpCallback(
