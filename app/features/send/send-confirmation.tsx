@@ -105,7 +105,7 @@ type PayBolt11ConfirmationProps = {
   /** The account to send from */
   account: CashuAccount;
   /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
-  displayDestination: string;
+  destinationDisplay: string;
   /** The quote to display in the UI. */
   quote: CashuLightningQuote;
 };
@@ -118,16 +118,15 @@ type PayBolt11ConfirmationProps = {
  * Then, once proofs are create we give them to the mint to melt.
  */
 export const PayBolt11Confirmation = ({
-  destination,
   account,
-  displayDestination,
   quote: bolt11Quote,
+  destination,
+  destinationDisplay,
 }: PayBolt11ConfirmationProps) => {
   const { toast } = useToast();
 
   const {
     mutate: initiateSend,
-    status: initiateSendStatus,
     data: { id: sendQuoteId } = {},
   } = useInitiateCashuSendQuote({
     onError: (error) => {
@@ -139,8 +138,8 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  const { quote } = useCashuSendQuote({
-    sendQuoteId: sendQuoteId,
+  const { quote, status: quoteStatus } = useCashuSendQuote({
+    sendQuoteId,
     onExpired: () => {
       toast({
         title: 'Send quote expired',
@@ -149,7 +148,6 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  // TODO: what if the state is failed? are we handling that atm?
   if (quote?.state === 'PAID') {
     return (
       <SuccessfulSendPage
@@ -161,11 +159,16 @@ export const PayBolt11Confirmation = ({
     );
   }
 
+  if (quote?.state === 'FAILED') {
+    // TODO: implement proper ui
+    return <div>Send Failed</div>;
+  }
+
   const handleConfirm = () => initiateSend({ account, sendQuote: bolt11Quote });
 
-  const paymentInProgress =
-    initiateSendStatus === 'pending' ||
-    ['UNPAID', 'PENDING'].includes(quote?.state ?? '');
+  const paymentInProgress = ['LOADING', 'UNPAID', 'PENDING'].includes(
+    quoteStatus,
+  );
   const { description } = decodeBolt11(destination);
   const fee = bolt11Quote.feeReserve;
 
@@ -181,7 +184,7 @@ export const PayBolt11Confirmation = ({
       ),
     },
     { label: 'From', value: account.name },
-    { label: 'Paying', value: formatDestination(displayDestination) },
+    { label: 'Paying', value: formatDestination(destinationDisplay) },
   ];
 
   return (

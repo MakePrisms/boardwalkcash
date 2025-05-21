@@ -164,7 +164,7 @@ type UseCashuSendQuoteProps = {
 
 type UseCashuSendQuoteResponse =
   | {
-      status: 'LOADING';
+      status: 'DISABLED' | 'LOADING';
       quote?: undefined;
     }
   | {
@@ -202,6 +202,10 @@ export function useCashuSendQuote({
       onExpiredRef.current?.(data);
     }
   }, [data]);
+
+  if (!enabled) {
+    return { status: 'DISABLED' };
+  }
 
   if (!data) {
     return { status: 'LOADING' };
