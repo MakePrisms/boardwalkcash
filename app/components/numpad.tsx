@@ -26,11 +26,12 @@ const isValidButton = (button: string): button is NumpadButton => {
 
 type NumpadButtonProps = React.ComponentProps<'button'>;
 
-const NumpadButton = ({ onClick, children }: NumpadButtonProps) => {
+const NumpadButton = ({ onClick, children, ...props }: NumpadButtonProps) => {
   return (
     <Button
       onClick={onClick}
       className="flex h-full w-full cursor-pointer items-center justify-center px-6 text-xl transition-all active:scale-95"
+      {...props}
     >
       {children}
     </Button>

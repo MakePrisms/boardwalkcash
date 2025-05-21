@@ -13,25 +13,16 @@ import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { Money } from '~/lib/money';
 
-function AccountDetailItem({
-  label,
-  values,
-}: { label: string; values: string[] }) {
+function AccountDetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
       <Badge variant="secondary" className="text-sm">
         {label}
       </Badge>
       <div className="flex items-center">
-        {values.map((value) => (
-          <Badge
-            key={value}
-            variant="outline"
-            className="text-muted-foreground"
-          >
-            {value}
-          </Badge>
-        ))}
+        <Badge variant="outline" className="text-muted-foreground">
+          {value}
+        </Badge>
       </div>
     </div>
   );
@@ -63,13 +54,13 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
             {account.isDefault && <Badge variant="outline">Default</Badge>}
           </div>
           {[
-            { label: 'Type', values: [account.type] },
-            { label: 'Currency', values: [account.currency] },
+            { label: 'Type', value: account.type },
+            { label: 'Currency', value: account.currency },
             {
               label: 'Mint',
-              values: [
-                account.mintUrl.replace('https://', '').replace('http://', ''),
-              ],
+              value: account.mintUrl
+                .replace('https://', '')
+                .replace('http://', ''),
             },
           ].map((detail) => (
             <AccountDetailItem key={detail.label} {...detail} />

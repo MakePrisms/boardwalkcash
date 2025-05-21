@@ -19,19 +19,23 @@ export const MoneyWithConvertedAmount = ({
     error: exchangeRateError,
     isLoading: exchangeRateLoading,
   } = useExchangeRate(`${money.currency}-${convertedCurrency}`);
+
   const shouldShowConvertedAmount =
     money.currency === 'BTC' || money.currency !== defaultFiatCurrency;
 
+  const unit = getDefaultUnit(money.currency);
+  const convertedUnit = getDefaultUnit(convertedCurrency);
+
   return variant === 'default' ? (
     <div className="flex min-h-[116px] flex-col items-center">
-      <MoneyDisplay money={money} unit={getDefaultUnit(money.currency)} />
+      <MoneyDisplay money={money} unit={unit} />
       {shouldShowConvertedAmount && (
         <>
           {exchangeRateLoading && <Skeleton className="h-6 w-32" />}
           {!exchangeRateError && rate && (
             <MoneyDisplay
               money={money.convert(convertedCurrency, rate)}
-              unit={getDefaultUnit(convertedCurrency)}
+              unit={convertedUnit}
               variant="secondary"
             />
           )}
@@ -40,16 +44,19 @@ export const MoneyWithConvertedAmount = ({
     </div>
   ) : (
     <span className="text-muted-foreground text-sm">
-      {money.toLocaleString({ unit: getDefaultUnit(money.currency) })}
-      {money.currency === 'BTC' &&
-        (exchangeRateLoading ? (
-          <Skeleton className="ml-1 inline-block h-4 w-10" />
-        ) : (
-          rate &&
-          ` (~${money.convert(convertedCurrency, rate).toLocaleString({
-            unit: getDefaultUnit(convertedCurrency),
-          })})`
-        ))}
+      {money.toLocaleString({ unit })}
+      {shouldShowConvertedAmount && (
+        <>
+          {exchangeRateLoading && (
+            <Skeleton className="ml-1 inline-block h-4 w-10" />
+          )}
+          {!exchangeRateError &&
+            rate &&
+            ` (~${money.convert(convertedCurrency, rate).toLocaleString({
+              unit: getDefaultUnit(convertedCurrency),
+            })})`}
+        </>
+      )}
     </span>
   );
 };
