@@ -26,7 +26,6 @@ const useConverter = (sendAccount: Account) => {
   );
 
   return (amount: Money) => {
-    if (amount.currency === sendAccount.currency) return amount;
     if (!rate) throw new Error('Exchange rate not found');
 
     return amount.convert(sendAccount.currency, rate);
@@ -64,9 +63,9 @@ export default function SendScanner() {
       });
     }
 
-    // TODO: do we need this conversion? See this discussion https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2049445764
-    const sendAmount = convert(amount);
-    const getQuoteResult = await getQuote(amount, sendAmount);
+    const convertedAmount =
+      amount.currency !== sendAccount.currency ? convert(amount) : undefined;
+    const getQuoteResult = await getQuote(amount, convertedAmount);
 
     if (!getQuoteResult.success) {
       return toast({
