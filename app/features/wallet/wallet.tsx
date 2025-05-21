@@ -6,6 +6,7 @@ import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
+import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -13,6 +14,19 @@ const useSetSupabseSession = (authUser: AuthUser) => {
   useEffect(() => {
     supabaseSessionStore.getState().setJwtPayload({ sub: authUser.id });
   }, [authUser]);
+};
+
+/**
+ * Syncs the theme settings stored in cookies to match the default currency
+ * according to the Agicash database.
+ */
+const useSyncThemeWithDefaultCurrency = () => {
+  const { setTheme } = useTheme();
+  const defaultCurrency = useUser((user) => user.defaultCurrency);
+  useEffect(() => {
+    const theme = defaultCurrency === 'BTC' ? 'btc' : 'usd';
+    setTheme(theme);
+  }, [defaultCurrency, setTheme]);
 };
 
 /**
@@ -47,6 +61,8 @@ const Wallet = ({ children }: PropsWithChildren) => {
       });
     },
   });
+
+  useSyncThemeWithDefaultCurrency();
 
   useTrackAccounts();
   useTrackPendingCashuReceiveQuotes();
