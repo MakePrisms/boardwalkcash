@@ -289,6 +289,10 @@ function SelectContactOrLud16Drawer({
   );
 
   const handleSelect = async (selection: string | Contact) => {
+    if (status === 'selecting') {
+      return;
+    }
+
     setStatus('selecting');
     const selected = await onSelect(selection);
     if (selected) {
