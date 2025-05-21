@@ -10,7 +10,6 @@ import {
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
 import { Skeleton } from '~/components/ui/skeleton';
-import { useTheme } from '~/features/theme';
 import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
 import type { Currency } from '~/lib/money/types';
@@ -84,7 +83,6 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
 export function DefaultCurrencySwitcher() {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const { setTheme } = useTheme();
   const defaultCurrency = useUser((user) => user.defaultCurrency);
   const setDefaultCurrency = useSetDefaultCurrency();
 
@@ -92,7 +90,6 @@ export function DefaultCurrencySwitcher() {
     try {
       await setDefaultCurrency(currency);
       setIsOpen(false);
-      setTheme(currency.toLowerCase() as 'usd' | 'btc');
     } catch (error) {
       console.error(error);
       toast({
