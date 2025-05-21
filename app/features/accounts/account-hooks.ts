@@ -76,7 +76,7 @@ class AccountVersionsCache {
   }
 }
 
-class AccountsCache {
+export class AccountsCache {
   private readonly accountVersionsCache;
 
   constructor(

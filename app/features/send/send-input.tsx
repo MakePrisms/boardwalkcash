@@ -75,7 +75,7 @@ export function SendInput() {
   const { data: accounts } = useAccounts();
 
   const sendAmount = useSendStore((s) => s.amount);
-  const sendAccount = useSendStore((s) => s.account);
+  const sendAccount = useSendStore((s) => s.getSourceAccount());
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
   const destinationDisplay = useSendStore((s) => s.destinationDisplay);
   const selectDestination = useSendStore((s) => s.selectDestination);

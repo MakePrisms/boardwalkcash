@@ -36,7 +36,7 @@ export default function SendScanner() {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
 
-  const sendAccount = useSendStore((state) => state.account);
+  const sendAccount = useSendStore((state) => state.getSourceAccount());
   const selectDestination = useSendStore((state) => state.selectDestination);
   const getQuote = useSendStore((state) => state.getQuote);
 

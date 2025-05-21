@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { useStore } from 'zustand';
 import type { Account } from '~/features/accounts/account';
+import { useAccountsCache } from '../accounts/account-hooks';
 import { useCreateCashuSendQuote } from './cashu-send-quote-hooks';
 import { type SendState, type SendStore, createSendStore } from './send-store';
 import { useGetInvoiceFromLud16 } from './use-get-invoice-from-lud16';
@@ -20,10 +21,12 @@ type Props = PropsWithChildren<{
 export const SendProvider = ({ initialAccount, children }: Props) => {
   const { mutateAsync: getInvoiceFromLud16 } = useGetInvoiceFromLud16();
   const { mutateAsync: createCashuSendQuote } = useCreateCashuSendQuote();
+  const accountsCache = useAccountsCache();
 
   const [store] = useState(() =>
     createSendStore({
       initialAccount,
+      accountsCache,
       getInvoiceFromLud16,
       createCashuSendQuote,
     }),
