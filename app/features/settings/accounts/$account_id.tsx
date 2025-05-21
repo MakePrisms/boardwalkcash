@@ -49,7 +49,7 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
       <div className="flex flex-col gap-6 p-6">
         <MoneyWithConvertedAmount money={getAccountBalance(account)} />
 
-        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 w-full space-y-4 p-6">
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 w-full space-y-4 p-6 sm:max-w-sm">
           <div className="flex w-full justify-end">
             {account.isDefault && <Badge variant="outline">Default</Badge>}
           </div>
