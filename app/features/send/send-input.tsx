@@ -23,7 +23,7 @@ import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
 import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
-import { buildLightningAddressValidator } from '~/lib/lnurl';
+import { buildLightningAddressFormatValidator } from '~/lib/lnurl';
 import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
 import {
@@ -77,7 +77,7 @@ export function SendInput() {
   const sendAmount = useSendStore((s) => s.amount);
   const sendAccount = useSendStore((s) => s.account);
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
-  const displayDestination = useSendStore((s) => s.displayDestination);
+  const destinationDisplay = useSendStore((s) => s.destinationDisplay);
   const selectDestination = useSendStore((s) => s.selectDestination);
   const clearDestination = useSendStore((s) => s.clearDestination);
   const getQuote = useSendStore((s) => s.getQuote);
@@ -122,11 +122,12 @@ export function SendInput() {
 
     const result = await getQuote(inputValue, convertedValue);
     if (!result.success) {
-      return toast({
+      toast({
         title: 'Error',
         description: 'Failed to get a send quote. Please try again',
         variant: 'destructive',
       });
+      return;
     }
 
     navigate('/send/confirm', {
@@ -135,20 +136,15 @@ export function SendInput() {
     });
   };
 
-  const handlePaste = async () => {
-    const input = await readClipboard();
-    if (!input) {
-      return;
-    }
-
-    const result = await selectDestination(input);
-
+  const handleSelectDestination = async (destination: string | Contact) => {
+    const result = await selectDestination(destination);
     if (!result.success) {
-      return toast({
-        title: 'Invalid input',
+      toast({
+        title: 'Invalid destination',
         description: result.error,
         variant: 'destructive',
       });
+      return false;
     }
 
     const {
@@ -166,7 +162,17 @@ export function SendInput() {
       } = setInputValue(amount.toString(defaultUnit), amount.currency));
     }
 
-    return handleContinue(latestInputValue, latestConvertedValue);
+    await handleContinue(latestInputValue, latestConvertedValue);
+    return true;
+  };
+
+  const handlePaste = async () => {
+    const input = await readClipboard();
+    if (!input) {
+      return;
+    }
+
+    await handleSelectDestination(input);
   };
 
   return (
@@ -195,9 +201,9 @@ export function SendInput() {
         </div>
 
         <div className="flex h-[24px] items-center justify-center gap-4">
-          {displayDestination && (
+          {destinationDisplay && (
             <>
-              <p>{displayDestination}</p>
+              <p>{destinationDisplay}</p>
               <X
                 onClick={clearDestination}
                 className="h-4 w-4 cursor-pointer"
@@ -234,16 +240,8 @@ export function SendInput() {
                 <Scan />
               </LinkWithViewTransition>
 
-              <SelectContactOrLud16Drawer
-                onSelectContact={(contact) => {
-                  selectDestination(contact);
-                }}
-                onSelectLud16={(lnAddress) => {
-                  selectDestination(lnAddress);
-                }}
-              />
+              <SelectContactOrLud16Drawer onSelect={handleSelectDestination} />
             </div>
-            <div />
 
             <div className="flex items-center justify-end">
               <Button
@@ -269,48 +267,38 @@ export function SendInput() {
 }
 
 type SelectContactOrLud16DrawerProps = {
-  onSelectContact: (contact: Contact) => void;
-  onSelectLud16: (lightningAddress: string) => void;
+  onSelect: (contactOrLnAddress: Contact | string) => Promise<boolean>;
 };
 
-const validateLightningAddress = buildLightningAddressValidator({
+const validateLightningAddressFormat = buildLightningAddressFormatValidator({
   message: 'Invalid lightning address',
   allowLocalhost: import.meta.env.MODE === 'development',
 });
 
 function SelectContactOrLud16Drawer({
-  onSelectContact,
-  onSelectLud16,
+  onSelect,
 }: SelectContactOrLud16DrawerProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { toast } = useToast();
+  const [status, setStatus] = useState<'idle' | 'selecting'>('idle');
+
   const contacts = useContacts((contacts) =>
     contacts.filter((contact) =>
       contact.username.toLowerCase().includes(input.toLowerCase()),
     ),
   );
 
-  const handleSelectContact = (contact: Contact) => {
-    onSelectContact(contact);
-    setOpen(false);
-    setInput('');
+  const handleSelect = async (selection: string | Contact) => {
+    setStatus('selecting');
+    const selected = await onSelect(selection);
+    if (selected) {
+      setOpen(false);
+      setInput('');
+    }
+    setStatus('idle');
   };
 
-  const handleCustomSelect = async (selection: string) => {
-    const result = await validateLightningAddress(selection);
-    if (result === true) {
-      onSelectLud16(selection);
-    } else {
-      return toast({
-        title: 'Invalid Lightning Address',
-        description: 'Please enter a valid Lightning Address',
-        variant: 'destructive',
-      });
-    }
-    setOpen(false);
-    setInput('');
-  };
+  const isLnAddressFormat = validateLightningAddressFormat(input) === true;
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -330,11 +318,12 @@ function SelectContactOrLud16Drawer({
             onSearch={setInput}
           />
 
-          {input.includes('@') && input.includes('.') && (
+          {isLnAddressFormat && (
             <button
-              className="flex w-full items-center gap-3 p-3 hover:bg-accent"
-              onClick={() => handleCustomSelect(input)}
+              className="flex w-full items-center gap-3 p-3 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              onClick={() => handleSelect(input)}
               type="button"
+              disabled={status === 'selecting'}
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground text-sm">
                 <ZapIcon />
@@ -342,7 +331,7 @@ function SelectContactOrLud16Drawer({
               <p>Send to Lightning Address: {input}</p>
             </button>
           )}
-          <ContactsList contacts={contacts} onClick={handleSelectContact} />
+          <ContactsList contacts={contacts} onClick={handleSelect} />
         </div>
       </DrawerContent>
     </Drawer>
