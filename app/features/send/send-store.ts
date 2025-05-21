@@ -9,6 +9,7 @@ import {
 } from '~/lib/lnurl';
 import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
+import type { AccountsCache } from '../accounts/account-hooks';
 import { type Contact, isContact } from '../contacts/contact';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
 
@@ -134,8 +135,14 @@ export type DecodedDestination = {
 
 type State = {
   status: 'idle' | 'quoting';
+  /**
+   * Amount to send.
+   */
   amount: Money | null;
-  account: Account;
+  /**
+   * ID of the account to send from.
+   */
+  accountId: string;
   sendType: SendType;
   /**
    * Stores the actual payment destination.
@@ -157,6 +164,7 @@ type State = {
 
 type Actions = {
   selectSourceAccount: (account: Account) => void;
+  getSourceAccount: () => Account;
   selectDestination: (
     destination: string | Contact,
   ) => Promise<
@@ -175,6 +183,7 @@ export type SendState = State & Actions;
 
 type CreateSendStoreProps = {
   initialAccount: Account;
+  accountsCache: AccountsCache;
   getInvoiceFromLud16: (params: {
     lud16: string;
     amount: Money<'BTC'>;
@@ -188,6 +197,7 @@ type CreateSendStoreProps = {
 
 export const createSendStore = ({
   initialAccount,
+  accountsCache,
   getInvoiceFromLud16,
   createCashuSendQuote,
 }: CreateSendStoreProps) => {
@@ -206,7 +216,7 @@ export const createSendStore = ({
     return {
       status: 'idle',
       amount: null,
-      account: initialAccount,
+      accountId: initialAccount.id,
       sendType: 'CASHU_TOKEN',
       destination: null,
       destinationAlias: null,
@@ -214,7 +224,16 @@ export const createSendStore = ({
       quote: null,
       cashuToken: null,
 
-      selectSourceAccount: (account) => set({ account }),
+      selectSourceAccount: (account) => set({ accountId: account.id }),
+
+      getSourceAccount: () => {
+        const accountId = get().accountId;
+        const account = accountsCache.get(accountId);
+        if (!account) {
+          throw new Error(`Account with id ${accountId} not found`);
+        }
+        return account;
+      },
 
       clearDestination: () =>
         set({
@@ -308,7 +327,8 @@ export const createSendStore = ({
 
       getQuote: async (amount, convertedAmount) => {
         const amounts = [amount, convertedAmount].filter((x) => !!x);
-        const { sendType, account } = get();
+        const { sendType, getSourceAccount } = get();
+        const account = getSourceAccount();
         let amountToSend = pickAmountByCurrency(amounts, account.currency);
 
         set({ status: 'quoting' });

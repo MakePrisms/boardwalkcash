@@ -7,7 +7,7 @@ import {
 import { useSendStore } from '~/features/send';
 
 export default function SendConfirmationPage() {
-  const sendAccount = useSendStore((state) => state.account);
+  const sendAccount = useSendStore((state) => state.getSourceAccount());
   const sendAmount = useSendStore((state) => state.amount);
   const sendType = useSendStore((state) => state.sendType);
   const destination = useSendStore((state) => state.destination);
