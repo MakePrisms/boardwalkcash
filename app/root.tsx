@@ -100,6 +100,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
+      {/* overflow-hidden prevents rubberbanding on scroll */}
       <body className="overflow-hidden">
         {children}
         <ScrollRestoration />
