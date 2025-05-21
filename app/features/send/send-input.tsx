@@ -1,4 +1,12 @@
-import { ArrowUpDown, AtSign, Clipboard, Scan, X, ZapIcon } from 'lucide-react';
+import {
+  ArrowUpDown,
+  AtSign,
+  Clipboard,
+  LoaderCircle,
+  Scan,
+  X,
+  ZapIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
@@ -289,16 +297,14 @@ function SelectContactOrLud16Drawer({
   );
 
   const handleSelect = async (selection: string | Contact) => {
-    if (status === 'selecting') {
-      return;
-    }
-
     setStatus('selecting');
+
     const selected = await onSelect(selection);
     if (selected) {
       setOpen(false);
       setInput('');
     }
+
     setStatus('idle');
   };
 
@@ -330,12 +336,16 @@ function SelectContactOrLud16Drawer({
               disabled={status === 'selecting'}
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground text-sm">
-                <ZapIcon />
+                {status === 'idle' ? (
+                  <ZapIcon />
+                ) : (
+                  <LoaderCircle className="animate-spin text-muted-foreground" />
+                )}
               </div>
               <p>Send to Lightning Address: {input}</p>
             </button>
           )}
-          <ContactsList contacts={contacts} onClick={handleSelect} />
+          <ContactsList contacts={contacts} onSelect={handleSelect} />
         </div>
       </DrawerContent>
     </Drawer>
