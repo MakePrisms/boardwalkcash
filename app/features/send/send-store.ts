@@ -309,9 +309,9 @@ export const createSendStore = ({
       getQuote: async (amount, convertedAmount) => {
         const amounts = [amount, convertedAmount].filter((x) => !!x);
         const { sendType, account } = get();
-        const amountToSend = pickAmountByCurrency(amounts, account.currency);
+        let amountToSend = pickAmountByCurrency(amounts, account.currency);
 
-        set({ status: 'quoting', amount: amountToSend });
+        set({ status: 'quoting' });
 
         if (['LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
           const lnAddress = getOrThrow('destinationAlias');
@@ -345,6 +345,7 @@ export const createSendStore = ({
               paymentRequest: destination,
               amount: amountToSend,
             });
+            amountToSend = quote.totalAmountToSend;
             set({ quote });
           } catch (error) {
             console.error(error);

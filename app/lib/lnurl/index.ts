@@ -96,7 +96,11 @@ export const buildLightningAddressFormatValidator = ({
 }) => {
   const validateLightningAddressFormat = buildEmailValidator(message);
   return (value: string | null | undefined): string | boolean => {
-    if (value && allowLocalhost) {
+    if (!value) {
+      return false;
+    }
+
+    if (allowLocalhost) {
       const localhostRegex = /^[a-zA-Z0-9._%+-]+@localhost(:\d+)?$/;
       if (localhostRegex.test(value)) {
         return true;
