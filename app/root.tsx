@@ -17,6 +17,7 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from 'react-router';
+import agicashLoadingLogo from '~/assets/full_logo.png';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -34,7 +35,6 @@ import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
-import agicashLoadingLogo from '~/assets/full_logo.png';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -54,8 +54,14 @@ export const links: LinksFunction = () => [
     href: 'https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400..700&family=Teko:wght@300..700&display=swap',
   },
   {
-    rel: 'icon',
+    rel: 'preload',
     href: agicashLoadingLogo,
+    as: 'image',
+  },
+  {
+    rel: 'icon',
+    href: '/favicon.png',
+    type: 'image/png',
   },
 ];
 
