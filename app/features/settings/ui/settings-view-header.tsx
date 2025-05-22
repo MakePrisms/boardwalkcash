@@ -10,14 +10,14 @@ export const SettingsViewHeader = ({
   navBack,
   children,
 }: {
-  title: string;
+  title?: string;
   navBack: PageBackButtonProps;
   children?: React.ReactNode;
 }) => {
   return (
     <PageHeader>
       <PageBackButton {...navBack} />
-      <PageHeaderTitle>{title}</PageHeaderTitle>
+      {title && <PageHeaderTitle>{title}</PageHeaderTitle>}
       {children}
     </PageHeader>
   );

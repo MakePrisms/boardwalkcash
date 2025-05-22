@@ -76,7 +76,7 @@ export default function Index() {
             money={defaultCurrency === 'BTC' ? balanceBTC : balanceUSD}
           />
           <div className="my-1 h-0.5 w-16 rounded-full bg-muted" />
-          <Price />
+          {defaultCurrency === 'BTC' && <Price />}
         </div>
 
         <DefaultCurrencySwitcher />

@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
-import { MoneyDisplay } from '~/components/money-display';
 import { PageContent } from '~/components/page';
+import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
@@ -8,14 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { getAccountBalance } from '~/features/accounts/account';
 import { useAccounts } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { getDefaultUnit } from '~/features/shared/currencies';
+import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useUser } from '~/features/user/user-hooks';
 import type { Currency } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
 function CurrencyAccounts({ currency }: { currency: Currency }) {
   const { data: accounts } = useAccounts({ currency });
-  const unit = getDefaultUnit(currency);
 
   return (
     <div className="space-y-3">
@@ -27,13 +26,19 @@ function CurrencyAccounts({ currency }: { currency: Currency }) {
           applyTo="newView"
           className="block"
         >
-          <Card className="flex items-center justify-between p-2 px-4 transition-colors hover:bg-muted/50">
-            <h3 className="font-medium">{account.name}</h3>
-            <MoneyDisplay
-              money={getAccountBalance(account)}
-              unit={unit}
-              variant="secondary"
-            />
+          <Card className="flex flex-col p-2 px-4 transition-colors hover:bg-muted/50">
+            <div className="flex items-center justify-between">
+              <h3>{account.name}</h3>
+              <MoneyWithConvertedAmount
+                money={getAccountBalance(account)}
+                variant="inline"
+              />
+            </div>
+            {account.isDefault && (
+              <div className="mt-1">
+                <Badge>Default</Badge>
+              </div>
+            )}
           </Card>
         </LinkWithViewTransition>
       ))}

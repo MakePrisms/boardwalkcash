@@ -85,7 +85,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </ThemeProvider>
   );
 }
-
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { themeClassName, theme, effectiveColorMode } = useTheme();
 
@@ -101,7 +100,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      {/* overflow-hidden prevents rubberbanding on scroll */}
+      <body className="overflow-hidden">
         {children}
         <ScrollRestoration />
         <Scripts />

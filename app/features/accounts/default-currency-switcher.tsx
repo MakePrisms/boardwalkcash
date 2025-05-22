@@ -9,10 +9,9 @@ import {
 } from '~/components/ui/drawer';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
-import { Skeleton } from '~/components/ui/skeleton';
-import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import { useToast } from '~/hooks/use-toast';
 import type { Currency } from '~/lib/money/types';
+import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useSetDefaultCurrency, useUser } from '../user/user-hooks';
 import { useBalance } from './account-hooks';
 
@@ -40,14 +39,7 @@ type CurrencyOptionProps = {
 
 function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
   const { label, currency } = data;
-  const otherCurrency = currency === 'BTC' ? 'USD' : 'BTC';
   const balance = useBalance(currency);
-  const { data: rate, isLoading: isRateLoading } = useExchangeRate(
-    `${currency}-${otherCurrency}`,
-  );
-  // we only show conversion for BTC to USD
-  const convertedBalance =
-    currency === 'BTC' && rate ? balance.convert('USD', rate) : undefined;
 
   return (
     <button
@@ -57,20 +49,7 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
     >
       <div className="flex flex-col items-start gap-1">
         <span>{label}</span>
-        {balance && (
-          <span className="text-muted-foreground text-sm">
-            {balance.toLocaleString({
-              unit: currency === 'BTC' ? 'sat' : 'usd',
-            })}
-            {currency === 'BTC' &&
-              (isRateLoading ? (
-                <Skeleton className="h-4 w-4" />
-              ) : (
-                convertedBalance &&
-                ` (~${convertedBalance.toLocaleString({ unit: 'usd' })})`
-              ))}
-          </span>
-        )}
+        <MoneyWithConvertedAmount money={balance} variant="inline" />
       </div>
       <RadioGroup value={isSelected ? currency : undefined}>
         <RadioGroupItem value={currency} />
