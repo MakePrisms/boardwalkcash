@@ -264,28 +264,11 @@ export function useMoneyInput({
     });
   };
 
-  /**
-   * Get the input value or converted value, whichever matches the currency.
-   * @throws if the currency is not found in the input state
-   */
-  const getInputValue = <T extends Currency>(currency: T): Money<T> => {
-    const value = [inputMoney, convertedMoney].find(
-      (item): item is Money<Currency> => !!item && item.currency === currency,
-    ) as Money<T> | undefined;
-
-    if (!value) {
-      throw new Error(`Currency not found in input state: ${currency}`);
-    }
-
-    return value;
-  };
-
   return {
     rawInputValue: state.input.value,
     maxInputDecimals,
     inputValue: inputMoney,
     convertedValue: convertedMoney,
-    getInputValue,
     handleNumberInput,
     switchInputCurrency,
     exchangeRateError,
