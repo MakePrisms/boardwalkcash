@@ -20,7 +20,7 @@ export function AddContactDrawer() {
   const { toast } = useToast();
   const createContact = useCreateContact();
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: results } = useFindContactCandidates(searchQuery);
+  const { data: results, isFetching } = useFindContactCandidates(searchQuery);
 
   const handleAddContact = async (username: string) => {
     try {
@@ -55,6 +55,7 @@ export function AddContactDrawer() {
             onSearch={setSearchQuery}
             placeholder="satoshi"
             debounceTime={300}
+            isLoading={isFetching}
           />
           <SearchResults results={results} onAddContact={handleAddContact} />
         </div>

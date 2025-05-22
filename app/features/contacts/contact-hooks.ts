@@ -1,7 +1,11 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
-import type { QueryClient } from '@tanstack/react-query';
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import useLocationData from '~/hooks/use-location';
 import { useLatest } from '~/lib/use-latest';
@@ -140,18 +144,16 @@ export function useFindContactCandidates(query: string) {
   const contactRepository = useContactRepository();
   const userRef = useUserRef();
 
-  return useQuery({
+  const response = useQuery({
     queryKey: ['search-user-profiles', query],
-    queryFn: async ({ queryKey }) => {
-      const [, search] = queryKey;
-      return contactRepository.findContactCandidates(
-        search,
-        userRef.current.id,
-      );
-    },
-    initialData: [],
+    queryFn: async () =>
+      contactRepository.findContactCandidates(query, userRef.current.id),
     staleTime: 1000 * 5,
   });
+
+  // TODO: see if we can use initialData instead once we get a response on
+  // https://github.com/TanStack/query/issues/9175
+  return { ...response, data: response.data ?? [] };
 }
 
 function useOnContactsChange({
