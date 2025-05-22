@@ -446,6 +446,7 @@ export class CashuSendQuoteRepository {
       amountRequested: new Money({
         amount: decryptedData.amount_requested,
         currency: decryptedData.currency_requested,
+        unit: decryptedData.unit,
       }),
       amountRequestedInMsat: decryptedData.amount_requested_in_msat,
       amountToSend: new Money({
