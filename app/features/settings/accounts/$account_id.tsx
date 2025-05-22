@@ -46,16 +46,16 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
 
   return (
     <>
-      <div className="flex flex-col gap-6 p-6">
-        <MoneyWithConvertedAmount money={getAccountBalance(account)} />
+      <div className="flex w-full flex-col gap-20 pt-4">
+        <div className="flex flex-col gap-20">
+          <h1 className="text-center text-2xl">{account.name}</h1>
+          <MoneyWithConvertedAmount money={getAccountBalance(account)} />
+        </div>
 
-        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 w-full space-y-4 p-6 sm:max-w-sm">
-          <div className="flex w-full justify-end">
-            {account.isDefault && <Badge variant="outline">Default</Badge>}
-          </div>
+        <div className="w-full space-y-8 sm:max-w-sm">
+          {account.isDefault && <Badge>Default</Badge>}
           {[
             { label: 'Type', value: account.type },
-            { label: 'Currency', value: account.currency },
             {
               label: 'Mint',
               value: account.mintUrl
@@ -99,7 +99,6 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
   return (
     <>
       <SettingsViewHeader
-        title={account.name}
         navBack={{
           to: '/settings/accounts',
           transition: 'slideRight',

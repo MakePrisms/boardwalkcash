@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react';
 import { PageContent } from '~/components/page';
+import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { getAccountBalance } from '~/features/accounts/account';
@@ -26,20 +26,19 @@ function CurrencyAccounts({ currency }: { currency: Currency }) {
           applyTo="newView"
           className="block"
         >
-          <Card className="flex items-center justify-between p-2 px-4 pr-8 transition-colors hover:bg-muted/50">
+          <Card className="flex flex-col p-2 px-4 transition-colors hover:bg-muted/50">
+            <div className="flex items-center justify-between">
+              <h3>{account.name}</h3>
+              <MoneyWithConvertedAmount
+                money={getAccountBalance(account)}
+                variant="inline"
+              />
+            </div>
             {account.isDefault && (
-              <RadioGroup
-                value={account.id}
-                className="absolute top-3 right-2 z-10"
-              >
-                <RadioGroupItem value={account.id} />
-              </RadioGroup>
+              <div className="mt-1">
+                <Badge>Default</Badge>
+              </div>
             )}
-            <h3>{account.name}</h3>
-            <MoneyWithConvertedAmount
-              money={getAccountBalance(account)}
-              variant="inline"
-            />
           </Card>
         </LinkWithViewTransition>
       ))}

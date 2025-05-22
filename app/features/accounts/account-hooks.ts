@@ -291,10 +291,12 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
     queryFn: () => accountRepository.getAll(user.id),
     staleTime: Number.POSITIVE_INFINITY,
     select: (data) => {
-      const extendedData = data.map((x) => ({
-        ...x,
-        isDefault: isDefaultAccount(user, x),
-      }));
+      const extendedData = data
+        .map((x) => ({
+          ...x,
+          isDefault: isDefaultAccount(user, x),
+        }))
+        .sort((_, b) => (b.isDefault ? 1 : -1)); // Sort the default account to the top
 
       if (!select) {
         return extendedData as ExtendedAccount<T>[];
