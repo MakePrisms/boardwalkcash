@@ -1,33 +1,65 @@
+import { LoaderCircle } from 'lucide-react';
+import { useState } from 'react';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import type { Contact } from './contact';
 import { ContactAvatar } from './contact-avatar';
 
 type ContactsListProps = {
   contacts: Contact[];
+  onSelect?: (contact: Contact) => Promise<void>;
 };
 
-export function ContactsList({ contacts }: ContactsListProps) {
+type State = { status: 'idle' } | { status: 'selecting'; selected: Contact };
+
+export function ContactsList({ contacts, onSelect }: ContactsListProps) {
+  const [state, setState] = useState<State>({ status: 'idle' });
   const hasContacts = contacts.length > 0;
+
+  const handleClick = async (contact: Contact) => {
+    setState({ status: 'selecting', selected: contact });
+    await onSelect?.(contact);
+    setState({ status: 'idle' });
+  };
 
   return (
     <div className="flex flex-col gap-6 py-6">
       {hasContacts ? (
-        contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className=" flex items-center rounded-lg transition-colors"
-          >
-            <LinkWithViewTransition
-              to={`/settings/contacts/${contact.id}`}
-              transition="slideLeft"
-              applyTo="oldView"
-              className="flex w-full items-center gap-3"
+        contacts.map((contact) =>
+          onSelect ? (
+            <button
+              key={contact.id}
+              className="flex w-full items-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              onClick={() => handleClick(contact)}
+              type="button"
+              disabled={state.status === 'selecting'}
             >
-              <ContactAvatar username={contact.username} size="sm" />
-              <span className="font-medium">{contact.username}</span>
-            </LinkWithViewTransition>{' '}
-          </div>
-        ))
+              <div className="flex w-full cursor-pointer items-center gap-3">
+                {state.status === 'selecting' &&
+                state.selected.id === contact.id ? (
+                  <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <ContactAvatar username={contact.username} size="sm" />
+                )}
+                <span className="font-medium">{contact.username}</span>
+              </div>
+            </button>
+          ) : (
+            <div
+              key={contact.id}
+              className=" flex items-center rounded-lg transition-colors"
+            >
+              <LinkWithViewTransition
+                to={`/settings/contacts/${contact.id}`}
+                transition="slideLeft"
+                applyTo="oldView"
+                className="flex w-full items-center gap-3"
+              >
+                <ContactAvatar username={contact.username} size="sm" />
+                <span className="font-medium">{contact.username}</span>
+              </LinkWithViewTransition>{' '}
+            </div>
+          ),
+        )
       ) : (
         <div className="text-center text-muted-foreground">
           No contacts found

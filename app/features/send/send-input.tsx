@@ -1,4 +1,13 @@
-import { ArrowUpDown, Clipboard, Gift, Scan, X } from 'lucide-react';
+import {
+  ArrowUpDown,
+  AtSign,
+  Clipboard,
+  LoaderCircle,
+  Scan,
+  X,
+  ZapIcon,
+} from 'lucide-react';
+import { useState } from 'react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
 import {
@@ -7,19 +16,31 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { SearchBar } from '~/components/search-bar';
 import { Button } from '~/components/ui/button';
+import {
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '~/components/ui/drawer';
+import { DrawerTrigger } from '~/components/ui/drawer';
+import { Drawer } from '~/components/ui/drawer';
 import { Skeleton } from '~/components/ui/skeleton';
 import { useAccounts } from '~/features/accounts/account-hooks';
 import { AccountSelector } from '~/features/accounts/account-selector';
 import useAnimation from '~/hooks/use-animation';
 import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
+import { buildLightningAddressFormatValidator } from '~/lib/lnurl';
 import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
 import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
+import { AddContactDrawer, ContactsList } from '../contacts';
+import type { Contact } from '../contacts/contact';
+import { useContacts } from '../contacts/contact-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import { useSendStore } from './send-provider';
 
@@ -62,13 +83,19 @@ export function SendInput() {
   const { data: accounts } = useAccounts();
 
   const sendAmount = useSendStore((s) => s.amount);
-  const sendAccount = useSendStore((s) => s.account);
-  const sendCurrencyUnit = getDefaultUnit(sendAccount.currency);
-  const paymentRequest = useSendStore((s) => s.paymentRequest);
-  const setSendAmount = useSendStore((s) => s.setAmount);
-  const setSendAccount = useSendStore((s) => s.setAccount);
-  const setPaymentRequest = useSendStore((s) => s.setPaymentRequest);
-  const clearPaymentRequest = useSendStore((s) => s.clearPaymentRequest);
+  const sendAccount = useSendStore((s) => s.getSourceAccount());
+  const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
+  const destinationDisplay = useSendStore((s) => s.destinationDisplay);
+  const selectDestination = useSendStore((s) => s.selectDestination);
+  const clearDestination = useSendStore((s) => s.clearDestination);
+  const getQuote = useSendStore((s) => s.getQuote);
+  const status = useSendStore((s) => s.status);
+
+  const sendAmountCurrencyUnit = sendAmount
+    ? getDefaultUnit(sendAmount.currency)
+    : undefined;
+  const initialInputCurrency = sendAmount?.currency ?? sendAccount.currency;
+
   const {
     rawInputValue,
     maxInputDecimals,
@@ -79,86 +106,81 @@ export function SendInput() {
     switchInputCurrency,
     setInputValue,
   } = useMoneyInput({
-    initialRawInputValue: sendAmount?.toString(sendCurrencyUnit) || '0',
-    initialInputCurrency: sendAccount.currency,
-    initialOtherCurrency: sendAccount.currency === 'BTC' ? 'USD' : 'BTC',
+    initialRawInputValue: sendAmount?.toString(sendAmountCurrencyUnit) || '0',
+    initialInputCurrency: initialInputCurrency,
+    initialOtherCurrency: initialInputCurrency === 'BTC' ? 'USD' : 'BTC',
   });
 
-  const handleContinue = async () => {
-    if (inputValue.currency === sendAccount.currency) {
-      setSendAmount(inputValue);
-    } else {
-      if (!convertedValue) {
-        // Can't happen because when there is no converted value, the toggle will not be shown so input currency and receive currency must be the same
-        return;
-      }
-      setSendAmount(convertedValue);
-    }
-    if (sendAccount.type === 'cashu') {
-      return navigate('/send/confirm', {
-        applyTo: 'newView',
-        transition: 'slideUp',
+  const handleContinue = async (
+    inputValue: Money,
+    convertedValue: Money | undefined,
+  ) => {
+    if (sendAccount.type !== 'cashu') {
+      toast({
+        title: 'Not implemented',
+        description: 'Only sends from the cashu accounts are supported',
+        variant: 'destructive',
       });
+      return;
     }
-    toast({
-      title: 'Not implemented',
-      variant: 'destructive',
+
+    if (inputValue.isZero()) {
+      return;
+    }
+
+    const result = await getQuote(inputValue, convertedValue);
+    if (!result.success) {
+      toast({
+        title: 'Error',
+        description: 'Failed to get a send quote. Please try again',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    navigate('/send/confirm', {
+      applyTo: 'newView',
+      transition: 'slideUp',
     });
   };
 
-  // User can paste a bolt11 or cashu request
+  const handleSelectDestination = async (destination: string | Contact) => {
+    const result = await selectDestination(destination);
+    if (!result.success) {
+      toast({
+        title: 'Invalid destination',
+        description: result.error,
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    const {
+      data: { amount },
+    } = result;
+
+    let latestInputValue = inputValue;
+    let latestConvertedValue = convertedValue;
+
+    if (amount) {
+      const defaultUnit = getDefaultUnit(amount.currency);
+      ({
+        newInputValue: latestInputValue,
+        newConvertedValue: latestConvertedValue,
+      } = setInputValue(amount.toString(defaultUnit), amount.currency));
+    }
+
+    await handleContinue(latestInputValue, latestConvertedValue);
+    return true;
+  };
+
   const handlePaste = async () => {
     const input = await readClipboard();
     if (!input) {
       return;
     }
 
-    const result = setPaymentRequest(input);
-    if (!result.valid) {
-      const { error } = result;
-      return toast({
-        title: 'Invalid input',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-    const { amount, unit, currency } = result;
-
-    if (!amount && inputValue.isZero()) {
-      // we enforce bolt11s to have an amount, but cashu requests don't need an amount
-      // if the setPaymentRequest validation passes, that means the user just needs
-      // to enter an amount then click continue. In the future bolt11s can be amountless
-      // in cashu and other account types can handle amountless bolt11s
-      return;
-    }
-    if (amount) {
-      // NOTE: I had to make this return these value so that we could set the sendAmount
-      // in this same function.The goal here is:
-      // 1. to update the input value displayed to the user
-      // 2. to handle conversion logic if the payment request is in a different currency than the send account
-      const { newInputValue, newConvertedValue } = setInputValue(
-        amount.toString(unit),
-        currency,
-      );
-
-      if (currency === sendAccount.currency) {
-        setSendAmount(newInputValue);
-      } else {
-        if (!newConvertedValue) {
-          // this shouldn't happen as long as exchange rate is loaded
-          return;
-        }
-        setSendAmount(newConvertedValue);
-      }
-
-      return navigate('/send/confirm', {
-        applyTo: 'newView',
-        transition: 'slideUp',
-      });
-    }
-
-    // no amount, but input value not zero so we can continue after setting the payment request
-    return handleContinue();
+    await handleSelectDestination(input);
   };
 
   return (
@@ -187,15 +209,12 @@ export function SendInput() {
         </div>
 
         <div className="flex h-[24px] items-center justify-center gap-4">
-          {paymentRequest && (
+          {destinationDisplay && (
             <>
-              <p>
-                {paymentRequest.raw.slice(0, 5)}...
-                {paymentRequest.raw.slice(-5)}
-              </p>
+              <p>{destinationDisplay}</p>
               <X
+                onClick={clearDestination}
                 className="h-4 w-4 cursor-pointer"
-                onClick={() => clearPaymentRequest()}
               />
             </>
           )}
@@ -206,7 +225,7 @@ export function SendInput() {
             accounts={accounts}
             selectedAccount={sendAccount}
             onSelect={(account) => {
-              setSendAccount(account);
+              selectSourceAccount(account);
               if (account.currency !== inputValue.currency) {
                 switchInputCurrency();
               }
@@ -229,15 +248,15 @@ export function SendInput() {
                 <Scan />
               </LinkWithViewTransition>
 
-              <button type="button">
-                <Gift />
-              </button>
+              <SelectContactOrLud16Drawer onSelect={handleSelectDestination} />
             </div>
-            {/* TODO: add a button to select a contact */}
-            <div />
 
             <div className="flex items-center justify-end">
-              <Button onClick={handleContinue} disabled={inputValue.isZero()}>
+              <Button
+                onClick={() => handleContinue(inputValue, convertedValue)}
+                disabled={inputValue.isZero()}
+                loading={status === 'quoting'}
+              >
                 Continue
               </Button>
             </div>
@@ -252,5 +271,83 @@ export function SendInput() {
         </div>
       </PageContent>
     </>
+  );
+}
+
+type SelectContactOrLud16DrawerProps = {
+  onSelect: (contactOrLnAddress: Contact | string) => Promise<boolean>;
+};
+
+const validateLightningAddressFormat = buildLightningAddressFormatValidator({
+  message: 'Invalid lightning address',
+  allowLocalhost: import.meta.env.MODE === 'development',
+});
+
+function SelectContactOrLud16Drawer({
+  onSelect,
+}: SelectContactOrLud16DrawerProps) {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [status, setStatus] = useState<'idle' | 'selecting'>('idle');
+
+  const contacts = useContacts((contacts) =>
+    contacts.filter((contact) =>
+      contact.username.toLowerCase().includes(input.toLowerCase()),
+    ),
+  );
+
+  const handleSelect = async (selection: string | Contact) => {
+    setStatus('selecting');
+
+    const selected = await onSelect(selection);
+    if (selected) {
+      setOpen(false);
+      setInput('');
+    }
+
+    setStatus('idle');
+  };
+
+  const isLnAddressFormat = validateLightningAddressFormat(input) === true;
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <button type="button" onClick={() => setOpen(true)}>
+          <AtSign />
+        </button>
+      </DrawerTrigger>
+      <DrawerContent className="h-[90vh] font-primary ">
+        <DrawerHeader className="flex items-center justify-between">
+          <DrawerTitle>Send to User</DrawerTitle>
+          <AddContactDrawer />
+        </DrawerHeader>
+        <div className="mx-auto flex w-full max-w-sm flex-col gap-3 px-4 sm:px-0">
+          <SearchBar
+            placeholder="Username or Lightning Address"
+            onSearch={setInput}
+          />
+
+          {isLnAddressFormat && (
+            <button
+              className="flex w-full items-center gap-3 p-3 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              onClick={() => handleSelect(input)}
+              type="button"
+              disabled={status === 'selecting'}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground text-sm">
+                {status === 'idle' ? (
+                  <ZapIcon />
+                ) : (
+                  <LoaderCircle className="animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <p>Send to Lightning Address: {input}</p>
+            </button>
+          )}
+          <ContactsList contacts={contacts} onSelect={handleSelect} />
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

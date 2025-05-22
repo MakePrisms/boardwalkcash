@@ -169,10 +169,18 @@ export function useMoneyInput({
 
       if (!rate) throw new Error('Exchange rate not found');
 
-      newInputValue = toMoney({ value: newValue, currency })
-        .convert(state.input.currency, rate)
-        .toString(getDefaultUnit(state.input.currency));
+      let newInputMoney = toMoney({ value: newValue, currency }).convert(
+        state.input.currency,
+        rate,
+      );
 
+      if (newInputMoney.isZero()) {
+        newInputMoney = Money.createMinAmount(state.input.currency);
+      }
+
+      newInputValue = newInputMoney.toString(
+        getDefaultUnit(state.input.currency),
+      );
       newConvertedValue = newValue;
     } else {
       throw new Error(`Currency does not exist in input state: ${currency}`);

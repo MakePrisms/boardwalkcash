@@ -26,7 +26,6 @@ const useConverter = (sendAccount: Account) => {
   );
 
   return (amount: Money) => {
-    if (amount.currency === sendAccount.currency) return amount;
     if (!rate) throw new Error('Exchange rate not found');
 
     return amount.convert(sendAccount.currency, rate);
@@ -37,42 +36,46 @@ export default function SendScanner() {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
 
-  const setPaymentRequest = useSendStore((state) => state.setPaymentRequest);
-  const setSendAmount = useSendStore((state) => state.setAmount);
-  const sendAccount = useSendStore((state) => state.account);
+  const sendAccount = useSendStore((state) => state.getSourceAccount());
+  const selectDestination = useSendStore((state) => state.selectDestination);
+  const getQuote = useSendStore((state) => state.getQuote);
 
   const convert = useConverter(sendAccount);
 
-  const handleDecode = (input: string) => {
-    const result = setPaymentRequest(input);
-    if (!result.valid) {
-      const { error } = result;
+  const handleDecode = async (input: string) => {
+    const selectDestinationResult = await selectDestination(input);
+    if (!selectDestinationResult.success) {
       // TODO: implement this https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2024690976
       return toast({
         title: 'Invalid input',
-        description: error,
+        description: selectDestinationResult.error,
         variant: 'destructive',
       });
     }
 
-    const { amount } = result;
+    const { amount } = selectDestinationResult.data;
 
     if (!amount) {
-      // we enforce bolt11s to have an amount, but cashu requests don't need an amount
-      // if the setPaymentRequest validation passes, that means the user just needs
-      // to enter an amount then click continue. In the future bolt11s can be amountless
-      // in cashu and other account types can handle amountless bolt11s
+      // Navigate to send input to enter the amount
       return navigate('/send', {
         applyTo: 'oldView',
         transition: 'slideDown',
       });
     }
 
-    // TODO: do we need this conversion? See this discussion https://github.com/MakePrisms/boardwalkcash/pull/331#discussion_r2049445764
-    const sendAmount = convert(amount);
-    setSendAmount(sendAmount);
+    const convertedAmount =
+      amount.currency !== sendAccount.currency ? convert(amount) : undefined;
+    const getQuoteResult = await getQuote(amount, convertedAmount);
 
-    return navigate('/send/confirm', {
+    if (!getQuoteResult.success) {
+      return toast({
+        title: 'Error',
+        description: 'Failed to get a send quote. Please try again',
+        variant: 'destructive',
+      });
+    }
+
+    navigate('/send/confirm', {
       applyTo: 'newView',
       transition: 'slideUp',
     });

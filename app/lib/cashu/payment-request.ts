@@ -1,14 +1,16 @@
-import { decodePaymentRequest } from '@cashu/cashu-ts';
+import { type PaymentRequest, decodePaymentRequest } from '@cashu/cashu-ts';
 
 /**
- * Checks if a string is a valid Cashu payment request
- * @param paymentRequest payment request to check
+ * Parses a Cashu payment request from the encoded string.
+ * @param paymentRequest encoded payment request to parse
  */
-export const isCashuPaymentRequest = (paymentRequest: string) => {
+export const parseCashuPaymentRequest = (
+  paymentRequest: string,
+): { valid: true; decoded: PaymentRequest } | { valid: false } => {
   try {
-    decodePaymentRequest(paymentRequest);
-    return true;
+    const decoded = decodePaymentRequest(paymentRequest);
+    return { valid: true, decoded };
   } catch {
-    return false;
+    return { valid: false };
   }
 };

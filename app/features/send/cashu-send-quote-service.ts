@@ -4,7 +4,7 @@ import {
   OutputData,
 } from '@cashu/cashu-ts';
 import type { Big } from 'big.js';
-import { validateBolt11Invoice } from '~/lib/bolt11';
+import { parseBolt11Invoice } from '~/lib/bolt11';
 import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
@@ -15,7 +15,7 @@ import {
   useCashuSendQuoteRepository,
 } from './cashu-send-quote-repository';
 
-type GetLightningQuoteOptions = {
+export type GetCashuLightningQuoteOptions = {
   /**
    * The account to send the money from.
    */
@@ -36,6 +36,37 @@ type GetLightningQuoteOptions = {
   exchangeRate?: Big;
 };
 
+export type CashuLightningQuote = {
+  /**
+   * The payment request to pay.
+   */
+  paymentRequest: string;
+  /**
+   * The amount requested.
+   */
+  amountRequested: Money;
+  /**
+   * The amount requested in BTC.
+   */
+  amountRequestedInBtc: Money<'BTC'>;
+  /**
+   * The mint's melt quote.
+   */
+  meltQuote: MeltQuoteResponse;
+  /**
+   * The maximum fee that will be charged for the send.
+   */
+  feeReserve: Money;
+  /**
+   * The amount to send.
+   */
+  amountToSend: Money;
+  /**
+   * The total amount to send (amount to send + fee reserve).
+   */
+  totalAmountToSend: Money;
+};
+
 export type SendQuoteRequest = {
   paymentRequest: string;
   amountRequested: Money;
@@ -54,8 +85,8 @@ export class CashuSendQuoteService {
     paymentRequest,
     amount,
     exchangeRate,
-  }: GetLightningQuoteOptions) {
-    const bolt11ValidationResult = validateBolt11Invoice(paymentRequest);
+  }: GetCashuLightningQuoteOptions): Promise<CashuLightningQuote> {
+    const bolt11ValidationResult = parseBolt11Invoice(paymentRequest);
     if (!bolt11ValidationResult.valid) {
       throw new Error('Invalid lightning invoice');
     }
@@ -101,12 +132,25 @@ export class CashuSendQuoteService {
     });
 
     const meltQuote = await wallet.createMeltQuote(paymentRequest);
+    const feeReserve = new Money({
+      amount: meltQuote.fee_reserve,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const amountToSend = new Money({
+      amount: meltQuote.amount,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
 
     return {
       paymentRequest,
       amountRequested: amount ?? (amountRequestedInBtc as Money<Currency>),
       amountRequestedInBtc,
       meltQuote,
+      feeReserve,
+      amountToSend,
+      totalAmountToSend: amountToSend.add(feeReserve),
     };
   }
 
@@ -260,7 +304,7 @@ export class CashuSendQuoteService {
     }
 
     if (!meltQuote.payment_preimage) {
-      throw new Error('Payment preimage is missing on the melt quote');
+      console.warn('Payment preimage is missing on the melt quote');
     }
 
     const cashuUnit = getCashuUnit(account.currency);
@@ -299,7 +343,7 @@ export class CashuSendQuoteService {
     return this.cashuSendRepository.complete({
       quoteId: sendQuote.id,
       quoteVersion: sendQuote.version,
-      paymentPreimage: meltQuote.payment_preimage,
+      paymentPreimage: meltQuote.payment_preimage ?? '',
       amountSpent,
       accountProofs: updatedAccountProofs,
       accountVersion: account.version,
