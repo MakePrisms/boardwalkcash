@@ -126,3 +126,5 @@ export type CashuSendSwap = {
       state: 'CANCELLED';
     }
 );
+
+export type PendingCashuSendSwap = CashuSendSwap & { state: 'PENDING' };

@@ -12,13 +12,16 @@ import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
-import { useAccountsCache } from '../accounts/account-hooks';
+import {
+  useAccountsCache,
+  useGetLatestCashuAccount,
+} from '../accounts/account-hooks';
 import { type AgicashDbCashuSendSwap, agicashDb } from '../agicash-db/database';
 import { useCashuTokenSwapService } from '../receive/cashu-token-swap-service';
 import { useCashuCryptography } from '../shared/cashu';
 import { getErrorMessage } from '../shared/error';
 import { useUserRef } from '../user/user-hooks';
-import type { CashuSendSwap } from './cashu-send-swap';
+import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 import {
   CashuSendSwapRepository,
   useCashuSendSwapRepository,
@@ -91,7 +94,7 @@ function useCashuSendSwapCache() {
 
 export function useGetCashuSendSwapQuote() {
   const cashuSendSwapService = useCashuSendSwapService();
-  const accountsCache = useAccountsCache();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
 
   return useMutation({
     mutationFn: async ({
@@ -103,10 +106,7 @@ export function useGetCashuSendSwapQuote() {
       accountId: string;
       senderPaysFee?: boolean;
     }) => {
-      const account = await accountsCache.getLatest(accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error('Account not found');
-      }
+      const account = await getLatestCashuAccount(accountId);
       return cashuSendSwapService.getQuote({
         amount,
         account,
@@ -121,7 +121,7 @@ export function useCreateCashuSendSwap({
 }: { onError: (error: Error) => void }) {
   const cashuSendSwapService = useCashuSendSwapService();
   const userRef = useUserRef();
-  const accountsCache = useAccountsCache();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
   const cashuSendSwapCache = useCashuSendSwapCache();
 
   return useMutation({
@@ -134,10 +134,7 @@ export function useCreateCashuSendSwap({
       accountId: string;
       senderPaysFee?: boolean;
     }) => {
-      const account = await accountsCache.getLatest(accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error('Account not found');
-      }
+      const account = await getLatestCashuAccount(accountId);
       return cashuSendSwapService.create({
         userId: userRef.current.id,
         amount,
@@ -152,9 +149,9 @@ export function useCreateCashuSendSwap({
   });
 }
 
-export function useSwapForProofsToSend() {
+function useSwapForProofsToSend() {
   const cashuSendSwapService = useCashuSendSwapService();
-  const accountsCache = useAccountsCache();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
 
   return useMutation({
     mutationKey: ['send-swap-for-proofs-to-send'],
@@ -166,10 +163,7 @@ export function useSwapForProofsToSend() {
     }: {
       swap: CashuSendSwap;
     }) => {
-      const account = await accountsCache.getLatest(swap.accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error('Account not found');
-      }
+      const account = await getLatestCashuAccount(swap.accountId);
       await cashuSendSwapService.swapForProofsToSend({
         swap,
         account,
@@ -190,17 +184,14 @@ export function useSwapForProofsToSend() {
 }
 
 export function useCancelCashuSendSwap() {
-  const accountsCache = useAccountsCache();
   const cashuSendSwapService = useCashuSendSwapService();
   const cashuTokenSwapService = useCashuTokenSwapService();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
   const userRef = useUserRef();
 
   return useMutation({
     mutationFn: async ({ swap }: { swap: CashuSendSwap }) => {
-      const account = await accountsCache.getLatest(swap.accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error('Account not found');
-      }
+      const account = await getLatestCashuAccount(swap.accountId);
       if (swap.state !== 'PENDING') {
         throw new Error('Swap is not PENDING');
       }
@@ -318,7 +309,7 @@ export function useUnresolvedCashuSendSwaps() {
       })[],
       pending: data.filter(
         (swap) => swap.state === 'PENDING',
-      ) as (CashuSendSwap & { state: 'PENDING' })[],
+      ) as PendingCashuSendSwap[],
     }),
     [data],
   );
@@ -328,26 +319,15 @@ type UseCashuSendSwapProps = {
   id?: string;
   onPending?: (swap: CashuSendSwap) => void;
   onCompleted?: (swap: CashuSendSwap) => void;
-  onFailed?: (swap: CashuSendSwap & { state: 'FAILED' }) => void;
+  onFailed?: (swap: CashuSendSwap) => void;
 };
 
-type UseCashuSendSwapResponse =
-  | {
-      status: 'LOADING';
-      token?: undefined;
-      swap?: undefined;
-    }
-  | {
-      status: CashuSendSwap['state'];
-      swap: CashuSendSwap;
-    };
-
 export function useCashuSendSwap({
-  id,
+  id = '',
   onPending,
   onCompleted,
   onFailed,
-}: UseCashuSendSwapProps): UseCashuSendSwapResponse {
+}: UseCashuSendSwapProps) {
   const enabled = !!id;
   const onPendingRef = useLatest(onPending);
   const onCompletedRef = useLatest(onCompleted);
@@ -355,13 +335,16 @@ export function useCashuSendSwap({
   const cashuSendSwapCache = useCashuSendSwapCache();
   const cashuSendSwapRepository = useCashuSendSwapRepository();
 
-  const { data } = useQuery({
+  const result = useQuery({
     queryKey: [cashuSendSwapQueryKey, id],
     queryFn: () =>
-      cashuSendSwapCache.get(id ?? '') ?? cashuSendSwapRepository.get(id ?? ''),
+      cashuSendSwapCache.get(id) ?? cashuSendSwapRepository.get(id),
     staleTime: Number.POSITIVE_INFINITY,
     enabled,
+    retry: 1,
   });
+
+  const { data } = result;
 
   useEffect(() => {
     if (!data) return;
@@ -375,27 +358,11 @@ export function useCashuSendSwap({
     }
   }, [data]);
 
-  if (!data || data.state === 'DRAFT') {
-    return { status: 'LOADING' };
-  }
-
-  if (
-    data.state === 'PENDING' ||
-    data.state === 'COMPLETED' ||
-    data.state === 'CANCELLED' ||
-    data.state === 'FAILED'
-  ) {
-    return {
-      status: data.state,
-      swap: data,
-    };
-  }
-
-  throw new Error(`Got unexpected swap state: ${data.state}`);
+  return result;
 }
 
 type OnProofStateChangeProps = {
-  swaps: (CashuSendSwap & { state: 'PENDING' })[];
+  swaps: PendingCashuSendSwap[];
   onSpent: (account: CashuAccount, swap: CashuSendSwap) => void;
 };
 
@@ -404,25 +371,21 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
     () => new ProofStateSubscriptionManager(),
   );
   const accountsCache = useAccountsCache();
-  const onSpentRef = useLatest(onSpent);
-  const swapsRef = useLatest(swaps);
-
-  const handleSpent = (spentSwap: CashuSendSwap) => {
-    const account = accountsCache.get(spentSwap.accountId);
-    if (!account || account.type !== 'cashu') {
-      throw new Error(`Cashu account not found for id: ${spentSwap.accountId}`);
-    }
-    onSpentRef.current(account, spentSwap);
-  };
+  const getLatestCashuAccount = useGetLatestCashuAccount();
 
   const { mutate: subscribe } = useMutation({
     mutationFn: (props: {
       mintUrl: string;
-      swaps: (CashuSendSwap & { state: 'PENDING' })[];
+      swaps: PendingCashuSendSwap[];
     }) =>
       subscriptionManager.subscribe({
         ...props,
-        onSpent: handleSpent,
+        onSpent: async (spentSwap) => {
+          // QUESTION: should I instead pass getAccount to subscribe, then make
+          // subscribe call onSpent directly?
+          const account = await getLatestCashuAccount(spentSwap.accountId);
+          onSpent(account, spentSwap);
+        },
       }),
     retry: 5,
     onError: (error, variables) => {
@@ -434,7 +397,7 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
   });
 
   useEffect(() => {
-    const swapsByMint = swapsRef.current.reduce<
+    const swapsByMint = swaps.reduce<
       Record<string, OnProofStateChangeProps['swaps']>
     >((acc, swap) => {
       const account = accountsCache.get(swap.accountId);
@@ -449,15 +412,13 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
     Object.entries(swapsByMint).forEach(([mintUrl, swaps]) => {
       subscribe({ mintUrl, swaps });
     });
-  }, [subscribe, accountsCache]);
+  }, [subscribe, swaps, accountsCache]);
 }
 
 export function useTrackUnresolvedCashuSendSwaps() {
   const { draft, pending } = useUnresolvedCashuSendSwaps();
   const { mutate: swapForProofsToSend } = useSwapForProofsToSend();
   const cashuSendSwapService = useCashuSendSwapService();
-
-  console.log('pending', pending);
 
   useOnProofStateChange({
     swaps: pending,

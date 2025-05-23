@@ -258,7 +258,7 @@ export const CreateCashuTokenConfirmation = ({
         })
       }
       loading={
-        isCreateSwapPending || (status === 'LOADING' && !!createSwapData)
+        isCreateSwapPending || (status === 'pending' && !!createSwapData)
       }
     >
       {[
