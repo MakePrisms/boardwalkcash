@@ -1,13 +1,15 @@
 import type { Proof, ProofState } from '@cashu/cashu-ts';
 import { getCashuWallet } from '~/lib/cashu';
 import { computeSHA256 } from '~/lib/sha256';
-import type { CashuSendSwap } from './cashu-send-swap';
+import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
+
+type Subscription = {
+  subscriptionHash: string;
+  subscriptionPromise: Promise<() => void>;
+};
 
 export class ProofStateSubscriptionManager {
-  private subscriptions: Map<
-    string,
-    { subscriptionHash: string; subscriptionPromise: Promise<() => void> }
-  > = new Map();
+  private subscriptions: Map<string, Subscription> = new Map();
   private proofUpdates: Record<string, Record<string, ProofState['state']>> =
     {};
 
@@ -17,7 +19,7 @@ export class ProofStateSubscriptionManager {
     onSpent,
   }: {
     mintUrl: string;
-    swaps: (CashuSendSwap & { state: 'PENDING' })[];
+    swaps: PendingCashuSendSwap[];
     onSpent: (swap: CashuSendSwap) => void;
   }): Promise<void> {
     const subscriptionHash = await this.getSubscriptionHash(swaps);
@@ -72,7 +74,7 @@ export class ProofStateSubscriptionManager {
 
   private async handleProofStateUpdate(
     proofUpdate: ProofState & { proof: Proof },
-    swaps: (CashuSendSwap & { state: 'PENDING' })[],
+    swaps: PendingCashuSendSwap[],
     onSpent: (swap: CashuSendSwap) => void,
   ) {
     console.debug('proofUpdate', proofUpdate);
@@ -94,12 +96,13 @@ export class ProofStateSubscriptionManager {
     console.debug('allProofsSpent', allProofsSpent);
 
     if (allProofsSpent) {
+      delete this.proofUpdates[swap.id];
       onSpent(swap);
     }
   }
 
   private async getSubscriptionHash(
-    swaps: (CashuSendSwap & { state: 'PENDING' })[],
+    swaps: PendingCashuSendSwap[],
   ): Promise<string> {
     // Concatenate swap ids to create a unique key for the subscription
     const data = `${swaps.map((x) => x.id).join('_')}`;

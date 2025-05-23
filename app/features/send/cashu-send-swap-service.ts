@@ -214,6 +214,14 @@ export class CashuSendSwapService {
       swap,
     );
 
+    if (proofsToSend.length === 0) {
+      console.error('No proofs to send', {
+        swap,
+        account,
+      });
+      throw new Error('No proofs to send');
+    }
+
     const accountProofs = [...account.proofs, ...newProofsToKeep];
 
     await this.cashuSendSwapRepository.completeSwap({

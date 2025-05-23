@@ -12,12 +12,20 @@ export default function SendShare({ params }: Route.ComponentProps) {
   const accountsCache = useAccountsCache();
   const { swapId } = params;
 
-  const { swap } = useCashuSendSwap({
+  const {
+    data: swap,
+    status,
+    error,
+  } = useCashuSendSwap({
     id: swapId,
   });
 
-  if (!swap) {
+  if (status === 'pending') {
     return <LoadingScreen />;
+  }
+
+  if (error) {
+    return <Redirect to="/send" logMessage="Error fetching swap" />;
   }
 
   if (swap.state === 'COMPLETED') {

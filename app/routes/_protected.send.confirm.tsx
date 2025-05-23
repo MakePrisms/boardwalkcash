@@ -48,7 +48,7 @@ export default function SendConfirmationPage() {
     return (
       <PayBolt11Confirmation
         account={sendAccount}
-        quote={quote as CashuLightningQuote}
+        quote={quote as CashuLightningQuote} // TODO: any way to make the typing on the send store better? Or should we use zod to check the type of these quotes?
         destination={destination}
         destinationDisplay={destinationDisplay}
       />
@@ -62,7 +62,7 @@ export default function SendConfirmationPage() {
 
     return (
       <CreateCashuTokenConfirmation
-        quote={quote as CashuSwapQuote}
+        quote={quote as CashuSwapQuote} // TODO: any way to make the typing on the send store better? Or should we use zod to check the type of these quotes?
         account={sendAccount}
       />
     );
