@@ -17,7 +17,7 @@ import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
-import { toast, useToast } from '~/hooks/use-toast';
+import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
@@ -223,6 +223,8 @@ export const CreateCashuTokenConfirmation = ({
   account,
 }: CreateCashuTokenConfirmationProps) => {
   const navigate = useNavigateWithViewTransition();
+  const { toast } = useToast();
+
   const {
     data: createSwapData,
     isPending: isCreateSwapPending,

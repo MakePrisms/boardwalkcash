@@ -429,7 +429,7 @@ export function useTrackUnresolvedCashuSendSwaps() {
 
   useQueries({
     queries: draft.map((swap) => ({
-      queryKey: ['send-swap-for-proofs-to-send', swap.id],
+      queryKey: ['send-swap-for-proofs-to-send-query', swap.id],
       queryFn: async () => {
         swapForProofsToSend({ swap });
         return true;

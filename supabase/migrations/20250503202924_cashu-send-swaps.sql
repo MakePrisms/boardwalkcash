@@ -70,6 +70,10 @@ begin
     if v_swap is null then
         raise exception 'Concurrency error: Swap % not found or was modified by another transaction. Expected version % and state PENDING.', p_swap_id, p_swap_version;
     end if;
+
+    if v_swap.state != 'DRAFT' then
+        raise exception 'Swap % is not in DRAFT state. Current state: %.', p_swap_id, v_swap.state;
+    end if;
     
     v_account_id := v_swap.account_id;
     v_transaction_id := v_swap.transaction_id;
@@ -78,10 +82,6 @@ begin
     update wallet.transactions
     set state = 'PENDING'
     where id = v_transaction_id;
-
-    if v_swap.state != 'DRAFT' then
-        raise exception 'Swap % is not in DRAFT state. Current state: %.', p_swap_id, v_swap.state;
-    end if;
     
     -- Update the swap with new proofs and increment version
     update wallet.cashu_send_swaps

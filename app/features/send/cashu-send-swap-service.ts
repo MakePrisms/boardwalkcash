@@ -269,12 +269,15 @@ export class CashuSendSwapService {
 
     const fee = includeFeesInSendAmount ? wallet.getFeesForProofs(send) : 0;
 
-    if (sumProofs(send) < amountNumber + fee) {
+    // TODO: make sure these fees will always be the same, I don't think will
+    const sendSwapFee = fee;
+    const receiveSwapFee = fee;
+
+    if (sumProofs(send) < amountNumber + sendSwapFee + receiveSwapFee) {
       throw new Error('Insufficient balance');
     }
 
-    // TODO: make sure these fees will always be the same, I don't think will
-    return { keep, send, sendSwapFee: fee, receiveSwapFee: fee };
+    return { keep, send, sendSwapFee, receiveSwapFee };
   }
 
   private async swapProofs(
