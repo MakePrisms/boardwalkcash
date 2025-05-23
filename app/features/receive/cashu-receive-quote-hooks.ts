@@ -499,8 +499,19 @@ const combineMintInfoQueryResults = (results: MintInfoQueryResult[]) => {
     return acc;
   }, new Map<string, MintInfoQueryResult>());
 
-  return map.size > 0 ? map : null;
+  const isPending = results.some(
+    (result) => result.isFetching && !result.data?.mintInfo,
+  );
+
+  const result = {
+    isPending,
+    results: map,
+  };
+
+  return result;
 };
+
+const mintInfoStaleTimeInMs = 30 * 60 * 1000;
 
 const usePartitionQuotesByStateCheckType = ({
   quotes,
@@ -526,7 +537,7 @@ const usePartitionQuotesByStateCheckType = ({
     return [...new Set(accounts.map((x) => x.mintUrl))];
   }, [quotes, getCashuAccount]);
 
-  const mintQueryResults = useQueries({
+  const mintInfoQueryResult = useQueries({
     queries: mintUrls.map((mintUrl) => ({
       queryKey: ['mint-info', mintUrl],
       queryFn: async () => {
@@ -534,7 +545,12 @@ const usePartitionQuotesByStateCheckType = ({
         const mintInfo = await wallet.getMintInfo();
         return { mintUrl, mintInfo };
       },
-      staleTime: 30 * 60 * 1000,
+      initialData: {
+        mintUrl,
+        mintInfo: null,
+      },
+      initialDataUpdatedAt: Date.now() - (mintInfoStaleTimeInMs + 1000),
+      staleTime: mintInfoStaleTimeInMs,
     })),
     combine: combineMintInfoQueryResults,
   });
@@ -543,50 +559,52 @@ const usePartitionQuotesByStateCheckType = ({
     const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
     const quotesToPoll: CashuReceiveQuote[] = [];
 
-    if (mintQueryResults) {
-      quotes.forEach((quote) => {
-        const account = getCashuAccount(quote.accountId);
-        const mintInfoQueryResult = mintQueryResults.get(account.mintUrl);
+    const { isPending, results } = mintInfoQueryResult;
 
-        if (!mintInfoQueryResult) {
-          console.warn(`Mint info not found for ${account.mintUrl}`, {
-            accountId: account.id,
-          });
-          return;
-        }
-
-        if (mintInfoQueryResult.isError) {
-          console.warn(`Fetching mint info failed for ${account.mintUrl}`, {
-            accountId: account.id,
-            error: mintInfoQueryResult.error,
-          });
-          return;
-        }
-
-        const mintInfo = mintInfoQueryResult.data?.mintInfo;
-        if (!mintInfo) {
-          // Data not loaded yet for the mint
-          return;
-        }
-
-        const mintSupportsWebSockets =
-          checkIfMintSupportsWebSocketsForMintQuotes(
-            account.mintUrl,
-            mintInfo,
-            account.currency,
-          );
-
-        if (mintSupportsWebSockets) {
-          const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
-          quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
-        } else {
-          quotesToPoll.push(quote);
-        }
-      });
+    if (isPending || results.size === 0) {
+      return { quotesToSubscribeTo, quotesToPoll };
     }
 
+    quotes.forEach((quote) => {
+      const account = getCashuAccount(quote.accountId);
+      const mintInfoQueryResult = results.get(account.mintUrl);
+      if (!mintInfoQueryResult) {
+        throw new Error(`Query result not found for mint ${account.mintUrl}`);
+      }
+
+      if (mintInfoQueryResult.isError) {
+        console.warn(
+          `Fetching mint info failed for ${account.mintUrl}. Will fallback to polling.`,
+          {
+            accountId: account.id,
+            error: mintInfoQueryResult.error,
+          },
+        );
+        quotesToPoll.push(quote);
+        return;
+      }
+
+      const mintInfo = mintInfoQueryResult.data?.mintInfo;
+      if (!mintInfo) {
+        throw new Error(`Mint info data not found for mint ${account.mintUrl}`);
+      }
+
+      const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
+        account.mintUrl,
+        mintInfo,
+        account.currency,
+      );
+
+      if (mintSupportsWebSockets) {
+        const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
+        quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
+      } else {
+        quotesToPoll.push(quote);
+      }
+    });
+
     return { quotesToSubscribeTo, quotesToPoll };
-  }, [mintQueryResults, quotes, getCashuAccount]);
+  }, [mintInfoQueryResult, quotes, getCashuAccount]);
 };
 
 type OnMintQuoteStateChangeProps = {
