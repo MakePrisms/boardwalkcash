@@ -14,7 +14,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type MintInfo,
   getCashuUnit,
@@ -41,6 +41,7 @@ import {
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
 import { useCashuReceiveQuoteService } from './cashu-receive-quote-service';
+import { MintQuoteSubscriptionManager } from './mint-quote-subscription-manager';
 
 type CreateProps = {
   account: CashuAccount;
@@ -104,6 +105,22 @@ class PendingCashuReceiveQuotesCache {
       (curr) => curr?.filter((q) => q.id !== quote.id),
     );
   }
+
+  getByMintQuoteId(userId: string, mintQuoteId: string) {
+    const quotes = this.queryClient.getQueryData<CashuReceiveQuote[]>([
+      pendingCashuReceiveQuotesQueryKey,
+      userId,
+    ]);
+    return quotes?.find((q) => q.quoteId === mintQuoteId);
+  }
+}
+
+function usePendingCashuReceiveQuotesCache() {
+  const queryClient = useQueryClient();
+  return useMemo(
+    () => new PendingCashuReceiveQuotesCache(queryClient),
+    [queryClient],
+  );
 }
 
 export function useCreateCashuReceiveQuote() {
@@ -253,13 +270,9 @@ function useOnCashuReceiveQuoteChange({
 }
 
 const usePendingCashuReceiveQuotes = () => {
-  const queryClient = useQueryClient();
   const cashuReceiveQuoteRepository = useCashuReceiveQuoteRepository();
   const userRef = useUserRef();
-  const pendingQuotesCache = useMemo(
-    () => new PendingCashuReceiveQuotesCache(queryClient),
-    [queryClient],
-  );
+  const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
   const { data } = useQuery({
@@ -391,42 +404,49 @@ const useTrackMintQuotesWithWebSocket = ({
   getCashuAccount,
   onUpdate,
 }: TrackMintQuotesWithWebSocketProps) => {
+  const [subscriptionManager] = useState(
+    () => new MintQuoteSubscriptionManager(),
+  );
+  const queryClient = useQueryClient();
+
+  const { mutate: subscribe } = useMutation({
+    mutationFn: (props: {
+      mintUrl: string;
+      quotes: CashuReceiveQuote[];
+    }) =>
+      subscriptionManager.subscribe({
+        ...props,
+        onUpdate,
+      }),
+    retry: 5,
+    onError: (error, variables) => {
+      console.error('Error subscribing to mint quote updates', {
+        mintUrl: variables.mintUrl,
+        cause: error,
+      });
+    },
+  });
+
   useEffect(() => {
-    const subcribeToMintQuoteUpdates = async (
-      quotesByMint: Record<string, CashuReceiveQuote[]>,
-    ) => {
-      const subscriptions = Object.entries(quotesByMint).map(
-        ([mintUrl, quotes]) => {
-          const wallet = getCashuWallet(mintUrl);
-          return wallet.onMintQuoteUpdates(
-            quotes.map((x) => x.quoteId),
-            onUpdate,
-            // TODO: what should we do here on error?
-            (error) =>
-              console.error('Mint quote updates socket error', {
-                cause: error,
-              }),
-          );
+    Object.entries(quotesByMint).map(([mintUrl, quotes]) =>
+      subscribe({ mintUrl, quotes }),
+    );
+  }, [subscribe, quotesByMint]);
+
+  const getMintQuote = useCallback(
+    (receiveQuote: CashuReceiveQuote) =>
+      queryClient.fetchQuery({
+        queryKey: ['check-mint-quote', receiveQuote.quoteId],
+        queryFn: async () => {
+          const account = await getCashuAccount(receiveQuote.accountId);
+          return checkMintQuote(account, receiveQuote);
         },
-      );
-
-      const subscriptionCancellers = await Promise.all(subscriptions);
-
-      return () => {
-        subscriptionCancellers.forEach((cancel) => cancel());
-      };
-    };
-
-    let cleanup: (() => void) | undefined;
-
-    subcribeToMintQuoteUpdates(quotesByMint).then((cleanupFn) => {
-      cleanup = cleanupFn;
-    });
-
-    return () => {
-      cleanup?.();
-    };
-  }, [quotesByMint, onUpdate]);
+        retry: 5,
+        staleTime: 0,
+        gcTime: 0,
+      }),
+    [queryClient, getCashuAccount],
+  );
 
   useEffect(() => {
     // We need to check the state of the quote upon expiration because there is no state change for the expiration
@@ -440,21 +460,27 @@ const useTrackMintQuotesWithWebSocket = ({
     const timeouts: LongTimeout[] = [];
 
     for (const receiveQuote of receiveQuotes) {
-      const msUntilExpiration =
-        new Date(receiveQuote.expiresAt).getTime() - Date.now();
-      const quoteTimeout = setLongTimeout(async () => {
-        const account = await getCashuAccount(receiveQuote.accountId);
-        const mintQuote = await checkMintQuote(account, receiveQuote);
+      const expiresAt = new Date(receiveQuote.expiresAt);
+      const msUntilExpiration = expiresAt.getTime() - Date.now();
 
-        return onUpdate(mintQuote);
+      const quoteTimeout = setLongTimeout(async () => {
+        try {
+          const mintQuote = await getMintQuote(receiveQuote);
+          return onUpdate(mintQuote);
+        } catch (error) {
+          console.error('Error checking mint quote upon expiration', {
+            cause: error,
+          });
+        }
       }, msUntilExpiration);
+
       timeouts.push(quoteTimeout);
     }
 
     return () => {
       timeouts.forEach((timeout) => clearLongTimeout(timeout));
     };
-  }, [quotesByMint, onUpdate, getCashuAccount]);
+  }, [quotesByMint, getMintQuote, onUpdate]);
 };
 
 type MintInfoQueryResult = UseQueryResult<
@@ -583,6 +609,8 @@ const useOnMintQuoteStateChange = ({
   const onIssuedRef = useLatest(onIssued);
   const onExpiredRef = useLatest(onExpired);
   const accountsCache = useAccountsCache();
+  const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
+  const userRef = useUserRef();
 
   const getCashuAccount = useCallback(
     async (accountId: string) => {
@@ -599,8 +627,9 @@ const useOnMintQuoteStateChange = ({
     async (mintQuote: MintQuoteResponse) => {
       console.debug('Processing mint quote', mintQuote);
 
-      const relatedReceiveQuote = quotes.find(
-        (receiveQuote) => receiveQuote.quoteId === mintQuote.quote,
+      const relatedReceiveQuote = pendingQuotesCache.getByMintQuoteId(
+        userRef.current.id,
+        mintQuote.quote,
       );
 
       if (!relatedReceiveQuote) {
@@ -631,7 +660,7 @@ const useOnMintQuoteStateChange = ({
         onIssuedRef.current(account, relatedReceiveQuote);
       }
     },
-    [quotes, getCashuAccount],
+    [pendingQuotesCache, getCashuAccount],
   );
 
   const { quotesToSubscribeTo, quotesToPoll } =

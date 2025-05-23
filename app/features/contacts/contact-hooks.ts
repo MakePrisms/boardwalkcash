@@ -144,16 +144,14 @@ export function useFindContactCandidates(query: string) {
   const contactRepository = useContactRepository();
   const userRef = useUserRef();
 
-  const response = useQuery({
+  return useQuery({
     queryKey: ['search-user-profiles', query],
     queryFn: async () =>
       contactRepository.findContactCandidates(query, userRef.current.id),
+    initialData: [],
+    initialDataUpdatedAt: () => Date.now() - 1000 * 6,
     staleTime: 1000 * 5,
   });
-
-  // TODO: see if we can use initialData instead once we get a response on
-  // https://github.com/TanStack/query/issues/9175
-  return { ...response, data: response.data ?? [] };
 }
 
 function useOnContactsChange({
