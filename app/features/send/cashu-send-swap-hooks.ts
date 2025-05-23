@@ -311,16 +311,17 @@ export function useUnresolvedCashuSendSwaps() {
     },
   });
 
-  // TODO: figure out why we have to cast here. I think something to do with the state and it being an array.
-  // The same problem for Extract<CashuSendSwap, { state: 'DRAFT' }>[] which makes the type `never[]`
-  return {
-    draft: data.filter((swap) => swap.state === 'DRAFT') as (CashuSendSwap & {
-      state: 'DRAFT';
-    })[],
-    pending: data.filter(
-      (swap) => swap.state === 'PENDING',
-    ) as (CashuSendSwap & { state: 'PENDING' })[],
-  };
+  return useMemo(
+    () => ({
+      draft: data.filter((swap) => swap.state === 'DRAFT') as (CashuSendSwap & {
+        state: 'DRAFT';
+      })[],
+      pending: data.filter(
+        (swap) => swap.state === 'PENDING',
+      ) as (CashuSendSwap & { state: 'PENDING' })[],
+    }),
+    [data],
+  );
 }
 
 type UseCashuSendSwapProps = {
