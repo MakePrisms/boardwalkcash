@@ -134,10 +134,11 @@ export class CashuSendSwapRepository {
 
     const unit = getDefaultUnit(amountToSend.currency);
 
-    const updatedKeysetCounter = keysetCounter
-      ? keysetCounter +
-        (outputData ? outputData.keep.length + outputData.send.length : 0)
-      : undefined;
+    const updatedKeysetCounter =
+      keysetCounter !== undefined
+        ? keysetCounter +
+          (outputData ? outputData.keep.length + outputData.send.length : 0)
+        : undefined;
     const tokenHash = proofsToSend
       ? await getTokenHash({
           mint: mintUrl,

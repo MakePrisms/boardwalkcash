@@ -31,7 +31,7 @@ export default function SendShare({ params }: Route.ComponentProps) {
   if (swap.state === 'COMPLETED') {
     const account = accountsCache.get(swap.accountId);
     if (!account) {
-      throw new Error(`Account not found for id: ${swap.accountId}`);
+      return <Redirect to="/send" logMessage="Account not found" />;
     }
     return (
       <SuccessfulSendPage

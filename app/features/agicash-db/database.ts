@@ -122,6 +122,20 @@ export type Database = MergeDeep<
             currency: Currency;
             unit: CurrencyUnit;
           };
+          Insert: {
+            keep_output_data: SerializedOutputData[];
+            send_output_data: SerializedOutputData[];
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+          Update: {
+            keep_output_data?: SerializedOutputData[];
+            send_output_data?: SerializedOutputData[];
+            state?: CashuSendSwap['state'];
+            currency?: Currency;
+            unit?: CurrencyUnit;
+          };
         };
         transactions: {
           Row: {
