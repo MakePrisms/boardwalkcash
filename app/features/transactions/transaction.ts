@@ -16,7 +16,11 @@ export type Transaction = {
   /**
    * Type of the transaction.
    */
-  type: 'CASHU_LIGHTNING' | 'CASHU_TOKEN' | 'CASHU_PAYMENT_REQUEST';
+  type:
+    | 'CASHU_LIGHTNING'
+    | 'CASHU_TOKEN'
+    | 'CASHU_PAYMENT_REQUEST'
+    | 'CANCEL_CASHU_SEND_SWAP';
   /**
    * State of the transaction.
    * Transaction states are:
@@ -24,8 +28,9 @@ export type Transaction = {
    * - PENDING: The transaction was initiated and is being processed. At this point the sender cannot cancel the transaction.
    * - COMPLETED: The transaction has been completed.
    * - FAILED: The transaction has failed.
+   * - CANCELLED: The transaction was cancelled and money was returned to the account.
    */
-  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED';
+  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   /**
    * ID of the account that the transaction was sent from or received to.
    * For SEND transactions, it is the account that the transaction was sent from.

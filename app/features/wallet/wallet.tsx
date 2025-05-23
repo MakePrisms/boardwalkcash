@@ -6,6 +6,7 @@ import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
+import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
 import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
@@ -68,6 +69,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
   useTrackPendingCashuReceiveQuotes();
   useTrackPendingCashuTokenSwaps();
   useTrackUnresolvedCashuSendQuotes();
+  useTrackUnresolvedCashuSendSwaps();
 
   return children;
 };

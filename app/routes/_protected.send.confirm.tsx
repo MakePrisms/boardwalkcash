@@ -5,6 +5,8 @@ import {
   PayCashuRequestConfirmation,
 } from '~/features/send';
 import { useSendStore } from '~/features/send';
+import type { CashuLightningQuote } from '~/features/send/cashu-send-quote-service';
+import type { CashuSwapQuote } from '~/features/send/cashu-send-swap-service';
 
 export default function SendConfirmationPage() {
   const sendAccount = useSendStore((state) => state.getSourceAccount());
@@ -46,7 +48,7 @@ export default function SendConfirmationPage() {
     return (
       <PayBolt11Confirmation
         account={sendAccount}
-        quote={quote}
+        quote={quote as CashuLightningQuote}
         destination={destination}
         destinationDisplay={destinationDisplay}
       />
@@ -54,8 +56,15 @@ export default function SendConfirmationPage() {
   }
 
   if (sendType === 'CASHU_TOKEN') {
+    if (!quote) {
+      return <Redirect to="/send" logMessage="Missing quote" />;
+    }
+
     return (
-      <CreateCashuTokenConfirmation amount={sendAmount} account={sendAccount} />
+      <CreateCashuTokenConfirmation
+        quote={quote as CashuSwapQuote}
+        account={sendAccount}
+      />
     );
   }
 

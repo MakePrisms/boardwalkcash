@@ -250,7 +250,7 @@ export function SendInput() {
 
               <SelectContactOrLud16Drawer onSelect={handleSelectDestination} />
             </div>
-
+            <div /> {/* spacer */}
             <div className="flex items-center justify-end">
               <Button
                 onClick={() => handleContinue(inputValue, convertedValue)}

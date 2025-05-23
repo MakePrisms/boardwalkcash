@@ -5,8 +5,7 @@ import {
 } from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useEffect } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
 import { PageHeaderTitle } from '~/components/page';
 import { PageBackButton } from '~/components/page';
@@ -18,16 +17,19 @@ import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
-import { useToast } from '~/hooks/use-toast';
+import { toast, useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import { Money } from '~/lib/money';
+import { useNavigateWithViewTransition } from '~/lib/transitions';
 import { getDefaultUnit } from '../shared/currencies';
 import {
   useCashuSendQuote,
   useInitiateCashuSendQuote,
 } from './cashu-send-quote-hooks';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
-import { useSendStore } from './send-provider';
+import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
+import { useCashuSendSwap } from './cashu-send-swap-hooks';
+import type { CashuSwapQuote } from './cashu-send-swap-service';
 import { SuccessfulSendPage } from './succesful-send-page';
 
 const formatDestination = (destination: string) => {
@@ -172,28 +174,26 @@ export const PayBolt11Confirmation = ({
   const { description } = decodeBolt11(destination);
   const fee = bolt11Quote.feeReserve;
 
-  const confirmationRowData = [
-    {
-      label: 'Estimated fee',
-      value: (
-        <MoneyDisplay
-          variant="secondary"
-          money={fee}
-          unit={getDefaultUnit(fee.currency)}
-        />
-      ),
-    },
-    { label: 'From', value: account.name },
-    { label: 'Paying', value: formatDestination(destinationDisplay) },
-  ];
-
   return (
     <BaseConfirmation
       amount={bolt11Quote.totalAmountToSend}
       onConfirm={handleConfirm}
       loading={paymentInProgress}
     >
-      {confirmationRowData.map((row) => (
+      {[
+        {
+          label: 'Estimated fee',
+          value: (
+            <MoneyDisplay
+              variant="secondary"
+              money={fee}
+              unit={getDefaultUnit(fee.currency)}
+            />
+          ),
+        },
+        { label: 'From', value: account.name },
+        { label: 'Paying', value: formatDestination(destinationDisplay) },
+      ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
       {description && (
@@ -206,9 +206,7 @@ export const PayBolt11Confirmation = ({
 };
 
 type CreateCashuTokenConfirmationProps = {
-  /** The amount to send. Currency should match the account's currency */
-  amount: Money;
-  /** The account to send from */
+  quote: CashuSwapQuote;
   account: CashuAccount;
 };
 
@@ -219,53 +217,74 @@ type CreateCashuTokenConfirmationProps = {
  *
  * This component should first estimate the fee for the swap, then once the user confirms
  * the payment details, it creates the token and navigates to the share page.
- *
- * NOTE: I think there's an open question of whether we should have a confirmation
- * for creating tokens or if it should be one click
  */
 export const CreateCashuTokenConfirmation = ({
-  amount,
+  quote,
   account,
 }: CreateCashuTokenConfirmationProps) => {
-  // here we are sending a token, so we may need to swap to create the token
-  // swapping will incur fees
-  const fee = Money.zero(amount.currency);
-  const setCashuToken = useSendStore((state) => state.setCashuToken);
-  const navigate = useNavigate();
+  const navigate = useNavigateWithViewTransition();
+  const {
+    data: createSwapData,
+    isPending: isCreateSwapPending,
+    mutate: createCashuSendSwap,
+  } = useCreateCashuSendSwap({
+    onError: (error) => {
+      console.error('Error creating cashu send swap', { cause: error });
+      toast({
+        title: 'Error',
+        description: 'Failed to create cashu send swap. Please try again.',
+      });
+    },
+  });
 
-  const handleConfirm = async () => {
-    setCashuToken({
-      mint: account.mintUrl,
-      proofs: [], // TODO
-      unit: getDefaultUnit(amount.currency),
-      memo: '',
-    });
-    navigate('/send/share');
-  };
-
-  const confirmationRowData = useMemo(
-    () => [
-      {
-        label: 'Estimated fee',
-        value: fee ? (
-          <MoneyDisplay
-            variant="secondary"
-            money={fee}
-            unit={getDefaultUnit(fee.currency)}
-          />
-        ) : (
-          <Skeleton className="h-[33px] w-[20px]" />
-        ),
-      },
-      { label: 'From', value: account.name },
-      { label: 'Sending', value: 'eCash Token' },
-    ],
-    [fee, account],
-  );
+  const { status } = useCashuSendSwap({
+    id: createSwapData?.id,
+    onPending: (swap) => {
+      console.log('swap pending', { swap });
+      navigate(`/send/share/${swap.id}`, {
+        transition: 'slideUp',
+        applyTo: 'newView',
+      });
+    },
+  });
 
   return (
-    <BaseConfirmation amount={amount} onConfirm={handleConfirm}>
-      {confirmationRowData.map((row) => (
+    <BaseConfirmation
+      amount={quote.amountToSend}
+      onConfirm={() =>
+        createCashuSendSwap({
+          accountId: account.id,
+          amount: quote.amountRequested,
+        })
+      }
+      loading={
+        isCreateSwapPending || (status === 'LOADING' && !!createSwapData)
+      }
+    >
+      {[
+        {
+          label: 'Recipient gets',
+          value: (
+            <MoneyDisplay
+              variant="secondary"
+              money={quote.amountRequested}
+              unit={getDefaultUnit(quote.amountRequested.currency)}
+            />
+          ),
+        },
+        {
+          label: 'Estimated fee',
+          value: (
+            <MoneyDisplay
+              variant="secondary"
+              money={quote.totalFee}
+              unit={getDefaultUnit(quote.totalFee.currency)}
+            />
+          ),
+        },
+        { label: 'From', value: account.name },
+        { label: 'Sending', value: 'ecash' },
+      ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
     </BaseConfirmation>

@@ -12,6 +12,7 @@ import type { BtcUnit, UsdUnit } from '~/lib/money/types';
 import type { AccountsCache } from '../accounts/account-hooks';
 import { type Contact, isContact } from '../contacts/contact';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
+import type { CashuSwapQuote } from './cashu-send-swap-service';
 
 const validateLightningAddressFormat = buildLightningAddressFormatValidator({
   message: 'Invalid lightning address',
@@ -159,7 +160,7 @@ type State = {
    */
   destinationDisplay: string | null;
   cashuToken: Token | null;
-  quote: CashuLightningQuote | null;
+  quote: CashuLightningQuote | CashuSwapQuote | null;
 };
 
 type Actions = {
@@ -193,6 +194,11 @@ type CreateSendStoreProps = {
     paymentRequest: string;
     amount: Money<Currency>;
   }) => Promise<CashuLightningQuote>;
+  getCashuSendSwapQuote: (params: {
+    accountId: string;
+    amount: Money<Currency>;
+    senderPaysFee?: boolean;
+  }) => Promise<CashuSwapQuote>;
 };
 
 export const createSendStore = ({
@@ -200,6 +206,7 @@ export const createSendStore = ({
   accountsCache,
   getInvoiceFromLud16,
   createCashuSendQuote,
+  getCashuSendSwapQuote,
 }: CreateSendStoreProps) => {
   return create<SendState>()((set, get) => {
     const getOrThrow = <T extends keyof SendState>(
@@ -332,6 +339,25 @@ export const createSendStore = ({
         const amountToSend = pickAmountByCurrency(amounts, account.currency);
 
         set({ status: 'quoting', amount: amountToSend });
+
+        if (sendType === 'CASHU_TOKEN') {
+          if (account.type !== 'cashu') {
+            throw new Error('Cannot send cashu token from non-cashu account');
+          }
+
+          try {
+            const quote = await getCashuSendSwapQuote({
+              accountId: account.id,
+              amount: amountToSend,
+            });
+
+            set({ quote });
+          } catch (error) {
+            console.error(error);
+            set({ status: 'idle' });
+            return { success: false, error };
+          }
+        }
 
         if (['LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
           const lnAddress = getOrThrow('destinationAlias');
