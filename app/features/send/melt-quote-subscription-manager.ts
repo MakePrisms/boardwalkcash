@@ -1,14 +1,14 @@
-import type { MintQuoteResponse } from '@cashu/cashu-ts';
+import type { MeltQuoteResponse } from '@cashu/cashu-ts';
 import { getCashuWallet } from '~/lib/cashu';
 import { computeSHA256 } from '~/lib/sha256';
-import type { CashuReceiveQuote } from './cashu-receive-quote';
+import type { CashuSendQuote } from './cashu-send-quote';
 
 type SubscriptionData = {
   subscriptionHash: string;
   subscriptionPromise: Promise<() => void>;
 };
 
-export class MintQuoteSubscriptionManager {
+export class MeltQuoteSubscriptionManager {
   private subscriptions: Map<string, SubscriptionData> = new Map();
 
   async subscribe({
@@ -17,8 +17,8 @@ export class MintQuoteSubscriptionManager {
     onUpdate,
   }: {
     mintUrl: string;
-    quotes: CashuReceiveQuote[];
-    onUpdate: (mintQuoteResponse: MintQuoteResponse) => void;
+    quotes: CashuSendQuote[];
+    onUpdate: (meltQuoteResponse: MeltQuoteResponse) => void;
   }): Promise<void> {
     const subscriptionHash = await this.getSubscriptionHash(quotes);
     const mintSubscription = this.subscriptions.get(mintUrl);
@@ -28,7 +28,7 @@ export class MintQuoteSubscriptionManager {
 
       if (subscriptionHash === mintSubscription.subscriptionHash) {
         console.debug(
-          'Mint quote updates subscription already exists for mint',
+          'Melt quote updates subscription already exists for mint',
           mintUrl,
           quotes,
         );
@@ -37,23 +37,23 @@ export class MintQuoteSubscriptionManager {
 
       const unsubscribe = await mintSubscription.subscriptionPromise;
 
-      console.debug('Unsubscribing from mint quote updates for mint', mintUrl);
+      console.debug('Unsubscribing from melt quote updates for mint', mintUrl);
       unsubscribe();
     }
 
     const wallet = getCashuWallet(mintUrl);
 
     console.debug(
-      'Subscribing to mint quote updates for mint',
+      'Subscribing to melt quote updates for mint',
       mintUrl,
       quotes,
     );
 
-    const subscriptionPromise = wallet.onMintQuoteUpdates(
+    const subscriptionPromise = wallet.onMeltQuoteUpdates(
       quotes.map((x) => x.quoteId),
       onUpdate,
       (error) =>
-        console.error('Mint quote updates socket error', {
+        console.error('Melt quote updates socket error', {
           cause: error,
         }),
     );
@@ -71,9 +71,7 @@ export class MintQuoteSubscriptionManager {
     }
   }
 
-  private async getSubscriptionHash(
-    quotes: CashuReceiveQuote[],
-  ): Promise<string> {
+  private async getSubscriptionHash(quotes: CashuSendQuote[]): Promise<string> {
     // Concatenate quoteIds to create a unique key for the subscription
     const data = `${quotes.map((x) => x.quoteId).join('_')}`;
     return await computeSHA256(data);

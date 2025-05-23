@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type Big from 'big.js';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CashuErrorCodes, getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
@@ -33,6 +33,7 @@ import {
   type SendQuoteRequest,
   useCashuSendQuoteService,
 } from './cashu-send-quote-service';
+import { MeltQuoteSubscriptionManager } from './melt-quote-subscription-manager';
 
 // Query that tracks the "active" cashu send quote. Active one is the one that user created in current browser session.
 // We want to track active send quote even after it is completed or expired which is why we can't use unresolved send quotes query.
@@ -354,6 +355,10 @@ function useOnMeltQuoteStateChange({
   const onPendingRef = useLatest(onPending);
   const onPaidRef = useLatest(onPaid);
   const onExpiredRef = useLatest(onExpired);
+  const [subscriptionManager] = useState(
+    () => new MeltQuoteSubscriptionManager(),
+  );
+  const queryClient = useQueryClient();
 
   const handleMeltQuoteUpdate = useCallback(
     async (meltQuote: MeltQuoteResponse) => {
@@ -383,8 +388,6 @@ function useOnMeltQuoteStateChange({
         expiresAt < now &&
         relatedSendQuote.state !== 'EXPIRED'
       ) {
-        // TODO: do we get notified by the socket when the quote is expired?
-        // If not we need to find another way.
         onExpiredRef.current(account, relatedSendQuote, meltQuote);
       } else if (
         meltQuote.state === 'PAID' &&
@@ -406,57 +409,62 @@ function useOnMeltQuoteStateChange({
     [sendQuotes, accountsCache],
   );
 
+  const { mutate: subscribe } = useMutation({
+    mutationFn: (props: {
+      mintUrl: string;
+      quotes: CashuSendQuote[];
+    }) =>
+      subscriptionManager.subscribe({
+        ...props,
+        onUpdate: handleMeltQuoteUpdate,
+      }),
+    retry: 5,
+    onError: (error, variables) => {
+      console.error('Error subscribing to melt quote updates', {
+        mintUrl: variables.mintUrl,
+        cause: error,
+      });
+    },
+  });
+
   useEffect(() => {
     if (sendQuotes.length === 0) return;
 
-    let cleanup: (() => void) | undefined;
+    const quotesByMint = sendQuotes.reduce<Record<string, CashuSendQuote[]>>(
+      (acc, quote) => {
+        const account = accountsCache.get(quote.accountId);
+        if (!account || account.type !== 'cashu') {
+          throw new Error(`Cashu account not found for id: ${quote.accountId}`);
+        }
+        const existingQuotesForMint = acc[account.mintUrl] ?? [];
+        acc[account.mintUrl] = existingQuotesForMint.concat(quote);
+        return acc;
+      },
+      {},
+    );
 
-    const subcribeToMeltQuoteUpdates = async (quotes: CashuSendQuote[]) => {
-      const quotesByMint = quotes.reduce<Record<string, string[]>>(
-        (acc, quote) => {
-          const account = accountsCache.get(quote.accountId);
+    Object.entries(quotesByMint).map(([mintUrl, quotes]) =>
+      subscribe({ mintUrl, quotes }),
+    );
+  }, [sendQuotes, accountsCache, subscribe]);
+
+  const getMeltQuote = useCallback(
+    (sendQuote: CashuSendQuote) =>
+      queryClient.fetchQuery({
+        queryKey: ['check-melt-quote', sendQuote.quoteId],
+        queryFn: async () => {
+          const account = await accountsCache.getLatest(sendQuote.accountId);
           if (!account || account.type !== 'cashu') {
-            throw new Error(
-              `Cashu account not found for id: ${quote.accountId}`,
-            );
+            throw new Error(`Account not found for id: ${sendQuote.accountId}`);
           }
-          const existingQuotesForMint = acc[account.mintUrl] ?? [];
-          acc[account.mintUrl] = existingQuotesForMint.concat(quote.quoteId);
-          return acc;
+          return checkMeltQuote(account, sendQuote);
         },
-        {},
-      );
-
-      const subscriptions = Object.entries(quotesByMint).map(
-        ([mintUrl, quotes]) => {
-          const wallet = getCashuWallet(mintUrl);
-          return wallet.onMeltQuoteUpdates(
-            quotes,
-            handleMeltQuoteUpdate,
-            // TODO: what should we do here on error?
-            (error) =>
-              console.error('Melt quote updates socket error', {
-                cause: error,
-              }),
-          );
-        },
-      );
-
-      const subscriptionCancellers = await Promise.all(subscriptions);
-
-      return () => {
-        subscriptionCancellers.forEach((cancel) => cancel());
-      };
-    };
-
-    subcribeToMeltQuoteUpdates(sendQuotes).then((cleanupFn) => {
-      cleanup = cleanupFn;
-    });
-
-    return () => {
-      cleanup?.();
-    };
-  }, [sendQuotes, accountsCache, handleMeltQuoteUpdate]);
+        retry: 5,
+        staleTime: 0,
+        gcTime: 0,
+      }),
+    [queryClient, accountsCache],
+  );
 
   useEffect(() => {
     // We need to check the state of the quote upon expiration because there is no state change for the expiration
@@ -469,14 +477,14 @@ function useOnMeltQuoteStateChange({
       const msUntilExpiration =
         new Date(sendQuote.expiresAt).getTime() - Date.now();
       const quoteTimeout = setLongTimeout(async () => {
-        const account = await accountsCache.getLatest(sendQuote.accountId);
-        if (!account || account.type !== 'cashu') {
-          throw new Error(`Account not found for id: ${sendQuote.accountId}`);
+        try {
+          const meltQuote = await getMeltQuote(sendQuote);
+          return handleMeltQuoteUpdate(meltQuote);
+        } catch (error) {
+          console.error('Error checking melt quote upon expiration', {
+            cause: error,
+          });
         }
-
-        const meltQuote = await checkMeltQuote(account, sendQuote);
-
-        return handleMeltQuoteUpdate(meltQuote);
       }, msUntilExpiration);
       timeouts.push(quoteTimeout);
     }
@@ -484,7 +492,7 @@ function useOnMeltQuoteStateChange({
     return () => {
       timeouts.forEach((timeout) => clearLongTimeout(timeout));
     };
-  }, [sendQuotes, handleMeltQuoteUpdate, accountsCache]);
+  }, [sendQuotes, handleMeltQuoteUpdate, getMeltQuote]);
 }
 
 export function useTrackUnresolvedCashuSendQuotes() {

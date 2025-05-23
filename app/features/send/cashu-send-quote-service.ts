@@ -197,7 +197,7 @@ export class CashuSendQuoteService {
       maxPotentialChangeAmount === 0
         ? 0
         : Math.ceil(Math.log2(maxPotentialChangeAmount)) || 1;
-    const keysetCounter = account.keysetCounters[keysetId];
+    const keysetCounter = account.keysetCounters[keysetId] ?? 0;
 
     return this.cashuSendRepository.create({
       userId: userId,
