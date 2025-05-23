@@ -1,0 +1,512 @@
+create table "wallet"."cashu_send_swaps" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "account_id" uuid not null,
+    "transaction_id" uuid not null,
+    "amount_requested" numeric not null,
+    "amount_to_send" numeric not null,
+    "send_swap_fee" numeric not null,
+    "receive_swap_fee" numeric not null,
+    "proofs_to_send" text,
+    "input_proofs" text not null,
+    "input_amount" numeric not null,
+    "keyset_id" text,
+    "keyset_counter" integer,
+    "output_data" text,
+    "token_hash" text,
+    "mint_url" text not null,
+    "currency" text not null,
+    "unit" text not null,
+    "state" text not null,
+    "version" integer not null default 0,
+    "created_at" timestamp with time zone not null default now(),
+    "failed_at" timestamp with time zone,
+    "failure_reason" text
+);
+
+CREATE UNIQUE INDEX cashu_send_swaps_pkey ON wallet.cashu_send_swaps USING btree (id);
+
+alter table "wallet"."cashu_send_swaps" add constraint "cashu_send_swaps_pkey" PRIMARY KEY using index "cashu_send_swaps_pkey";
+
+alter table "wallet"."cashu_send_swaps" enable row level security;
+
+alter table "wallet"."cashu_send_swaps" add constraint "cashu_send_swaps_account_id_fkey" FOREIGN KEY (account_id) REFERENCES wallet.accounts(id) not valid;
+
+alter table "wallet"."cashu_send_swaps" validate constraint "cashu_send_swaps_account_id_fkey";
+
+alter table "wallet"."cashu_send_swaps" add constraint "cashu_send_swaps_transaction_id_fkey" FOREIGN KEY (transaction_id) REFERENCES wallet.transactions(id) not valid;
+
+alter table "wallet"."cashu_send_swaps" validate constraint "cashu_send_swaps_transaction_id_fkey";
+
+alter table "wallet"."cashu_send_swaps" add constraint "cashu_send_swaps_user_id_fkey" FOREIGN KEY (user_id) REFERENCES wallet.users(id) not valid;
+
+alter table "wallet"."cashu_send_swaps" validate constraint "cashu_send_swaps_user_id_fkey";
+
+set check_function_bodies = off;
+
+alter publication supabase_realtime add table wallet.cashu_send_swaps;
+
+CREATE OR REPLACE FUNCTION wallet.complete_cashu_send_swap(
+    p_swap_id uuid,
+    p_swap_version integer,
+    p_account_version integer,
+    p_proofs_to_send text,
+    p_account_proofs jsonb,
+    p_token_hash text
+)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+declare
+    v_swap wallet.cashu_send_swaps;
+    v_account_id uuid;
+    v_transaction_id uuid;
+begin
+    -- Get the swap record with optimistic concurrency check
+    select * into v_swap
+    from wallet.cashu_send_swaps
+    where id = p_swap_id and version = p_swap_version;
+    
+    if v_swap is null then
+        raise exception 'Concurrency error: Swap % not found or was modified by another transaction. Expected version % and state PENDING.', p_swap_id, p_swap_version;
+    end if;
+    
+    v_account_id := v_swap.account_id;
+    v_transaction_id := v_swap.transaction_id;
+    
+    -- Update the transaction state to PENDING
+    update wallet.transactions
+    set state = 'PENDING'
+    where id = v_transaction_id;
+
+    if v_swap.state != 'DRAFT' then
+        raise exception 'Swap % is not in DRAFT state. Current state: %.', p_swap_id, v_swap.state;
+    end if;
+    
+    -- Update the swap with new proofs and increment version
+    update wallet.cashu_send_swaps
+    set proofs_to_send = p_proofs_to_send,
+        state = 'PENDING',
+        token_hash = p_token_hash,
+        version = version + 1
+    where id = p_swap_id and version = p_swap_version;
+    
+    -- Update the account proofs with optimistic concurrency check
+    update wallet.accounts
+    set details = jsonb_set(details, '{proofs}', p_account_proofs),
+        version = version + 1
+    where id = v_account_id and version = p_account_version;
+    
+    return;
+    end;
+$function$
+;
+
+-- Mark a send swap and its transaction as COMPLETED
+CREATE OR REPLACE FUNCTION wallet.mark_cashu_send_swap_completed(
+    p_swap_id uuid,
+    p_swap_version integer
+) RETURNS void
+LANGUAGE plpgsql
+AS $function$
+declare
+    v_swap wallet.cashu_send_swaps;
+    v_transaction_id uuid;
+    v_token_hash text;
+    v_cancelling_swap_exists boolean;
+begin
+    -- Get the swap record with optimistic concurrency check
+    select * into v_swap
+    from wallet.cashu_send_swaps
+    where id = p_swap_id and version = p_swap_version;
+
+    if v_swap is null then
+        raise exception 'Concurrency error: Swap % not found or was modified by another transaction. Expected version %.', p_swap_id, p_swap_version;
+    end if;
+
+    v_transaction_id := v_swap.transaction_id;
+    v_token_hash := v_swap.token_hash;
+    -- Return if already COMPLETED
+    if v_swap.state = 'COMPLETED' then
+        return;
+    end if;
+
+    -- Only allow PENDING swaps to be marked as COMPLETED
+    if v_swap.state != 'PENDING' then
+        raise exception 'Swap % is not in PENDING state. Current state: %.', p_swap_id, v_swap.state;
+    end if;
+
+    -- Check if there is a cancelling token swap
+    select exists (
+        select 1 
+        from wallet.cashu_token_swaps 
+        where token_hash = v_token_hash 
+        and type = 'CANCEL_CASHU_SEND_SWAP'
+        and user_id = v_swap.user_id
+    ) into v_cancelling_swap_exists;
+
+    -- Update the swap state based on whether there is a cancelling swap
+    update wallet.cashu_send_swaps
+    set state = case when v_cancelling_swap_exists then 'CANCELLED' else 'COMPLETED' end,
+        version = version + 1
+    where id = p_swap_id and version = p_swap_version;
+
+    -- Update the transaction state to match the swap state
+    update wallet.transactions
+    set state = case when v_cancelling_swap_exists then 'CANCELLED' else 'COMPLETED' end,
+        completed_at = now()
+    where id = v_transaction_id;
+
+    return;
+end;
+$function$
+;
+
+
+CREATE OR REPLACE FUNCTION wallet.create_cashu_send_swap(
+    p_user_id uuid,
+    p_account_id uuid,
+    p_amount_requested numeric,
+    p_amount_to_send numeric,
+    p_input_proofs text,
+    p_account_proofs text, 
+    p_currency text, 
+    p_mint_url text, 
+    p_unit text, 
+    p_state text, 
+    p_account_version integer, 
+    p_input_amount numeric,
+    p_send_swap_fee numeric,
+    p_receive_swap_fee numeric,
+    p_keyset_id text DEFAULT NULL::text, 
+    p_keyset_counter integer DEFAULT NULL::integer,
+    p_updated_keyset_counter integer DEFAULT NULL::integer,
+    p_token_hash text DEFAULT NULL::text,
+    p_output_data text DEFAULT NULL::text, 
+    p_proofs_to_send text DEFAULT NULL::text
+) RETURNS wallet.cashu_send_swaps
+ LANGUAGE plpgsql
+AS $function$
+declare
+    v_transaction_id uuid;
+    v_swap wallet.cashu_send_swaps;
+begin
+    -- Validate p_state is one of the allowed values
+    IF p_state NOT IN ('DRAFT', 'PENDING') THEN
+        RAISE EXCEPTION 'Invalid state: %. State must be either DRAFT or PENDING.', p_state;
+    END IF;
+
+    -- Validate input parameters based on the state
+    IF p_state = 'PENDING' THEN
+        -- For PENDING state, proofs_to_send and token_hash must be defined
+        IF p_proofs_to_send IS NULL OR p_token_hash IS NULL THEN
+            RAISE EXCEPTION 'When state is PENDING, proofs_to_send and token_hash must be provided';
+        END IF;
+    ELSIF p_state = 'DRAFT' THEN
+        -- For DRAFT state, output_data, keyset_id, keyset_counter, and updated_keyset_counter must be defined
+        IF p_output_data IS NULL OR p_keyset_id IS NULL OR p_keyset_counter IS NULL OR p_updated_keyset_counter IS NULL THEN
+            RAISE EXCEPTION 'When state is DRAFT, output_data, keyset_id, keyset_counter, and updated_keyset_counter must be provided';
+        END IF;
+    END IF;
+
+    -- TODO:
+    -- details: 
+    -- - amount_requested: amount to send
+    -- - amount_to_send: amount to receive
+    -- - input_amount: amoun taken from balance
+    -- - fees
+    -- - state to track phase of the transaction
+
+    -- Create transaction record with the determined state
+    insert into wallet.transactions (
+        user_id,
+        account_id,
+        direction,
+        type,
+        state,
+        amount,
+        currency
+    ) values (
+        p_user_id,
+        p_account_id,
+        'SEND',
+        'CASHU_TOKEN',
+        'PENDING',
+        p_amount_to_send,
+        p_currency
+    ) returning id into v_transaction_id;
+
+    -- Create send swap record
+    insert into wallet.cashu_send_swaps (
+        user_id,
+        account_id,
+        transaction_id,
+        amount_requested,
+        amount_to_send,
+        send_swap_fee,
+        receive_swap_fee,
+        input_proofs,
+        input_amount,
+        proofs_to_send,
+        keyset_id,
+        keyset_counter,
+        output_data,
+        token_hash,
+        mint_url,
+        currency,
+        unit,
+        state
+    ) values (
+        p_user_id,
+        p_account_id,
+        v_transaction_id,
+        p_amount_requested,
+        p_amount_to_send,
+        p_send_swap_fee,
+        p_receive_swap_fee,
+        p_input_proofs,
+        p_input_amount,
+        p_proofs_to_send,
+        p_keyset_id,
+        p_keyset_counter,
+        p_output_data,
+        p_token_hash,
+        p_mint_url,
+        p_currency,
+        p_unit,
+        p_state
+    ) returning * into v_swap;
+
+    if p_updated_keyset_counter is not null then
+        update wallet.accounts
+        set details = jsonb_set(
+                jsonb_set(details, '{proofs}', to_jsonb(p_account_proofs)),
+                array['keyset_counters', p_keyset_id],
+                to_jsonb(p_updated_keyset_counter),
+                true
+            ),
+            version = version + 1
+        where id = v_swap.account_id and version = p_account_version;
+    else
+        update wallet.accounts
+        set details = jsonb_set(details, '{proofs}', to_jsonb(p_account_proofs)),
+            version = version + 1
+        where id = v_swap.account_id and version = p_account_version;
+    end if;
+    
+    return v_swap;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION wallet.fail_cashu_send_swap(
+    p_swap_id uuid,
+    p_swap_version integer,
+    p_reason text
+) RETURNS void
+LANGUAGE plpgsql
+AS $function$
+declare
+    v_swap wallet.cashu_send_swaps;
+    v_transaction_id uuid;
+begin
+    -- Get the swap record with optimistic concurrency check
+    select * into v_swap
+    from wallet.cashu_send_swaps
+    where id = p_swap_id and version = p_swap_version;
+    
+    if not found then
+        raise exception 'Swap not found or version mismatch';
+    end if;
+
+    if v_swap.state != 'DRAFT' then
+        raise exception 'Swap is not in DRAFT state. Current state: %.', v_swap.state;
+    end if;
+    
+    -- Get the transaction ID
+    v_transaction_id := v_swap.transaction_id;
+    
+    -- Update the swap state to FAILED
+    update wallet.cashu_send_swaps
+    set state = 'FAILED',
+        failure_reason = p_reason,
+        failed_at = now(),
+        version = version + 1
+    where id = p_swap_id and version = p_swap_version;
+    
+    if not found then
+        raise exception 'Failed to update swap: version conflict';
+    end if;
+    
+    -- Update the corresponding transaction to FAILED
+    update wallet.transactions
+    set state = 'FAILED',
+        failed_at = now()
+    where id = v_transaction_id;
+    
+    return;
+end;
+$function$
+;
+
+-- drop old function
+drop function if exists "wallet"."create_cashu_token_swap"(p_token_hash text, p_token_proofs text, p_account_id uuid, p_user_id uuid, p_currency text, p_unit text, p_keyset_id text, p_keyset_counter integer, p_output_amounts integer[], p_input_amount numeric, p_receive_amount numeric, p_fee_amount numeric, p_account_version integer);
+
+alter table "wallet"."cashu_token_swaps" add column "type" text;
+
+set check_function_bodies = off;
+
+--  updated to create token swaps with type
+CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
+    p_token_hash text, 
+    p_token_proofs text, 
+    p_account_id uuid, 
+    p_user_id uuid, 
+    p_currency text, 
+    p_unit text, 
+    p_keyset_id text, 
+    p_keyset_counter integer, 
+    p_output_amounts integer[], 
+    p_input_amount numeric, 
+    p_receive_amount numeric, 
+    p_fee_amount numeric, 
+    p_account_version integer, 
+    p_type text)
+ RETURNS wallet.cashu_token_swaps
+ LANGUAGE plpgsql
+AS $function$
+declare
+  v_token_swap wallet.cashu_token_swaps;
+  v_updated_counter integer;
+  v_transaction_id uuid;
+begin
+
+ -- Create transaction record 
+    insert into wallet.transactions (
+        user_id,
+        account_id,
+        direction,
+        type,
+        state,
+        amount,
+        currency
+    ) values (
+        p_user_id,
+        p_account_id,
+        'RECEIVE',
+        case when p_type = 'CANCEL_CASHU_SEND_SWAP' then 'CANCEL_CASHU_SEND_SWAP' else 'CASHU_TOKEN' end,
+        'PENDING',
+        p_receive_amount,
+        p_currency
+    ) returning id into v_transaction_id;
+
+  -- Calculate new counter
+  v_updated_counter := p_keyset_counter + array_length(p_output_amounts, 1);
+
+  -- Update the account with optimistic concurrency
+  update wallet.accounts a
+  set 
+    details = jsonb_set(
+      details, 
+      array['keyset_counters', p_keyset_id], 
+      to_jsonb(v_updated_counter), 
+      true
+    ),
+    version = version + 1
+  where a.id = p_account_id and a.version = p_account_version;
+
+  if not found then
+    raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', p_account_id, p_account_version;
+  end if;
+
+  insert into wallet.cashu_token_swaps (
+    token_hash,
+    token_proofs,
+    account_id,
+    user_id,
+    currency,
+    unit,
+    keyset_id,
+    keyset_counter,
+    output_amounts,
+    input_amount,
+    receive_amount,
+    fee_amount,
+    state,
+    transaction_id,
+    type
+  ) values (
+    p_token_hash,
+    p_token_proofs,
+    p_account_id,
+    p_user_id,
+    p_currency,
+    p_unit,
+    p_keyset_id,
+    p_keyset_counter,
+    p_output_amounts,
+    p_input_amount,
+    p_receive_amount,
+    p_fee_amount,
+    'PENDING',
+    v_transaction_id,
+    p_type
+  ) returning * into v_token_swap;
+
+  return v_token_swap;
+end;
+$function$
+;
+
+grant delete on table "wallet"."cashu_send_swaps" to "anon";
+
+grant insert on table "wallet"."cashu_send_swaps" to "anon";
+
+grant references on table "wallet"."cashu_send_swaps" to "anon";
+
+grant select on table "wallet"."cashu_send_swaps" to "anon";
+
+grant trigger on table "wallet"."cashu_send_swaps" to "anon";
+
+grant truncate on table "wallet"."cashu_send_swaps" to "anon";
+
+grant update on table "wallet"."cashu_send_swaps" to "anon";
+
+grant delete on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant insert on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant references on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant select on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant trigger on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant truncate on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant update on table "wallet"."cashu_send_swaps" to "authenticated";
+
+grant delete on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant insert on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant references on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant select on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant trigger on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant truncate on table "wallet"."cashu_send_swaps" to "service_role";
+
+grant update on table "wallet"."cashu_send_swaps" to "service_role";
+
+-- solves realtime update problems with PostgreSQL's TOAST and replication settings where we get updates missing large calumns
+ALTER TABLE wallet.cashu_send_swaps REPLICA IDENTITY FULL;
+
+create policy "Enable CRUD for cashu_send_swaps based on user_id"
+on "wallet"."cashu_send_swaps"
+as permissive
+for all
+to public
+using ((( SELECT auth.uid() AS uid) = user_id))
+with check ((( SELECT auth.uid() AS uid) = user_id));

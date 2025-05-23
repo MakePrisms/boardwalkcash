@@ -3,6 +3,9 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { CashuTokenSwap } from '../receive/cashu-token-swap';
+import type { CashuSendSwap } from '../send/cashu-send-swap';
+import type { SerializedOutputData } from '../send/cashu-send-swap-repository';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
@@ -81,14 +84,17 @@ export type Database = MergeDeep<
           Row: {
             currency: Currency;
             unit: CurrencyUnit;
+            type: CashuTokenSwap['type'];
           };
           Insert: {
             currency: Currency;
             unit: CurrencyUnit;
+            type: CashuTokenSwap['type'];
           };
           Update: {
             currency?: Currency;
             unit?: CurrencyUnit;
+            type?: CashuTokenSwap['type'];
           };
         };
         cashu_send_quotes: {
@@ -106,6 +112,15 @@ export type Database = MergeDeep<
             currency?: Currency;
             unit?: CurrencyUnit;
             currency_requested?: Currency;
+          };
+        };
+        cashu_send_swaps: {
+          Row: {
+            keep_output_data: SerializedOutputData[];
+            send_output_data: SerializedOutputData[];
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
           };
         };
         transactions: {
@@ -145,6 +160,9 @@ export type Database = MergeDeep<
         fail_cashu_send_quote: {
           Returns: UpdateCashuSendQuoteResult;
         };
+        create_cashu_send_swap: {
+          Returns: AgicashDbCashuSendSwap;
+        };
       };
       CompositeTypes: {
         cashu_receive_quote_payment_result: CashuReceiveQuotePaymentResult;
@@ -179,3 +197,5 @@ export type AgicashDbCashuSendQuote =
 export type AgicashDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
 export type AgicashDbContact = Database['wallet']['Tables']['contacts']['Row'];
+export type AgicashDbCashuSendSwap =
+  Database['wallet']['Tables']['cashu_send_swaps']['Row'];
