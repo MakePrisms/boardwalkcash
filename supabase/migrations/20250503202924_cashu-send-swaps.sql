@@ -44,6 +44,9 @@ alter table "wallet"."cashu_send_swaps" validate constraint "cashu_send_swaps_us
 
 set check_function_bodies = off;
 
+alter table "wallet"."transactions" add column "reversed_txid" uuid;
+alter table "wallet"."transactions" add constraint "transactions_reversed_txid_fkey" FOREIGN KEY (reversed_txid) REFERENCES wallet.transactions(id);
+
 alter publication supabase_realtime add table wallet.cashu_send_swaps;
 
 CREATE OR REPLACE FUNCTION wallet.complete_cashu_send_swap(
@@ -112,8 +115,7 @@ AS $function$
 declare
     v_swap wallet.cashu_send_swaps;
     v_transaction_id uuid;
-    v_token_hash text;
-    v_cancelling_swap_exists boolean;
+    v_reversed_txid uuid;
 begin
     -- Get the swap record with optimistic concurrency check
     select * into v_swap
@@ -125,7 +127,9 @@ begin
     end if;
 
     v_transaction_id := v_swap.transaction_id;
-    v_token_hash := v_swap.token_hash;
+    select reversed_txid into v_reversed_txid
+    from wallet.transactions
+    where id = v_transaction_id;
     -- Return if already COMPLETED
     if v_swap.state = 'COMPLETED' then
         return;
@@ -136,24 +140,14 @@ begin
         raise exception 'Swap % is not in PENDING state. Current state: %.', p_swap_id, v_swap.state;
     end if;
 
-    -- Check if there is a cancelling token swap
-    select exists (
-        select 1 
-        from wallet.cashu_token_swaps 
-        where token_hash = v_token_hash 
-        and type = 'CANCEL_CASHU_SEND_SWAP'
-        and user_id = v_swap.user_id
-    ) into v_cancelling_swap_exists;
-
-    -- Update the swap state based on whether there is a cancelling swap
     update wallet.cashu_send_swaps
-    set state = case when v_cancelling_swap_exists then 'CANCELLED' else 'COMPLETED' end,
+    set state = case when v_reversed_txid is null then 'COMPLETED' else 'REVERSED' end,
         version = version + 1
     where id = p_swap_id and version = p_swap_version;
 
-    -- Update the transaction state to match the swap state
+    -- Update the transaction state to COMPLETED
     update wallet.transactions
-    set state = case when v_cancelling_swap_exists then 'CANCELLED' else 'COMPLETED' end,
+    set state = case when v_reversed_txid is null then 'COMPLETED' else 'REVERSED' end,
         completed_at = now()
     where id = v_transaction_id;
 
@@ -349,14 +343,11 @@ end;
 $function$
 ;
 
+
 -- drop old function
 drop function if exists "wallet"."create_cashu_token_swap"(p_token_hash text, p_token_proofs text, p_account_id uuid, p_user_id uuid, p_currency text, p_unit text, p_keyset_id text, p_keyset_counter integer, p_output_amounts integer[], p_input_amount numeric, p_receive_amount numeric, p_fee_amount numeric, p_account_version integer);
 
-alter table "wallet"."cashu_token_swaps" add column "type" text;
-
 set check_function_bodies = off;
-
---  updated to create token swaps with type
 CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
     p_token_hash text, 
     p_token_proofs text, 
@@ -365,13 +356,13 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
     p_currency text, 
     p_unit text, 
     p_keyset_id text, 
-    p_keyset_counter integer, 
-    p_output_amounts integer[], 
-    p_input_amount numeric, 
-    p_receive_amount numeric, 
-    p_fee_amount numeric, 
-    p_account_version integer, 
-    p_type text)
+    p_keyset_counter integer,
+    p_output_amounts integer[],
+    p_input_amount numeric,
+    p_receive_amount numeric,
+    p_fee_amount numeric,
+    p_account_version integer,
+    p_reversed_txid uuid DEFAULT NULL)
  RETURNS wallet.cashu_token_swaps
  LANGUAGE plpgsql
 AS $function$
@@ -389,15 +380,17 @@ begin
         type,
         state,
         amount,
-        currency
+        currency,
+        reversed_txid
     ) values (
         p_user_id,
         p_account_id,
         'RECEIVE',
-        case when p_type = 'CANCEL_CASHU_SEND_SWAP' then 'CANCEL_CASHU_SEND_SWAP' else 'CASHU_TOKEN' end,
+        'CASHU_TOKEN',
         'PENDING',
         p_receive_amount,
-        p_currency
+        p_currency,
+        p_reversed_txid
     ) returning id into v_transaction_id;
 
   -- Calculate new counter
@@ -433,8 +426,7 @@ begin
     receive_amount,
     fee_amount,
     state,
-    transaction_id,
-    type
+    transaction_id
   ) values (
     p_token_hash,
     p_token_proofs,
@@ -449,8 +441,7 @@ begin
     p_receive_amount,
     p_fee_amount,
     'PENDING',
-    v_transaction_id,
-    p_type
+    v_transaction_id
   ) returning * into v_token_swap;
 
   return v_token_swap;

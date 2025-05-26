@@ -360,7 +360,6 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
-          type: string | null
           unit: string
           user_id: string
           version: number
@@ -380,7 +379,6 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
-          type?: string | null
           unit: string
           user_id: string
           version?: number
@@ -400,7 +398,6 @@ export type Database = {
           token_hash?: string
           token_proofs?: string
           transaction_id?: string
-          type?: string | null
           unit?: string
           user_id?: string
           version?: number
@@ -476,6 +473,7 @@ export type Database = {
           failed_at: string | null
           id: string
           pending_at: string | null
+          reversed_txid: string | null
           state: string
           type: string
           user_id: string
@@ -490,6 +488,7 @@ export type Database = {
           failed_at?: string | null
           id?: string
           pending_at?: string | null
+          reversed_txid?: string | null
           state: string
           type: string
           user_id: string
@@ -504,6 +503,7 @@ export type Database = {
           failed_at?: string | null
           id?: string
           pending_at?: string | null
+          reversed_txid?: string | null
           state?: string
           type?: string
           user_id?: string
@@ -514,6 +514,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_reversed_txid_fkey"
+            columns: ["reversed_txid"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
@@ -775,7 +782,7 @@ export type Database = {
           p_receive_amount: number
           p_fee_amount: number
           p_account_version: number
-          p_type: string
+          p_reversed_txid?: string
         }
         Returns: {
           account_id: string
@@ -792,7 +799,6 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
-          type: string | null
           unit: string
           user_id: string
           version: number

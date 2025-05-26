@@ -9,24 +9,24 @@ import {
 import { Button } from '~/components/ui/button';
 import type { CashuSendSwap } from '~/features/send/cashu-send-swap';
 import {
-  useCancelCashuSendSwap,
+  useReverseCashuSendSwap,
   useUnresolvedCashuSendSwaps,
 } from '~/features/send/cashu-send-swap-hooks';
 import { getDefaultUnit } from '~/features/shared/currencies';
 
 export default function Demo() {
   const { pending } = useUnresolvedCashuSendSwaps();
-  const { mutate: cancelCashuSendSwap } = useCancelCashuSendSwap();
+  const { mutate: reverseCashuSendSwap } = useReverseCashuSendSwap();
 
-  const handleCancelCashuSendSwap = (swap: CashuSendSwap) => {
-    cancelCashuSendSwap(
+  const handleReverseCashuSendSwap = (swap: CashuSendSwap) => {
+    reverseCashuSendSwap(
       { swap },
       {
         onSuccess: () => {
-          console.log('Swap cancelled');
+          console.log('Swap reversed');
         },
         onError: (error) => {
-          console.error('Failed to cancel swap', error);
+          console.error('Failed to reverse swap', error);
         },
       },
     );
@@ -57,7 +57,7 @@ export default function Demo() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleCancelCashuSendSwap(swap)}
+                      onClick={() => handleReverseCashuSendSwap(swap)}
                     >
                       Cancel
                     </Button>

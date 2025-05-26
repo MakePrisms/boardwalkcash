@@ -54,12 +54,9 @@ type CreateTokenSwap = {
    */
   accountVersion: number;
   /**
-   * Type of the token swap
-   *
-   * - RECEIVE: directly receiving a token
-   * - CANCEL_CASHU_SEND_SWAP: cancelling a cashu send swap by swapping the sent proofs back to the account
+   * The txid of the transaction that this swap is reversing.
    */
-  type: 'RECEIVE' | 'CANCEL_CASHU_SEND_SWAP';
+  reversedTxid?: string;
 };
 
 export class CashuTokenSwapRepository {
@@ -83,7 +80,7 @@ export class CashuTokenSwapRepository {
       keysetCounter,
       outputAmounts,
       accountVersion,
-      type,
+      reversedTxid,
     }: CreateTokenSwap,
     options?: Options,
   ): Promise<CashuTokenSwap> {
@@ -106,7 +103,7 @@ export class CashuTokenSwapRepository {
       p_receive_amount: sum(outputAmounts) - fee,
       p_fee_amount: fee,
       p_account_version: accountVersion,
-      p_type: type,
+      p_reversed_txid: reversedTxid,
     });
 
     if (options?.abortSignal) {
@@ -284,7 +281,6 @@ export class CashuTokenSwapRepository {
       state: data.state as CashuTokenSwap['state'],
       version: data.version,
       transactionId: data.transaction_id,
-      type: data.type,
     };
   }
 }

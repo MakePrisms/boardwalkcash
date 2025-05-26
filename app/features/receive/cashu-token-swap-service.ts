@@ -34,12 +34,12 @@ export class CashuTokenSwapService {
     userId,
     token,
     account,
-    type = 'RECEIVE',
+    reversedTxid,
   }: {
     userId: string;
     token: Token;
     account: CashuAccount;
-    type?: 'RECEIVE' | 'CANCEL_CASHU_SEND_SWAP';
+    reversedTxid?: string;
   }) {
     if (account.mintUrl !== token.mint) {
       throw new Error('Cannot swap a token to a different mint');
@@ -80,7 +80,7 @@ export class CashuTokenSwapService {
       outputAmounts,
       fee,
       accountVersion: account.version,
-      type,
+      reversedTxid,
     });
 
     return tokenSwap;
