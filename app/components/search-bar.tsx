@@ -1,4 +1,5 @@
 import { useDebounceCallback } from 'usehooks-ts';
+import { LoaderCircle } from 'lucide-react';
 import { Input } from '~/components/ui/input';
 
 type SearchBarProps = {
@@ -25,7 +26,7 @@ export function SearchBar({
       />
       {isLoading && (
         <div className="-translate-y-1/2 absolute top-1/2 right-3 transform">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
     </div>
