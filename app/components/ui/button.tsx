@@ -58,13 +58,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : 'button';
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn('relative', buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={loading || disabled}
         {...props}
       >
         {loading ? (
-          <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
+          <>
+            <span className="invisible">{children}</span>
+            <span className="absolute inset-0 flex items-center justify-center">
+              <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
+            </span>
+          </>
         ) : (
           children
         )}
