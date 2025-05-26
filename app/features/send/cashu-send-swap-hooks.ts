@@ -183,7 +183,7 @@ function useSwapForProofsToSend() {
   });
 }
 
-export function useCancelCashuSendSwap() {
+export function useReverseCashuSendSwap() {
   const cashuSendSwapService = useCashuSendSwapService();
   const cashuTokenSwapService = useCashuTokenSwapService();
   const getLatestCashuAccount = useGetLatestCashuAccount();
@@ -204,7 +204,7 @@ export function useCancelCashuSendSwap() {
           proofs: swap.proofsToSend,
           unit: getCashuProtocolUnit(swap.currency),
         },
-        type: 'CANCEL_CASHU_SEND_SWAP',
+        reversedTxid: swap.transactionId,
       });
 
       return swap;

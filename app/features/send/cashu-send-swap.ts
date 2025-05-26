@@ -10,7 +10,7 @@ import type { Currency, Money } from '~/lib/money';
  * the inputProofs are swapped for proofsToSend.
  *
  * When PENDING, the proofsToSend exist and we are just waiting for them to be spent.
- * In this state, the transaction can be cancelled by swapping the proofsToSend back
+ * In this state, the transaction can be reversed by swapping the proofsToSend back
  * into the account.
  *
  * Once the proofsToSend are spent, the swap is COMPLETED.
@@ -67,9 +67,9 @@ export type CashuSendSwap = {
    * we have only taken the inputProofs from the account
    * - PENDING: There are proofs to send and the swap is waiting for the proofsToSend to be spent.
    * - COMPLETED: The proofsToSend have been spent.
-   * - CANCELLED: The swap was cancelled before the proofsToSend were spent.
+   * - REVERSED: The swap was reversed before the proofsToSend were spent.
    */
-  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'REVERSED' | 'FAILED';
   /**
    * The version of the swap used for optimistic locking.
    */
@@ -123,7 +123,7 @@ export type CashuSendSwap = {
       failureReason: string;
     }
   | {
-      state: 'CANCELLED';
+      state: 'REVERSED';
     }
 );
 

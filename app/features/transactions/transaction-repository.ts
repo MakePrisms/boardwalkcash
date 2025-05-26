@@ -41,6 +41,7 @@ export class TransactionRepository {
         amount: data.amount,
         currency: data.currency,
       }),
+      reversedTxid: data.reversed_txid,
       createdAt: data.created_at,
       pendingAt: data.pending_at,
       completedAt: data.completed_at,

@@ -39,11 +39,6 @@ export type CashuTokenSwap = {
    */
   state: 'PENDING' | 'COMPLETED' | 'FAILED';
   /**
-   * - RECEIVE: directly receiving a token
-   * - CANCEL_CASHU_SEND_SWAP: cancelling a cashu send swap by swapping the sent proofs back to the account
-   */
-  type: 'RECEIVE' | 'CANCEL_CASHU_SEND_SWAP';
-  /**
    * ID of the corresponding transaction
    */
   transactionId: string;

@@ -360,7 +360,6 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
-          type: string | null
           unit: string
           user_id: string
           version: number
@@ -380,7 +379,6 @@ export type Database = {
           token_hash: string
           token_proofs: string
           transaction_id: string
-          type?: string | null
           unit: string
           user_id: string
           version?: number
@@ -400,7 +398,6 @@ export type Database = {
           token_hash?: string
           token_proofs?: string
           transaction_id?: string
-          type?: string | null
           unit?: string
           user_id?: string
           version?: number
@@ -470,6 +467,7 @@ export type Database = {
           account_id: string
           amount: number
           completed_at: string | null
+          reversed_txid: string | null
           created_at: string
           currency: string
           direction: string
@@ -484,6 +482,7 @@ export type Database = {
           account_id: string
           amount: number
           completed_at?: string | null
+          reversed_txid?: string | null
           created_at?: string
           currency: string
           direction: string
@@ -498,6 +497,7 @@ export type Database = {
           account_id?: string
           amount?: number
           completed_at?: string | null
+          reversed_txid?: string | null
           created_at?: string
           currency?: string
           direction?: string

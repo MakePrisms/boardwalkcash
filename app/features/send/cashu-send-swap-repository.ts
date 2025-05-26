@@ -419,10 +419,10 @@ export class CashuSendSwapRepository {
       };
     }
 
-    if (data.state === 'CANCELLED') {
+    if (data.state === 'REVERSED') {
       return {
         ...commonData,
-        state: 'CANCELLED',
+        state: 'REVERSED',
       };
     }
 
