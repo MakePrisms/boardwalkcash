@@ -12,7 +12,6 @@ create table "wallet"."cashu_send_swaps" (
     "input_amount" numeric not null,
     "keyset_id" text,
     "keyset_counter" integer,
-    "output_data" text,
     "token_hash" text,
     "mint_url" text not null,
     "currency" text not null,
@@ -178,11 +177,10 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_send_swap(
     p_input_amount numeric,
     p_send_swap_fee numeric,
     p_receive_swap_fee numeric,
-    p_keyset_id text DEFAULT NULL::text, 
+    p_keyset_id text DEFAULT NULL::text,
     p_keyset_counter integer DEFAULT NULL::integer,
     p_updated_keyset_counter integer DEFAULT NULL::integer,
     p_token_hash text DEFAULT NULL::text,
-    p_output_data text DEFAULT NULL::text, 
     p_proofs_to_send text DEFAULT NULL::text
 ) RETURNS wallet.cashu_send_swaps
  LANGUAGE plpgsql
@@ -203,9 +201,9 @@ begin
             RAISE EXCEPTION 'When state is PENDING, proofs_to_send and token_hash must be provided';
         END IF;
     ELSIF p_state = 'DRAFT' THEN
-        -- For DRAFT state, output_data, keyset_id, keyset_counter, and updated_keyset_counter must be defined
-        IF p_output_data IS NULL OR p_keyset_id IS NULL OR p_keyset_counter IS NULL OR p_updated_keyset_counter IS NULL THEN
-            RAISE EXCEPTION 'When state is DRAFT, output_data, keyset_id, keyset_counter, and updated_keyset_counter must be provided';
+        -- For DRAFT state, keyset_id, keyset_counter, and updated_keyset_counter must be defined
+        IF p_keyset_id IS NULL OR p_keyset_counter IS NULL OR p_updated_keyset_counter IS NULL THEN
+            RAISE EXCEPTION 'When state is DRAFT, keyset_id, keyset_counter, and updated_keyset_counter must be provided';
         END IF;
     END IF;
 
@@ -250,7 +248,6 @@ begin
         proofs_to_send,
         keyset_id,
         keyset_counter,
-        output_data,
         token_hash,
         mint_url,
         currency,
@@ -269,7 +266,6 @@ begin
         p_proofs_to_send,
         p_keyset_id,
         p_keyset_counter,
-        p_output_data,
         p_token_hash,
         p_mint_url,
         p_currency,

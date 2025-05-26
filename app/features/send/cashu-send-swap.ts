@@ -89,7 +89,7 @@ export type CashuSendSwap = {
        * The output data used for deterministic outputs when we swap the inputProofs
        * for proofsToSend.
        */
-      outputData: {
+      outputData?: {
         /** Output data for the change from the swap. */
         keep: OutputData[];
         /** Output data for the amount to send. */

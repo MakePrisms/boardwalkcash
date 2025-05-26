@@ -259,7 +259,6 @@ export type Database = {
           keyset_counter: number | null
           keyset_id: string | null
           mint_url: string
-          output_data: string | null
           proofs_to_send: string | null
           receive_swap_fee: number
           send_swap_fee: number
@@ -284,7 +283,6 @@ export type Database = {
           keyset_counter?: number | null
           keyset_id?: string | null
           mint_url: string
-          output_data?: string | null
           proofs_to_send?: string | null
           receive_swap_fee: number
           send_swap_fee: number
@@ -309,7 +307,6 @@ export type Database = {
           keyset_counter?: number | null
           keyset_id?: string | null
           mint_url?: string
-          output_data?: string | null
           proofs_to_send?: string | null
           receive_swap_fee?: number
           send_swap_fee?: number
@@ -731,7 +728,6 @@ export type Database = {
           p_keyset_counter?: number
           p_updated_keyset_counter?: number
           p_token_hash?: string
-          p_output_data?: string
           p_proofs_to_send?: string
         }
         Returns: {
@@ -748,7 +744,6 @@ export type Database = {
           keyset_counter: number | null
           keyset_id: string | null
           mint_url: string
-          output_data: string | null
           proofs_to_send: string | null
           receive_swap_fee: number
           send_swap_fee: number

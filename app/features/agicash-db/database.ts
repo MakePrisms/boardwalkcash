@@ -5,7 +5,6 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
 import type { CashuTokenSwap } from '../receive/cashu-token-swap';
 import type { CashuSendSwap } from '../send/cashu-send-swap';
-import type { SerializedOutputData } from '../send/cashu-send-swap-repository';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
@@ -116,22 +115,16 @@ export type Database = MergeDeep<
         };
         cashu_send_swaps: {
           Row: {
-            keep_output_data: SerializedOutputData[];
-            send_output_data: SerializedOutputData[];
             state: CashuSendSwap['state'];
             currency: Currency;
             unit: CurrencyUnit;
           };
           Insert: {
-            keep_output_data: SerializedOutputData[];
-            send_output_data: SerializedOutputData[];
             state: CashuSendSwap['state'];
             currency: Currency;
             unit: CurrencyUnit;
           };
           Update: {
-            keep_output_data?: SerializedOutputData[];
-            send_output_data?: SerializedOutputData[];
             state?: CashuSendSwap['state'];
             currency?: Currency;
             unit?: CurrencyUnit;

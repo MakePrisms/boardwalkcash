@@ -209,6 +209,36 @@ export class CashuSendSwapService {
       bip39seed: seed,
     });
 
+    if (!swap.outputData) {
+      if (!swap.keysetId || swap.keysetCounter === undefined) {
+        throw new Error('Swap is missing keyset info');
+      }
+
+      const keys = await wallet.getKeys(swap.keysetId);
+      const sendAmount = swap.amountToSend.toNumber(
+        getCashuUnit(swap.currency),
+      );
+      const sendOutputData = OutputData.createDeterministicData(
+        sendAmount,
+        seed,
+        swap.keysetCounter,
+        keys,
+      );
+
+      const amountToKeep =
+        sumProofs(swap.inputProofs) -
+        sendAmount -
+        swap.sendSwapFee.toNumber(getCashuUnit(swap.currency));
+      const keepOutputData = OutputData.createDeterministicData(
+        amountToKeep,
+        seed,
+        swap.keysetCounter + sendOutputData.length,
+        keys,
+      );
+
+      swap = { ...swap, outputData: { send: sendOutputData, keep: keepOutputData } };
+    }
+
     const { send: proofsToSend, keep: newProofsToKeep } = await this.swapProofs(
       wallet,
       swap,
