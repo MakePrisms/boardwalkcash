@@ -1,4 +1,4 @@
-import type { OutputData, Proof } from '@cashu/cashu-ts';
+import type { Proof } from '@cashu/cashu-ts';
 import type { Currency, Money } from '~/lib/money';
 
 /**
@@ -90,11 +90,11 @@ export type CashuSendSwap = {
        * The output data used for deterministic outputs when we swap the inputProofs
        * for proofsToSend.
        */
-      outputData: {
-        /** Output data for the change from the swap. */
-        keep: OutputData[];
-        /** Output data for the amount to send. */
-        send: OutputData[];
+      outputAmounts: {
+        /** The output amounts to use when constructing the keep output data. */
+        keep: number[];
+        /** The output amounts to use when constructing the send output data. */
+        send: number[];
       };
       /**
        * The keyset counter used to generate the output data at the time the swap was created.

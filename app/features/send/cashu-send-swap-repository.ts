@@ -1,12 +1,6 @@
-import {
-  OutputData,
-  type Proof,
-  type SerializedBlindedMessage,
-} from '@cashu/cashu-ts';
+import type { Proof } from '@cashu/cashu-ts';
 import { getCashuProtocolUnit, sumProofs } from '~/lib/cashu';
 import { Money } from '~/lib/money';
-import { hexToUint8Array } from '~/lib/utils';
-import { uint8ArrayToHex } from '~/lib/utils';
 import {
   type AgicashDb,
   type AgicashDbCashuSendSwap,
@@ -75,20 +69,14 @@ type CreateSendSwap = {
   /**
    * The output data to use for performing the swap.
    */
-  outputData?: {
-    keep: OutputData[];
-    send: OutputData[];
+  outputAmounts?: {
+    keep: number[];
+    send: number[];
   };
   /**
    * The version seen by the client for optimistic concurrency control.
    */
   accountVersion: number;
-};
-
-export type SerializedOutputData = {
-  blindedMessage: SerializedBlindedMessage;
-  blindingFactor: string;
-  secret: string;
 };
 
 export class CashuSendSwapRepository {
@@ -110,7 +98,7 @@ export class CashuSendSwapRepository {
       accountProofs,
       keysetId,
       keysetCounter,
-      outputData,
+      outputAmounts,
       accountVersion,
     }: CreateSendSwap,
     options?: Options,
@@ -119,17 +107,10 @@ export class CashuSendSwapRepository {
       encryptedInputProofs,
       encryptedAccountProofs,
       encryptedProofsToSend,
-      encryptedOutputData,
     ] = await Promise.all([
       this.encryption.encrypt(inputProofs),
       this.encryption.encrypt(accountProofs),
       proofsToSend ? this.encryption.encrypt(proofsToSend) : undefined,
-      outputData
-        ? this.encryption.encrypt({
-            keep: outputDataToJson(outputData.keep),
-            send: outputDataToJson(outputData.send),
-          })
-        : undefined,
     ]);
 
     const unit = getDefaultUnit(amountToSend.currency);
@@ -137,7 +118,9 @@ export class CashuSendSwapRepository {
     const updatedKeysetCounter =
       keysetCounter !== undefined
         ? keysetCounter +
-          (outputData ? outputData.keep.length + outputData.send.length : 0)
+          (outputAmounts
+            ? outputAmounts.keep.length + outputAmounts.send.length
+            : 0)
         : undefined;
     const tokenHash = proofsToSend
       ? await getTokenHash({
@@ -159,8 +142,9 @@ export class CashuSendSwapRepository {
       p_account_proofs: encryptedAccountProofs,
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
+      p_send_output_amounts: outputAmounts?.send ?? undefined,
+      p_keep_output_amounts: outputAmounts?.keep ?? undefined,
       p_updated_keyset_counter: updatedKeysetCounter,
-      p_output_data: encryptedOutputData,
       p_currency: amountToSend.currency,
       p_mint_url: mintUrl,
       p_unit: unit,
@@ -331,15 +315,9 @@ export class CashuSendSwapRepository {
     data: AgicashDbCashuSendSwap,
     decrypt: Encryption['decrypt'],
   ): Promise<CashuSendSwap> {
-    const [inputProofs, proofsToSend, outputData] = await Promise.all([
+    const [inputProofs, proofsToSend] = await Promise.all([
       decrypt<Proof[]>(data.input_proofs),
       data.proofs_to_send ? decrypt<Proof[]>(data.proofs_to_send) : undefined,
-      data.output_data
-        ? decrypt<{
-            keep: SerializedOutputData[];
-            send: SerializedOutputData[];
-          }>(data.output_data)
-        : undefined,
     ]);
 
     const toMoney = (amount: number) => {
@@ -369,22 +347,24 @@ export class CashuSendSwapRepository {
     };
 
     if (data.state === 'DRAFT') {
-      if (!outputData || !data.keyset_id || !data.keyset_counter) {
-        throw new Error(
-          'Invalid swap, output data or keyset id or counter is missing',
-          {
-            cause: data,
-          },
-        );
+      if (
+        !data.keyset_id ||
+        !data.keyset_counter ||
+        !data.send_output_amounts ||
+        !data.keep_output_amounts
+      ) {
+        throw new Error('Invalid swap, keyset id or counter is missing', {
+          cause: data,
+        });
       }
       return {
         ...commonData,
-        outputData: {
-          keep: jsonToOutputData(outputData.keep),
-          send: jsonToOutputData(outputData.send),
-        },
         keysetId: data.keyset_id,
         keysetCounter: data.keyset_counter,
+        outputAmounts: {
+          keep: data.keep_output_amounts,
+          send: data.send_output_amounts,
+        },
         state: 'DRAFT',
       };
     }
@@ -434,23 +414,3 @@ export function useCashuSendSwapRepository() {
   const encryption = useCashuCryptography();
   return new CashuSendSwapRepository(agicashDb, encryption);
 }
-
-const outputDataToJson = (outputData: OutputData[]): SerializedOutputData[] => {
-  return outputData.map((data) => ({
-    blindedMessage: data.blindedMessage,
-    blindingFactor: data.blindingFactor.toString(),
-    secret: uint8ArrayToHex(data.secret),
-  }));
-};
-
-const jsonToOutputData = (
-  serializedOutputData: SerializedOutputData[],
-): OutputData[] => {
-  return serializedOutputData.map((data) => {
-    return new OutputData(
-      data.blindedMessage,
-      BigInt(data.blindingFactor),
-      hexToUint8Array(data.secret),
-    );
-  });
-};

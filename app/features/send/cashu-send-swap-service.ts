@@ -185,9 +185,9 @@ export class CashuSendSwapService {
       keysetId,
       keysetCounter: sendKeysetCounter,
       mintUrl: account.mintUrl,
-      outputData: {
-        send: sendOutputData,
-        keep: keepOutputData,
+      outputAmounts: {
+        send: amountsFromOutputData(sendOutputData),
+        keep: amountsFromOutputData(keepOutputData),
       },
     });
   }
@@ -209,9 +209,35 @@ export class CashuSendSwapService {
       bip39seed: seed,
     });
 
+    const keys = await wallet.getKeys(swap.keysetId);
+    const sendAmount = swap.amountToSend.toNumber(getCashuUnit(swap.currency));
+    const sendOutputData = OutputData.createDeterministicData(
+      sendAmount,
+      seed,
+      swap.keysetCounter,
+      keys,
+      swap.outputAmounts.send,
+    );
+
+    const amountToKeep =
+      sumProofs(swap.inputProofs) -
+      sendAmount -
+      swap.sendSwapFee.toNumber(getCashuUnit(swap.currency));
+    const keepOutputData = OutputData.createDeterministicData(
+      amountToKeep,
+      seed,
+      swap.keysetCounter + sendOutputData.length,
+      keys,
+      swap.outputAmounts.keep,
+    );
+
     const { send: proofsToSend, keep: newProofsToKeep } = await this.swapProofs(
       wallet,
       swap,
+      {
+        keep: keepOutputData,
+        send: sendOutputData,
+      },
     );
 
     if (proofsToSend.length === 0) {
@@ -283,6 +309,10 @@ export class CashuSendSwapService {
   private async swapProofs(
     wallet: CashuWallet,
     swap: CashuSendSwap & { state: 'DRAFT' },
+    outputData: {
+      keep: OutputData[];
+      send: OutputData[];
+    },
   ) {
     const amountToSend = swap.amountToSend.toNumber(
       getCashuUnit(swap.currency),
@@ -290,7 +320,7 @@ export class CashuSendSwapService {
 
     try {
       return await wallet.swap(amountToSend, swap.inputProofs, {
-        outputData: swap.outputData,
+        outputData,
         keysetId: swap.keysetId,
       });
     } catch (error) {
@@ -306,11 +336,8 @@ export class CashuSendSwapService {
             .toLowerCase()
             .includes('outputs have already been signed before'))
       ) {
-        const { send, keep } = swap.outputData;
-        const totalOutputCount = amountsFromOutputData([
-          ...send,
-          ...keep,
-        ]).length;
+        const totalOutputCount =
+          outputData.send.length + outputData.keep.length;
         const { proofs } = await wallet.restore(
           swap.keysetCounter,
           totalOutputCount,
@@ -328,10 +355,10 @@ export class CashuSendSwapService {
 
         return {
           send: proofs.filter((o) =>
-            send.some((s) => uint8ArrayToHex(s.secret) === o.secret),
+            outputData.send.some((s) => uint8ArrayToHex(s.secret) === o.secret),
           ),
           keep: proofs.filter((o) =>
-            keep.some((s) => uint8ArrayToHex(s.secret) === o.secret),
+            outputData.keep.some((s) => uint8ArrayToHex(s.secret) === o.secret),
           ),
         };
       }

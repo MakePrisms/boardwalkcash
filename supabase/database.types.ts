@@ -256,12 +256,13 @@ export type Database = {
           id: string
           input_amount: number
           input_proofs: string
+          keep_output_amounts: number[] | null
           keyset_counter: number | null
           keyset_id: string | null
           mint_url: string
-          output_data: string | null
           proofs_to_send: string | null
           receive_swap_fee: number
+          send_output_amounts: number[] | null
           send_swap_fee: number
           state: string
           token_hash: string | null
@@ -281,12 +282,13 @@ export type Database = {
           id?: string
           input_amount: number
           input_proofs: string
+          keep_output_amounts?: number[] | null
           keyset_counter?: number | null
           keyset_id?: string | null
           mint_url: string
-          output_data?: string | null
           proofs_to_send?: string | null
           receive_swap_fee: number
+          send_output_amounts?: number[] | null
           send_swap_fee: number
           state: string
           token_hash?: string | null
@@ -306,12 +308,13 @@ export type Database = {
           id?: string
           input_amount?: number
           input_proofs?: string
+          keep_output_amounts?: number[] | null
           keyset_counter?: number | null
           keyset_id?: string | null
           mint_url?: string
-          output_data?: string | null
           proofs_to_send?: string | null
           receive_swap_fee?: number
+          send_output_amounts?: number[] | null
           send_swap_fee?: number
           state?: string
           token_hash?: string | null
@@ -738,8 +741,9 @@ export type Database = {
           p_keyset_counter?: number
           p_updated_keyset_counter?: number
           p_token_hash?: string
-          p_output_data?: string
           p_proofs_to_send?: string
+          p_send_output_amounts?: number[]
+          p_keep_output_amounts?: number[]
         }
         Returns: {
           account_id: string
@@ -752,12 +756,13 @@ export type Database = {
           id: string
           input_amount: number
           input_proofs: string
+          keep_output_amounts: number[] | null
           keyset_counter: number | null
           keyset_id: string | null
           mint_url: string
-          output_data: string | null
           proofs_to_send: string | null
           receive_swap_fee: number
+          send_output_amounts: number[] | null
           send_swap_fee: number
           state: string
           token_hash: string | null
