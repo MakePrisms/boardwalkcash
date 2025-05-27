@@ -170,6 +170,10 @@ function useSwapForProofsToSend() {
       });
     },
     onError: (error, { swap }) => {
+      console.error('Failed to swap for proofs to send', {
+        cause: error,
+        swap,
+      });
       if (
         error instanceof Error &&
         error.message.includes('TOKEN_ALREADY_CLAIMED')
@@ -200,7 +204,7 @@ export function useReverseCashuSendSwap() {
         account,
         userId: userRef.current.id,
         token: {
-          mint: account.mintUrl,
+          mint: swap.mintUrl,
           proofs: swap.proofsToSend,
           unit: getCashuProtocolUnit(swap.currency),
         },
@@ -242,6 +246,9 @@ function useOnCashuSendSwapChange({
         async (
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendSwap>,
         ) => {
+          console.debug(payload.eventType, {
+            payload,
+          });
           if (payload.eventType === 'INSERT') {
             const addedSwap = await CashuSendSwapRepository.toSwap(
               payload.new,
@@ -359,10 +366,6 @@ export function useCashuSendSwap({
       onFailedRef.current?.(data);
     }
   }, [data]);
-
-  if (data && !account) {
-    throw new Error(`Account not found for Cashu send swap ${id}`);
-  }
 
   return { ...result, account };
 }

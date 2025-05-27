@@ -37,9 +37,17 @@ type CreateSendSwap = {
    */
   amountToSend: Money;
   /**
+   * The total amount spent. This is the sum of amountToSend and the fees.
+   */
+  totalAmount: Money;
+  /**
    * The fee for the swap in the account's currency.
    */
-  fee: Money;
+  sendSwapFee: Money;
+  /**
+   * The fee for the swap in the account's currency.
+   */
+  receiveSwapFee: Money;
   /**
    * The proofs being spent as inputs.
    */
@@ -91,7 +99,9 @@ export class CashuSendSwapRepository {
       userId,
       amountRequested,
       amountToSend,
-      fee,
+      totalAmount,
+      sendSwapFee,
+      receiveSwapFee,
       mintUrl,
       inputProofs,
       proofsToSend,
@@ -135,8 +145,9 @@ export class CashuSendSwapRepository {
       p_account_id: accountId,
       p_amount_requested: amountRequested.toNumber(unit),
       p_amount_to_send: amountToSend.toNumber(unit),
-      p_receive_swap_fee: fee.toNumber(unit),
-      p_send_swap_fee: fee.toNumber(unit),
+      p_receive_swap_fee: receiveSwapFee.toNumber(unit),
+      p_send_swap_fee: sendSwapFee.toNumber(unit),
+      p_total_amount: totalAmount.toNumber(unit),
       p_input_proofs: encryptedInputProofs,
       p_input_amount: sumProofs(inputProofs),
       p_account_proofs: encryptedAccountProofs,
@@ -335,6 +346,7 @@ export class CashuSendSwapRepository {
       transactionId: data.transaction_id,
       amountRequested: toMoney(data.amount_requested),
       amountToSend: toMoney(data.amount_to_send),
+      totalAmount: toMoney(data.total_amount),
       receiveSwapFee: toMoney(data.receive_swap_fee),
       sendSwapFee: toMoney(data.send_swap_fee),
       inputProofs,
@@ -349,11 +361,11 @@ export class CashuSendSwapRepository {
     if (data.state === 'DRAFT') {
       if (
         !data.keyset_id ||
-        !data.keyset_counter ||
+        data.keyset_counter === null ||
         !data.send_output_amounts ||
         !data.keep_output_amounts
       ) {
-        throw new Error('Invalid swap, keyset id or counter is missing', {
+        throw new Error('Invalid swap, DRAFT state is missing data', {
           cause: data,
         });
       }

@@ -266,6 +266,7 @@ export type Database = {
           send_swap_fee: number
           state: string
           token_hash: string | null
+          total_amount: number
           transaction_id: string
           unit: string
           user_id: string
@@ -292,6 +293,7 @@ export type Database = {
           send_swap_fee: number
           state: string
           token_hash?: string | null
+          total_amount: number
           transaction_id: string
           unit: string
           user_id: string
@@ -318,6 +320,7 @@ export type Database = {
           send_swap_fee?: number
           state?: string
           token_hash?: string | null
+          total_amount?: number
           transaction_id?: string
           unit?: string
           user_id?: string
@@ -737,6 +740,7 @@ export type Database = {
           p_input_amount: number
           p_send_swap_fee: number
           p_receive_swap_fee: number
+          p_total_amount: number
           p_keyset_id?: string
           p_keyset_counter?: number
           p_updated_keyset_counter?: number
@@ -766,6 +770,7 @@ export type Database = {
           send_swap_fee: number
           state: string
           token_hash: string | null
+          total_amount: number
           transaction_id: string
           unit: string
           user_id: string

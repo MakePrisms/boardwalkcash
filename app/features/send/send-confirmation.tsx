@@ -252,7 +252,7 @@ export const CreateCashuTokenConfirmation = ({
 
   return (
     <BaseConfirmation
-      amount={quote.amountToSend}
+      amount={quote.totalAmount}
       onConfirm={() =>
         createCashuSendSwap({
           accountId: account.id,

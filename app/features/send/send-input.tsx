@@ -42,6 +42,7 @@ import { AddContactDrawer, ContactsList } from '../contacts';
 import type { Contact } from '../contacts/contact';
 import { useContacts } from '../contacts/contact-hooks';
 import { getDefaultUnit } from '../shared/currencies';
+import { getErrorMessage } from '../shared/error';
 import { useSendStore } from './send-provider';
 
 type ConvertedMoneySwitcherProps = {
@@ -132,7 +133,10 @@ export function SendInput() {
     if (!result.success) {
       toast({
         title: 'Error',
-        description: 'Failed to get a send quote. Please try again',
+        description: getErrorMessage(
+          result.error,
+          'Failed to get a send quote. Please try again',
+        ),
         variant: 'destructive',
       });
       return;

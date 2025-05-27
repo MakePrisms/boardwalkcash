@@ -24,8 +24,9 @@ import {
 export type CashuSwapQuote = {
   amountRequested: Money;
   senderPaysFee: boolean;
-  receiveSwapFee: number;
-  sendSwapFee: number;
+  receiveSwapFee: Money;
+  sendSwapFee: Money;
+  totalAmount: Money;
   totalFee: Money;
   amountToSend: Money;
 };
@@ -69,21 +70,21 @@ export class CashuSendSwapService {
       senderPaysFee,
     );
 
+    const toMoney = (num: number) =>
+      new Money({
+        amount: num,
+        currency: amount.currency,
+        unit: cashuUnit,
+      });
+
     return {
       amountRequested: amount,
-      amountToSend: new Money({
-        amount: amountNumber + receiveSwapFee,
-        currency: amount.currency,
-        unit: cashuUnit,
-      }),
-      totalFee: new Money({
-        amount: receiveSwapFee + sendSwapFee,
-        currency: amount.currency,
-        unit: cashuUnit,
-      }),
+      amountToSend: toMoney(amountNumber + receiveSwapFee),
+      totalAmount: toMoney(amountNumber + receiveSwapFee + sendSwapFee),
+      totalFee: toMoney(receiveSwapFee + sendSwapFee),
       senderPaysFee,
-      receiveSwapFee,
-      sendSwapFee,
+      receiveSwapFee: toMoney(receiveSwapFee),
+      sendSwapFee: toMoney(sendSwapFee),
     };
   }
 
@@ -164,6 +165,13 @@ export class CashuSendSwapService {
       );
     }
 
+    const toMoney = (num: number) =>
+      new Money({
+        amount: num,
+        currency: amount.currency,
+        unit: cashuUnit,
+      });
+
     return this.cashuSendSwapRepository.create({
       accountId: account.id,
       accountVersion: account.version,
@@ -172,16 +180,10 @@ export class CashuSendSwapService {
       proofsToSend,
       accountProofs: accountProofsToKeep,
       amountRequested: amount,
-      amountToSend: new Money({
-        amount: totalAmountToSend,
-        currency: amount.currency,
-        unit: cashuUnit,
-      }),
-      fee: new Money({
-        amount: receiveSwapFee,
-        currency: amount.currency,
-        unit: cashuUnit,
-      }),
+      amountToSend: toMoney(totalAmountToSend),
+      sendSwapFee: toMoney(sendSwapFee),
+      receiveSwapFee: toMoney(receiveSwapFee),
+      totalAmount: toMoney(totalAmountToSend + sendSwapFee),
       keysetId,
       keysetCounter: sendKeysetCounter,
       mintUrl: account.mintUrl,
@@ -275,8 +277,8 @@ export class CashuSendSwapService {
 
   private async prepareProofsAndFee(
     wallet: CashuWallet,
-    proofs: Proof[],
-    amountNumber: number,
+    allProofs: Proof[],
+    requestedAmount: number,
     includeFeesInSendAmount: boolean,
   ): Promise<{
     keep: Proof[];
@@ -284,24 +286,65 @@ export class CashuSendSwapService {
     sendSwapFee: number;
     receiveSwapFee: number;
   }> {
-    // If we want to do fee calculation, then the keys are required
-    includeFeesInSendAmount && (await wallet.getKeys());
+    if (includeFeesInSendAmount) {
+      // If we want to do fee calculation, then the keys are required
+      await wallet.getKeys();
+    }
 
     const { keep, send } = wallet.selectProofsToSend(
-      proofs,
-      amountNumber,
+      allProofs,
+      requestedAmount,
       includeFeesInSendAmount,
     );
+    const feeToSwapSelectedProofs = wallet.getFeesForProofs(send);
 
-    const fee = includeFeesInSendAmount ? wallet.getFeesForProofs(send) : 0;
-
-    // TODO: make sure these fees will always be the same, I don't think will
-    const sendSwapFee = fee;
-    const receiveSwapFee = fee;
-
-    if (sumProofs(send) < amountNumber + sendSwapFee + receiveSwapFee) {
-      throw new Error('Insufficient balance');
+    if (!includeFeesInSendAmount) {
+      throw new Error(
+        'Sender must pay fees - this feature is not yet implemented',
+      );
     }
+
+    const proofAmountSelected = sumProofs(send);
+    const amountToSend = requestedAmount + feeToSwapSelectedProofs;
+
+    console.debug('proofSelection', {
+      selectedProofs: send.map((p) => p.amount),
+      proofAmountSelected,
+      amountToSend,
+      feeToSwapSelectedProofs,
+    });
+
+    if (proofAmountSelected < amountToSend) {
+      // TODO: there's a bug with fees, so sometime this happens even with sufficient balance
+      // should be resolved when this issue is fixed: https://github.com/cashubtc/cashu-ts/issues/310
+      throw new Error(
+        `Insufficient balance. Required fee: ${feeToSwapSelectedProofs}`,
+      );
+    }
+
+    if (proofAmountSelected === amountToSend) {
+      return {
+        keep,
+        send,
+        sendSwapFee: 0,
+        receiveSwapFee: feeToSwapSelectedProofs,
+      };
+    }
+
+    const sendSwapFee = feeToSwapSelectedProofs;
+    // TODO: this needs to be calculated based on the outputs from the send swap
+    const receiveSwapFee = feeToSwapSelectedProofs;
+
+    if (proofAmountSelected < amountToSend + sendSwapFee) {
+      throw new Error(
+        `Insufficient balance. Required fee: ${sendSwapFee + receiveSwapFee}`,
+      );
+    }
+
+    console.debug('fees', {
+      sendSwapFee,
+      receiveSwapFee,
+    });
 
     return { keep, send, sendSwapFee, receiveSwapFee };
   }

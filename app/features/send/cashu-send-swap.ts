@@ -2,7 +2,7 @@ import type { Proof } from '@cashu/cashu-ts';
 import type { Currency, Money } from '~/lib/money';
 
 /**
- * A CashuSendSwap takes proofs from an account and creates proofs to send
+ * A CashuSendSwap spends proofs from an account and creates proofs to send
  * which can then be encoded into a token.
  *
  * When in the DRAFT state, the proofs from the account that we will use for the
@@ -42,7 +42,7 @@ export type CashuSendSwap = {
    */
   amountRequested: Money;
   /**
-   * The request amount to send plus the receiveSwapFee.
+   * The requested amount to send plus the receiveSwapFee.
    * proofsToSend will sum to this amount.
    */
   amountToSend: Money;
@@ -53,7 +53,11 @@ export type CashuSendSwap = {
   /**
    * The swap fee that will be incurred when swapping the inputProofs for the proofsToSend.
    */
-  sendSwapFee: Money; // QUESTION: if we don't need to swap this will be 0, should it be undefined here or 0?
+  sendSwapFee: Money;
+  /**
+   * The total amount spent. This is the sum of amountToSend and the fees.
+   */
+  totalAmount: Money;
   /**
    * The currency of the account and all amounts.
    */
