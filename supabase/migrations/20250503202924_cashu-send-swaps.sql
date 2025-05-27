@@ -49,6 +49,12 @@ set check_function_bodies = off;
 alter table "wallet"."transactions" add column "reversed_txid" uuid;
 alter table "wallet"."transactions" add constraint "transactions_reversed_txid_fkey" FOREIGN KEY (reversed_txid) REFERENCES wallet.transactions(id);
 
+-- Add unique constraint to ensure one transaction can only reverse one other transaction
+ALTER TABLE "wallet"."transactions" ADD CONSTRAINT "transactions_reversed_txid_unique" UNIQUE (reversed_txid);
+
+-- Add index for efficient lookup of transactions that reverse other transactions
+CREATE INDEX idx_transactions_reversed_txid ON wallet.transactions(reversed_txid) WHERE reversed_txid IS NOT NULL;
+
 alter publication supabase_realtime add table wallet.cashu_send_swaps;
 
 CREATE OR REPLACE FUNCTION wallet.complete_cashu_send_swap(
@@ -117,7 +123,7 @@ AS $function$
 declare
     v_swap wallet.cashu_send_swaps;
     v_transaction_id uuid;
-    v_reversed_txid uuid;
+    v_is_reversed boolean;
 begin
     -- Get the swap record with optimistic concurrency check
     select * into v_swap
@@ -128,28 +134,30 @@ begin
         raise exception 'Concurrency error: Swap % not found or was modified by another transaction. Expected version %.', p_swap_id, p_swap_version;
     end if;
 
+       -- Only allow PENDING swaps to be marked as COMPLETED
+    if v_swap.state != 'PENDING' then
+        raise exception 'Swap % is not in PENDING state. Current state: %.', p_swap_id, v_swap.state;
+    end if;
+
     v_transaction_id := v_swap.transaction_id;
-    select reversed_txid into v_reversed_txid
+    -- Check if there's a transaction that has reversed this send swap transaction
+    select count(*) > 0 into v_is_reversed
     from wallet.transactions
-    where id = v_transaction_id;
+    where reversed_txid = v_transaction_id;
+    
     -- Return if already COMPLETED
     if v_swap.state = 'COMPLETED' then
         return;
     end if;
 
-    -- Only allow PENDING swaps to be marked as COMPLETED
-    if v_swap.state != 'PENDING' then
-        raise exception 'Swap % is not in PENDING state. Current state: %.', p_swap_id, v_swap.state;
-    end if;
-
     update wallet.cashu_send_swaps
-    set state = case when v_reversed_txid is null then 'COMPLETED' else 'REVERSED' end,
+    set state = case when v_is_reversed then 'REVERSED' else 'COMPLETED' end,
         version = version + 1
     where id = p_swap_id and version = p_swap_version;
 
     -- Update the transaction state to COMPLETED
     update wallet.transactions
-    set state = case when v_reversed_txid is null then 'COMPLETED' else 'REVERSED' end,
+    set state = case when v_is_reversed then 'REVERSED' else 'COMPLETED' end,
         completed_at = now()
     where id = v_transaction_id;
 
