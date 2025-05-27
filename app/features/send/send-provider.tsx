@@ -38,10 +38,12 @@ export const SendProvider = ({ initialAccount, children }: Props) => {
   return <SendContext.Provider value={store}>{children}</SendContext.Provider>;
 };
 
-export const useSendStore = <T,>(selector: (state: SendState) => T): T => {
+export const useSendStore = <T = SendState>(
+  selector?: (state: SendState) => T,
+): T => {
   const store = useContext(SendContext);
   if (!store) {
     throw new Error('Missing SendProvider in the tree');
   }
-  return useStore(store, selector);
+  return useStore(store, selector ?? ((state) => state as T));
 };

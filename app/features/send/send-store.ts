@@ -1,4 +1,4 @@
-import type { PaymentRequest, Token } from '@cashu/cashu-ts';
+import type { PaymentRequest } from '@cashu/cashu-ts';
 import { create } from 'zustand';
 import type { Account, CashuAccount } from '~/features/accounts/account';
 import { type DecodedBolt11, parseBolt11Invoice } from '~/lib/bolt11';
@@ -122,14 +122,14 @@ const pickAmountByCurrency = <T extends Currency>(
   return amount as unknown as Money<T>;
 };
 
-export type SendType =
+type SendType =
   | 'CASHU_TOKEN'
   | 'CASHU_PAYMENT_REQUEST'
   | 'BOLT11_INVOICE'
   | 'LN_ADDRESS'
   | 'AGICASH_CONTACT';
 
-export type DecodedDestination = {
+type DecodedDestination = {
   type: SendType;
   amount?: Money | null;
 };
@@ -144,6 +144,9 @@ type State = {
    * ID of the account to send from.
    */
   accountId: string;
+  /**
+   * Type of the send.
+   */
   sendType: SendType;
   /**
    * Stores the actual payment destination.
@@ -159,9 +162,26 @@ type State = {
    * E.g. for agicash contact it's the username, for ln address it's the ln address, etc.
    */
   destinationDisplay: string | null;
-  cashuToken: Token | null;
-  quote: CashuLightningQuote | CashuSwapQuote | null;
-};
+} & (
+  | {
+      sendType: 'CASHU_TOKEN';
+      /**
+       * Quote to generate a cashu token to send.
+       */
+      quote: CashuSwapQuote | null;
+    }
+  | {
+      sendType:
+        | 'CASHU_PAYMENT_REQUEST'
+        | 'BOLT11_INVOICE'
+        | 'LN_ADDRESS'
+        | 'AGICASH_CONTACT';
+      /**
+       * Quote to make a lightning payment.
+       */
+      quote: CashuLightningQuote | null;
+    }
+);
 
 type Actions = {
   selectSourceAccount: (account: Account) => void;
@@ -177,7 +197,6 @@ type Actions = {
     amount: Money<Currency>,
     convertedAmount: Money<Currency> | undefined,
   ) => Promise<{ success: true } | { success: false; error: unknown }>;
-  setCashuToken: (token: Token) => void;
 };
 
 export type SendState = State & Actions;
@@ -401,16 +420,6 @@ export const createSendStore = ({
 
         set({ status: 'idle' });
         return { success: true };
-      },
-
-      setCashuToken: (token) => {
-        const { sendType } = get();
-        if (sendType !== 'CASHU_TOKEN') {
-          throw new Error(
-            'Cannot set cashu token if send type is not CASHU_TOKEN',
-          );
-        }
-        set({ cashuToken: token });
       },
     };
   });

@@ -5,16 +5,17 @@ import {
   PayCashuRequestConfirmation,
 } from '~/features/send';
 import { useSendStore } from '~/features/send';
-import type { CashuLightningQuote } from '~/features/send/cashu-send-quote-service';
-import type { CashuSwapQuote } from '~/features/send/cashu-send-swap-service';
 
 export default function SendConfirmationPage() {
-  const sendAccount = useSendStore((state) => state.getSourceAccount());
-  const sendAmount = useSendStore((state) => state.amount);
-  const sendType = useSendStore((state) => state.sendType);
-  const destination = useSendStore((state) => state.destination);
-  const destinationDisplay = useSendStore((state) => state.destinationDisplay);
-  const quote = useSendStore((state) => state.quote);
+  const {
+    sendType,
+    getSourceAccount,
+    amount: sendAmount,
+    destination,
+    destinationDisplay,
+    quote,
+  } = useSendStore();
+  const sendAccount = getSourceAccount();
 
   if (!sendAmount || !sendType || !sendAccount) {
     return <Redirect to="/send" logMessage="Missing send data" />;
@@ -40,7 +41,11 @@ export default function SendConfirmationPage() {
     );
   }
 
-  if (['BOLT11_INVOICE', 'LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
+  if (
+    sendType === 'BOLT11_INVOICE' ||
+    sendType === 'LN_ADDRESS' ||
+    sendType === 'AGICASH_CONTACT'
+  ) {
     if (!destination || !destinationDisplay || !quote) {
       return <Redirect to="/send" logMessage="Missing destination data" />;
     }
@@ -48,7 +53,7 @@ export default function SendConfirmationPage() {
     return (
       <PayBolt11Confirmation
         account={sendAccount}
-        quote={quote as CashuLightningQuote} // TODO: any way to make the typing on the send store better? Or should we use zod to check the type of these quotes?
+        quote={quote}
         destination={destination}
         destinationDisplay={destinationDisplay}
       />
@@ -60,12 +65,7 @@ export default function SendConfirmationPage() {
       return <Redirect to="/send" logMessage="Missing quote" />;
     }
 
-    return (
-      <CreateCashuTokenConfirmation
-        quote={quote as CashuSwapQuote} // TODO: any way to make the typing on the send store better? Or should we use zod to check the type of these quotes?
-        account={sendAccount}
-      />
-    );
+    return <CreateCashuTokenConfirmation quote={quote} account={sendAccount} />;
   }
 
   return <Redirect to="/send" logMessage="Invalid send type" />;
