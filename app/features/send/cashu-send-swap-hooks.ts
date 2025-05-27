@@ -334,6 +334,7 @@ export function useCashuSendSwap({
   const onFailedRef = useLatest(onFailed);
   const cashuSendSwapCache = useCashuSendSwapCache();
   const cashuSendSwapRepository = useCashuSendSwapRepository();
+  const accountsCache = useAccountsCache();
 
   const result = useQuery({
     queryKey: [cashuSendSwapQueryKey, id],
@@ -345,6 +346,7 @@ export function useCashuSendSwap({
   });
 
   const { data } = result;
+  const account = data ? accountsCache.get(data.accountId) : undefined;
 
   useEffect(() => {
     if (!data) return;
@@ -358,7 +360,11 @@ export function useCashuSendSwap({
     }
   }, [data]);
 
-  return result;
+  if (data && !account) {
+    throw new Error(`Account not found for Cashu send swap ${id}`);
+  }
+
+  return { ...result, account };
 }
 
 type OnProofStateChangeProps = {
