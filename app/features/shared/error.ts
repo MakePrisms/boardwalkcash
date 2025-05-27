@@ -12,3 +12,10 @@ export const getErrorMessage = (
 
   return fallbackMessage;
 };
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}

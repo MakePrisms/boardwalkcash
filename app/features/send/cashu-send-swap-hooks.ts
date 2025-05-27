@@ -13,13 +13,14 @@ import type { Money } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import {
+  useAccount,
   useAccountsCache,
   useGetLatestCashuAccount,
 } from '../accounts/account-hooks';
 import { type AgicashDbCashuSendSwap, agicashDb } from '../agicash-db/database';
 import { useCashuTokenSwapService } from '../receive/cashu-token-swap-service';
 import { useCashuCryptography } from '../shared/cashu';
-import { getErrorMessage } from '../shared/error';
+import { NotFoundError, getErrorMessage } from '../shared/error';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 import {
@@ -322,38 +323,73 @@ export function useUnresolvedCashuSendSwaps() {
   );
 }
 
-type UseCashuSendSwapProps = {
+export function useCashuSendSwap(id: string) {
+  const cashuSendSwapRepository = useCashuSendSwapRepository();
+
+  const result = useSuspenseQuery({
+    queryKey: [cashuSendSwapQueryKey, id],
+    queryFn: async () => {
+      const swap = await cashuSendSwapRepository.get(id);
+      if (!swap) {
+        throw new NotFoundError(`Cashu send swap not found for id: ${id}`);
+      }
+      return swap;
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof NotFoundError) {
+        return false;
+      }
+      return failureCount <= 3;
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+  const account = useAccount(result.data.accountId);
+
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      account,
+    },
+  };
+}
+
+type UseTrackCashuSendSwapProps = {
   id?: string;
   onPending?: (swap: CashuSendSwap) => void;
   onCompleted?: (swap: CashuSendSwap) => void;
   onFailed?: (swap: CashuSendSwap) => void;
 };
 
-export function useCashuSendSwap({
+type UseTrackCashuSendSwapResponse =
+  | {
+      status: 'DISABLED' | 'LOADING';
+      swap?: undefined;
+    }
+  | {
+      status: CashuSendSwap['state'];
+      swap: CashuSendSwap;
+    };
+
+export function useTrackCashuSendSwap({
   id = '',
   onPending,
   onCompleted,
   onFailed,
-}: UseCashuSendSwapProps) {
+}: UseTrackCashuSendSwapProps): UseTrackCashuSendSwapResponse {
   const enabled = !!id;
   const onPendingRef = useLatest(onPending);
   const onCompletedRef = useLatest(onCompleted);
   const onFailedRef = useLatest(onFailed);
   const cashuSendSwapCache = useCashuSendSwapCache();
-  const cashuSendSwapRepository = useCashuSendSwapRepository();
-  const accountsCache = useAccountsCache();
 
-  const result = useQuery({
+  const { data } = useQuery({
     queryKey: [cashuSendSwapQueryKey, id],
-    queryFn: () =>
-      cashuSendSwapCache.get(id) ?? cashuSendSwapRepository.get(id),
+    queryFn: () => cashuSendSwapCache.get(id),
     staleTime: Number.POSITIVE_INFINITY,
     enabled,
-    retry: 1,
   });
-
-  const { data } = result;
-  const account = data ? accountsCache.get(data.accountId) : undefined;
 
   useEffect(() => {
     if (!data) return;
@@ -367,7 +403,18 @@ export function useCashuSendSwap({
     }
   }, [data]);
 
-  return { ...result, account };
+  if (!enabled) {
+    return { status: 'DISABLED' };
+  }
+
+  if (!data) {
+    return { status: 'LOADING' };
+  }
+
+  return {
+    status: data.state,
+    swap: data,
+  };
 }
 
 type OnProofStateChangeProps = {

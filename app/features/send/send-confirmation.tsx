@@ -28,7 +28,7 @@ import {
 } from './cashu-send-quote-hooks';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
 import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
-import { useCashuSendSwap } from './cashu-send-swap-hooks';
+import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
 import { SuccessfulSendPage } from './succesful-send-page';
 
@@ -225,21 +225,20 @@ export const CreateCashuTokenConfirmation = ({
   const navigate = useNavigateWithViewTransition();
   const { toast } = useToast();
 
-  const {
-    data: createSwapData,
-    isPending: isCreateSwapPending,
-    mutate: createCashuSendSwap,
-  } = useCreateCashuSendSwap({
-    onError: (error) => {
-      console.error('Error creating cashu send swap', { cause: error });
-      toast({
-        title: 'Error',
-        description: 'Failed to create cashu send swap. Please try again.',
-      });
-    },
-  });
+  const { data: createSwapData, mutate: createCashuSendSwap } =
+    useCreateCashuSendSwap({
+      onError: (error) => {
+        console.error('Error creating cashu send swap', { cause: error });
+        toast({
+          title: 'Error',
+          description: 'Failed to create cashu send swap. Please try again.',
+        });
+      },
+    });
 
-  const { status } = useCashuSendSwap({
+  console.log('createSwapData', createSwapData);
+
+  const { status } = useTrackCashuSendSwap({
     id: createSwapData?.id,
     onPending: (swap) => {
       console.log('swap pending', { swap });
@@ -250,6 +249,8 @@ export const CreateCashuTokenConfirmation = ({
     },
   });
 
+  const swapInProgress = ['LOADING', 'UNPAID', 'PENDING'].includes(status);
+
   return (
     <BaseConfirmation
       amount={quote.totalAmount}
@@ -259,9 +260,7 @@ export const CreateCashuTokenConfirmation = ({
           amount: quote.amountRequested,
         })
       }
-      loading={
-        isCreateSwapPending || (status === 'pending' && !!createSwapData)
-      }
+      loading={swapInProgress}
     >
       {[
         {

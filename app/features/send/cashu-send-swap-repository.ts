@@ -311,7 +311,7 @@ export class CashuSendSwapRepository {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       throw new Error('Failed to get cashu send swap', {
@@ -319,7 +319,9 @@ export class CashuSendSwapRepository {
       });
     }
 
-    return CashuSendSwapRepository.toSwap(data, this.encryption.decrypt);
+    return data
+      ? CashuSendSwapRepository.toSwap(data, this.encryption.decrypt)
+      : null;
   }
 
   static async toSwap(
