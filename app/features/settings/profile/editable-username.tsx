@@ -1,5 +1,5 @@
 import { Check, Edit } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useUpdateUsername, useUser } from '~/features/user/user-hooks';
 import useAnimation from '~/hooks/use-animation';
@@ -44,7 +44,15 @@ export default function EditableUsername() {
       username: user.username,
     },
   });
+  const usernameRegister = register('username', { validate: validateUsername });
   const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.select();
+    }
+  }, [isEditing]);
 
   const onSubmit = async (data: FormValues) => {
     if (data.username === user.username) {
@@ -80,7 +88,11 @@ export default function EditableUsername() {
           <div className="flex items-center gap-2">
             <div className={cn('flex-1', animationClass)}>
               <input
-                {...register('username', { validate: validateUsername })}
+                {...usernameRegister}
+                ref={(el) => {
+                  usernameRegister.ref(el);
+                  inputRef.current = el;
+                }}
                 type="text"
                 className="w-full bg-transparent text-2xl text-white outline-none"
                 // biome-ignore lint/a11y/noAutofocus: the rule is for accessibility reasons, but for this case it makes sense to autofocus so that the user is editing as soon as they click the edit button
