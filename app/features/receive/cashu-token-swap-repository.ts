@@ -109,10 +109,7 @@ export class CashuTokenSwapRepository {
 
     if (error) {
       if (error.code === '23505') {
-        throw new UniqueConstraintError(
-          error,
-          'This token has already been claimed',
-        );
+        throw new UniqueConstraintError('This token has already been claimed');
       }
       throw new Error('Failed to create token swap', { cause: error });
     }

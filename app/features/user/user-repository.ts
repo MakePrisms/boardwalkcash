@@ -85,7 +85,7 @@ export class UserRepository {
 
     if (error) {
       if (error.code === '23505') {
-        throw new UniqueConstraintError(error);
+        throw new UniqueConstraintError();
       }
 
       throw new Error('Failed to update user', { cause: error });

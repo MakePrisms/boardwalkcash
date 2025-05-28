@@ -1,5 +1,3 @@
-import type { PostgrestError } from '@supabase/supabase-js';
-
 export const getErrorMessage = (
   error: unknown,
   fallbackMessage = 'Unknown error. Please try again or contact support',
@@ -15,14 +13,4 @@ export const getErrorMessage = (
   return fallbackMessage;
 };
 
-export class UniqueConstraintError extends Error {
-  constructor(postgresError: PostgrestError, message?: string) {
-    if (postgresError.code !== '23505') {
-      throw new Error('Expected a unique constraint error', {
-        cause: postgresError,
-      });
-    }
-
-    super(message ?? postgresError.message, { cause: postgresError });
-  }
-}
+export class UniqueConstraintError extends Error {}
