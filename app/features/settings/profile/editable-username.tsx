@@ -68,9 +68,7 @@ export default function EditableUsername() {
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         toast({
-          title: 'Error',
-          description: 'Username not available',
-          variant: 'destructive',
+          title: 'Username not available',
         });
       } else {
         toast({
