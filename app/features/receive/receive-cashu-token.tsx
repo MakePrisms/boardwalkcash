@@ -9,12 +9,10 @@ import {
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { useToast } from '~/hooks/use-toast';
-import type { CashuAccount } from '../accounts/account';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
-  useCashuTokenSourceAccount,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
   useTokenWithClaimableProofs,
@@ -33,14 +31,13 @@ export default function ReceiveToken({ token }: Props) {
     cashuPubKey: // TODO: replace with user's pubkey from OS
       '038127ae202c95f4cd4ea8ba34e73618f578adf516db553a902a8589796bdc373',
   });
-  const sourceAccount = useCashuTokenSourceAccount(token);
   const {
     selectableAccounts,
     receiveAccount,
     isCrossMintSwapDisabled,
     setReceiveAccount,
     addAndSetReceiveAccount,
-  } = useReceiveCashuTokenAccounts(sourceAccount);
+  } = useReceiveCashuTokenAccounts(token);
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
@@ -59,7 +56,7 @@ export default function ReceiveToken({ token }: Props) {
       return;
     }
 
-    let account: CashuAccount = receiveAccount;
+    let account = receiveAccount;
 
     if (!isReceiveAccountAdded) {
       try {
@@ -134,6 +131,7 @@ export default function ReceiveToken({ token }: Props) {
         {claimableToken && (
           <div className="z-10 mt-auto mb-28">
             <Button
+              disabled={receiveAccount.selectable === false}
               onClick={handleClaim}
               className="min-w-[200px]"
               loading={status === 'CLAIMING'}

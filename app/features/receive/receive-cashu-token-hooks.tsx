@@ -11,8 +11,12 @@ import {
   useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
-import { tokenToMoney } from '~/features/shared/cashu';
-import { getClaimableProofs, getUnspentProofsFromToken } from '~/lib/cashu';
+import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
+import {
+  getCashuProtocolUnit,
+  getClaimableProofs,
+  getUnspentProofsFromToken,
+} from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
@@ -50,7 +54,7 @@ type TokenQueryResult =
  * Takes a token and returns the account that the token is from.
  * If the account does not exist, we construct and return an account, but we do not store it in the database.
  */
-export function useCashuTokenSourceAccount(token: Token) {
+function useCashuTokenSourceAccount(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
   const { data: allAccounts } = useAccounts({ type: 'cashu' });
   const existingAccount = allAccounts.find(
@@ -60,9 +64,15 @@ export function useCashuTokenSourceAccount(token: Token) {
 
   const { data } = useSuspenseQuery({
     queryKey: ['token-source-account', token.mint, tokenCurrency],
-    queryFn: async (): Promise<ExtendedCashuAccount> => {
+    queryFn: async (): Promise<{
+      isValid: boolean;
+      sourceAccount: ExtendedCashuAccount;
+    }> => {
       if (existingAccount) {
-        return existingAccount;
+        return {
+          isValid: true,
+          sourceAccount: existingAccount,
+        };
       }
 
       const [info, isTestMint] = await Promise.all([
@@ -70,18 +80,27 @@ export function useCashuTokenSourceAccount(token: Token) {
         checkIsTestMint(token.mint),
       ]);
 
+      const validationResult = await cashuMintValidator(
+        token.mint,
+        getCashuProtocolUnit(tokenCurrency),
+        info,
+      );
+
       return {
-        id: '',
-        type: 'cashu',
-        mintUrl: token.mint,
-        createdAt: new Date().toISOString(),
-        name: info?.name ?? token.mint.replace('https://', ''),
-        currency: tokenToMoney(token).currency,
-        isTestMint,
-        version: 0,
-        keysetCounters: {},
-        proofs: [],
-        isDefault: false,
+        isValid: validationResult === true,
+        sourceAccount: {
+          id: '',
+          type: 'cashu',
+          mintUrl: token.mint,
+          createdAt: new Date().toISOString(),
+          name: info?.name ?? token.mint.replace('https://', ''),
+          currency: tokenToMoney(token).currency,
+          isTestMint,
+          version: 0,
+          keysetCounters: {},
+          proofs: [],
+          isDefault: false,
+        },
       };
     },
     staleTime: 3 * 60 * 1000,
@@ -133,7 +152,7 @@ export function useTokenWithClaimableProofs({
 }
 
 const getDefaultReceiveAccount = (
-  selectableAccounts: CashuAccount[],
+  selectableAccounts: CashuAccountWithBadges[],
   sourceAccount: CashuAccount,
   isCrossMintSwapDisabled: boolean,
   defaultAccount: Account,
@@ -144,8 +163,16 @@ const getDefaultReceiveAccount = (
       : defaultAccount;
 
   const matchingAccount = selectableAccounts.find(
-    (a) => a.id === targetAccount.id,
+    (a) => a.id === targetAccount.id && a.selectable,
   );
+
+  // If no matching selectable account found, get the first selectable account
+  if (!matchingAccount) {
+    const firstSelectable = selectableAccounts.find((a) => a.selectable);
+    if (firstSelectable) {
+      return firstSelectable;
+    }
+  }
 
   // Fall back to source account if no match found
   return matchingAccount ?? sourceAccount;
@@ -156,6 +183,7 @@ const getBadges = (
   allAccounts: CashuAccount[],
   sourceAccount: CashuAccount,
   defaultAccount: Account,
+  isSourceAccountValid: boolean,
 ) => {
   const badges: string[] = [];
 
@@ -164,6 +192,9 @@ const getBadges = (
   }
   if (account.id === sourceAccount.id) {
     badges.push('Source');
+    if (!isSourceAccountValid) {
+      badges.push('Invalid');
+    }
   }
   if (account.id === defaultAccount.id) {
     badges.push('Default');
@@ -177,6 +208,7 @@ const getBadges = (
 
 const getSelectableAccounts = (
   sourceAccount: CashuAccount,
+  isSourceAccountValid: boolean,
   isCrossMintSwapDisabled: boolean,
   accounts: CashuAccount[],
   defaultAccount: Account,
@@ -192,7 +224,14 @@ const getSelectableAccounts = (
 
   return baseAccounts.map((account) => ({
     ...account,
-    badges: getBadges(account, accounts, sourceAccount, defaultAccount),
+    badges: getBadges(
+      account,
+      accounts,
+      sourceAccount,
+      defaultAccount,
+      isSourceAccountValid,
+    ),
+    selectable: account.id === sourceAccount.id ? isSourceAccountValid : true,
   }));
 };
 
@@ -200,9 +239,9 @@ const getSelectableAccounts = (
  * Lets the user select an account to receive the token and returns data about the
  * selectable accounts based on the source account and the user's accounts in the database.
  */
-export function useReceiveCashuTokenAccounts(
-  sourceAccount: ExtendedCashuAccount,
-) {
+export function useReceiveCashuTokenAccounts(token: Token) {
+  const { sourceAccount, isValid: isSourceAccountValid } =
+    useCashuTokenSourceAccount(token);
   const { data: accounts } = useAccounts({ type: 'cashu' });
   const addCashuAccount = useAddCashuAccount();
   const defaultAccount = useDefaultAccount();
@@ -210,6 +249,7 @@ export function useReceiveCashuTokenAccounts(
   const isCrossMintSwapDisabled = sourceAccount.isTestMint;
   const selectableAccounts = getSelectableAccounts(
     sourceAccount,
+    isSourceAccountValid,
     isCrossMintSwapDisabled,
     accounts,
     defaultAccount,
@@ -224,13 +264,15 @@ export function useReceiveCashuTokenAccounts(
   const [receiveAccountId, setReceiveAccountId] = useState<string>(
     defaultReceiveAccount.id,
   );
-  const receiveAccount =
+  const receiveAccount: CashuAccountWithBadges =
     selectableAccounts.find((account) => account.id === receiveAccountId) ??
     defaultReceiveAccount;
 
   const setReceiveAccount = (account: CashuAccountWithBadges) => {
-    const isSelectable = selectableAccounts.some((a) => a.id === account.id);
-    if (!isSelectable) {
+    const selectableAccount = selectableAccounts.find(
+      (a) => a.id === account.id,
+    );
+    if (!selectableAccount || !selectableAccount.selectable) {
       throw new Error('Account is not selectable');
     }
 
