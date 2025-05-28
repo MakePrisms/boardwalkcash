@@ -30,13 +30,14 @@ type BuildMintValidatorOptions = {
 
 /**
  * Builds a validator function that checks if the mint is valid according to the given NUTs
- * and the selected unit and returns an error message if the mint is not valid.
- * @returns The validator function.
+ * and the selected unit. If mint info is not provided, it will be fetched from the URL.
+ * @returns The validator function
  */
 export const buildMintValidator = (params: BuildMintValidatorOptions) => {
   return async (
     mintUrl: string,
     selectedUnit: CashuProtocolUnit,
+    mintInfo?: MintInfo,
   ): Promise<string | true> => {
     if (!/^https?:\/\/.+/.test(mintUrl)) {
       return 'Must be a valid URL starting with http(s)://';
@@ -52,16 +53,22 @@ export const buildMintValidator = (params: BuildMintValidatorOptions) => {
       return 'Mint does not support this currency';
     }
 
-    const featuresResult = await validateMintFeatures(
-      mintUrl,
-      selectedUnit,
-      createNutValidators(params),
-    );
-    if (!featuresResult.isValid) {
-      return featuresResult.message;
-    }
+    try {
+      const info = mintInfo ?? (await getCashuWallet(mintUrl).getMintInfo());
 
-    return true;
+      const featuresResult = await validateMintFeatures(
+        info,
+        selectedUnit,
+        createNutValidators(params),
+      );
+      if (!featuresResult.isValid) {
+        return featuresResult.message;
+      }
+
+      return true;
+    } catch {
+      return 'Failed to connect to mint. Please make sure the URL is correct or try again.';
+    }
   };
 };
 
@@ -228,16 +235,13 @@ const validateWebSocketSupport = (
 };
 
 const validateMintFeatures = async (
-  mintUrl: string,
+  mintInfo: MintInfo,
   unit: string,
   nutValidators: NutValidation[],
 ): Promise<NutValidationResult> => {
   try {
-    const wallet = getCashuWallet(mintUrl);
-    const info = await wallet.getMintInfo();
-
     for (const { validate } of nutValidators) {
-      const result = validate(info, unit);
+      const result = validate(mintInfo, unit);
       if (!result.isValid) {
         return result;
       }

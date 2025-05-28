@@ -83,6 +83,7 @@ function useCashuTokenSourceAccount(token: Token) {
       const validationResult = await cashuMintValidator(
         token.mint,
         getCashuProtocolUnit(tokenCurrency),
+        info,
       );
 
       return {
