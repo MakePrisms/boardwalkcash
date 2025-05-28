@@ -1,6 +1,7 @@
 import { Check, Edit } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { UniqueConstraintError } from '~/features/shared/error';
 import { useUpdateUsername, useUser } from '~/features/user/user-hooks';
 import useAnimation from '~/hooks/use-animation';
 import { useToast } from '~/hooks/use-toast';
@@ -64,11 +65,18 @@ export default function EditableUsername() {
       await updateUsername(data.username);
       startAnimation();
       setIsEditing(false);
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to update username',
-      });
+    } catch (error) {
+      if (error instanceof UniqueConstraintError) {
+        toast({
+          title: 'Username not available',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to update username',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

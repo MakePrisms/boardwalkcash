@@ -12,3 +12,5 @@ export const getErrorMessage = (
 
   return fallbackMessage;
 };
+
+export class UniqueConstraintError extends Error {}

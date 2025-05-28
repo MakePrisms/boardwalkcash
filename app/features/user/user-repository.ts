@@ -8,6 +8,7 @@ import {
   agicashDb,
 } from '../agicash-db/database';
 import { useEncryption } from '../shared/encryption';
+import { UniqueConstraintError } from '../shared/error';
 import type { User } from './user';
 
 export type UpdateUser = {
@@ -83,6 +84,10 @@ export class UserRepository {
     const { data: updatedUser, error } = await query.single();
 
     if (error) {
+      if (error.code === '23505') {
+        throw new UniqueConstraintError(error.message);
+      }
+
       throw new Error('Failed to update user', { cause: error });
     }
 

@@ -9,6 +9,7 @@ import {
 import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
+import { UniqueConstraintError } from '../shared/error';
 import type { CashuTokenSwap } from './cashu-token-swap';
 
 type Options = {
@@ -108,7 +109,7 @@ export class CashuTokenSwapRepository {
 
     if (error) {
       if (error.code === '23505') {
-        throw new Error('This token has already been claimed');
+        throw new UniqueConstraintError('This token has already been claimed');
       }
       throw new Error('Failed to create token swap', { cause: error });
     }
