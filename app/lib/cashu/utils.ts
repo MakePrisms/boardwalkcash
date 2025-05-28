@@ -7,7 +7,7 @@ import {
 import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
-import type { MintInfo } from './types';
+import type { CashuProtocolUnit, MintInfo } from './types';
 
 const knownTestMints = [
   'https://testnut.cashu.space',
@@ -21,8 +21,15 @@ const currencyToUnit: {
   USD: 'cent',
 };
 
+const currencyToCashuProtocolUnit: {
+  [K in Currency]: CashuProtocolUnit;
+} = {
+  BTC: 'sat',
+  USD: 'usd',
+};
+
 const cashuProtocolUnitToCurrency: {
-  [key in 'sat' | 'usd']: Currency;
+  [key in CashuProtocolUnit]: Currency;
 } = {
   sat: 'BTC',
   usd: 'USD',
@@ -30,6 +37,10 @@ const cashuProtocolUnitToCurrency: {
 
 export const getCashuUnit = (currency: Currency) => {
   return currencyToUnit[currency];
+};
+
+export const getCashuProtocolUnit = (currency: Currency) => {
+  return currencyToCashuProtocolUnit[currency];
 };
 
 export const getWalletCurrency = (wallet: CashuWallet) => {

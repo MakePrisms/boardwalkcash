@@ -145,3 +145,26 @@ export type P2PKSecret = NUT10Secret & { kind: 'P2PK' };
  * [NUT-06 info endpoint](https://github.com/cashubtc/nuts/blob/main/06.md)
  */
 export type MintInfo = Awaited<ReturnType<CashuWallet['getMintInfo']>>;
+
+/**
+ * The units that are determined by the soft-consensus of cashu mints and wallets.
+ * These units are not definite as they are not defined in NUTs directly.
+ * The following units generally mean:
+ * - `sat`: satoshis
+ * - `usd`: cents in USD
+ */
+export type CashuProtocolUnit = 'sat' | 'usd';
+
+/**
+ * A subset of the cashu [NUTs](https://github.com/cashubtc/nuts).
+ */
+export type NUT = 4 | 5 | 7 | 8 | 9 | 10 | 11 | 12 | 17 | 20;
+
+/**
+ * Web socket commands as defined by NUT-17.
+ * @see https://github.com/cashubtc/nuts/blob/main/17.md for NUT-17 WebSocket commands
+ */
+export type NUT17WebSocketCommand =
+  | 'bolt11_mint_quote'
+  | 'bolt11_melt_quote'
+  | 'proof_state';

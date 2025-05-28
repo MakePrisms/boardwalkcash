@@ -1,5 +1,3 @@
-import { CashuMint } from '@cashu/cashu-ts';
-import type { WebSocketSupport } from '@cashu/cashu-ts';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
@@ -13,9 +11,10 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 import { useAddCashuAccount } from '~/features/accounts/account-hooks';
+import { cashuMintValidator } from '~/features/shared/cashu';
+import { useUser } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
-import { getCashuWallet } from '~/lib/cashu';
-import type { MintInfo } from '~/lib/cashu/types';
+import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 
 type FormValues = {
@@ -25,246 +24,35 @@ type FormValues = {
 };
 
 const currencies = [
-  { value: 'BTC', label: 'BTC', unit: 'sat' },
-  { value: 'USD', label: 'USD', unit: 'usd' },
+  { value: 'BTC', label: 'BTC' },
+  { value: 'USD', label: 'USD' },
 ];
-
-const getCurrencyUnit = (currency: Currency) => {
-  return currencies.find((x) => x.value === currency)?.unit;
-};
-
-const getUnitsSupportedByMint = async (
-  mintUrl: string,
-): Promise<string[] | null> => {
-  try {
-    const mint = new CashuMint(mintUrl);
-    const { keysets } = await mint.getKeySets();
-    const activeUnits = keysets.filter((x) => x.active).map((x) => x.unit);
-    const distinctActiveUnits = [...new Set(activeUnits)];
-    return distinctActiveUnits;
-  } catch {
-    return null;
-  }
-};
-
-type NutValidationResult =
-  | { isValid: false; message: string }
-  | { isValid: true };
-
-type NutValidation = {
-  nut: number;
-  validate: (info: MintInfo, unit: string) => NutValidationResult;
-};
-
-const validateBolt11Support = (
-  info: MintInfo,
-  operation: 'minting' | 'melting',
-  unit: string,
-): NutValidationResult => {
-  const nut = operation === 'minting' ? 4 : 5;
-  const status = info.isSupported(nut);
-
-  if (status.disabled) {
-    return {
-      isValid: false,
-      message: `${operation} is disabled on this mint`,
-    };
-  }
-
-  const hasBolt11Support = status.params.some(
-    (method) => method.method === 'bolt11' && method.unit === unit,
-  );
-
-  if (!hasBolt11Support) {
-    return {
-      isValid: false,
-      message: `Mint does not support Lightning (bolt11) ${operation} for ${unit}`,
-    };
-  }
-
-  return { isValid: true };
-};
-
-const validateGenericNut = (
-  info: MintInfo,
-  nut: 7 | 8 | 9 | 10 | 11 | 12 | 20,
-  message: string,
-): NutValidationResult => {
-  const status = info.isSupported(nut);
-  if (!status.supported) {
-    return {
-      isValid: false,
-      message,
-    };
-  }
-  return { isValid: true };
-};
-
-const nutValidations: NutValidation[] = [
-  {
-    nut: 4,
-    validate: (info, unit) => validateBolt11Support(info, 'minting', unit),
-  },
-  {
-    nut: 5,
-    validate: (info, unit) => validateBolt11Support(info, 'melting', unit),
-  },
-  {
-    nut: 7,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        7,
-        'Mint does not support token state checks (NUT-7)',
-      ),
-  },
-  {
-    nut: 8,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        8,
-        'Mint does not support overpaid lightning fees (NUT-8)',
-      ),
-  },
-  {
-    nut: 9,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        9,
-        'Mint does not support signature restoration (NUT-9)',
-      ),
-  },
-  {
-    nut: 10,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        10,
-        'Mint does not support spending conditions (NUT-10)',
-      ),
-  },
-  {
-    nut: 11,
-    validate: (info) =>
-      validateGenericNut(info, 11, 'Mint does not support P2PK (NUT-11)'),
-  },
-  {
-    nut: 12,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        12,
-        'Mint does not support DLEQ proofs (NUT-12)',
-      ),
-  },
-  {
-    nut: 17,
-    validate: (info, unit) => {
-      const status = info.isSupported(17);
-      if (!status.supported) {
-        return {
-          isValid: false,
-          message: 'Mint does not support WebSockets (NUT-17)',
-        };
-      }
-
-      const requiredCommands = ['bolt11_melt_quote'];
-      const hasBolt11WebSocketSupport = status.params?.some(
-        (support: WebSocketSupport) =>
-          support.method === 'bolt11' &&
-          support.unit === unit &&
-          requiredCommands.every((cmd) => support.commands.includes(cmd)),
-      );
-
-      if (!hasBolt11WebSocketSupport) {
-        return {
-          isValid: false,
-          message: `Mint does not support required WebSocket commands for ${unit} via bolt11`,
-        };
-      }
-
-      return { isValid: true };
-    },
-  },
-  {
-    nut: 20,
-    validate: (info) =>
-      validateGenericNut(
-        info,
-        20,
-        'Mint does not support signed mint quotes (NUT-20)',
-      ),
-  },
-];
-
-const validateMintFeatures = async (
-  mintUrl: string,
-  unit: string,
-): Promise<NutValidationResult> => {
-  try {
-    const wallet = getCashuWallet(mintUrl);
-    const info = await wallet.getMintInfo();
-
-    for (const validation of nutValidations) {
-      const result = validation.validate(info, unit);
-      if (!result.isValid) {
-        return result;
-      }
-    }
-
-    return { isValid: true };
-  } catch {
-    return {
-      isValid: false,
-      message: 'Failed to connect to mint or validate features',
-    };
-  }
-};
 
 const validateMint = async (
   value: string,
   formValues: FormValues,
 ): Promise<string | true> => {
-  if (!/^https?:\/\/.+/.test(value)) {
-    return 'Must be a valid URL starting with http(s)://';
-  }
-
-  const selectedUnit = getCurrencyUnit(formValues.currency);
-  if (!selectedUnit) {
-    return true;
-  }
-
-  const units = await getUnitsSupportedByMint(value);
-
-  if (!units) {
-    return 'Failed to connect to mint. Please make sure the URL is correct or try again.';
-  }
-
-  if (!units.includes(selectedUnit)) {
-    return 'Mint does not support this currency';
-  }
-
-  const featuresResult = await validateMintFeatures(value, selectedUnit);
-  if (!featuresResult.isValid) {
-    return featuresResult.message;
-  }
-
-  return true;
+  const unit = getCashuProtocolUnit(formValues.currency);
+  return cashuMintValidator(value, unit);
 };
 
 export function AddMintForm() {
   const addAccount = useAddCashuAccount();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const defaultCurrency = useUser((u) => u.defaultCurrency);
+
   const {
     register,
     handleSubmit,
     control,
     getValues,
     formState: { isSubmitting, errors },
-  } = useForm<FormValues>();
-  const navigate = useNavigate();
+  } = useForm<FormValues>({
+    defaultValues: {
+      currency: defaultCurrency,
+    },
+  });
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -293,7 +81,7 @@ export function AddMintForm() {
   };
 
   const currency = getValues('currency');
-  const unit = currency === 'BTC' ? 'sat' : currency;
+  const unit = getCashuProtocolUnit(currency);
 
   return (
     <form

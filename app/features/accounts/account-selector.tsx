@@ -8,6 +8,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '~/components/ui/drawer';
+import { cn } from '~/lib/utils';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { type Account, getAccountBalance } from './account';
 import { AccountTypeIcon } from './account-icons';
@@ -15,6 +16,8 @@ import { AccountTypeIcon } from './account-icons';
 export type AccountWithBadges<T extends Account = Account> = T & {
   /** Text to display as a badge in the account selector */
   badges?: string[];
+  /** Whether the account is selectable */
+  selectable?: boolean;
 };
 
 function AccountItem({ account }: { account: AccountWithBadges }) {
@@ -92,12 +95,16 @@ export function AccountSelector<T extends Account>({
               ...accounts.filter((a) => a.id !== selectedAccount.id),
             ].map((account) => (
               <button
+                disabled={account.selectable === false}
                 type="button"
                 key={account.id}
                 onClick={() => handleAccountSelect(account)}
-                className={`rounded-lg hover:bg-muted ${
-                  selectedAccount.id === account.id ? 'bg-muted' : ''
-                }`}
+                className={cn(
+                  'rounded-lg hover:bg-muted',
+                  selectedAccount.id === account.id && 'bg-muted',
+                  account.selectable === false &&
+                    'pointer-events-none cursor-not-allowed opacity-50',
+                )}
               >
                 <AccountItem account={account} />
               </button>
