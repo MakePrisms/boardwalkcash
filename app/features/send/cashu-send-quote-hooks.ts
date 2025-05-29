@@ -17,7 +17,10 @@ import {
 } from '~/lib/timeout';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
-import { useAccountsCache } from '../accounts/account-hooks';
+import {
+  useAccountsCache,
+  useGetLatestCashuAccount,
+} from '../accounts/account-hooks';
 import {
   type AgicashDbCashuSendQuote,
   agicashDb,
@@ -133,21 +136,24 @@ export function useInitiateCashuSendQuote({
   const userRef = useUserRef();
   const cashuSendQuoteService = useCashuSendQuoteService();
   const cashuSendQuoteCache = useCashuSendQuoteCache();
+  const getCashuAccount = useGetLatestCashuAccount();
 
   return useMutation({
     mutationKey: ['initiate-cashu-send-quote'],
     scope: {
       id: 'initiate-cashu-send-quote',
     },
-    mutationFn: ({
-      account,
+    mutationFn: async ({
+      accountId,
       sendQuote,
-    }: { account: CashuAccount; sendQuote: SendQuoteRequest }) =>
-      cashuSendQuoteService.createSendQuote({
+    }: { accountId: string; sendQuote: SendQuoteRequest }) => {
+      const account = await getCashuAccount(accountId);
+      return cashuSendQuoteService.createSendQuote({
         userId: userRef.current.id,
         account,
         sendQuote,
-      }),
+      });
+    },
     onSuccess: (data) => {
       cashuSendQuoteCache.add(data);
     },
@@ -359,6 +365,7 @@ function useOnMeltQuoteStateChange({
     () => new MeltQuoteSubscriptionManager(),
   );
   const queryClient = useQueryClient();
+  const getCashuAccount = useGetLatestCashuAccount();
 
   const handleMeltQuoteUpdate = useCallback(
     async (meltQuote: MeltQuoteResponse) => {
@@ -373,12 +380,7 @@ function useOnMeltQuoteStateChange({
         return;
       }
 
-      const account = await accountsCache.getLatest(relatedSendQuote.accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error(
-          `Account not found for id: ${relatedSendQuote.accountId}`,
-        );
-      }
+      const account = await getCashuAccount(relatedSendQuote.accountId);
 
       const expiresAt = new Date(relatedSendQuote.expiresAt);
       const now = new Date();
@@ -406,7 +408,7 @@ function useOnMeltQuoteStateChange({
         onUnpaidRef.current(account, relatedSendQuote, meltQuote);
       }
     },
-    [sendQuotes, accountsCache],
+    [sendQuotes, getCashuAccount],
   );
 
   const { mutate: subscribe } = useMutation({
@@ -453,17 +455,14 @@ function useOnMeltQuoteStateChange({
       queryClient.fetchQuery({
         queryKey: ['check-melt-quote', sendQuote.quoteId],
         queryFn: async () => {
-          const account = await accountsCache.getLatest(sendQuote.accountId);
-          if (!account || account.type !== 'cashu') {
-            throw new Error(`Account not found for id: ${sendQuote.accountId}`);
-          }
+          const account = await getCashuAccount(sendQuote.accountId);
           return checkMeltQuote(account, sendQuote);
         },
         retry: 5,
         staleTime: 0,
         gcTime: 0,
       }),
-    [queryClient, accountsCache],
+    [queryClient, getCashuAccount],
   );
 
   useEffect(() => {

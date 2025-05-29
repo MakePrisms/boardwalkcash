@@ -3,6 +3,7 @@ import type { Database as DatabaseGenerated } from 'supabase/database.types';
 import type { MergeDeep } from 'type-fest';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
+import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
@@ -108,10 +109,28 @@ export type Database = MergeDeep<
             currency_requested?: Currency;
           };
         };
+        cashu_send_swaps: {
+          Row: {
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+          Insert: {
+            state: CashuSendSwap['state'];
+            currency: Currency;
+            unit: CurrencyUnit;
+          };
+          Update: {
+            state?: CashuSendSwap['state'];
+            currency?: Currency;
+            unit?: CurrencyUnit;
+          };
+        };
         transactions: {
           Row: {
             currency: Currency;
             unit: CurrencyUnit;
+            reversed_transaction_id: string | null;
             direction: Transaction['direction'];
             type: Transaction['type'];
             state: Transaction['state'];
@@ -144,6 +163,9 @@ export type Database = MergeDeep<
         };
         fail_cashu_send_quote: {
           Returns: UpdateCashuSendQuoteResult;
+        };
+        create_cashu_send_swap: {
+          Returns: AgicashDbCashuSendSwap;
         };
       };
       CompositeTypes: {
@@ -179,3 +201,5 @@ export type AgicashDbCashuSendQuote =
 export type AgicashDbTransaction =
   Database['wallet']['Tables']['transactions']['Row'];
 export type AgicashDbContact = Database['wallet']['Tables']['contacts']['Row'];
+export type AgicashDbCashuSendSwap =
+  Database['wallet']['Tables']['cashu_send_swaps']['Row'];
