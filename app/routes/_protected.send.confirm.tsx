@@ -7,12 +7,15 @@ import {
 import { useSendStore } from '~/features/send';
 
 export default function SendConfirmationPage() {
-  const sendAccount = useSendStore((state) => state.getSourceAccount());
-  const sendAmount = useSendStore((state) => state.amount);
-  const sendType = useSendStore((state) => state.sendType);
-  const destination = useSendStore((state) => state.destination);
-  const destinationDisplay = useSendStore((state) => state.destinationDisplay);
-  const quote = useSendStore((state) => state.quote);
+  const {
+    sendType,
+    getSourceAccount,
+    amount: sendAmount,
+    destination,
+    destinationDisplay,
+    quote,
+  } = useSendStore();
+  const sendAccount = getSourceAccount();
 
   if (!sendAmount || !sendType || !sendAccount) {
     return <Redirect to="/send" logMessage="Missing send data" />;
@@ -38,7 +41,11 @@ export default function SendConfirmationPage() {
     );
   }
 
-  if (['BOLT11_INVOICE', 'LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
+  if (
+    sendType === 'BOLT11_INVOICE' ||
+    sendType === 'LN_ADDRESS' ||
+    sendType === 'AGICASH_CONTACT'
+  ) {
     if (!destination || !destinationDisplay || !quote) {
       return <Redirect to="/send" logMessage="Missing destination data" />;
     }
@@ -54,9 +61,11 @@ export default function SendConfirmationPage() {
   }
 
   if (sendType === 'CASHU_TOKEN') {
-    return (
-      <CreateCashuTokenConfirmation amount={sendAmount} account={sendAccount} />
-    );
+    if (!quote) {
+      return <Redirect to="/send" logMessage="Missing quote" />;
+    }
+
+    return <CreateCashuTokenConfirmation quote={quote} account={sendAccount} />;
   }
 
   return <Redirect to="/send" logMessage="Invalid send type" />;

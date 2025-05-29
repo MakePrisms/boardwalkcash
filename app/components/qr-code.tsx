@@ -1,6 +1,7 @@
 import { AlertCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Skeleton } from '~/components/ui/skeleton';
+import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import { cn } from '~/lib/utils';
 
 type QRCodeProps = {
@@ -12,6 +13,10 @@ type QRCodeProps = {
    * The description to display below the QR code.
    */
   description?: string;
+  /**
+   * Whether the QR code should be animated.
+   */
+  animate?: boolean;
   /**
    * An error message to display if an error occurs when getting the value.
    */
@@ -36,6 +41,7 @@ type QRCodeProps = {
 export function QRCode({
   value,
   description,
+  animate,
   error,
   isLoading,
   onClick,
@@ -71,12 +77,21 @@ export function QRCode({
             'bg-foreground transition-transform active:scale-95',
           )}
         >
-          <QRCodeSVG
-            value={value}
-            size={256}
-            marginSize={3}
-            className="rounded-lg bg-foreground"
-          />
+          {animate ? (
+            <AnimatedQRCode
+              value={value}
+              size={256}
+              marginSize={3}
+              className="rounded-lg bg-foreground"
+            />
+          ) : (
+            <QRCodeSVG
+              value={value}
+              size={256}
+              marginSize={3}
+              className="rounded-lg bg-foreground"
+            />
+          )}
         </button>
       )}
 
