@@ -6,12 +6,14 @@
 - **Development**: Nix + devenv, Bun for scripts/tests
 - **Database**: Supabase with migrations in `supabase/migrations`
 
+See .cursor/rules for more detailed instructions on how to make changes. Use the rules sparingly based on the changes you are trying to make.
+
 ## Directory Structure
 
 - `app/components/` – Reusable UI components
-- `app/lib/` – Utilities and server helpers
-- `app/features/` – Feature-specific code (see `GUIDELINES.md`)
-- `app/routes/` – Remix routes
+- `app/lib/` – Non-app specific reusable libs
+- `app/features/` –  agicash wallet application feature-specific code.(see `GUIDELINES.md`)
+- `app/routes/` – React router routes from React Router v7 framework mode
 - `e2e/` – Playwright tests
 - `supabase/`
     ├── migrations/           # Database migration files
@@ -28,9 +30,9 @@ Use **kebab-case** for files/directories. Follow hierarchy in `GUIDELINES.md`.
 
 ## React Guidelines
 
-- Use hooks for side effects and data fetching
-- Use **@tanstack/react-query** for network requests (`useQuery`, `useSuspenseQuery`, `useMutation`)
-- Avoid `useEffect` for data fetching
+- Keep components focused on UI rendering and move business logic to custom hooks
+- Use `useEffect` for side effects (except data fetching)
+- Use **@tanstack/react-query** for data fetching and network requests (`useQuery`, `useSuspenseQuery`, `useMutation`)
 - Prefer `type` over `interface` when possible
 
 ## General Guidelines
