@@ -205,6 +205,7 @@ function useOnCashuSendSwapChange({
         async (
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendSwap>,
         ) => {
+          // TODO: remove this debug once we figure out why we stop getting updates
           console.debug(payload.eventType, {
             payload,
           });
@@ -241,12 +242,10 @@ export function useUnresolvedCashuSendSwaps() {
     [queryClient],
   );
 
-  const { data } = useQuery({
+  const { data = [] } = useQuery({
     queryKey: [unresolvedCashuSendSwapsQueryKey, userRef.current.id],
     queryFn: () => cashuSendSwapRepository.getUnresolved(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
-    initialData: [],
-    initialDataUpdatedAt: 0,
   });
 
   useOnCashuSendSwapChange({
@@ -430,7 +429,7 @@ export function useTrackUnresolvedCashuSendSwaps() {
 
   useOnProofStateChange({
     swaps: pending,
-    onSpent: cashuSendSwapService.complete,
+    onSpent: (swap) => cashuSendSwapService.complete(swap),
   });
 
   useQueries({

@@ -30,7 +30,7 @@ export class ProofStateSubscriptionManager {
 
       if (subscriptionHash === mintSubscription.subscriptionHash) {
         console.debug(
-          'Mint quote updates subscription already exists for mint',
+          'Proof state updates subscription already exists for mint',
           mintUrl,
           swaps,
         );
@@ -39,13 +39,13 @@ export class ProofStateSubscriptionManager {
 
       const unsubscribe = await mintSubscription.subscriptionPromise;
 
-      console.debug('Unsubscribing from mint quote updates for mint', mintUrl);
+      console.debug('Unsubscribing from proof state updates for mint', mintUrl);
       unsubscribe();
     }
 
     const wallet = getCashuWallet(mintUrl);
 
-    console.debug('Subscribing to mint quote updates for mint', {
+    console.debug('Subscribing to proof state updates for mint', {
       mintUrl,
       swaps,
     });
@@ -54,7 +54,7 @@ export class ProofStateSubscriptionManager {
       swaps.flatMap((x) => x.proofsToSend),
       (payload) => this.handleProofStateUpdate(payload, swaps, onSpent),
       (error) =>
-        console.error('Mint quote updates socket error', {
+        console.error('Proof state updates socket error', {
           cause: error,
         }),
     );

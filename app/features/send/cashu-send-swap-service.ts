@@ -263,7 +263,8 @@ export class CashuSendSwapService {
         swap,
         account,
       });
-      throw new Error('No proofs to send');
+      // this can happen if the input proofs were already spent by another wallet
+      return this.fail(swap, 'Could not restore proofs to send');
     }
 
     const tokenHash = await getTokenHash({
