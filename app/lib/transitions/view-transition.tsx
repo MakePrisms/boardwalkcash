@@ -205,7 +205,19 @@ type NavigateWithViewTransitionOptions = NavigateOptions & ViewTransitionState;
 export function useNavigateWithViewTransition() {
   const navigate = useNavigate();
 
-  return (to: To, options: NavigateWithViewTransitionOptions) => {
-    navigate(to, { ...options, viewTransition: true });
+  return (
+    to: To,
+    {
+      transition,
+      applyTo = 'bothViews',
+      state,
+      ...options
+    }: NavigateWithViewTransitionOptions,
+  ) => {
+    navigate(to, {
+      ...options,
+      viewTransition: true,
+      state: { ...(state ?? {}), transition, applyTo },
+    });
   };
 }
