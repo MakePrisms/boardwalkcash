@@ -122,13 +122,15 @@ $function$
 CREATE OR REPLACE FUNCTION wallet.complete_cashu_send_swap(
     p_swap_id uuid,
     p_swap_version integer
-) RETURNS void
+)
+RETURNS void
 LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
 AS $function$
 declare
     v_swap wallet.cashu_send_swaps;
     v_transaction_id uuid;
-    v_is_reversed boolean;
 begin
     -- Get the swap record with optimistic concurrency check
     select * into v_swap
@@ -140,8 +142,8 @@ begin
         raise exception 'Swap % not found.', p_swap_id;
     end if;
 
-        -- Return if already COMPLETED
-    if v_swap.state = 'COMPLETED' then
+    -- return if already completed or reversed
+    if v_swap.state in ('COMPLETED', 'REVERSED') then
         return;
     end if;
 
@@ -151,13 +153,9 @@ begin
     end if;
 
     v_transaction_id := v_swap.transaction_id;
-    -- Check if there's a transaction that has reversed this send swap transaction
-    select count(*) > 0 into v_is_reversed
-    from wallet.transactions
-    where reversed_transaction_id = v_transaction_id;
 
     update wallet.cashu_send_swaps
-    set state = case when v_is_reversed then 'REVERSED' else 'COMPLETED' end,
+    set state = 'COMPLETED',
         version = version + 1
     where id = p_swap_id and version = p_swap_version;
 
@@ -165,11 +163,10 @@ begin
         raise exception 'Concurrency error: Swap % was modified by another transaction. Expected version %.', p_swap_id, p_swap_version;
     end if;
 
-    -- Update the transaction state to COMPLETED or REVERSED
+    -- update the transaction state to completed
     update wallet.transactions
-    set state = case when v_is_reversed then 'REVERSED' else 'COMPLETED' end,
-        completed_at = case when not v_is_reversed then now() else completed_at end,
-        reversed_at = case when v_is_reversed then now() else reversed_at end
+    set state = 'COMPLETED',
+        completed_at = now()
     where id = v_transaction_id;
 
     return;
@@ -541,3 +538,85 @@ create index idx_cashu_send_swaps_state_created_at on wallet.cashu_send_swaps (s
 
 -- add index for efficient getUnresolved query (user_id + state filter)
 create index idx_cashu_send_swaps_user_id_state on wallet.cashu_send_swaps (user_id, state) where state in ('DRAFT', 'PENDING');
+
+-- add index for lookup by transaction_id used during reversals
+create index idx_cashu_send_swaps_transaction_id on wallet.cashu_send_swaps (transaction_id);
+-- drop old complete function
+DROP FUNCTION IF EXISTS wallet.complete_cashu_token_swap(p_token_hash text, p_user_id uuid, p_swap_version integer, p_proofs jsonb, p_account_version integer);
+
+CREATE OR REPLACE FUNCTION wallet.complete_cashu_token_swap(
+    p_token_hash text,
+    p_user_id uuid,
+    p_swap_version integer,
+    p_proofs jsonb,
+    p_account_version integer
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+    v_token_swap wallet.cashu_token_swaps;
+    v_reversed_transaction_id uuid;
+    v_send_swap wallet.cashu_send_swaps;
+BEGIN
+    SELECT * INTO v_token_swap
+    FROM wallet.cashu_token_swaps
+    WHERE token_hash = p_token_hash AND user_id = p_user_id
+    FOR UPDATE;
+
+    IF v_token_swap IS NULL THEN
+        RAISE EXCEPTION 'Token swap for token hash % not found', p_token_hash;
+    END IF;
+
+    IF v_token_swap.state != 'PENDING' THEN
+        RAISE EXCEPTION 'Token swap for token hash % cannot be completed because it is not in PENDING state. Current state: %', p_token_hash, v_token_swap.state;
+    END IF;
+
+    UPDATE wallet.accounts
+    SET details = jsonb_set(details, '{proofs}', p_proofs, true),
+        version = version + 1
+    WHERE id = v_token_swap.account_id AND version = p_account_version;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one', v_token_swap.account_id, p_account_version;
+    END IF;
+
+    UPDATE wallet.cashu_token_swaps
+    SET state = 'COMPLETED',
+        version = version + 1
+    WHERE token_hash = p_token_hash AND version = p_swap_version;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Concurrency error: Token swap % was modified by another transaction. Expected version %, but found different one', p_token_hash, p_swap_version;
+    END IF;
+
+    UPDATE wallet.transactions
+    SET state = 'COMPLETED',
+        completed_at = now()
+    WHERE id = v_token_swap.transaction_id
+    RETURNING reversed_transaction_id INTO v_reversed_transaction_id;
+
+    IF v_reversed_transaction_id IS NOT NULL THEN
+        SELECT * INTO v_send_swap
+        FROM wallet.cashu_send_swaps
+        WHERE transaction_id = v_reversed_transaction_id
+        FOR UPDATE;
+
+        IF FOUND THEN
+            UPDATE wallet.cashu_send_swaps
+            SET state = 'REVERSED',
+                version = v_send_swap.version + 1
+            WHERE id = v_send_swap.id;
+        END IF;
+
+        UPDATE wallet.transactions
+        SET state = 'REVERSED',
+            reversed_at = now()
+        WHERE id = v_reversed_transaction_id;
+    END IF;
+
+    RETURN;
+END;
+$$;
