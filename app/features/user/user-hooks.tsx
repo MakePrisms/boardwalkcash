@@ -41,21 +41,55 @@ export const useUser = <TData = User>(
   return response.data;
 };
 
+const isDevelopmentMode = import.meta.env.MODE === 'development';
+
 const defaultAccounts = [
-  {
-    type: 'cashu',
-    currency: 'USD',
-    name: 'Default USD Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
-    isTestMint: false,
-  },
   {
     type: 'cashu',
     currency: 'BTC',
     name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com/',
+    mintUrl: 'https://mint.lnvoltz.com',
     isTestMint: false,
   },
+  {
+    type: 'cashu',
+    currency: 'USD',
+    name: 'Default USD Account',
+    mintUrl: 'https://mint.lnvoltz.com',
+    isTestMint: false,
+  },
+  ...(isDevelopmentMode
+    ? ([
+        {
+          type: 'cashu',
+          currency: 'BTC',
+          name: 'Testnut BTC (nofees)',
+          mintUrl: 'https://nofees.testnut.cashu.space',
+          isTestMint: true,
+        },
+        {
+          type: 'cashu',
+          currency: 'USD',
+          name: 'Testnut USD (nofees)',
+          mintUrl: 'https://nofees.testnut.cashu.space',
+          isTestMint: true,
+        },
+        {
+          type: 'cashu',
+          currency: 'BTC',
+          name: 'Testnut BTC',
+          mintUrl: 'https://testnut.cashu.space',
+          isTestMint: true,
+        },
+        {
+          type: 'cashu',
+          currency: 'USD',
+          name: 'Testnut USD',
+          mintUrl: 'https://testnut.cashu.space',
+          isTestMint: true,
+        },
+      ] as const)
+    : []),
 ] as const;
 
 export const useUpsertUser = () => {
