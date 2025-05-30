@@ -1,10 +1,10 @@
 import type { Proof, ProofState } from '@cashu/cashu-ts';
 import { getCashuWallet } from '~/lib/cashu';
-import { computeSHA256 } from '~/lib/sha256';
+import { isSubset } from '~/lib/utils';
 import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 
 type Subscription = {
-  subscriptionHash: string;
+  ids: Set<string>;
   subscriptionPromise: Promise<() => void>;
 };
 
@@ -22,13 +22,13 @@ export class ProofStateSubscriptionManager {
     swaps: PendingCashuSendSwap[];
     onSpent: (swap: CashuSendSwap) => void;
   }): Promise<void> {
-    const subscriptionHash = await this.getSubscriptionHash(swaps);
+    const ids = new Set(swaps.map((x) => x.id));
     const mintSubscription = this.subscriptions.get(mintUrl);
 
     if (mintSubscription) {
       await mintSubscription.subscriptionPromise;
 
-      if (subscriptionHash === mintSubscription.subscriptionHash) {
+      if (isSubset(ids, mintSubscription.ids)) {
         console.debug(
           'Proof state updates subscription already exists for mint',
           mintUrl,
@@ -60,7 +60,7 @@ export class ProofStateSubscriptionManager {
     );
 
     this.subscriptions.set(mintUrl, {
-      subscriptionHash,
+      ids,
       subscriptionPromise,
     });
 
@@ -99,13 +99,5 @@ export class ProofStateSubscriptionManager {
       delete this.proofUpdates[swap.id];
       onSpent(swap);
     }
-  }
-
-  private async getSubscriptionHash(
-    swaps: PendingCashuSendSwap[],
-  ): Promise<string> {
-    // Concatenate swap ids to create a unique key for the subscription
-    const data = `${swaps.map((x) => x.id).join('_')}`;
-    return await computeSHA256(data);
   }
 }
