@@ -1,17 +1,17 @@
 import { useParams } from 'react-router';
 import { Page } from '~/components/page';
-import SingleAccount from '~/features/settings/accounts/$account_id';
+import SingleAccount from '~/features/settings/accounts/$accountId';
 
 export default function SingleAccountPage() {
-  const { account_id } = useParams();
+  const { accountId } = useParams();
 
-  if (!account_id) {
+  if (!accountId) {
     throw new Error('Account ID is required');
   }
 
   return (
     <Page>
-      <SingleAccount accountId={account_id} />
+      <SingleAccount accountId={accountId} />
     </Page>
   );
 }

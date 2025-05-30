@@ -5,10 +5,10 @@
 
 import { agicashDbServiceRole } from '~/features/agicash-db/database.server';
 import { LightningAddressService } from '~/features/receive/lightning-address-service';
-import type { Route } from './+types/api.lnurlp.verify.$cashu_receive_quote_id';
+import type { Route } from './+types/api.lnurlp.verify.$cashuReceiveQuoteId';
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const cashuReceiveQuoteId = params.cashu_receive_quote_id;
+  const cashuReceiveQuoteId = params.cashuReceiveQuoteId;
 
   const lightningAddressService = new LightningAddressService(
     request,

@@ -6,10 +6,10 @@
 import { agicashDbServiceRole } from '~/features/agicash-db/database.server';
 import { LightningAddressService } from '~/features/receive/lightning-address-service';
 import { Money } from '~/lib/money';
-import type { Route } from './+types/api.lnurlp.callback.$user_id';
+import type { Route } from './+types/api.lnurlp.callback.$userId';
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const userId = params.user_id;
+  const userId = params.userId;
 
   const amountMsat = new URL(request.url).searchParams.get('amount');
 

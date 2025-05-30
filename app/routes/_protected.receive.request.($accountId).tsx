@@ -5,14 +5,14 @@ import { useAccounts } from '~/features/accounts/account-hooks';
 import ReusablePaymentRequest from '~/features/receive/reusable-payment-request';
 
 export default function ReceiveRequest() {
-  const { account_id } = useParams();
+  const { accountId } = useParams();
   const { data: accounts } = useAccounts();
 
-  if (!account_id) {
+  if (!accountId) {
     return <Redirect to="/receive" logMessage="No account id provided" />;
   }
 
-  const account = accounts.find((a) => a.id === account_id);
+  const account = accounts.find((a) => a.id === accountId);
   if (!account) {
     return <Redirect to="/receive" logMessage="Account not found" />;
   }
