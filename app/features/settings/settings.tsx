@@ -59,6 +59,8 @@ export default function Settings() {
           Appearance
         </SettingsNavButton>
         <SettingsNavButton to="/settings/contacts">Contacts</SettingsNavButton>
+        {/* this is temporary just so we can test reversing the pending swaps */}
+        <SettingsNavButton to="/demo">Pending Sends</SettingsNavButton>
 
         <Separator />
 

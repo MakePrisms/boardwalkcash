@@ -6,7 +6,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
@@ -337,6 +337,28 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   }
 
   return { ...account, isDefault: isDefaultAccount(user, account) } as T;
+}
+
+/**
+ * Hook to get the latest version of a cashu account. If we know that the account was updated but we don't have the full account data yet,
+ * we can use this hook to wait for the account data to be updated in the cache.
+ * Prefer using this hook whenever using the account's version property to minimize the errors that result in retries which are caused by using the old version of the account.
+ * @returns The latest version of the cashu account.
+ * @throws Error if the account is not found.
+ */
+export function useGetLatestCashuAccount() {
+  const accountsCache = useAccountsCache();
+
+  return useCallback(
+    async (id: string): Promise<CashuAccount> => {
+      const account = await accountsCache.getLatest(id);
+      if (!account || account.type !== 'cashu') {
+        throw new Error(`Cashu account not found for id: ${id}`);
+      }
+      return account;
+    },
+    [accountsCache],
+  );
 }
 
 export function useDefaultAccount() {

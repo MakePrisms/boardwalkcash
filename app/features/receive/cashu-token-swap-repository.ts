@@ -54,6 +54,10 @@ type CreateTokenSwap = {
    * Version of the account as seen by the client. Used for optimistic concurrency control.
    */
   accountVersion: number;
+  /**
+   * ID of the transaction that this swap is reversing.
+   */
+  reversedTransactionId?: string;
 };
 
 export class CashuTokenSwapRepository {
@@ -77,6 +81,7 @@ export class CashuTokenSwapRepository {
       keysetCounter,
       outputAmounts,
       accountVersion,
+      reversedTransactionId,
     }: CreateTokenSwap,
     options?: Options,
   ): Promise<CashuTokenSwap> {
@@ -99,6 +104,7 @@ export class CashuTokenSwapRepository {
       p_receive_amount: sum(outputAmounts) - fee,
       p_fee_amount: fee,
       p_account_version: accountVersion,
+      p_reversed_transaction_id: reversedTransactionId,
     });
 
     if (options?.abortSignal) {

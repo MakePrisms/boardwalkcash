@@ -29,7 +29,10 @@ import {
 } from '~/lib/timeout';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
-import { useAccountsCache } from '../accounts/account-hooks';
+import {
+  useAccountsCache,
+  useGetLatestCashuAccount,
+} from '../accounts/account-hooks';
 import {
   type AgicashDbCashuReceiveQuote,
   agicashDb,
@@ -629,17 +632,7 @@ const useOnMintQuoteStateChange = ({
   const accountsCache = useAccountsCache();
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const userRef = useUserRef();
-
-  const getCashuAccount = useCallback(
-    async (accountId: string) => {
-      const account = await accountsCache.getLatest(accountId);
-      if (!account || account.type !== 'cashu') {
-        throw new Error(`Account not found for id: ${accountId}`);
-      }
-      return account;
-    },
-    [accountsCache],
-  );
+  const getCashuAccount = useGetLatestCashuAccount();
 
   const processMintQuote = useCallback(
     async (mintQuote: MintQuoteResponse) => {

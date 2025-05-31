@@ -1,83 +1,73 @@
-import type {
-  QueryData,
-  RealtimePostgresChangesPayload,
-} from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
-import { agicashDb } from '~/features/agicash-db/database';
-import { useUser } from '~/features/user/user-hooks';
-
-const accountsQuery = agicashDb.from('accounts').select();
-type Accounts = QueryData<typeof accountsQuery>;
-type Account = Accounts[number];
+import { MoneyDisplay } from '~/components/money-display';
+import {
+  ClosePageButton,
+  Page,
+  PageContent,
+  PageHeader,
+  PageHeaderTitle,
+} from '~/components/page';
+import { Button } from '~/components/ui/button';
+import type { CashuSendSwap } from '~/features/send/cashu-send-swap';
+import {
+  useReverseCashuSendSwap,
+  useUnresolvedCashuSendSwaps,
+} from '~/features/send/cashu-send-swap-hooks';
+import { getDefaultUnit } from '~/features/shared/currencies';
 
 export default function Demo() {
-  const user = useUser();
-  const [accounts, setAccounts] = useState<Accounts>([]);
-  const [error, setError] = useState<string | null>(null);
+  const { pending } = useUnresolvedCashuSendSwaps();
+  const { mutate: reverseCashuSendSwap } = useReverseCashuSendSwap();
 
-  useEffect(() => {
-    const getAccounts = async () => {
-      if (!user.id) return;
-
-      const { data, error } = await accountsQuery;
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setAccounts(data);
-      }
-    };
-
-    getAccounts();
-  }, [user.id]);
-
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('accounts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'accounts',
+  const handleReverseCashuSendSwap = (swap: CashuSendSwap) => {
+    reverseCashuSendSwap(
+      { swap },
+      {
+        onSuccess: () => {
+          console.log('Swap reversed');
         },
-        (payload: RealtimePostgresChangesPayload<Account>) => {
-          if (payload.eventType === 'DELETE') {
-            setAccounts((prev) =>
-              prev.filter((account) => account.id !== payload.old.id),
-            );
-          } else if (payload.eventType === 'INSERT') {
-            setAccounts((prev) => [...prev, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setAccounts((prev) =>
-              prev.map((account) =>
-                account.id === payload.new.id ? payload.new : account,
-              ),
-            );
-          }
+        onError: (error) => {
+          console.error('Failed to reverse swap', error);
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+      },
+    );
+  };
 
   return (
-    <div>
-      <h1>This is Demo page</h1>
-      {error ? (
-        <div className="mt-4">{error}</div>
-      ) : (
-        <div className="mt-4">
-          {accounts.map((account) => (
-            <div key={account.id}>
-              <pre>{JSON.stringify(account, null, 2)}</pre>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <Page>
+      <PageHeader>
+        <ClosePageButton transition="slideRight" applyTo="oldView" to="/" />
+        <PageHeaderTitle>Pending Sends</PageHeaderTitle>
+      </PageHeader>
+      <PageContent>
+        {pending.length > 0 ? (
+          <div className="mt-4 space-y-4">
+            <ul className="space-y-3">
+              {pending.map((swap) => (
+                <li key={swap.id} className="rounded-lg border p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <MoneyDisplay
+                        money={swap.amountToSend}
+                        variant="secondary"
+                        unit={getDefaultUnit(swap.currency)}
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleReverseCashuSendSwap(swap)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-4 text-gray-500">No pending sends</p>
+        )}
+      </PageContent>
+    </Page>
   );
 }

@@ -21,11 +21,12 @@ export type Transaction = {
    * State of the transaction.
    * Transaction states are:
    * - DRAFT: The transaction is drafted but might never be initiated and thus completed.
-   * - PENDING: The transaction was initiated and is being processed. At this point the sender cannot cancel the transaction.
-   * - COMPLETED: The transaction has been completed.
+   * - PENDING: The transaction was initiated and is being processed.
+   * - COMPLETED: The transaction has been completed. At this point the sender cannot reverse the transaction.
    * - FAILED: The transaction has failed.
+   * - REVERSED: The transaction was reversed and money was returned to the account.
    */
-  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED';
+  state: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'REVERSED';
   /**
    * ID of the account that the transaction was sent from or received to.
    * For SEND transactions, it is the account that the transaction was sent from.
@@ -36,6 +37,10 @@ export type Transaction = {
    * Amount of the transaction.
    */
   amount: Money;
+  /**
+   * ID of the transaction that is reversed by this transaction.
+   */
+  reversedTransactionId?: string | null;
   /**
    * Date and time the transaction was created in ISO 8601 format.
    */
@@ -52,4 +57,8 @@ export type Transaction = {
    * Date and time the transaction failed in ISO 8601 format.
    */
   failedAt?: string | null;
+  /**
+   * Date and time the transaction was reversed in ISO 8601 format.
+   */
+  reversedAt?: string | null;
 };

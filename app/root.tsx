@@ -15,6 +15,7 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
+  useNavigate,
   useRouteError,
 } from 'react-router';
 import agicashLoadingLogo from '~/assets/full_logo.png';
@@ -34,6 +35,7 @@ import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
+import { NotFoundError } from './features/shared/error';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
 
 export const links: LinksFunction = () => [
@@ -153,7 +155,13 @@ export default function App() {
   );
 }
 
-const getErrorDetails = (error: unknown) => {
+const useErrorDetails = (error: unknown) => {
+  const navigate = useNavigate();
+
+  const reload = () => {
+    window.location.reload();
+  };
+
   if (isRouteErrorResponse(error)) {
     return {
       message: `${error.status} - ${error.statusText || 'Error'}`,
@@ -162,6 +170,27 @@ const getErrorDetails = (error: unknown) => {
           {JSON.stringify(error.data, null, 2)}
         </pre>
       ) : null,
+      footer: (
+        <Button variant="default" type="button" onClick={reload}>
+          Reload Page
+        </Button>
+      ),
+    };
+  }
+
+  if (error instanceof NotFoundError) {
+    return {
+      message: error.message,
+      footer: (
+        <Button
+          className="mt-4"
+          variant="default"
+          type="button"
+          onClick={() => navigate('/')}
+        >
+          Go Home
+        </Button>
+      ),
     };
   }
 
@@ -171,22 +200,28 @@ const getErrorDetails = (error: unknown) => {
       additionalInfo: (
         <p className="overflow-auto rounded-lg bg-muted p-4">{error.message}</p>
       ),
+      footer: (
+        <Button variant="default" type="button" onClick={reload}>
+          Reload Page
+        </Button>
+      ),
     };
   }
 
   return {
     message: 'An unexpected error occurred. Please try again later.',
+    footer: (
+      <Button className="mt-4" variant="default" type="button" onClick={reload}>
+        Reload Page
+      </Button>
+    ),
   };
 };
 
 export function ErrorBoundary() {
   const error = useRouteError();
 
-  const handleReload = () => {
-    window.location.reload();
-  };
-
-  const errorDetails = getErrorDetails(error);
+  const errorDetails = useErrorDetails(error);
 
   return (
     <Card className="m-4">
@@ -197,11 +232,7 @@ export function ErrorBoundary() {
       {errorDetails.additionalInfo && (
         <CardContent>{errorDetails.additionalInfo}</CardContent>
       )}
-      <CardFooter>
-        <Button variant="default" type="button" onClick={handleReload}>
-          Reload Page
-        </Button>
-      </CardFooter>
+      <CardFooter>{errorDetails.footer}</CardFooter>
     </Card>
   );
 }

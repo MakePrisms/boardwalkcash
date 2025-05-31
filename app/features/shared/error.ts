@@ -14,3 +14,10 @@ export const getErrorMessage = (
 };
 
 export class UniqueConstraintError extends Error {}
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}

@@ -41,10 +41,12 @@ export class TransactionRepository {
         amount: data.amount,
         currency: data.currency,
       }),
+      reversedTransactionId: data.reversed_transaction_id,
       createdAt: data.created_at,
       pendingAt: data.pending_at,
       completedAt: data.completed_at,
       failedAt: data.failed_at,
+      reversedAt: data.reversed_at,
     };
   }
 }
