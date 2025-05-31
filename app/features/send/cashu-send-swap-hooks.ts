@@ -172,7 +172,13 @@ function useSwapForProofsToSend() {
   });
 }
 
-export function useReverseCashuSendSwap() {
+export function useReverseCashuSendSwap({
+  onSuccess,
+  onError,
+}: {
+  onSuccess?: (swap: CashuSendSwap) => void;
+  onError?: (error: Error) => void;
+}) {
   const cashuSendSwapService = useCashuSendSwapService();
   const getLatestCashuAccount = useGetLatestCashuAccount();
 
@@ -182,6 +188,8 @@ export function useReverseCashuSendSwap() {
       await cashuSendSwapService.reverse(swap, account);
       return swap;
     },
+    onSuccess,
+    onError,
   });
 }
 
@@ -316,6 +324,7 @@ type UseTrackCashuSendSwapProps = {
   onPending?: (swap: CashuSendSwap) => void;
   onCompleted?: (swap: CashuSendSwap) => void;
   onFailed?: (swap: CashuSendSwap) => void;
+  onReversed?: (swap: CashuSendSwap) => void;
 };
 
 type UseTrackCashuSendSwapResponse =
@@ -333,16 +342,18 @@ export function useTrackCashuSendSwap({
   onPending,
   onCompleted,
   onFailed,
+  onReversed,
 }: UseTrackCashuSendSwapProps): UseTrackCashuSendSwapResponse {
   const enabled = !!id;
   const onPendingRef = useLatest(onPending);
   const onCompletedRef = useLatest(onCompleted);
   const onFailedRef = useLatest(onFailed);
-  const cashuSendSwapCache = useCashuSendSwapCache();
+  const onReversedRef = useLatest(onReversed);
+  const cashuSendSwapRepository = useCashuSendSwapRepository();
 
   const { data } = useQuery({
     queryKey: [cashuSendSwapQueryKey, id],
-    queryFn: () => cashuSendSwapCache.get(id),
+    queryFn: () => cashuSendSwapRepository.get(id),
     staleTime: Number.POSITIVE_INFINITY,
     enabled,
   });
@@ -356,6 +367,8 @@ export function useTrackCashuSendSwap({
       onCompletedRef.current?.(data);
     } else if (data.state === 'FAILED') {
       onFailedRef.current?.(data);
+    } else if (data.state === 'REVERSED') {
+      onReversedRef.current?.(data);
     }
   }, [data]);
 
