@@ -20,7 +20,7 @@ import {
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import { useTransaction } from '../transactions/transaction-hooks';
+import { useTrackTransaction } from '../transactions/transaction-hooks';
 import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
 import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 
@@ -321,7 +321,7 @@ export function useReceiveCashuToken({
     data: cashuReceiveQuote,
   } = useMeltTokenToCashuAccount();
 
-  const transaction = useTransaction({
+  const { transaction } = useTrackTransaction({
     transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
   });
 
