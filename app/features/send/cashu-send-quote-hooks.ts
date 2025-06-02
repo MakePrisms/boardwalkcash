@@ -272,35 +272,14 @@ function useOnCashuSendQuoteChange({
 }
 
 function useUnresolvedCashuSendQuotes() {
-  const queryClient = useQueryClient();
   const cashuSendQuoteRepository = useCashuSendQuoteRepository();
   const userRef = useUserRef();
-  const unresolvedSendQuotesCache = useMemo(
-    () => new UnresolvedCashuSendQuotesCache(queryClient),
-    [queryClient],
-  );
-  const cashuSendQuoteCache = useCashuSendQuoteCache();
 
   const { data } = useQuery({
     queryKey: [unresolvedCashuSendQuotesQueryKey, userRef.current.id],
     queryFn: () => cashuSendQuoteRepository.getUnresolved(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
-  });
-
-  useOnCashuSendQuoteChange({
-    onCreated: (send) => {
-      unresolvedSendQuotesCache.add(send);
-    },
-    onUpdated: (send) => {
-      cashuSendQuoteCache.updateIfExists(send);
-
-      if (['UNPAID', 'PENDING'].includes(send.state)) {
-        unresolvedSendQuotesCache.update(send);
-      } else {
-        unresolvedSendQuotesCache.remove(send);
-      }
-    },
   });
 
   return data ?? [];
@@ -495,8 +474,29 @@ function useOnMeltQuoteStateChange({
 }
 
 export function useTrackUnresolvedCashuSendQuotes() {
+  const queryClient = useQueryClient();
+  const unresolvedSendQuotesCache = useMemo(
+    () => new UnresolvedCashuSendQuotesCache(queryClient),
+    [queryClient],
+  );
+  const cashuSendQuoteCache = useCashuSendQuoteCache();
   const cashuSendService = useCashuSendQuoteService();
   const unresolvedSendQuotes = useUnresolvedCashuSendQuotes();
+
+  useOnCashuSendQuoteChange({
+    onCreated: (send) => {
+      unresolvedSendQuotesCache.add(send);
+    },
+    onUpdated: (send) => {
+      cashuSendQuoteCache.updateIfExists(send);
+
+      if (['UNPAID', 'PENDING'].includes(send.state)) {
+        unresolvedSendQuotesCache.update(send);
+      } else {
+        unresolvedSendQuotesCache.remove(send);
+      }
+    },
+  });
 
   useOnMeltQuoteStateChange({
     sendQuotes: unresolvedSendQuotes,
