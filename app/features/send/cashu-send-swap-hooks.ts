@@ -205,10 +205,6 @@ function useOnCashuSendSwapChange({
         async (
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendSwap>,
         ) => {
-          // TODO: remove this debug once we figure out why we stop getting updates
-          console.debug(payload.eventType, {
-            payload,
-          });
           if (payload.eventType === 'INSERT') {
             const addedSwap = await CashuSendSwapRepository.toSwap(
               payload.new,
@@ -235,32 +231,11 @@ function useOnCashuSendSwapChange({
 export function useUnresolvedCashuSendSwaps() {
   const cashuSendSwapRepository = useCashuSendSwapRepository();
   const userRef = useUserRef();
-  const cashuSendSwapCache = useCashuSendSwapCache();
-  const queryClient = useQueryClient();
-  const unresolvedSwapsCache = useMemo(
-    () => new UnresolvedCashuSendSwapsCache(queryClient),
-    [queryClient],
-  );
 
   const { data = [] } = useQuery({
     queryKey: [unresolvedCashuSendSwapsQueryKey, userRef.current.id],
     queryFn: () => cashuSendSwapRepository.getUnresolved(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
-  });
-
-  useOnCashuSendSwapChange({
-    onCreated: (swap) => {
-      unresolvedSwapsCache.add(swap);
-    },
-    onUpdated: (swap) => {
-      cashuSendSwapCache.updateIfExists(swap);
-
-      if (['DRAFT', 'PENDING'].includes(swap.state)) {
-        unresolvedSwapsCache.update(swap);
-      } else {
-        unresolvedSwapsCache.remove(swap);
-      }
-    },
   });
 
   return useMemo(() => {
@@ -423,9 +398,30 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
 }
 
 export function useTrackUnresolvedCashuSendSwaps() {
+  const cashuSendSwapCache = useCashuSendSwapCache();
+  const queryClient = useQueryClient();
+  const unresolvedSwapsCache = useMemo(
+    () => new UnresolvedCashuSendSwapsCache(queryClient),
+    [queryClient],
+  );
   const { draft, pending } = useUnresolvedCashuSendSwaps();
   const { mutate: swapForProofsToSend } = useSwapForProofsToSend();
   const cashuSendSwapService = useCashuSendSwapService();
+
+  useOnCashuSendSwapChange({
+    onCreated: (swap) => {
+      unresolvedSwapsCache.add(swap);
+    },
+    onUpdated: (swap) => {
+      cashuSendSwapCache.updateIfExists(swap);
+
+      if (['DRAFT', 'PENDING'].includes(swap.state)) {
+        unresolvedSwapsCache.update(swap);
+      } else {
+        unresolvedSwapsCache.remove(swap);
+      }
+    },
+  });
 
   useOnProofStateChange({
     swaps: pending,

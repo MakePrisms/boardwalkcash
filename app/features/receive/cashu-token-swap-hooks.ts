@@ -237,12 +237,6 @@ function useOnCashuTokenSwapChange({
 function usePendingCashuTokenSwaps() {
   const userRef = useUserRef();
   const tokenSwapRepository = useCashuTokenSwapRepository();
-  const queryClient = useQueryClient();
-  const pendingSwapsCache = useMemo(
-    () => new PendingCashuTokenSwapsCache(queryClient),
-    [queryClient],
-  );
-  const tokenSwapCache = useCashuTokenSwapCache();
 
   const { data } = useQuery({
     queryKey: [pendingCashuTokenSwapsQueryKey, userRef.current.id],
@@ -250,6 +244,19 @@ function usePendingCashuTokenSwaps() {
     staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
   });
+
+  return data ?? [];
+}
+
+export function useTrackPendingCashuTokenSwaps() {
+  const queryClient = useQueryClient();
+  const pendingSwapsCache = useMemo(
+    () => new PendingCashuTokenSwapsCache(queryClient),
+    [queryClient],
+  );
+  const tokenSwapCache = useCashuTokenSwapCache();
+  const pendingSwaps = usePendingCashuTokenSwaps();
+  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useOnCashuTokenSwapChange({
     onCreated: (swap) => {
@@ -266,13 +273,6 @@ function usePendingCashuTokenSwaps() {
       }
     },
   });
-
-  return data ?? [];
-}
-
-export function useTrackPendingCashuTokenSwaps() {
-  const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useQueries({
     queries: pendingSwaps.map((swap) => ({

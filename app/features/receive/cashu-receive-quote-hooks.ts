@@ -275,30 +275,12 @@ function useOnCashuReceiveQuoteChange({
 const usePendingCashuReceiveQuotes = () => {
   const cashuReceiveQuoteRepository = useCashuReceiveQuoteRepository();
   const userRef = useUserRef();
-  const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
-  const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
   const { data } = useQuery({
     queryKey: [pendingCashuReceiveQuotesQueryKey, userRef.current.id],
     queryFn: () => cashuReceiveQuoteRepository.getPending(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
-  });
-
-  useOnCashuReceiveQuoteChange({
-    onCreated: (quote) => {
-      pendingQuotesCache.add(quote);
-    },
-    onUpdated: (quote) => {
-      cashuReceiveQuoteCache.updateIfExists(quote);
-
-      const isQuoteStillPending = ['UNPAID', 'PAID'].includes(quote.state);
-      if (isQuoteStillPending) {
-        pendingQuotesCache.update(quote);
-      } else {
-        pendingQuotesCache.remove(quote);
-      }
-    },
   });
 
   return data ?? [];
@@ -694,8 +676,26 @@ const useOnMintQuoteStateChange = ({
 };
 
 export function useTrackPendingCashuReceiveQuotes() {
+  const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
+  const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
   const cashuReceiveQuoteService = useCashuReceiveQuoteService();
   const pendingQuotes = usePendingCashuReceiveQuotes();
+
+  useOnCashuReceiveQuoteChange({
+    onCreated: (quote) => {
+      pendingQuotesCache.add(quote);
+    },
+    onUpdated: (quote) => {
+      cashuReceiveQuoteCache.updateIfExists(quote);
+
+      const isQuoteStillPending = ['UNPAID', 'PAID'].includes(quote.state);
+      if (isQuoteStillPending) {
+        pendingQuotesCache.update(quote);
+      } else {
+        pendingQuotesCache.remove(quote);
+      }
+    },
+  });
 
   useOnMintQuoteStateChange({
     quotes: pendingQuotes,
