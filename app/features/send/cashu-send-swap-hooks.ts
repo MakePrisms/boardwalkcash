@@ -358,16 +358,11 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
     () => new ProofStateSubscriptionManager(),
   );
   const accountsCache = useAccountsCache();
+  const onSpentRef = useLatest(onSpent);
 
   const { mutate: subscribe } = useMutation({
-    mutationFn: (props: {
-      mintUrl: string;
-      swaps: PendingCashuSendSwap[];
-    }) =>
-      subscriptionManager.subscribe({
-        ...props,
-        onSpent,
-      }),
+    mutationFn: (props: Parameters<typeof subscriptionManager.subscribe>[0]) =>
+      subscriptionManager.subscribe(props),
     retry: 5,
     onError: (error, variables) => {
       console.error('Failed to subscribe to proof state updates', {
@@ -392,7 +387,7 @@ function useOnProofStateChange({ swaps, onSpent }: OnProofStateChangeProps) {
     );
 
     Object.entries(swapsByMint).forEach(([mintUrl, swaps]) => {
-      subscribe({ mintUrl, swaps });
+      subscribe({ mintUrl, swaps, onSpent: onSpentRef.current });
     });
   }, [subscribe, swaps, accountsCache]);
 }

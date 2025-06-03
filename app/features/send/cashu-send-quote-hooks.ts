@@ -391,14 +391,8 @@ function useOnMeltQuoteStateChange({
   );
 
   const { mutate: subscribe } = useMutation({
-    mutationFn: (props: {
-      mintUrl: string;
-      quotes: CashuSendQuote[];
-    }) =>
-      subscriptionManager.subscribe({
-        ...props,
-        onUpdate: handleMeltQuoteUpdate,
-      }),
+    mutationFn: (props: Parameters<typeof subscriptionManager.subscribe>[0]) =>
+      subscriptionManager.subscribe(props),
     retry: 5,
     onError: (error, variables) => {
       console.error('Error subscribing to melt quote updates', {
@@ -425,9 +419,9 @@ function useOnMeltQuoteStateChange({
     );
 
     Object.entries(quotesByMint).map(([mintUrl, quotes]) =>
-      subscribe({ mintUrl, quotes }),
+      subscribe({ mintUrl, quotes, onUpdate: handleMeltQuoteUpdate }),
     );
-  }, [sendQuotes, accountsCache, subscribe]);
+  }, [sendQuotes, handleMeltQuoteUpdate, accountsCache, subscribe]);
 
   const getMeltQuote = useCallback(
     (sendQuote: CashuSendQuote) =>

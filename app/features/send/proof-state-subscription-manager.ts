@@ -6,6 +6,7 @@ import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 type Subscription = {
   ids: Set<string>;
   subscriptionPromise: Promise<() => void>;
+  onSpent: (swap: CashuSendSwap) => void;
 };
 
 export class ProofStateSubscriptionManager {
@@ -29,8 +30,12 @@ export class ProofStateSubscriptionManager {
       await mintSubscription.subscriptionPromise;
 
       if (isSubset(ids, mintSubscription.ids)) {
+        this.subscriptions.set(mintUrl, {
+          ...mintSubscription,
+          onSpent,
+        });
         console.debug(
-          'Proof state updates subscription already exists for mint',
+          'Proof state updates subscription already exists for mint. Updated callback.',
           mintUrl,
           swaps,
         );
@@ -50,9 +55,22 @@ export class ProofStateSubscriptionManager {
       swaps,
     });
 
+    const subscriptionCallback = (
+      proofUpdate: ProofState & { proof: Proof },
+    ) => {
+      const currentSubscription = this.subscriptions.get(mintUrl);
+      if (currentSubscription) {
+        this.handleProofStateUpdate(
+          proofUpdate,
+          swaps,
+          currentSubscription.onSpent,
+        );
+      }
+    };
+
     const subscriptionPromise = wallet.onProofStateUpdates(
       swaps.flatMap((x) => x.proofsToSend),
-      (payload) => this.handleProofStateUpdate(payload, swaps, onSpent),
+      subscriptionCallback,
       (error) =>
         console.error('Proof state updates socket error', {
           cause: error,
@@ -62,6 +80,7 @@ export class ProofStateSubscriptionManager {
     this.subscriptions.set(mintUrl, {
       ids,
       subscriptionPromise,
+      onSpent,
     });
 
     try {
