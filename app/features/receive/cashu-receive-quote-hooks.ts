@@ -395,14 +395,8 @@ const useTrackMintQuotesWithWebSocket = ({
   const queryClient = useQueryClient();
 
   const { mutate: subscribe } = useMutation({
-    mutationFn: (props: {
-      mintUrl: string;
-      quotes: CashuReceiveQuote[];
-    }) =>
-      subscriptionManager.subscribe({
-        ...props,
-        onUpdate,
-      }),
+    mutationFn: (props: Parameters<typeof subscriptionManager.subscribe>[0]) =>
+      subscriptionManager.subscribe(props),
     retry: 5,
     onError: (error, variables) => {
       console.error('Error subscribing to mint quote updates', {
@@ -414,9 +408,9 @@ const useTrackMintQuotesWithWebSocket = ({
 
   useEffect(() => {
     Object.entries(quotesByMint).map(([mintUrl, quotes]) =>
-      subscribe({ mintUrl, quotes }),
+      subscribe({ mintUrl, quotes, onUpdate }),
     );
-  }, [subscribe, quotesByMint]);
+  }, [subscribe, quotesByMint, onUpdate]);
 
   const getMintQuote = useCallback(
     (receiveQuote: CashuReceiveQuote) =>

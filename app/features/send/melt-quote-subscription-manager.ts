@@ -6,6 +6,7 @@ import type { CashuSendQuote } from './cashu-send-quote';
 type SubscriptionData = {
   ids: Set<string>;
   subscriptionPromise: Promise<() => void>;
+  onUpdate: (meltQuoteResponse: MeltQuoteResponse) => void;
 };
 
 export class MeltQuoteSubscriptionManager {
@@ -27,8 +28,12 @@ export class MeltQuoteSubscriptionManager {
       await mintSubscription.subscriptionPromise;
 
       if (isSubset(ids, mintSubscription.ids)) {
+        this.subscriptions.set(mintUrl, {
+          ...mintSubscription,
+          onUpdate,
+        });
         console.debug(
-          'Melt quote updates subscription already exists for mint',
+          'Melt quote updates subscription already exists for mint. Updated callback.',
           mintUrl,
           quotes,
         );
@@ -49,9 +54,16 @@ export class MeltQuoteSubscriptionManager {
       quotes,
     );
 
+    const subscriptionCallback = (meltQuote: MeltQuoteResponse) => {
+      const currentSubscription = this.subscriptions.get(mintUrl);
+      if (currentSubscription) {
+        currentSubscription.onUpdate(meltQuote);
+      }
+    };
+
     const subscriptionPromise = wallet.onMeltQuoteUpdates(
       Array.from(ids),
-      onUpdate,
+      subscriptionCallback,
       (error) =>
         console.error('Melt quote updates socket error', {
           cause: error,
@@ -61,6 +73,7 @@ export class MeltQuoteSubscriptionManager {
     this.subscriptions.set(mintUrl, {
       ids,
       subscriptionPromise,
+      onUpdate,
     });
 
     try {
