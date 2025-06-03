@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CashuErrorCodes, getCashuUnit, getCashuWallet } from '~/lib/cashu';
+import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
   type LongTimeout,
@@ -248,6 +248,7 @@ function useOnCashuSendQuoteChange({
         async (
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
         ) => {
+          console.debug('Cashu send quote changed', payload);
           if (payload.eventType === 'INSERT') {
             const addedQuote = await CashuSendQuoteRepository.toSend(
               payload.new,
@@ -502,10 +503,7 @@ export function useTrackUnresolvedCashuSendQuotes() {
         cashuSendService
           .initiateSend(account, send, meltQuote)
           .catch((error) => {
-            if (
-              error instanceof MintOperationError &&
-              error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED
-            ) {
+            if (error instanceof MintOperationError) {
               return cashuSendService.failSendQuote(
                 account,
                 send,
