@@ -1,6 +1,7 @@
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
+import { useReconnectSupabaseRealtime } from '../agicash-db/supabase-realtime-hooks';
 import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
@@ -62,6 +63,8 @@ const Wallet = ({ children }: PropsWithChildren) => {
       });
     },
   });
+
+  useReconnectSupabaseRealtime();
 
   useSyncThemeWithDefaultCurrency();
 
