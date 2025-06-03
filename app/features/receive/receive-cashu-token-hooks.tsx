@@ -336,7 +336,7 @@ export function useReceiveCashuToken({
       const isSourceMint = areMintUrlsEqual(account.mintUrl, token.mint);
 
       if (isSourceMint) {
-        await createCashuTokenSwap({ token, account });
+        await createCashuTokenSwap({ token, accountId: account.id });
       } else {
         await meltTokenToCashuAccount({ token, account });
       }

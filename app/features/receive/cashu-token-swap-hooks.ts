@@ -9,8 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useLatest } from '~/lib/use-latest';
-import type { CashuAccount } from '../accounts/account';
-import { useAccountsCache } from '../accounts/account-hooks';
+import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import {
   type AgicashDbCashuTokenSwap,
   agicashDb,
@@ -26,7 +25,7 @@ import { useCashuTokenSwapService } from './cashu-token-swap-service';
 
 type CreateProps = {
   token: Token;
-  account: CashuAccount;
+  accountId: string;
 };
 
 // Query to track the active token swap for a given token hash. The active swap is the one that user created in current browser session, and we track it in order to show the current state of the swap on the receive page.
@@ -94,13 +93,15 @@ export function useCreateCashuTokenSwap() {
   const userRef = useUserRef();
   const tokenSwapService = useCashuTokenSwapService();
   const tokenSwapCache = useCashuTokenSwapCache();
+  const getLatestAccount = useGetLatestCashuAccount();
 
   return useMutation({
     mutationKey: ['create-cashu-token-swap'],
     scope: {
       id: 'create-cashu-token-swap',
     },
-    mutationFn: async ({ token, account }: CreateProps) => {
+    mutationFn: async ({ token, accountId }: CreateProps) => {
+      const account = await getLatestAccount(accountId);
       return tokenSwapService.create({
         userId: userRef.current.id,
         token,
@@ -167,7 +168,7 @@ export function useTokenSwap({
 
 function useCompleteCashuTokenSwap() {
   const tokenSwapService = useCashuTokenSwapService();
-  const accountsCache = useAccountsCache();
+  const getLatestAccount = useGetLatestCashuAccount();
 
   return useMutation({
     mutationKey: ['complete-cashu-token-swap'],
@@ -176,10 +177,7 @@ function useCompleteCashuTokenSwap() {
     },
     mutationFn: async (swap: CashuTokenSwap) => {
       try {
-        const account = await accountsCache.getLatest(swap.accountId);
-        if (!account || account.type !== 'cashu') {
-          throw new Error(`Cashu account not found for id: ${swap.accountId}`);
-        }
+        const account = await getLatestAccount(swap.accountId);
         await tokenSwapService.completeSwap(account, swap);
       } catch (error) {
         console.error('Error finalizing token swap', error);
@@ -239,12 +237,6 @@ function useOnCashuTokenSwapChange({
 function usePendingCashuTokenSwaps() {
   const userRef = useUserRef();
   const tokenSwapRepository = useCashuTokenSwapRepository();
-  const queryClient = useQueryClient();
-  const pendingSwapsCache = useMemo(
-    () => new PendingCashuTokenSwapsCache(queryClient),
-    [queryClient],
-  );
-  const tokenSwapCache = useCashuTokenSwapCache();
 
   const { data } = useQuery({
     queryKey: [pendingCashuTokenSwapsQueryKey, userRef.current.id],
@@ -252,6 +244,19 @@ function usePendingCashuTokenSwaps() {
     staleTime: Number.POSITIVE_INFINITY,
     throwOnError: true,
   });
+
+  return data ?? [];
+}
+
+export function useTrackPendingCashuTokenSwaps() {
+  const queryClient = useQueryClient();
+  const pendingSwapsCache = useMemo(
+    () => new PendingCashuTokenSwapsCache(queryClient),
+    [queryClient],
+  );
+  const tokenSwapCache = useCashuTokenSwapCache();
+  const pendingSwaps = usePendingCashuTokenSwaps();
+  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useOnCashuTokenSwapChange({
     onCreated: (swap) => {
@@ -268,13 +273,6 @@ function usePendingCashuTokenSwaps() {
       }
     },
   });
-
-  return data ?? [];
-}
-
-export function useTrackPendingCashuTokenSwaps() {
-  const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useQueries({
     queries: pendingSwaps.map((swap) => ({
