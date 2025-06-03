@@ -172,7 +172,13 @@ function useSwapForProofsToSend() {
   });
 }
 
-export function useReverseCashuSendSwap() {
+export function useReverseCashuSendSwap({
+  onSuccess,
+  onError,
+}: {
+  onSuccess?: (swap: CashuSendSwap) => void;
+  onError?: (error: Error) => void;
+}) {
   const cashuSendSwapService = useCashuSendSwapService();
   const getLatestCashuAccount = useGetLatestCashuAccount();
 
@@ -182,6 +188,8 @@ export function useReverseCashuSendSwap() {
       await cashuSendSwapService.reverse(swap, account);
       return swap;
     },
+    onSuccess,
+    onError,
   });
 }
 

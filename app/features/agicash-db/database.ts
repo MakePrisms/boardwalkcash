@@ -167,6 +167,16 @@ export type Database = MergeDeep<
         create_cashu_send_swap: {
           Returns: AgicashDbCashuSendSwap;
         };
+        list_transactions: {
+          Args: {
+            p_user_id: string;
+            p_cursor_state_sort_order?: number | null;
+            p_cursor_created_at?: string | null;
+            p_cursor_id?: string | null;
+            p_page_size?: number;
+          };
+          Returns: AgicashDbTransaction[];
+        };
       };
       CompositeTypes: {
         cashu_receive_quote_payment_result: CashuReceiveQuotePaymentResult;

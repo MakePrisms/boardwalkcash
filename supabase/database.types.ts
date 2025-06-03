@@ -476,6 +476,7 @@ export type Database = {
           reversed_at: string | null
           reversed_transaction_id: string | null
           state: string
+          state_sort_order: number | null
           type: string
           user_id: string
         }
@@ -492,6 +493,7 @@ export type Database = {
           reversed_at?: string | null
           reversed_transaction_id?: string | null
           state: string
+          state_sort_order?: number | null
           type: string
           user_id: string
         }
@@ -508,6 +510,7 @@ export type Database = {
           reversed_at?: string | null
           reversed_transaction_id?: string | null
           state?: string
+          state_sort_order?: number | null
           type?: string
           user_id?: string
         }
@@ -874,6 +877,32 @@ export type Database = {
         Returns: {
           username: string
           id: string
+        }[]
+      }
+      list_transactions: {
+        Args: {
+          p_user_id: string
+          p_cursor_state_sort_order?: number
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_page_size?: number
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          direction: string
+          failed_at: string | null
+          id: string
+          pending_at: string | null
+          reversed_at: string | null
+          reversed_transaction_id: string | null
+          state: string
+          state_sort_order: number | null
+          type: string
+          user_id: string
         }[]
       }
       process_cashu_receive_quote_payment: {
