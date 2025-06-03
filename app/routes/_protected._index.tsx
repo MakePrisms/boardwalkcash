@@ -8,7 +8,7 @@ import {
 import { useState } from 'react';
 import type { LinksFunction } from 'react-router';
 import agicashIcon192 from '~/assets/icon-192x192.png';
-import { Page, PageContent } from '~/components/page';
+import { Page, PageContent, PageHeader } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import {
@@ -66,22 +66,24 @@ export default function Index() {
 
   return (
     <Page>
-      <header className="z-10 flex w-full items-center justify-end gap-4 pr-4">
-        <LinkWithViewTransition
-          to="/transactions"
-          transition="slideLeft"
-          applyTo="newView"
-        >
-          <Clock className="text-muted-foreground" />
-        </LinkWithViewTransition>
-        <LinkWithViewTransition
-          to="/settings"
-          transition="slideLeft"
-          applyTo="newView"
-        >
-          <Cog className="text-muted-foreground" />
-        </LinkWithViewTransition>
-      </header>
+      <PageHeader className="z-10 flex w-full items-center justify-end gap-4 pr-2">
+        <div className="flex items-center gap-4">
+          <LinkWithViewTransition
+            to="/transactions"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Clock className="text-muted-foreground" />
+          </LinkWithViewTransition>
+          <LinkWithViewTransition
+            to="/settings"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Cog className="text-muted-foreground" />
+          </LinkWithViewTransition>
+        </div>
+      </PageHeader>
 
       <PageContent className="absolute inset-0 mx-auto flex flex-col items-center justify-center gap-24">
         <div className="flex flex-col items-center gap-4">

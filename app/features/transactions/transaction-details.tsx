@@ -20,10 +20,12 @@ import type { Transaction } from '~/features/transactions/transaction';
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useAccount } from '../accounts/account-hooks';
-import type { CashuSendSwap } from '../send/cashu-send-swap';
-import { useReverseCashuSendSwap } from '../send/cashu-send-swap-hooks';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import {
+  isTransactionReversable,
+  useReverseTransaction,
+} from './transaction-hooks';
 
 /**
  * Formats a timestamp into a human-readable relative time string with specific time of day.
@@ -63,16 +65,14 @@ function formatRelativeTimestampWithTime(timestamp: string): string {
 
 export function TransactionDetails({
   transaction,
-  pendingCashuSendSwap,
 }: {
   transaction: Transaction;
-  pendingCashuSendSwap?: CashuSendSwap;
 }) {
   const account = useAccount(transaction.accountId);
   const { toast } = useToast();
 
   const { mutate: reverseTransaction, isPending: isReversing } =
-    useReverseCashuSendSwap({
+    useReverseTransaction({
       onSuccess: () => {
         toast({
           title: 'Reclaimed!',
@@ -157,10 +157,10 @@ export function TransactionDetails({
       </Card>
 
       <div className="h-[40px]">
-        {pendingCashuSendSwap && (
+        {isTransactionReversable(transaction) && (
           <Button
             className="w-[100px]"
-            onClick={() => reverseTransaction({ swap: pendingCashuSendSwap })}
+            onClick={() => reverseTransaction({ transaction })}
             loading={isReversing}
           >
             Reclaim
