@@ -1,6 +1,7 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   useInfiniteQuery,
+  useMutation,
   useQuery,
   useQueryClient,
   useSuspenseQuery,
@@ -11,6 +12,9 @@ import {
   agicashDb,
 } from '~/features/agicash-db/database';
 import { useLatest } from '~/lib/use-latest';
+import { useGetLatestCashuAccount } from '../accounts/account-hooks';
+import { useCashuSendSwapRepository } from '../send/cashu-send-swap-repository';
+import { useCashuSendSwapService } from '../send/cashu-send-swap-service';
 import { useUserRef } from '../user/user-hooks';
 import type { Transaction } from './transaction';
 import {
@@ -75,6 +79,62 @@ export function useTransactions() {
   });
 
   return result;
+}
+
+export function isTransactionReversable(transaction: Transaction) {
+  return (
+    transaction.state === 'PENDING' &&
+    transaction.direction === 'SEND' &&
+    transaction.type === 'CASHU_TOKEN'
+  );
+}
+
+/**
+ * Hook to reverse a transaction before it has been completed.
+ * Transactions that can be reversed are:
+ * - CASHU_TOKEN sends that are in the PENDING state
+ * @returns a mutation to reverse a transaction
+ * @throws an error if the transaction cannot be reversed based on the type and state of the transaction
+ */
+export function useReverseTransaction({
+  onSuccess,
+  onError,
+}: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) {
+  const cashuSendSwapService = useCashuSendSwapService();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
+  const cashuSendSwapRepository = useCashuSendSwapRepository();
+  const onSuccessRef = useLatest(onSuccess);
+  const onErrorRef = useLatest(onError);
+
+  return useMutation({
+    mutationFn: async ({ transaction }: { transaction: Transaction }) => {
+      if (!isTransactionReversable(transaction)) {
+        throw new Error('Transaction cannot be reversed');
+      }
+
+      if (transaction.type === 'CASHU_TOKEN') {
+        const swap = await cashuSendSwapRepository.getByTransactionId(
+          transaction.id,
+        );
+        if (!swap) {
+          throw new Error(`Swap not found for transaction ${transaction.id}`);
+        }
+        const account = await getLatestCashuAccount(swap.accountId);
+        await cashuSendSwapService.reverse(swap, account);
+      } else {
+        throw new Error('Only CASHU_TOKEN transactions can be reversed');
+      }
+    },
+    onSuccess: () => {
+      onSuccessRef.current?.();
+    },
+    onError: (error) => {
+      onErrorRef.current?.(error);
+    },
+  });
 }
 
 export function useOnTransactionChange({

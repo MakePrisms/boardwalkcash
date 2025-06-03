@@ -39,6 +39,10 @@ type CreateTokenSwap = {
    */
   keysetCounter: number;
   /**
+   * The sum of the proofs being claimed.
+   */
+  inputAmount: number;
+  /**
    * Output amounts.
    */
   outputAmounts: number[];
@@ -77,6 +81,7 @@ export class CashuTokenSwapRepository {
       userId,
       accountId,
       keysetId,
+      inputAmount,
       fee,
       keysetCounter,
       outputAmounts,
@@ -100,8 +105,8 @@ export class CashuTokenSwapRepository {
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
       p_output_amounts: outputAmounts,
-      p_input_amount: sum(outputAmounts),
-      p_receive_amount: sum(outputAmounts) - fee,
+      p_input_amount: inputAmount,
+      p_receive_amount: sum(outputAmounts),
       p_fee_amount: fee,
       p_account_version: accountVersion,
       p_reversed_transaction_id: reversedTransactionId,
