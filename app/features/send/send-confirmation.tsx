@@ -164,7 +164,7 @@ export const PayBolt11Confirmation = ({
 
   if (quote?.state === 'FAILED') {
     // TODO: implement proper ui
-    return <div>Send Failed</div>;
+    return <div>Send Failed: {quote.failureReason}</div>;
   }
 
   const handleConfirm = () =>
