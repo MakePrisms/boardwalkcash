@@ -94,26 +94,18 @@ const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
   CASHU_PAYMENT_REQUEST: <BanknoteIcon className="h-4 w-4" />,
   CASHU_TOKEN: <BanknoteIcon className="h-4 w-4" />,
 };
-
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
     <tr className="flex w-full items-center justify-start gap-4">
-      <td>
+      <td colSpan={2} className="w-full">
         <LinkWithViewTransition
           to={`/transactions/${transaction.id}`}
           transition="slideUp"
           applyTo="newView"
+          className="flex w-full items-center justify-start gap-4"
         >
           {transactionTypeIcons[transaction.type]}
-        </LinkWithViewTransition>
-      </td>
-      <td className="w-full flex-grow">
-        <LinkWithViewTransition
-          to={`/transactions/${transaction.id}`}
-          transition="slideUp"
-          applyTo="newView"
-        >
-          <div className="flex w-full flex-col gap-0">
+          <div className="flex w-full flex-grow flex-col gap-0">
             <div className="flex items-center justify-between">
               <p className="text-sm">
                 {transaction.direction === 'RECEIVE' && '+'}
