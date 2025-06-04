@@ -148,12 +148,23 @@ export function useViewTransitionEffect() {
   useEffect(() => {
     if (navigation.state === 'loading') {
       const state = getViewTransitionState(navigation.location.state);
-      console.debug('Navigation state: ', state);
       if (state) {
         applyTransitionStyles(state.transition, state.applyTo);
       } else {
         removeTransitionStyles();
       }
+    } else if (navigation.state === 'idle') {
+      // Clear transition CSS variables after navigation completes to prevent
+      // stale values from causing incorrect animation directions on subsequent navigations.
+      // If we don't do this, then subsequent animations may reuse the old values.
+
+      // Wait for current animation to finish before cleanup, otherwise the animation gets interrupted.
+      const animationDurationMs = 150; // This value is repeated in transitions.css. When changing make sure to keep them in sync!
+      new Promise((resolve) => setTimeout(resolve, animationDurationMs)).then(
+        () => {
+          removeTransitionStyles();
+        },
+      );
     }
   }, [navigation]);
 }
