@@ -172,19 +172,6 @@ function useSwapForProofsToSend() {
   });
 }
 
-export function useReverseCashuSendSwap() {
-  const cashuSendSwapService = useCashuSendSwapService();
-  const getLatestCashuAccount = useGetLatestCashuAccount();
-
-  return useMutation({
-    mutationFn: async ({ swap }: { swap: CashuSendSwap }) => {
-      const account = await getLatestCashuAccount(swap.accountId);
-      await cashuSendSwapService.reverse(swap, account);
-      return swap;
-    },
-  });
-}
-
 function useOnCashuSendSwapChange({
   onCreated,
   onUpdated,

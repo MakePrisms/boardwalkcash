@@ -8,6 +8,7 @@ import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hook
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
 import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
 import { useTheme } from '../theme';
+import { useTrackTransactions } from '../transactions/transaction-hooks';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
@@ -66,6 +67,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
   useSyncThemeWithDefaultCurrency();
 
   useTrackAccounts();
+  useTrackTransactions();
   useTrackPendingCashuReceiveQuotes();
   useTrackPendingCashuTokenSwaps();
   useTrackUnresolvedCashuSendQuotes();
