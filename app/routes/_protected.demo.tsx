@@ -1,3 +1,4 @@
+import { useOpenSecret } from '@opensecret/react';
 import { MoneyDisplay } from '~/components/money-display';
 import {
   ClosePageButton,
@@ -17,6 +18,7 @@ import { getDefaultUnit } from '~/features/shared/currencies';
 export default function Demo() {
   const { pending } = useUnresolvedCashuSendSwaps();
   const { mutate: reverseCashuSendSwap } = useReverseCashuSendSwap();
+  const { generateThirdPartyToken } = useOpenSecret();
 
   const handleReverseCashuSendSwap = (swap: CashuSendSwap) => {
     reverseCashuSendSwap(
@@ -39,6 +41,14 @@ export default function Demo() {
         <PageHeaderTitle>Pending Sends</PageHeaderTitle>
       </PageHeader>
       <PageContent>
+        <Button
+          onClick={async () => {
+            const response = await generateThirdPartyToken();
+            console.log(response);
+          }}
+        >
+          Get third party token
+        </Button>
         {pending.length > 0 ? (
           <div className="mt-4 space-y-4">
             <ul className="space-y-3">

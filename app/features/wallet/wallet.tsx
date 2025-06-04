@@ -1,3 +1,4 @@
+import { useOpenSecret } from '@opensecret/react';
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
@@ -11,10 +12,14 @@ import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 
-const useSetSupabseSession = (authUser: AuthUser) => {
+const useInitializeSupabaseSessionStore = () => {
+  const { generateThirdPartyToken } = useOpenSecret();
+
   useEffect(() => {
-    supabaseSessionStore.getState().setJwtPayload({ sub: authUser.id });
-  }, [authUser]);
+    supabaseSessionStore
+      .getState()
+      .setJwtGetter(() => generateThirdPartyToken().then((res) => res.token));
+  }, [generateThirdPartyToken]);
 };
 
 /**
@@ -80,7 +85,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
  * @returns True if the setup is done, false otherwise.
  */
 const useSetupWallet = (authUser: AuthUser) => {
-  useSetSupabseSession(authUser);
+  useInitializeSupabaseSessionStore();
 
   const user = useUpsertAgicashUser(authUser);
   const setupCompleted = user !== null;
