@@ -339,26 +339,51 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   return { ...account, isDefault: isDefaultAccount(user, account) } as T;
 }
 
+type AccountTypeMap = {
+  cashu: CashuAccount;
+};
+
 /**
- * Hook to get the latest version of a cashu account. If we know that the account was updated but we don't have the full account data yet,
- * we can use this hook to wait for the account data to be updated in the cache.
+ * Hook to get the method which return the latest version of the account.
+ * If we know that the account was updated but we don't have the full account data yet, we can use this hook to wait for the account data to be updated in the cache.
+ * Prefer using this hook whenever using the account's version property to minimize the errors that result in retries which are caused by using the old version of the account.
+ * @param type - The type of the account to get the latest version of. If provided the type of the returned account will be narrowed.
+ * @returns The latest version of the account.
+ * @throws Error if the account is not found.
+ */
+export function useGetLatestAccount<T extends keyof AccountTypeMap>(
+  type: T,
+): (id: string) => Promise<AccountTypeMap[T]>;
+export function useGetLatestAccount(
+  type?: undefined,
+): (id: string) => Promise<Account>;
+export function useGetLatestAccount(type?: keyof AccountTypeMap) {
+  const accountsCache = useAccountsCache();
+
+  return useCallback(
+    async (id: string) => {
+      const account = await accountsCache.getLatest(id);
+      if (!account) {
+        throw new Error(`Account not found for id: ${id}`);
+      }
+      if (type && account.type !== type) {
+        throw new Error(`Account with id: ${id} is not of type: ${type}`);
+      }
+      return account;
+    },
+    [accountsCache, type],
+  );
+}
+
+/**
+ * Hook to get the method which return the latest version of the cashu account.
+ * If we know that the account was updated but we don't have the full account data yet, we can use this hook to wait for the account data to be updated in the cache.
  * Prefer using this hook whenever using the account's version property to minimize the errors that result in retries which are caused by using the old version of the account.
  * @returns The latest version of the cashu account.
  * @throws Error if the account is not found.
  */
 export function useGetLatestCashuAccount() {
-  const accountsCache = useAccountsCache();
-
-  return useCallback(
-    async (id: string): Promise<CashuAccount> => {
-      const account = await accountsCache.getLatest(id);
-      if (!account || account.type !== 'cashu') {
-        throw new Error(`Cashu account not found for id: ${id}`);
-      }
-      return account;
-    },
-    [accountsCache],
-  );
+  return useGetLatestAccount('cashu');
 }
 
 export function useDefaultAccount() {

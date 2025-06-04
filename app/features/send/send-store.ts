@@ -11,6 +11,7 @@ import { type Currency, Money } from '~/lib/money';
 import type { BtcUnit, UsdUnit } from '~/lib/money/types';
 import type { AccountsCache } from '../accounts/account-hooks';
 import { type Contact, isContact } from '../contacts/contact';
+import { DomainError } from '../shared/error';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
 
@@ -204,6 +205,7 @@ export type SendState = State & Actions;
 type CreateSendStoreProps = {
   initialAccount: Account;
   accountsCache: AccountsCache;
+  getLatestAccount: (accountId: string) => Promise<Account>;
   getInvoiceFromLud16: (params: {
     lud16: string;
     amount: Money<'BTC'>;
@@ -223,6 +225,7 @@ type CreateSendStoreProps = {
 export const createSendStore = ({
   initialAccount,
   accountsCache,
+  getLatestAccount,
   getInvoiceFromLud16,
   createCashuSendQuote,
   getCashuSendSwapQuote,
@@ -353,8 +356,8 @@ export const createSendStore = ({
 
       getQuote: async (amount, convertedAmount) => {
         const amounts = [amount, convertedAmount].filter((x) => !!x);
-        const { sendType, getSourceAccount } = get();
-        const account = getSourceAccount();
+        const { sendType, accountId } = get();
+        const account = await getLatestAccount(accountId);
         const amountToSend = pickAmountByCurrency(amounts, account.currency);
 
         set({ status: 'quoting', amount: amountToSend });
@@ -412,7 +415,9 @@ export const createSendStore = ({
             });
             set({ quote });
           } catch (error) {
-            console.error(error);
+            if (!(error instanceof DomainError)) {
+              console.error(error);
+            }
             set({ status: 'idle' });
             return { success: false, error };
           }

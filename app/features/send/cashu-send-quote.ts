@@ -36,17 +36,22 @@ export type CashuSendQuote = {
    */
   amountRequestedInMsat: number;
   /**
-   * Amount that the mint will send to the receiver.
+   * Amount that the receiver will receive.
    * This is the amount requested in the currency of the account we are sending from.
    * If the currency of the account we are sending from is not BTC, the mint will do the conversion using their exchange rate at the time of quote creation.
    */
-  amountToSend: Money;
+  amountToReceive: Money;
   /**
    * Fee reserve for the lightning network fee.
    * Currency will be the same as the currency of the account we are sending from.
    * If payment ends up being cheaper than the fee reserve, the difference will be returned as change.
    */
-  feeReserve: Money;
+  lightningFeeReserve: Money;
+  /**
+   * Cashu mint fee for the proofs used.
+   * Currency will be the same as the currency of the account we are sending from.
+   */
+  cashuFee: Money;
   /**
    * ID of the melt quote.
    */

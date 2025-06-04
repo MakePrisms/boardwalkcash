@@ -24,7 +24,7 @@ type Props = {
   amount: Money;
   account: Account;
   destination: string;
-  feesPaid?: Money;
+  feesPaid: Money;
 };
 
 export function SuccessfulSendPage({
@@ -48,14 +48,12 @@ export function SuccessfulSendPage({
           <div className="flex w-full flex-col gap-8">
             <TransactionDetail label="Account" value={account.name} />
             <TransactionDetail label="Destination" value={destination} />
-            {feesPaid && (
-              <TransactionDetail
-                label="Fees paid"
-                value={feesPaid.toLocaleString({
-                  unit: getDefaultUnit(feesPaid.currency),
-                })}
-              />
-            )}
+            <TransactionDetail
+              label="Fees paid"
+              value={feesPaid.toLocaleString({
+                unit: getDefaultUnit(feesPaid.currency),
+              })}
+            />
           </div>
         </div>
       </PageContent>

@@ -7,6 +7,7 @@ import {
 import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
+import { sumProofs } from './proof';
 import type { CashuProtocolUnit, MintInfo } from './types';
 
 const knownTestMints = [
@@ -72,6 +73,40 @@ export const getWalletCurrency = (wallet: CashuWallet) => {
   return cashuProtocolUnitToCurrency[unit];
 };
 
+// TODO: see if we can use this extended wallet class to completely abstract away the mismtach between cashu protocol unit and the units we use (cashu protocol unit is 'usd' for cents, but we use 'cent' for cents)
+// If we do that maybe we can even get rid of this getCashuWallet function
+/**
+ * ExtendedCashuWallet extends CashuWallet to allow custom postprocessing of proof selection.
+ * We will remove this if cashu-ts ever updates selectProofsToSend not to return send proofs that are less than the amount.
+ */
+export class ExtendedCashuWallet extends CashuWallet {
+  /**
+   * Override selectProofsToSend to allow postprocessing of the result.
+   * @param proofs - The available proofs to select from
+   * @param amount - The amount to send
+   * @param includeFees - Whether to include fees in the selection
+   * @returns The selected proofs (with possible postprocessing)
+   */
+  selectProofsToSend(
+    proofs: Parameters<CashuWallet['selectProofsToSend']>[0],
+    amount: Parameters<CashuWallet['selectProofsToSend']>[1],
+    includeFees: Parameters<CashuWallet['selectProofsToSend']>[2],
+  ) {
+    const result = super.selectProofsToSend(proofs, amount, includeFees);
+
+    const sendProofsAmount = sumProofs(result.send);
+
+    if (sendProofsAmount < amount) {
+      return {
+        send: [],
+        keep: proofs,
+      };
+    }
+
+    return result;
+  }
+}
+
 export const getCashuWallet = (
   mintUrl: string,
   options: DistributedOmit<
@@ -85,7 +120,7 @@ export const getCashuWallet = (
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
   const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new CashuWallet(new CashuMint(mintUrl), {
+  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
     ...rest,
     unit: cashuUnit,
   });

@@ -26,6 +26,7 @@ import {
   agicashDb,
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
+import { DomainError } from '../shared/error';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
@@ -158,7 +159,12 @@ export function useInitiateCashuSendQuote({
       cashuSendQuoteCache.add(data);
     },
     onError: onError,
-    retry: 1,
+    retry: (failureCount, error) => {
+      if (error instanceof DomainError) {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 }
 
@@ -248,7 +254,6 @@ function useOnCashuSendQuoteChange({
         async (
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
         ) => {
-          console.debug('Cashu send quote changed', payload);
           if (payload.eventType === 'INSERT') {
             const addedQuote = await CashuSendQuoteRepository.toSend(
               payload.new,
@@ -314,7 +319,7 @@ const checkMeltQuote = async (
   account: CashuAccount,
   quote: CashuSendQuote,
 ): Promise<MeltQuoteResponse> => {
-  const cashuUnit = getCashuUnit(quote.amountToSend.currency);
+  const cashuUnit = getCashuUnit(quote.amountToReceive.currency);
   const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
 
   const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);

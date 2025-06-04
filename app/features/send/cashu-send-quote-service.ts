@@ -9,6 +9,8 @@ import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import { getDefaultUnit } from '../shared/currencies';
+import { DomainError } from '../shared/error';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
   type CashuSendQuoteRepository,
@@ -54,17 +56,27 @@ export type CashuLightningQuote = {
    */
   meltQuote: MeltQuoteResponse;
   /**
-   * The maximum fee that will be charged for the send.
+   * The amount that the receiver will receive.
    */
-  feeReserve: Money;
+  amountToReceive: Money;
   /**
-   * The amount to send.
+   * The maximum lightning network fee that will be charged for the send.
+   * If the amount reserved is bigger than the actual fee, the difference will be returned to the senderas change.
    */
-  amountToSend: Money;
+  lightningFeeReserve: Money;
   /**
-   * The total amount to send (amount to send + fee reserve).
+   * Estimated cashu mint fee that will be charged for the proofs melted.
+   * Actual fee might be different if the proofs selected at the time when the send is confirmed are different from the ones used to create the quote.
    */
-  totalAmountToSend: Money;
+  estimatedCashuFee: Money;
+  /**
+   * Estimated total fee (lightning fee reserve + estimated cashu fee).
+   */
+  estimatedTotalFee: Money;
+  /**
+   * Estimated total amount of the send (amount to receive + lightning fee reserve + estimated cashu fee).
+   */
+  estimatedTotalAmount: Money;
 };
 
 export type SendQuoteRequest = {
@@ -88,12 +100,12 @@ export class CashuSendQuoteService {
   }: GetCashuLightningQuoteOptions): Promise<CashuLightningQuote> {
     const bolt11ValidationResult = parseBolt11Invoice(paymentRequest);
     if (!bolt11ValidationResult.valid) {
-      throw new Error('Invalid lightning invoice');
+      throw new DomainError('Invalid lightning invoice');
     }
     const invoice = bolt11ValidationResult.decoded;
 
     if (invoice.expiryUnixMs && new Date(invoice.expiryUnixMs) < new Date()) {
-      throw new Error('Lightning invoice has expired');
+      throw new DomainError('Lightning invoice has expired');
     }
 
     let amountRequestedInBtc = new Money({
@@ -130,27 +142,57 @@ export class CashuSendQuoteService {
     const wallet = getCashuWallet(account.mintUrl, {
       unit: cashuUnit,
     });
+    await wallet.getKeys();
 
     const meltQuote = await wallet.createMeltQuote(paymentRequest);
-    const feeReserve = new Money({
-      amount: meltQuote.fee_reserve,
-      currency: account.currency,
-      unit: cashuUnit,
-    });
-    const amountToSend = new Money({
+
+    const amountWithLightningFee = meltQuote.amount + meltQuote.fee_reserve;
+
+    const proofs = wallet.selectProofsToSend(
+      account.proofs,
+      amountWithLightningFee,
+      true,
+    );
+
+    const amountToReceive = new Money({
       amount: meltQuote.amount,
       currency: account.currency,
       unit: cashuUnit,
     });
+    const lightningFeeReserve = new Money({
+      amount: meltQuote.fee_reserve,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+
+    const unit = getDefaultUnit(account.currency);
+
+    const sumOfSendProofs = sumProofs(proofs.send);
+    if (sumOfSendProofs < amountWithLightningFee) {
+      throw new DomainError(
+        `Insufficient balance. Estimated fee to send ${amountToReceive.toLocaleString({ unit })} is ${lightningFeeReserve.toLocaleString({ unit })}.`,
+      );
+    }
+
+    const proofsFee = wallet.getFeesForProofs(proofs.send);
+    const estimatedCashuFee = new Money({
+      amount: proofsFee,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const estimatedTotalFee = lightningFeeReserve.add(estimatedCashuFee);
+    const estimatedTotalAmount = amountToReceive.add(estimatedTotalFee);
 
     return {
       paymentRequest,
       amountRequested: amount ?? (amountRequestedInBtc as Money<Currency>),
       amountRequestedInBtc,
       meltQuote,
-      feeReserve,
-      amountToSend,
-      totalAmountToSend: amountToSend.add(feeReserve),
+      amountToReceive,
+      lightningFeeReserve,
+      estimatedCashuFee,
+      estimatedTotalFee,
+      estimatedTotalAmount,
     };
   }
 
@@ -175,6 +217,14 @@ export class CashuSendQuoteService {
      */
     sendQuote: SendQuoteRequest;
   }) {
+    const meltQuote = sendQuote.meltQuote;
+    const expiresAt = new Date(meltQuote.expiry * 1000);
+    const now = new Date();
+
+    if (now > expiresAt) {
+      throw new DomainError('Quote has expired');
+    }
+
     const cashuUnit = getCashuUnit(account.currency);
     const wallet = getCashuWallet(account.mintUrl, {
       unit: cashuUnit,
@@ -182,17 +232,45 @@ export class CashuSendQuoteService {
     const keys = await wallet.getKeys();
     const keysetId = keys.id;
 
-    const meltQuote = sendQuote.meltQuote;
-    const totalAmountToSend = meltQuote.amount + meltQuote.fee_reserve;
-    const expiresAt = new Date(meltQuote.expiry * 1000).toISOString();
+    const amountWithLightningFee = meltQuote.amount + meltQuote.fee_reserve;
 
     const proofs = wallet.selectProofsToSend(
       account.proofs,
-      totalAmountToSend,
-      false,
+      amountWithLightningFee,
+      true,
     );
+    const proofsToSendSum = sumProofs(proofs.send);
 
-    const maxPotentialChangeAmount = sumProofs(proofs.send) - meltQuote.amount;
+    const proofsFee = wallet.getFeesForProofs(proofs.send);
+    const totalAmountToSend = amountWithLightningFee + proofsFee;
+
+    const amountToReceive = new Money({
+      amount: meltQuote.amount,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const lightningFeeReserve = new Money({
+      amount: meltQuote.fee_reserve,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const cashuFee = new Money({
+      amount: proofsFee,
+      currency: account.currency,
+      unit: cashuUnit,
+    });
+    const estimatedTotalFee = lightningFeeReserve.add(cashuFee);
+    const unit = getDefaultUnit(account.currency);
+
+    if (proofsToSendSum < totalAmountToSend) {
+      throw new DomainError(
+        `Insufficient balance. Estimated fee to send ${amountToReceive.toLocaleString({ unit })} is ${estimatedTotalFee.toLocaleString({ unit })}.`,
+      );
+    }
+
+    // TODO: Confirm with Damien that we can subtract proofs fee here as well. I think we can becaue proofs fee should never have change
+    const maxPotentialChangeAmount =
+      proofsToSendSum - meltQuote.amount - proofsFee;
     const numberOfChangeOutputs =
       maxPotentialChangeAmount === 0
         ? 0
@@ -203,19 +281,12 @@ export class CashuSendQuoteService {
       userId: userId,
       accountId: account.id,
       paymentRequest: sendQuote.paymentRequest,
-      expiresAt,
+      expiresAt: expiresAt.toISOString(),
       amountRequested: sendQuote.amountRequested,
       amountRequestedInMsat: sendQuote.amountRequestedInBtc.toNumber('msat'),
-      amountToSend: new Money({
-        amount: meltQuote.amount,
-        currency: account.currency,
-        unit: cashuUnit,
-      }),
-      feeReserve: new Money({
-        amount: meltQuote.fee_reserve,
-        currency: account.currency,
-        unit: cashuUnit,
-      }),
+      amountToReceive,
+      lightningFeeReserve,
+      cashuFee,
       quoteId: meltQuote.quote,
       keysetId,
       keysetCounter,
