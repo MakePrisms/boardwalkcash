@@ -321,7 +321,7 @@ export function useReceiveCashuToken({
     data: cashuReceiveQuote,
   } = useMeltTokenToCashuAccount();
 
-  const transaction = useTransaction({
+  const { data: transaction } = useTransaction({
     transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
   });
 

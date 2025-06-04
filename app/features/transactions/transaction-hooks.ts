@@ -1,48 +1,142 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { useEffect } from 'react';
 import {
   type AgicashDbTransaction,
   agicashDb,
 } from '~/features/agicash-db/database';
 import { useLatest } from '~/lib/use-latest';
+import { useGetLatestCashuAccount } from '../accounts/account-hooks';
+import { useCashuSendSwapRepository } from '../send/cashu-send-swap-repository';
+import { useCashuSendSwapService } from '../send/cashu-send-swap-service';
+import { useUserRef } from '../user/user-hooks';
 import type { Transaction } from './transaction';
 import {
+  type Cursor,
   TransactionRepository,
   useTransactionRepository,
 } from './transaction-repository';
 
-/**
- * Hook to get a transaction by id and listen for updates.
- * @returns the transaction or undefined if no transaction id is provided or the transaction is being fetched
- */
+const transactionQueryKey = 'transaction';
+const allTransactionsQueryKey = 'all-transactions';
+
 export function useTransaction({
   transactionId,
 }: {
   transactionId?: string;
 }) {
   const enabled = !!transactionId;
-  const queryClient = useQueryClient();
   const transactionRepository = useTransactionRepository();
 
-  const { data: transaction } = useQuery({
-    queryKey: ['transaction', transactionId],
+  useTrackTransaction(transactionId);
+
+  return useQuery({
+    queryKey: [transactionQueryKey, transactionId],
     queryFn: () => transactionRepository.get(transactionId ?? ''),
     enabled,
     staleTime: Number.POSITIVE_INFINITY,
   });
+}
 
-  useOnTransactionChange({
-    transactionId,
-    onUpdated: (transaction) => {
-      queryClient.setQueryData<Transaction>(
-        ['transaction', transactionId],
-        transaction,
-      );
+export function useSuspenseTransaction(id: string) {
+  const transactionRepository = useTransactionRepository();
+
+  useTrackTransaction(id);
+
+  return useSuspenseQuery({
+    queryKey: [transactionQueryKey, id],
+    queryFn: () => transactionRepository.get(id),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+const PAGE_SIZE = 25;
+
+export function useTransactions() {
+  const userRef = useUserRef();
+  const transactionRepository = useTransactionRepository();
+
+  const result = useInfiniteQuery({
+    queryKey: [allTransactionsQueryKey, userRef.current.id],
+    initialPageParam: null,
+    queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+      const result = await transactionRepository.list({
+        userId: userRef.current.id,
+        cursor: pageParam,
+        pageSize: PAGE_SIZE,
+      });
+      return {
+        transactions: result.transactions,
+        nextCursor:
+          result.transactions.length === PAGE_SIZE ? result.nextCursor : null,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  return transaction;
+  return result;
+}
+
+export function isTransactionReversable(transaction: Transaction) {
+  return (
+    transaction.state === 'PENDING' &&
+    transaction.direction === 'SEND' &&
+    transaction.type === 'CASHU_TOKEN'
+  );
+}
+
+/**
+ * Hook to reverse a transaction before it has been completed.
+ * Transactions that can be reversed are:
+ * - CASHU_TOKEN sends that are in the PENDING state
+ * @returns a mutation to reverse a transaction
+ * @throws an error if the transaction cannot be reversed based on the type and state of the transaction
+ */
+export function useReverseTransaction({
+  onSuccess,
+  onError,
+}: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) {
+  const cashuSendSwapService = useCashuSendSwapService();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
+  const cashuSendSwapRepository = useCashuSendSwapRepository();
+  const onSuccessRef = useLatest(onSuccess);
+  const onErrorRef = useLatest(onError);
+
+  return useMutation({
+    mutationFn: async ({ transaction }: { transaction: Transaction }) => {
+      if (!isTransactionReversable(transaction)) {
+        throw new Error('Transaction cannot be reversed');
+      }
+
+      if (transaction.type === 'CASHU_TOKEN') {
+        const swap = await cashuSendSwapRepository.getByTransactionId(
+          transaction.id,
+        );
+        if (!swap) {
+          throw new Error(`Swap not found for transaction ${transaction.id}`);
+        }
+        const account = await getLatestCashuAccount(swap.accountId);
+        await cashuSendSwapService.reverse(swap, account);
+      } else {
+        throw new Error('Only CASHU_TOKEN transactions can be reversed');
+      }
+    },
+    onSuccess: () => {
+      onSuccessRef.current?.();
+    },
+    onError: (error) => {
+      onErrorRef.current?.(error);
+    },
+  });
 }
 
 function useOnTransactionChange({
@@ -58,7 +152,7 @@ function useOnTransactionChange({
     if (!transactionId) return;
 
     const channel = agicashDb
-      .channel('transactions')
+      .channel(`transaction-${transactionId}`)
       .on(
         'postgres_changes',
         {
@@ -82,4 +176,19 @@ function useOnTransactionChange({
       channel.unsubscribe();
     };
   }, [transactionId]);
+}
+
+/** Listens for changes to a transaction in the Agicash DB and updates the query client with the latest transaction. */
+function useTrackTransaction(id?: string) {
+  const queryClient = useQueryClient();
+
+  useOnTransactionChange({
+    transactionId: id,
+    onUpdated: (updatedTransaction) => {
+      queryClient.setQueryData<Transaction>(
+        [transactionQueryKey, updatedTransaction.id],
+        updatedTransaction,
+      );
+    },
+  });
 }

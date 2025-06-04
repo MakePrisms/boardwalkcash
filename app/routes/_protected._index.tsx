@@ -1,4 +1,10 @@
-import { ArrowDownRight, ArrowUpRight, ChartSpline, Cog } from 'lucide-react';
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChartSpline,
+  Clock,
+  Cog,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { LinksFunction } from 'react-router';
 import agicashIcon192 from '~/assets/icon-192x192.png';
@@ -60,14 +66,23 @@ export default function Index() {
 
   return (
     <Page>
-      <PageHeader className="z-10">
-        <LinkWithViewTransition
-          to="/settings"
-          transition="slideLeft"
-          applyTo="newView"
-        >
-          <Cog className="text-muted-foreground" />
-        </LinkWithViewTransition>
+      <PageHeader className="z-10 flex w-full items-center justify-end gap-4 pr-2">
+        <div className="flex items-center gap-4">
+          <LinkWithViewTransition
+            to="/transactions"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Clock className="text-muted-foreground" />
+          </LinkWithViewTransition>
+          <LinkWithViewTransition
+            to="/settings"
+            transition="slideLeft"
+            applyTo="newView"
+          >
+            <Cog className="text-muted-foreground" />
+          </LinkWithViewTransition>
+        </div>
       </PageHeader>
 
       <PageContent className="absolute inset-0 mx-auto flex flex-col items-center justify-center gap-24">
@@ -75,7 +90,6 @@ export default function Index() {
           <MoneyWithConvertedAmount
             money={defaultCurrency === 'BTC' ? balanceBTC : balanceUSD}
           />
-          <div className="my-1 h-0.5 w-16 rounded-full bg-muted" />
           {defaultCurrency === 'BTC' && <Price />}
         </div>
 

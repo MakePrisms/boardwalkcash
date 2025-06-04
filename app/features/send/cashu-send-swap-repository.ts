@@ -315,6 +315,29 @@ export class CashuSendSwapRepository {
       : null;
   }
 
+  async getByTransactionId(transactionId: string, options?: Options) {
+    const query = this.db
+      .from('cashu_send_swaps')
+      .select()
+      .eq('transaction_id', transactionId);
+
+    if (options?.abortSignal) {
+      query.abortSignal(options.abortSignal);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      throw new Error('Failed to get cashu send swap by transaction id', {
+        cause: error,
+      });
+    }
+
+    return data
+      ? CashuSendSwapRepository.toSwap(data, this.encryption.decrypt)
+      : null;
+  }
+
   static async toSwap(
     data: AgicashDbCashuSendSwap,
     decrypt: Encryption['decrypt'],
