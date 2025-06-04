@@ -37,6 +37,8 @@ import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
 import { NotFoundError } from './features/shared/error';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
+import { useNavigationHistory } from '~/hooks/use-navigation-history';
+import { useCustomBackButton } from '~/hooks/use-custom-back-button';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -139,6 +141,8 @@ export default function App() {
   const [queryClient] = useState(() => new QueryClient());
   const dehydratedState = useDehydratedState();
   useViewTransitionEffect();
+  useNavigationHistory();
+  useCustomBackButton(); // Add this line
 
   return (
     <QueryClientProvider client={queryClient}>
