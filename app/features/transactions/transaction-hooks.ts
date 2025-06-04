@@ -34,18 +34,20 @@ export function useTransaction({
   const enabled = !!transactionId;
   const transactionRepository = useTransactionRepository();
 
-  const { data: transaction } = useQuery({
+  useTrackTransaction(transactionId);
+
+  return useQuery({
     queryKey: [transactionQueryKey, transactionId],
     queryFn: () => transactionRepository.get(transactionId ?? ''),
     enabled,
     staleTime: Number.POSITIVE_INFINITY,
   });
-
-  return transaction;
 }
 
 export function useSuspenseTransaction(id: string) {
   const transactionRepository = useTransactionRepository();
+
+  useTrackTransaction(id);
 
   return useSuspenseQuery({
     queryKey: [transactionQueryKey, id],
@@ -137,22 +139,27 @@ export function useReverseTransaction({
   });
 }
 
-export function useOnTransactionChange({
+function useOnTransactionChange({
+  transactionId,
   onUpdated,
 }: {
+  transactionId?: string;
   onUpdated: (transaction: Transaction) => void;
 }) {
   const onUpdatedRef = useLatest(onUpdated);
 
   useEffect(() => {
+    if (!transactionId) return;
+
     const channel = agicashDb
-      .channel('transactions')
+      .channel(`transaction-${transactionId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'wallet',
           table: 'transactions',
+          filter: `id=eq.${transactionId}`,
         },
         (payload: RealtimePostgresChangesPayload<AgicashDbTransaction>) => {
           if (payload.eventType === 'UPDATE') {
@@ -168,19 +175,19 @@ export function useOnTransactionChange({
     return () => {
       channel.unsubscribe();
     };
-  }, []);
+  }, [transactionId]);
 }
 
-export function useTrackTransactions() {
+/** Listens for changes to a transaction in the Agicash DB and updates the query client with the latest transaction. */
+function useTrackTransaction(id?: string) {
   const queryClient = useQueryClient();
 
   useOnTransactionChange({
+    transactionId: id,
     onUpdated: (updatedTransaction) => {
-      // update the transaction in the query cache if it exists
-      // the tx will exist if a hook that queries for transactionQueryKey is active
       queryClient.setQueryData<Transaction>(
         [transactionQueryKey, updatedTransaction.id],
-        (curr) => (curr ? updatedTransaction : undefined),
+        updatedTransaction,
       );
     },
   });
