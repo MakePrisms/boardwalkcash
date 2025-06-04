@@ -1,69 +1,47 @@
-import ky from 'ky';
+import { jwtDecode } from 'jwt-decode';
 import { create } from 'zustand';
 
 type SupabaseSession = {
-  payload: { sub: string; iat?: number; exp?: number } | null;
   jwt: string | null;
-  setJwtPayload: (payload: { sub: string }) => void;
+  getJwt: (() => Promise<string>) | null;
+  setJwtGetter: (getJwt: () => Promise<string>) => void;
   getJwtWithRefresh: () => Promise<string | null>;
   clear: () => void;
 };
 
-const signJwt = async (payload: {
-  sub: string;
-  iat: number;
-  exp: number;
-  role: string;
-}): Promise<string> => {
-  // TODO: use the token from OS here and validate it in the endpoint to make sure only logged in users can call that endpoint.
-  // Otherwise anyone could create this jwt and access supabse db.
-  const response = await ky
-    .post<{ jwt: string }>('/api/sign', {
-      json: payload,
-    })
-    .json();
-  return response.jwt;
-};
-
 export const supabaseSessionStore = create<SupabaseSession>((set, get) => ({
-  payload: null,
   jwt: null,
-  setJwtPayload: (payload: { sub: string }) => {
-    set({ payload });
+  getJwt: null,
+  setJwtGetter: (getJwt) => {
+    set({ getJwt });
   },
   getJwtWithRefresh: async (): Promise<string | null> => {
-    const { jwt: currentJwt, payload: currentPayload } = get();
-    if (
-      currentJwt &&
-      currentPayload?.exp &&
-      currentPayload.exp > Math.floor(Date.now() / 1000) + 5
-    ) {
-      return currentJwt;
+    const { jwt: currentJwt, getJwt } = get();
+    if (currentJwt) {
+      const decoded = jwtDecode(currentJwt);
+      const expiration = decoded?.exp;
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+      const fiveSecondsFromNow = nowInSeconds + 5;
+
+      if (expiration && expiration > fiveSecondsFromNow) {
+        return currentJwt;
+      }
     }
 
-    if (!currentPayload?.sub) {
+    if (!getJwt) {
       console.warn(
-        'No sub found in payload. Returning null for supabase session jwt',
+        'No jwt getter found. Returning null for supabase session jwt',
       );
       return null;
     }
 
-    const iat = Math.floor(Date.now() / 1000);
-    const oneHourInSeconds = 60 * 60;
-    const exp = iat + oneHourInSeconds;
-    const payload = {
-      sub: currentPayload?.sub,
-      iat,
-      exp,
-      role: 'authenticated',
-    };
-    const jwt = await signJwt(payload);
+    const jwt = await getJwt();
 
-    set({ payload, jwt });
+    set({ jwt });
 
     return jwt;
   },
   clear: () => {
-    set({ payload: null, jwt: null });
+    set({ jwt: null });
   },
 }));

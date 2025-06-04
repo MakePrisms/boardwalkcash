@@ -205,11 +205,7 @@ export type Database = MergeDeep<
 >;
 
 export const agicashDb = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  accessToken: () =>
-    supabaseSessionStore
-      .getState()
-      .getJwtWithRefresh()
-      .then((jwt) => jwt ?? ''),
+  accessToken: () => supabaseSessionStore.getState().getJwtWithRefresh(),
   db: {
     schema: 'wallet',
   },
