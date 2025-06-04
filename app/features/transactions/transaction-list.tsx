@@ -1,5 +1,6 @@
-import { BanknoteIcon, ZapIcon } from 'lucide-react';
+import { AlertCircle, BanknoteIcon, ZapIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { getDefaultUnit } from '../shared/currencies';
@@ -96,34 +97,32 @@ const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
 };
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
-    <tr className="flex w-full items-center justify-start gap-4">
-      <td colSpan={2} className="w-full">
-        <LinkWithViewTransition
-          to={`/transactions/${transaction.id}`}
-          transition="slideUp"
-          applyTo="newView"
-          className="flex w-full items-center justify-start gap-4"
-        >
-          {transactionTypeIcons[transaction.type]}
-          <div className="flex w-full flex-grow flex-col gap-0">
-            <div className="flex items-center justify-between">
-              <p className="text-sm">
-                {transaction.direction === 'RECEIVE' && '+'}
-                {transaction.amount.toLocaleString({
-                  unit: getDefaultUnit(transaction.amount.currency),
-                })}
-              </p>
-              <span className="text-muted-foreground text-xs">
-                {formatRelativeTime(new Date(transaction.createdAt).getTime())}
-              </span>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {getTransactionDescription(transaction)}
+    <div className="flex w-full items-center justify-start gap-4">
+      <LinkWithViewTransition
+        to={`/transactions/${transaction.id}`}
+        transition="slideUp"
+        applyTo="newView"
+        className="flex w-full items-center justify-start gap-4"
+      >
+        {transactionTypeIcons[transaction.type]}
+        <div className="flex w-full flex-grow flex-col gap-0">
+          <div className="flex items-center justify-between">
+            <p className="text-sm">
+              {transaction.direction === 'RECEIVE' && '+'}
+              {transaction.amount.toLocaleString({
+                unit: getDefaultUnit(transaction.amount.currency),
+              })}
             </p>
+            <span className="text-muted-foreground text-xs">
+              {formatRelativeTime(new Date(transaction.createdAt).getTime())}
+            </span>
           </div>
-        </LinkWithViewTransition>
-      </td>
-    </tr>
+          <p className="text-muted-foreground text-xs">
+            {getTransactionDescription(transaction)}
+          </p>
+        </div>
+      </LinkWithViewTransition>
+    </div>
   );
 }
 
@@ -137,16 +136,14 @@ function TransactionSection({
   if (transactions.length === 0) return null;
 
   return (
-    <>
-      <tr className="hover:bg-transparent">
-        <td colSpan={2} className="py-2">
-          <span className="font-medium text-lg">{title}</span>
-        </td>
-      </tr>
+    <div className="space-y-3">
+      <div className="py-2">
+        <span className="font-medium text-lg">{title}</span>
+      </div>
       {transactions.map((transaction) => (
         <TransactionRow key={transaction.id} transaction={transaction} />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -198,9 +195,13 @@ export function TransactionList() {
 
   if (status === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
-        <span className="text-destructive">Error loading transactions</span>
-        <span className="text-muted-foreground text-sm">{error.message}</span>
+      <div className="flex h-full flex-col items-center justify-center p-8">
+        <Card className="max-w-sm p-6">
+          <div className="flex flex-col items-center gap-3 text-center text-primary-foreground">
+            <AlertCircle className="h-8 w-8" />
+            <span>{error?.message || 'Unable to load transactions'}</span>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -233,26 +234,18 @@ export function TransactionList() {
   return (
     <ScrollArea className="h-full min-h-0 ">
       <div className="pr-4">
-        <table className="w-full">
-          <tbody className="flex flex-col gap-3">
-            <TransactionSection
-              title="Pending"
-              transactions={pendingTransactions}
-            />
-            <TransactionSection
-              title="Today"
-              transactions={todayTransactions}
-            />
-            <TransactionSection
-              title="This Week"
-              transactions={thisWeekTransactions}
-            />
-            <TransactionSection
-              title="Older"
-              transactions={olderTransactions}
-            />
-          </tbody>
-        </table>
+        <div className="w-full space-y-6">
+          <TransactionSection
+            title="Pending"
+            transactions={pendingTransactions}
+          />
+          <TransactionSection title="Today" transactions={todayTransactions} />
+          <TransactionSection
+            title="This Week"
+            transactions={thisWeekTransactions}
+          />
+          <TransactionSection title="Older" transactions={olderTransactions} />
+        </div>
         {hasNextPage && (
           <LoadMore
             onEndReached={() => !isFetchingNextPage && fetchNextPage()}
