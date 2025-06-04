@@ -45,6 +45,7 @@ import {
 } from './cashu-receive-quote-repository';
 import { useCashuReceiveQuoteService } from './cashu-receive-quote-service';
 import { MintQuoteSubscriptionManager } from './mint-quote-subscription-manager';
+import { useToast } from '~/hooks/use-toast';
 
 type CreateProps = {
   account: CashuAccount;
@@ -393,6 +394,7 @@ const useTrackMintQuotesWithWebSocket = ({
     () => new MintQuoteSubscriptionManager(),
   );
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { mutate: subscribe } = useMutation({
     mutationFn: (props: {
@@ -417,6 +419,28 @@ const useTrackMintQuotesWithWebSocket = ({
       subscribe({ mintUrl, quotes }),
     );
   }, [subscribe, quotesByMint]);
+
+  useEffect(() => {
+    const reconnect = () => {
+      toast({
+        title: 'Reconnecting to mint quotes',
+        description: Object.keys(quotesByMint).join(', '),
+      });
+      if (document.visibilityState === 'visible') {
+        Object.entries(quotesByMint).forEach(([mintUrl, quotes]) =>
+          subscribe({ mintUrl, quotes }),
+        );
+      }
+    };
+
+    document.addEventListener('visibilitychange', reconnect);
+    window.addEventListener('focus', reconnect);
+
+    return () => {
+      document.removeEventListener('visibilitychange', reconnect);
+      window.removeEventListener('focus', reconnect);
+    };
+  }, [subscribe, quotesByMint, toast]);
 
   const getMintQuote = useCallback(
     (receiveQuote: CashuReceiveQuote) =>
