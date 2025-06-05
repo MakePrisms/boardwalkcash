@@ -113,6 +113,7 @@ export class MintQuoteSubscriptionManager {
           try {
             const unsubscribe = await subscription.subscriptionPromise;
             unsubscribe();
+            this.subscriptions.delete(mintUrl);
           } catch (error) {
             console.error('Error unsubscribing during refresh', {
               mintUrl,
