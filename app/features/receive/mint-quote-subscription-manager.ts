@@ -5,8 +5,10 @@ import type { CashuReceiveQuote } from './cashu-receive-quote';
 
 type SubscriptionData = {
   ids: Set<string>;
+  quotes: CashuReceiveQuote[];
   subscriptionPromise: Promise<() => void>;
   onUpdate: (mintQuoteResponse: MintQuoteResponse) => void;
+  removeCloseListener?: () => void;
 };
 
 export class MintQuoteSubscriptionManager {
@@ -30,6 +32,7 @@ export class MintQuoteSubscriptionManager {
       if (isSubset(ids, mintSubscription.ids)) {
         this.subscriptions.set(mintUrl, {
           ...mintSubscription,
+          quotes,
           onUpdate,
         });
         console.debug(
@@ -41,6 +44,7 @@ export class MintQuoteSubscriptionManager {
       }
 
       const unsubscribe = await mintSubscription.subscriptionPromise;
+      mintSubscription.removeCloseListener?.();
 
       console.debug('Unsubscribing from mint quote updates for mint', mintUrl);
       unsubscribe();
@@ -70,14 +74,40 @@ export class MintQuoteSubscriptionManager {
         }),
     );
 
-    this.subscriptions.set(mintUrl, {
+    const subscriptionData: SubscriptionData = {
       ids,
+      quotes,
       subscriptionPromise,
       onUpdate,
-    });
+    };
+
+    this.subscriptions.set(mintUrl, subscriptionData);
 
     try {
-      await subscriptionPromise;
+      const unsubscribe = await subscriptionPromise;
+
+      const handleClose = () => {
+        console.debug('Mint quote updates socket closed', mintUrl);
+        subscriptionData.removeCloseListener?.();
+        this.subscriptions.delete(mintUrl);
+        void this.subscribe({
+          mintUrl,
+          quotes: subscriptionData.quotes,
+          onUpdate: subscriptionData.onUpdate,
+        });
+      };
+
+      wallet.mint.webSocketConnection?.ws.addEventListener(
+        'close',
+        handleClose,
+      );
+      subscriptionData.removeCloseListener = () =>
+        wallet.mint.webSocketConnection?.ws.removeEventListener(
+          'close',
+          handleClose,
+        );
+      // ignore unsubscribe as socket close will cancel it automatically
+      await Promise.resolve(unsubscribe);
     } catch (error) {
       this.subscriptions.delete(mintUrl);
       throw error;

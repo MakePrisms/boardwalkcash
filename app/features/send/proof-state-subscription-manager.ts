@@ -5,8 +5,10 @@ import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 
 type Subscription = {
   ids: Set<string>;
+  swaps: PendingCashuSendSwap[];
   subscriptionPromise: Promise<() => void>;
   onSpent: (swap: CashuSendSwap) => void;
+  removeCloseListener?: () => void;
 };
 
 export class ProofStateSubscriptionManager {
@@ -32,6 +34,7 @@ export class ProofStateSubscriptionManager {
       if (isSubset(ids, mintSubscription.ids)) {
         this.subscriptions.set(mintUrl, {
           ...mintSubscription,
+          swaps,
           onSpent,
         });
         console.debug(
@@ -43,6 +46,7 @@ export class ProofStateSubscriptionManager {
       }
 
       const unsubscribe = await mintSubscription.subscriptionPromise;
+      mintSubscription.removeCloseListener?.();
 
       console.debug('Unsubscribing from proof state updates for mint', mintUrl);
       unsubscribe();
@@ -77,14 +81,38 @@ export class ProofStateSubscriptionManager {
         }),
     );
 
-    this.subscriptions.set(mintUrl, {
+    const subscriptionData: Subscription = {
       ids,
+      swaps,
       subscriptionPromise,
       onSpent,
-    });
+    };
+
+    this.subscriptions.set(mintUrl, subscriptionData);
 
     try {
-      await subscriptionPromise;
+      const unsubscribe = await subscriptionPromise;
+
+      const handleClose = () => {
+        subscriptionData.removeCloseListener?.();
+        this.subscriptions.delete(mintUrl);
+        void this.subscribe({
+          mintUrl,
+          swaps: subscriptionData.swaps,
+          onSpent: subscriptionData.onSpent,
+        });
+      };
+
+      wallet.mint.webSocketConnection?.ws.addEventListener(
+        'close',
+        handleClose,
+      );
+      subscriptionData.removeCloseListener = () =>
+        wallet.mint.webSocketConnection?.ws.removeEventListener(
+          'close',
+          handleClose,
+        );
+      await Promise.resolve(unsubscribe);
     } catch (error) {
       this.subscriptions.delete(mintUrl);
       throw error;
