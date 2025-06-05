@@ -6,6 +6,7 @@ import type { CashuReceiveQuote } from './cashu-receive-quote';
 type SubscriptionData = {
   ids: Set<string>;
   subscriptionPromise: Promise<() => void>;
+  ensureConnection?: () => Promise<void>;
 };
 
 export class MintQuoteSubscriptionManager {
@@ -61,6 +62,7 @@ export class MintQuoteSubscriptionManager {
     this.subscriptions.set(mintUrl, {
       ids,
       subscriptionPromise,
+      ensureConnection: wallet.mint.webSocketConnection?.ensureConnection,
     });
 
     try {
@@ -69,5 +71,34 @@ export class MintQuoteSubscriptionManager {
       this.subscriptions.delete(mintUrl);
       throw error;
     }
+  }
+
+  async clearAll(): Promise<void> {
+    console.debug('Clearing all mint quote subscriptions');
+
+    const unsubscribePromises = Array.from(this.subscriptions.entries()).map(
+      async ([mintUrl, subscription]) => {
+        try {
+          if (subscription.ensureConnection) {
+            console.debug('Ensuring connection for mint', mintUrl);
+            await subscription.ensureConnection();
+          }
+          const unsubscribe = await subscription.subscriptionPromise;
+          console.debug(
+            'Unsubscribing from mint quote updates for mint',
+            mintUrl,
+          );
+          unsubscribe();
+        } catch (error) {
+          console.error('Error unsubscribing from mint quote updates', {
+            mintUrl,
+            cause: error,
+          });
+        }
+      },
+    );
+
+    await Promise.allSettled(unsubscribePromises);
+    this.subscriptions.clear();
   }
 }
