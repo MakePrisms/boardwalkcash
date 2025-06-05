@@ -424,13 +424,7 @@ const useTrackMintQuotesWithWebSocket = ({
       if (document.visibilityState === 'visible') {
         console.debug('App became visible, resetting mint quote subscriptions');
 
-        // Clear existing subscriptions
-        await subscriptionManager.clearAll();
-
-        // Re-subscribe to current quotes
-        Object.entries(quotesByMint).forEach(([mintUrl, quotes]) => {
-          subscribe({ mintUrl, quotes });
-        });
+        subscriptionManager.refresh();
       }
     };
 
@@ -439,7 +433,7 @@ const useTrackMintQuotesWithWebSocket = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [subscriptionManager, quotesByMint, subscribe]);
+  }, [subscriptionManager]);
 
   const getMintQuote = useCallback(
     (receiveQuote: CashuReceiveQuote) =>
