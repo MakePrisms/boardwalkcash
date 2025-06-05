@@ -6,7 +6,10 @@ import type { CashuReceiveQuote } from './cashu-receive-quote';
 type SubscriptionData = {
   ids: Set<string>;
   subscriptionPromise: Promise<() => void>;
-  ensureConnection?: () => Promise<void>;
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  connection: any;
+  quotes: CashuReceiveQuote[];
+  onUpdate: (mintQuoteResponse: MintQuoteResponse) => void;
 };
 
 export class MintQuoteSubscriptionManager {
@@ -62,7 +65,9 @@ export class MintQuoteSubscriptionManager {
     this.subscriptions.set(mintUrl, {
       ids,
       subscriptionPromise,
-      ensureConnection: wallet.mint.webSocketConnection?.ensureConnection,
+      connection: wallet.mint.webSocketConnection,
+      quotes,
+      onUpdate,
     });
 
     try {
@@ -73,15 +78,75 @@ export class MintQuoteSubscriptionManager {
     }
   }
 
+  async refresh(): Promise<void> {
+    console.debug('Refreshing all mint quote subscriptions');
+
+    const subscriptionEntries = Array.from(this.subscriptions.entries());
+
+    const connectionPromises = subscriptionEntries.map(
+      async ([mintUrl, subscription]) => {
+        try {
+          if (subscription.connection?.ensureConnection) {
+            console.debug('Ensuring connection for mint', mintUrl);
+            await subscription.connection.ensureConnection();
+            console.debug('Connection ensured for mint', mintUrl);
+          }
+        } catch (error) {
+          console.error('Error ensuring connection for mint', {
+            mintUrl,
+            cause: error,
+          });
+        }
+      },
+    );
+
+    await Promise.allSettled(connectionPromises);
+
+    const resubscribePromises = subscriptionEntries.map(
+      async ([mintUrl, subscription]) => {
+        try {
+          console.debug(
+            'Resubscribing to mint quote updates for mint',
+            mintUrl,
+          );
+
+          try {
+            const unsubscribe = await subscription.subscriptionPromise;
+            unsubscribe();
+          } catch (error) {
+            console.error('Error unsubscribing during refresh', {
+              mintUrl,
+              cause: error,
+            });
+          }
+
+          await this.subscribe({
+            mintUrl,
+            quotes: subscription.quotes,
+            onUpdate: subscription.onUpdate,
+          });
+        } catch (error) {
+          console.error('Error resubscribing during refresh', {
+            mintUrl,
+            cause: error,
+          });
+        }
+      },
+    );
+
+    await Promise.allSettled(resubscribePromises);
+  }
+
   async clearAll(): Promise<void> {
     console.debug('Clearing all mint quote subscriptions');
 
     const unsubscribePromises = Array.from(this.subscriptions.entries()).map(
       async ([mintUrl, subscription]) => {
         try {
-          if (subscription.ensureConnection) {
+          if (subscription.connection?.ensureConnection) {
             console.debug('Ensuring connection for mint', mintUrl);
-            await subscription.ensureConnection();
+            await subscription.connection.ensureConnection();
+            console.debug('Connection ensured for mint', mintUrl);
           }
           const unsubscribe = await subscription.subscriptionPromise;
           console.debug(
