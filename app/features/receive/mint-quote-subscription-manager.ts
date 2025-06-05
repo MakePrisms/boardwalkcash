@@ -86,6 +86,10 @@ export class MintQuoteSubscriptionManager {
     const connectionPromises = subscriptionEntries.map(
       async ([mintUrl, subscription]) => {
         try {
+          console.debug(
+            'Current sub status',
+            subscription.connection?.readyState,
+          );
           if (subscription.connection?.ensureConnection) {
             console.debug('Ensuring connection for mint', mintUrl);
             await subscription.connection.ensureConnection();
