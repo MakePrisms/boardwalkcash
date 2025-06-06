@@ -22,6 +22,7 @@ import { decodeBolt11 } from '~/lib/bolt11';
 import { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
 import { getDefaultUnit } from '../shared/currencies';
+import { DomainError } from '../shared/error';
 import {
   useCashuSendQuote,
   useInitiateCashuSendQuote,
@@ -133,11 +134,16 @@ export const PayBolt11Confirmation = ({
     isPending: isCreatingSendQuote,
   } = useInitiateCashuSendQuote({
     onError: (error) => {
-      console.error('Error initiating send quote', { cause: error });
-      toast({
-        title: 'Error',
-        description: 'Failed to initiate send quote. Please try again.',
-      });
+      if (error instanceof DomainError) {
+        toast({ description: error.message });
+      } else {
+        console.error('Error initiating send quote', { cause: error });
+        toast({
+          title: 'Error',
+          description: 'Failed to initiate send quote. Please try again.',
+          variant: 'destructive',
+        });
+      }
     },
   });
 
@@ -154,10 +160,11 @@ export const PayBolt11Confirmation = ({
   if (quote?.state === 'PAID') {
     return (
       <SuccessfulSendPage
-        amount={quote.amountToSend}
+        amountSpent={quote.amountSpent}
         account={account}
         destination={formatDestination(destination)}
-        feesPaid={quote.amountSpent.subtract(quote.amountToSend)}
+        amountReceived={quote.amountToReceive}
+        feesPaid={quote.amountSpent.subtract(quote.amountToReceive)}
       />
     );
   }
@@ -174,22 +181,31 @@ export const PayBolt11Confirmation = ({
     ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
     isCreatingSendQuote;
   const { description } = decodeBolt11(destination);
-  const fee = bolt11Quote.feeReserve;
 
   return (
     <BaseConfirmation
-      amount={bolt11Quote.totalAmountToSend}
+      amount={bolt11Quote.estimatedTotalAmount}
       onConfirm={handleConfirm}
       loading={paymentInProgress}
     >
       {[
         {
+          label: 'Recipient gets',
+          value: (
+            <MoneyDisplay
+              variant="secondary"
+              money={bolt11Quote.amountToReceive}
+              unit={getDefaultUnit(bolt11Quote.amountToReceive.currency)}
+            />
+          ),
+        },
+        {
           label: 'Estimated fee',
           value: (
             <MoneyDisplay
               variant="secondary"
-              money={fee}
-              unit={getDefaultUnit(fee.currency)}
+              money={bolt11Quote.estimatedTotalFee}
+              unit={getDefaultUnit(bolt11Quote.estimatedTotalFee.currency)}
             />
           ),
         },

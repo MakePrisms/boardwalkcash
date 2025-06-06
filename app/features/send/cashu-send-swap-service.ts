@@ -7,6 +7,7 @@ import {
 import type { CashuAccount } from '~/features/accounts/account';
 import {
   CashuErrorCodes,
+  type ExtendedCashuWallet,
   amountsFromOutputData,
   getCashuProtocolUnit,
   getCashuUnit,
@@ -24,6 +25,8 @@ import {
   getTokenHash,
   useCashuCryptography,
 } from '../shared/cashu';
+import { getDefaultUnit } from '../shared/currencies';
+import { DomainError } from '../shared/error';
 import type { CashuSendSwap } from './cashu-send-swap';
 import {
   type CashuSendSwapRepository,
@@ -76,7 +79,7 @@ export class CashuSendSwapService {
     const { receiveSwapFee, sendSwapFee } = await this.prepareProofsAndFee(
       wallet,
       account.proofs,
-      amountNumber,
+      amount,
       senderPaysFee,
     );
 
@@ -139,7 +142,7 @@ export class CashuSendSwapService {
     } = await this.prepareProofsAndFee(
       wallet,
       account.proofs,
-      amountNumber,
+      amount,
       senderPaysFee,
     );
 
@@ -320,9 +323,9 @@ export class CashuSendSwapService {
   }
 
   private async prepareProofsAndFee(
-    wallet: CashuWallet,
+    wallet: ExtendedCashuWallet,
     allProofs: Proof[],
-    requestedAmount: number,
+    requestedAmount: Money,
     includeFeesInSendAmount: boolean,
   ): Promise<{
     keep: Proof[];
@@ -335,9 +338,13 @@ export class CashuSendSwapService {
       await wallet.getKeys();
     }
 
-    const { keep, send } = wallet.selectProofsToSend(
+    const currency = requestedAmount.currency;
+    const cashuUnit = getCashuUnit(currency);
+    const requestedAmountNumber = requestedAmount.toNumber(cashuUnit);
+
+    let { keep, send } = wallet.selectProofsToSend(
       allProofs,
-      requestedAmount,
+      requestedAmountNumber,
       includeFeesInSendAmount,
     );
     const feeToSwapSelectedProofs = wallet.getFeesForProofs(send);
@@ -348,8 +355,8 @@ export class CashuSendSwapService {
       );
     }
 
-    const proofAmountSelected = sumProofs(send);
-    const amountToSend = requestedAmount + feeToSwapSelectedProofs;
+    let proofAmountSelected = sumProofs(send);
+    const amountToSend = requestedAmountNumber + feeToSwapSelectedProofs;
 
     console.debug('proofSelection', {
       selectedProofs: send.map((p) => p.amount),
@@ -357,14 +364,6 @@ export class CashuSendSwapService {
       amountToSend,
       feeToSwapSelectedProofs,
     });
-
-    if (proofAmountSelected < amountToSend) {
-      // TODO: there's a bug with fees, so sometime this happens even with sufficient balance
-      // should be resolved when this issue is fixed: https://github.com/cashubtc/cashu-ts/issues/310
-      throw new Error(
-        `Insufficient balance. Required fee: ${feeToSwapSelectedProofs}`,
-      );
-    }
 
     if (proofAmountSelected === amountToSend) {
       return {
@@ -375,13 +374,45 @@ export class CashuSendSwapService {
       };
     }
 
-    const sendSwapFee = feeToSwapSelectedProofs;
-    // TODO: this needs to be calculated based on the outputs from the send swap
-    const receiveSwapFee = feeToSwapSelectedProofs;
+    const estimatedFeeToReceive =
+      wallet.getFeesEstimateToReceiveAtLeast(amountToSend);
 
-    if (proofAmountSelected < amountToSend + sendSwapFee) {
-      throw new Error(
-        `Insufficient balance. Required fee: ${sendSwapFee + receiveSwapFee}`,
+    if (proofAmountSelected < amountToSend) {
+      const estimatedFee = new Money({
+        amount: estimatedFeeToReceive,
+        currency: currency,
+        unit: cashuUnit,
+      });
+      const unit = getDefaultUnit(currency);
+
+      throw new DomainError(
+        `Insufficient balance. Estimated fee to send ${requestedAmount.toLocaleString({ unit })} is ${estimatedFee.toLocaleString({ unit })}.`,
+      );
+    }
+
+    ({ keep, send } = wallet.selectProofsToSend(
+      allProofs,
+      requestedAmountNumber + estimatedFeeToReceive,
+      includeFeesInSendAmount,
+    ));
+    proofAmountSelected = sumProofs(send);
+
+    const sendSwapFee = wallet.getFeesForProofs(send);
+    const receiveSwapFee = estimatedFeeToReceive;
+
+    if (
+      proofAmountSelected <
+      requestedAmountNumber + sendSwapFee + receiveSwapFee
+    ) {
+      const estimatedFee = new Money({
+        amount: sendSwapFee + receiveSwapFee,
+        currency: currency,
+        unit: cashuUnit,
+      });
+      const unit = getDefaultUnit(currency);
+
+      throw new DomainError(
+        `Insufficient balance. Estimated fee to send ${requestedAmount.toLocaleString({ unit })} is ${estimatedFee.toLocaleString({ unit })}.`,
       );
     }
 

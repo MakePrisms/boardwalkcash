@@ -147,16 +147,17 @@ export type Database = {
           amount_requested: number
           amount_requested_in_msat: number
           amount_spent: number | null
-          amount_to_send: number
+          amount_to_receive: number
+          cashu_fee: number
           created_at: string
           currency: string
           currency_requested: string
           expires_at: string
           failure_reason: string | null
-          fee_reserve: number
           id: string
           keyset_counter: number
           keyset_id: string
+          lightning_fee_reserve: number
           number_of_change_outputs: number
           payment_preimage: string | null
           payment_request: string
@@ -173,16 +174,17 @@ export type Database = {
           amount_requested: number
           amount_requested_in_msat: number
           amount_spent?: number | null
-          amount_to_send: number
+          amount_to_receive: number
+          cashu_fee: number
           created_at?: string
           currency: string
           currency_requested: string
           expires_at: string
           failure_reason?: string | null
-          fee_reserve: number
           id?: string
           keyset_counter: number
           keyset_id: string
+          lightning_fee_reserve: number
           number_of_change_outputs: number
           payment_preimage?: string | null
           payment_request: string
@@ -199,16 +201,17 @@ export type Database = {
           amount_requested?: number
           amount_requested_in_msat?: number
           amount_spent?: number | null
-          amount_to_send?: number
+          amount_to_receive?: number
+          cashu_fee?: number
           created_at?: string
           currency?: string
           currency_requested?: string
           expires_at?: string
           failure_reason?: string | null
-          fee_reserve?: number
           id?: string
           keyset_counter?: number
           keyset_id?: string
+          lightning_fee_reserve?: number
           number_of_change_outputs?: number
           payment_preimage?: string | null
           payment_request?: string
@@ -716,8 +719,9 @@ export type Database = {
           p_amount_requested: number
           p_currency_requested: string
           p_amount_requested_in_msat: number
-          p_amount_to_send: number
-          p_fee_reserve: number
+          p_amount_to_receive: number
+          p_lightning_fee_reserve: number
+          p_cashu_fee: number
           p_quote_id: string
           p_keyset_id: string
           p_keyset_counter: number

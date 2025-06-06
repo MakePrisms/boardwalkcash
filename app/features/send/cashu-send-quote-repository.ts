@@ -46,11 +46,15 @@ type CreateSendQuote = {
   /**
    * Amount that the mint will send to the receiver.
    */
-  amountToSend: Money;
+  amountToReceive: Money;
   /**
    * Fee reserve for the lightning network fee.
    */
-  feeReserve: Money;
+  lightningFeeReserve: Money;
+  /**
+   * Cashu mint fee.
+   */
+  cashuFee: Money;
   /**
    * Id of the melt quote.
    */
@@ -99,8 +103,9 @@ export class CashuSendQuoteRepository {
       expiresAt,
       amountRequested,
       amountRequestedInMsat,
-      amountToSend,
-      feeReserve,
+      amountToReceive,
+      lightningFeeReserve,
+      cashuFee,
       quoteId,
       keysetId,
       keysetCounter,
@@ -115,20 +120,21 @@ export class CashuSendQuoteRepository {
       this.encryption.encrypt(proofsToSend),
       this.encryption.encrypt(proofsToKeep),
     ]);
-    const unit = getDefaultUnit(amountToSend.currency);
+    const unit = getDefaultUnit(amountToReceive.currency);
 
     const query = this.db.rpc('create_cashu_send_quote', {
       p_user_id: userId,
       p_account_id: accountId,
-      p_currency: amountToSend.currency,
+      p_currency: amountToReceive.currency,
       p_unit: unit,
       p_payment_request: paymentRequest,
       p_expires_at: expiresAt,
       p_amount_requested: amountRequested.toNumber(unit),
       p_currency_requested: amountRequested.currency,
       p_amount_requested_in_msat: amountRequestedInMsat,
-      p_amount_to_send: amountToSend.toNumber(unit),
-      p_fee_reserve: feeReserve.toNumber(unit),
+      p_amount_to_receive: amountToReceive.toNumber(unit),
+      p_lightning_fee_reserve: lightningFeeReserve.toNumber(unit),
+      p_cashu_fee: cashuFee.toNumber(unit),
       p_quote_id: quoteId,
       p_keyset_id: keysetId,
       p_keyset_counter: keysetCounter,
@@ -449,13 +455,18 @@ export class CashuSendQuoteRepository {
         unit: decryptedData.unit,
       }),
       amountRequestedInMsat: decryptedData.amount_requested_in_msat,
-      amountToSend: new Money({
-        amount: decryptedData.amount_to_send,
+      amountToReceive: new Money({
+        amount: decryptedData.amount_to_receive,
         currency: decryptedData.currency,
         unit: decryptedData.unit,
       }),
-      feeReserve: new Money({
-        amount: decryptedData.fee_reserve,
+      lightningFeeReserve: new Money({
+        amount: decryptedData.lightning_fee_reserve,
+        currency: decryptedData.currency,
+        unit: decryptedData.unit,
+      }),
+      cashuFee: new Money({
+        amount: decryptedData.cashu_fee,
         currency: decryptedData.currency,
         unit: decryptedData.unit,
       }),

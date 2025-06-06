@@ -1,12 +1,15 @@
 import {
   CashuMint,
   CashuWallet,
+  type Keys,
   type MintKeyset,
   type OutputData,
 } from '@cashu/cashu-ts';
+import Big from 'big.js';
 import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
+import { sumProofs } from './proof';
 import type { CashuProtocolUnit, MintInfo } from './types';
 
 const knownTestMints = [
@@ -72,6 +75,112 @@ export const getWalletCurrency = (wallet: CashuWallet) => {
   return cashuProtocolUnitToCurrency[unit];
 };
 
+// TODO: see if we can use this extended wallet class to completely abstract away the mismtach between cashu protocol unit and the units we use (cashu protocol unit is 'usd' for cents, but we use 'cent' for cents)
+// If we do that maybe we can even get rid of this getCashuWallet function
+/**
+ * ExtendedCashuWallet extends CashuWallet to allow custom postprocessing of proof selection.
+ * We will remove this if cashu-ts ever updates selectProofsToSend not to return send proofs that are less than the amount.
+ */
+export class ExtendedCashuWallet extends CashuWallet {
+  /**
+   * Override selectProofsToSend to allow postprocessing of the result.
+   * @param proofs - The available proofs to select from
+   * @param amount - The amount to send
+   * @param includeFees - Whether to include fees in the selection
+   * @returns The selected proofs (with possible postprocessing)
+   */
+  selectProofsToSend(
+    proofs: Parameters<CashuWallet['selectProofsToSend']>[0],
+    amount: Parameters<CashuWallet['selectProofsToSend']>[1],
+    includeFees: Parameters<CashuWallet['selectProofsToSend']>[2],
+  ) {
+    const result = super.selectProofsToSend(proofs, amount, includeFees);
+
+    const sendProofsAmount = sumProofs(result.send);
+
+    if (sendProofsAmount < amount) {
+      return {
+        send: [],
+        keep: proofs,
+      };
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the estimated fee to receive at least the given amount.
+   * If cashu token has value of amount plus the fee returned by this function, the receiver can swap it for at least that amount.
+   * @param amount - The minimum amount to receive
+   * @returns The estimated fee
+   */
+  getFeesEstimateToReceiveAtLeast(amount: number | Big) {
+    const amountBig = new Big(amount);
+    const keyset = this.getActiveKeyset(this.keysets);
+
+    if (!keyset?.input_fee_ppk) {
+      return 0;
+    }
+
+    const { keys = null } = this.keys.get(keyset.id) ?? {};
+    if (!keys) {
+      throw new Error('Keys not found');
+    }
+
+    const minNumberOfProofs = this.getMinNumberOfProofsForAmount(
+      keys,
+      amountBig,
+    );
+    const fee = this.getFeeForNumberOfProofs(
+      minNumberOfProofs,
+      keyset.input_fee_ppk,
+    );
+
+    return fee;
+  }
+
+  private getMinNumberOfProofsForAmount(keys: Keys, amount: Big) {
+    const availableDenominations = Object.keys(keys).map((x) => new Big(x));
+    const biggestDenomination = availableDenominations.reduce(
+      (max, curr) => (curr.gt(max) ? curr : max),
+      new Big(0),
+    );
+
+    return this.getInPowersOfTwo(new Big(amount), biggestDenomination).length;
+  }
+
+  /**
+   * Get the powers of two that sum up to the given number
+   * @param n - The number to get the powers of two for
+   * @param maxValue - The maximum power of two value that can be used
+   * @returns The powers of two that sum up to the given number
+   */
+  private getInPowersOfTwo(number: Big, maxValue: Big): Big[] {
+    const result: Big[] = [];
+    let n = number;
+
+    for (let pow = maxValue; pow.gte(1); pow = pow.div(2).round(0, 0)) {
+      const count = n.div(pow).round(0, 0); // floor division
+      if (count.gt(0)) {
+        for (let i = 0; i < count.toNumber(); i++) {
+          result.push(pow);
+        }
+        n = n.minus(count.times(pow));
+      }
+      if (n.eq(0)) break;
+    }
+
+    if (n.gt(0))
+      throw new Error('Cannot represent number with given max value');
+
+    return result;
+  }
+
+  private getFeeForNumberOfProofs(numberOfProofs: number, inputFeePpk: number) {
+    return Math.floor((numberOfProofs * inputFeePpk + 999) / 1000);
+  }
+}
+
 export const getCashuWallet = (
   mintUrl: string,
   options: DistributedOmit<
@@ -85,7 +194,7 @@ export const getCashuWallet = (
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
   const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new CashuWallet(new CashuMint(mintUrl), {
+  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
     ...rest,
     unit: cashuUnit,
   });
