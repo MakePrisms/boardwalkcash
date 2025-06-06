@@ -5,8 +5,10 @@ import type { CashuSendQuote } from './cashu-send-quote';
 
 type SubscriptionData = {
   ids: Set<string>;
+  quotes: CashuSendQuote[];
   subscriptionPromise: Promise<() => void>;
   onUpdate: (meltQuoteResponse: MeltQuoteResponse) => void;
+  removeCloseListener?: () => void;
 };
 
 export class MeltQuoteSubscriptionManager {
@@ -30,6 +32,7 @@ export class MeltQuoteSubscriptionManager {
       if (isSubset(ids, mintSubscription.ids)) {
         this.subscriptions.set(mintUrl, {
           ...mintSubscription,
+          quotes,
           onUpdate,
         });
         console.debug(
@@ -41,6 +44,7 @@ export class MeltQuoteSubscriptionManager {
       }
 
       const unsubscribe = await mintSubscription.subscriptionPromise;
+      mintSubscription.removeCloseListener?.();
 
       console.debug('Unsubscribing from melt quote updates for mint', mintUrl);
       unsubscribe();
@@ -70,14 +74,38 @@ export class MeltQuoteSubscriptionManager {
         }),
     );
 
-    this.subscriptions.set(mintUrl, {
+    const subscriptionData: SubscriptionData = {
       ids,
+      quotes,
       subscriptionPromise,
       onUpdate,
-    });
+    };
+
+    this.subscriptions.set(mintUrl, subscriptionData);
 
     try {
-      await subscriptionPromise;
+      const unsubscribe = await subscriptionPromise;
+
+      const handleClose = () => {
+        subscriptionData.removeCloseListener?.();
+        this.subscriptions.delete(mintUrl);
+        void this.subscribe({
+          mintUrl,
+          quotes: subscriptionData.quotes,
+          onUpdate: subscriptionData.onUpdate,
+        });
+      };
+
+      wallet.mint.webSocketConnection?.ws.addEventListener(
+        'close',
+        handleClose,
+      );
+      subscriptionData.removeCloseListener = () =>
+        wallet.mint.webSocketConnection?.ws.removeEventListener(
+          'close',
+          handleClose,
+        );
+      await Promise.resolve(unsubscribe);
     } catch (error) {
       this.subscriptions.delete(mintUrl);
       throw error;
