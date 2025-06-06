@@ -160,9 +160,10 @@ export const PayBolt11Confirmation = ({
   if (quote?.state === 'PAID') {
     return (
       <SuccessfulSendPage
-        amount={quote.amountSpent}
+        amountSpent={quote.amountSpent}
         account={account}
         destination={formatDestination(destination)}
+        amountReceived={quote.amountToReceive}
         feesPaid={quote.amountSpent.subtract(quote.amountToReceive)}
       />
     );

@@ -21,16 +21,18 @@ function TransactionDetail({ label, value }: { label: string; value: string }) {
 }
 
 type Props = {
-  amount: Money;
+  amountSpent: Money;
   account: Account;
   destination: string;
+  amountReceived: Money;
   feesPaid: Money;
 };
 
 export function SuccessfulSendPage({
-  amount,
+  amountSpent,
   account,
   destination,
+  amountReceived,
   feesPaid,
 }: Props) {
   return (
@@ -40,7 +42,7 @@ export function SuccessfulSendPage({
         <ClosePageButton to="/" transition="slideDown" applyTo="oldView" />
       </PageHeader>
       <PageContent className="relative flex flex-col items-center gap-12">
-        <MoneyWithConvertedAmount money={amount} />
+        <MoneyWithConvertedAmount money={amountSpent} />
         <div className="fade-in-0 flex w-full animate-in flex-col gap-12 place-self-center duration-300">
           <div className="mb-2 flex justify-center">
             <CheckCircle className="h-16 w-16 text-green-500" />
@@ -48,6 +50,12 @@ export function SuccessfulSendPage({
           <div className="flex w-full flex-col gap-8">
             <TransactionDetail label="Account" value={account.name} />
             <TransactionDetail label="Destination" value={destination} />
+            <TransactionDetail
+              label="Recipient got"
+              value={amountReceived.toLocaleString({
+                unit: getDefaultUnit(amountReceived.currency),
+              })}
+            />
             <TransactionDetail
               label="Fees paid"
               value={feesPaid.toLocaleString({

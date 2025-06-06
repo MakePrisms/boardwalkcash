@@ -10,12 +10,14 @@ export default function SendShare({ params }: Route.ComponentProps) {
   const { data: swap } = useCashuSendSwap(params.swapId);
 
   if (swap.state === 'COMPLETED') {
+    const totalFee = swap.sendSwapFee.add(swap.receiveSwapFee);
     return (
       <SuccessfulSendPage
-        amount={swap.totalAmount}
+        amountSpent={swap.totalAmount}
         account={swap.account}
         destination={'ecash'}
-        feesPaid={swap.sendSwapFee.add(swap.receiveSwapFee)}
+        amountReceived={swap.totalAmount.subtract(totalFee)}
+        feesPaid={totalFee}
       />
     );
   }
