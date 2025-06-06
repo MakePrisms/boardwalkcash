@@ -97,32 +97,30 @@ const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
 };
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
-    <div className="flex w-full items-center justify-start gap-4">
-      <LinkWithViewTransition
-        to={`/transactions/${transaction.id}`}
-        transition="slideUp"
-        applyTo="newView"
-        className="flex w-full items-center justify-start gap-4"
-      >
-        {transactionTypeIcons[transaction.type]}
-        <div className="flex w-full flex-grow flex-col gap-0">
-          <div className="flex items-center justify-between">
-            <p className="text-sm">
-              {transaction.direction === 'RECEIVE' && '+'}
-              {transaction.amount.toLocaleString({
-                unit: getDefaultUnit(transaction.amount.currency),
-              })}
-            </p>
-            <span className="text-muted-foreground text-xs">
-              {formatRelativeTime(new Date(transaction.createdAt).getTime())}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            {getTransactionDescription(transaction)}
+    <LinkWithViewTransition
+      to={`/transactions/${transaction.id}`}
+      transition="slideUp"
+      applyTo="newView"
+      className="flex w-full items-center justify-start gap-4"
+    >
+      {transactionTypeIcons[transaction.type]}
+      <div className="flex w-full flex-grow flex-col gap-0">
+        <div className="flex items-center justify-between">
+          <p className="text-sm">
+            {transaction.direction === 'RECEIVE' && '+'}
+            {transaction.amount.toLocaleString({
+              unit: getDefaultUnit(transaction.amount.currency),
+            })}
           </p>
+          <span className="text-muted-foreground text-xs">
+            {formatRelativeTime(new Date(transaction.createdAt).getTime())}
+          </span>
         </div>
-      </LinkWithViewTransition>
-    </div>
+        <p className="text-muted-foreground text-xs">
+          {getTransactionDescription(transaction)}
+        </p>
+      </div>
+    </LinkWithViewTransition>
   );
 }
 
