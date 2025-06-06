@@ -4,7 +4,7 @@
     "": {
       "name": "agicash",
       "dependencies": {
-        "@cashu/cashu-ts": "2.5.2",
+        "@cashu/cashu-ts": "https://github.com/gudnuf/cashu-ts#gudnuf/ws-reconnection-2",
         "@cashu/crypto": "0.3.4",
         "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
         "@opensecret/react": "1.1.0",
@@ -161,7 +161,7 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@1.9.4", "", { "os": "win32", "cpu": "x64" }, "sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA=="],
 
-    "@cashu/cashu-ts": ["@cashu/cashu-ts@2.5.2", "", { "dependencies": { "@noble/curves": "^1.6.0", "@noble/hashes": "^1.5.0", "@scure/bip32": "^1.5.0", "buffer": "^6.0.3" } }, "sha512-AjfDOZKb3RWWhmpHABC4KJxwJs3wp6eOFg6U3S6d3QOqtSoNkceMTn6lLN4/bYQarLR19rysbrIJ8MHsSwNxeQ=="],
+    "@cashu/cashu-ts": ["@cashu/cashu-ts@github:gudnuf/cashu-ts#0c4b297", { "dependencies": { "@noble/curves": "^1.6.0", "@noble/hashes": "^1.5.0", "@scure/bip32": "^1.5.0", "buffer": "^6.0.3" } }, "gudnuf-cashu-ts-0c4b297"],
 
     "@cashu/crypto": ["@cashu/crypto@0.3.4", "", { "dependencies": { "@noble/curves": "^1.6.0", "@noble/hashes": "^1.5.0", "@scure/bip32": "^1.5.0", "@scure/bip39": "^1.4.0", "buffer": "^6.0.3" } }, "sha512-mfv1Pj4iL1PXzUj9NKIJbmncCLMqYfnEDqh/OPxAX0nNBt6BOnVJJLjLWFlQeYxlnEfWABSNkrqPje1t5zcyhA=="],
 
