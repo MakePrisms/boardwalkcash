@@ -1,5 +1,5 @@
-import { useDebounceCallback } from 'usehooks-ts';
 import { LoaderCircle } from 'lucide-react';
+import { useDebounceCallback } from 'usehooks-ts';
 import { Input } from '~/components/ui/input';
 
 type SearchBarProps = {
