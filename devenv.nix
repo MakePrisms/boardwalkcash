@@ -11,6 +11,7 @@
     pkgs.bun
     pkgs.fnm
     pkgs.nodePackages.vercel
+    pkgs.mkcert
   ];
 
   # https://devenv.sh/languages/
@@ -27,12 +28,13 @@
     echo Hello from $GREET
   '';
   scripts.webstorm.exec = "$DEVENV_ROOT/tools/devenv/webstorm.sh $@";
-
+  scripts.generate-ssl-cert.exec = "$DEVENV_ROOT/tools/devenv/generate-ssl-cert.sh";
 
   enterShell = ''
     hello
     git --version
     echo Bun version: $(bun --version)
+    generate-ssl-cert
   '';
 
   # https://devenv.sh/tasks/
