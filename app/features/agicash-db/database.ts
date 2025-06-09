@@ -7,10 +7,23 @@ import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
-if (!supabaseUrl) {
-  throw new Error('VITE_SUPABASE_URL is not set');
-}
+// Dynamic Supabase URL using proxy to avoid certificate issues
+const getSupabaseUrl = () => {
+  if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') {
+    // Production version or development version server-side: use direct connection
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
+    if (!supabaseUrl) {
+      throw new Error('VITE_SUPABASE_URL is not set');
+    }
+    return supabaseUrl;
+  }
+
+  // Client-side: use proxy through our trusted HTTPS server
+  const { protocol, host } = window.location;
+  return `${protocol}//${host}/supabase`;
+};
+
+const supabaseUrl = getSupabaseUrl();
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 if (!supabaseAnonKey) {
