@@ -7,4 +7,7 @@ export default {
   presets: [process.env.VERCEL ? vercelPreset() : null].filter(
     (preset): preset is Preset => Boolean(preset),
   ),
+  async prerender() {
+    return ['/terms', '/privacy'];
+  },
 } satisfies Config;
