@@ -1,4 +1,3 @@
-import { getDecodedToken } from '@cashu/cashu-ts';
 import {
   PageBackButton,
   PageContent,
@@ -7,6 +6,7 @@ import {
 } from '~/components/page';
 import { QRScanner } from '~/components/qr-scanner';
 import { useToast } from '~/hooks/use-toast';
+import { extractCashuToken } from '~/lib/cashu';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
 
 export default function Scan() {
@@ -25,20 +25,21 @@ export default function Scan() {
       </PageHeader>
       <PageContent className="relative flex items-center justify-center">
         <QRScanner
-          onDecode={(token) => {
-            console.log('token', token);
-            try {
-              getDecodedToken(token);
-              navigate(`/receive/cashu-token#${token}`, {
-                applyTo: 'oldView',
-                transition: 'slideDown',
-              });
-            } catch {
+          onDecode={(scannedContent) => {
+            const token = extractCashuToken(scannedContent);
+            if (!token) {
               toast({
-                title: 'Invalid token',
+                title: 'Invalid input',
+                description: 'Please scan a valid cashu token',
                 variant: 'destructive',
               });
+              return;
             }
+
+            navigate(`/receive/cashu-token#${token}`, {
+              transition: 'slideLeft',
+              applyTo: 'newView',
+            });
           }}
         />
       </PageContent>

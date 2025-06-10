@@ -4,6 +4,7 @@ import {
   CheckStateEnum,
   type Proof,
   type Token,
+  getDecodedToken,
 } from '@cashu/cashu-ts';
 import { proofToY } from './proof';
 
@@ -29,4 +30,45 @@ export const getUnspentProofsFromToken = async (
     const state = states.find((s) => s.Y === Y);
     return state?.state === CheckStateEnum.UNSPENT;
   });
+};
+
+const getDecodedTokenSafe = (
+  encodedToken: string,
+):
+  | {
+      success: true;
+      token: Token;
+    }
+  | {
+      success: false;
+      error: string;
+    } => {
+  try {
+    return { success: true, token: getDecodedToken(encodedToken) };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to decode token';
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * Extract a cashu token from a string if there is one and then validate it
+ * @param content - The content to extract the encoded cashu token from (a string like a URL or a direct token)
+ * @returns The extracted token if found and valid, otherwise null
+ */
+export const extractCashuToken = (content: string): string | null => {
+  // Look for V3 (cashuA) or V4 (cashuB) tokens anywhere in the content
+  // Tokens are base64_urlsafe encoded, so they can contain: A-Z, a-z, 0-9, -, _, and optional = padding
+  // See https://github.com/cashubtc/nuts/blob/main/00.md#serialization-of-tokens for more details
+  const tokenMatch = content.match(/cashu[AB][A-Za-z0-9_-]+={0,2}/);
+  if (tokenMatch) {
+    const extractedToken = tokenMatch[0];
+    const result = getDecodedTokenSafe(extractedToken);
+    if (result.success) {
+      return extractedToken;
+    }
+  }
+
+  return null;
 };

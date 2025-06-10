@@ -1,4 +1,3 @@
-import { getDecodedToken } from '@cashu/cashu-ts';
 import { ArrowUpDown, Clipboard, QrCode, Scan } from 'lucide-react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
@@ -15,6 +14,7 @@ import { getDefaultUnit } from '~/features/shared/currencies';
 import useAnimation from '~/hooks/use-animation';
 import { useMoneyInput } from '~/hooks/use-money-input';
 import { useToast } from '~/hooks/use-toast';
+import { extractCashuToken } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { readClipboard } from '~/lib/read-clipboard';
 import {
@@ -111,21 +111,21 @@ export default function ReceiveInput() {
     if (!clipboardContent) {
       return;
     }
-    try {
-      // This will throw if the token is invalid
-      getDecodedToken(clipboardContent);
-      navigate(`/receive/cashu-token#${clipboardContent}`, {
-        transition: 'slideLeft',
-        applyTo: 'newView',
-      });
-    } catch (error) {
+
+    const token = extractCashuToken(clipboardContent);
+    if (!token) {
       toast({
-        title: 'Invalid token',
-        description:
-          error instanceof Error ? error.message : 'Failed to decode token',
+        title: 'Invalid input',
+        description: 'Please paste a valid cashu token',
         variant: 'destructive',
       });
+      return;
     }
+
+    navigate(`/receive/cashu-token#${token}`, {
+      transition: 'slideLeft',
+      applyTo: 'newView',
+    });
   };
 
   return (
