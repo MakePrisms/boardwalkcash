@@ -206,7 +206,17 @@ export function SendInput() {
               inputValue={rawInputValue}
               currency={inputValue.currency}
               unit={getDefaultUnit(inputValue.currency)}
+              onNumpadInput={(button) =>
+                handleNumberInput(button, startShakeAnimation)
+              }
+              inputId="send-amount-input"
+              ariaDescribedBy="numpad-instructions"
             />
+          </div>
+
+          {/* Hidden instructions for screen readers */}
+          <div id="numpad-instructions" className="sr-only">
+            Use the number pad below or type directly to enter an amount
           </div>
 
           {!exchangeRateError && (
@@ -276,6 +286,8 @@ export function SendInput() {
             onButtonClick={(value) => {
               handleNumberInput(value, startShakeAnimation);
             }}
+            ariaControls="send-amount-input"
+            id="send-input-numpad"
           />
         </div>
       </PageContent>
