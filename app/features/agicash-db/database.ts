@@ -7,11 +7,21 @@ import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { Transaction } from '../transactions/transaction';
 import { supabaseSessionStore } from './supabse-session-store';
 
+const isLocalServer = (hostname: string) => {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.local') ||
+    hostname.startsWith('192.168.')
+  );
+};
+
 const getSupabaseUrl = () => {
   if (
-    process.env.NODE_ENV === 'production' ||
     typeof window === 'undefined' ||
-    window.location.protocol === 'http:'
+    window.location.protocol === 'http:' ||
+    (process.env.NODE_ENV === 'production' &&
+      !isLocalServer(window.location.hostname))
   ) {
     // Production version, development version server-side, or client-side with HTTP: use direct connection
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';

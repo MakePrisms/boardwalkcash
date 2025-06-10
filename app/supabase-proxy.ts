@@ -110,7 +110,7 @@ export const setupSupabaseWebSocketProxy = (
         targetWs.send(data, { binary: isBinary });
       } else {
         console.warn(
-          '⚠️ Cannot forward message to Supabase - Supabase connection not open',
+          '⚠️  Cannot forward message to Supabase - Supabase connection not open',
         );
       }
     });
@@ -121,7 +121,7 @@ export const setupSupabaseWebSocketProxy = (
         ws.send(data, { binary: isBinary });
       } else {
         console.warn(
-          '⚠️ Cannot forward message from Supabase - Client connection not open',
+          '⚠️  Cannot forward message from Supabase - Client connection not open',
         );
       }
     });
@@ -131,19 +131,21 @@ export const setupSupabaseWebSocketProxy = (
       console.debug('✅ WebSocket proxy connected to Supabase realtime');
     });
 
-    targetWs.on('close', () => {
-      console.warn('⚠️  Supabase realtime connection closed');
-      ws.close();
+    targetWs.on('close', (code) => {
+      console.warn('⚠️  Supabase realtime connection closed', { code });
+      const reason = `Supabase web socket was closed with code ${code}`;
+      ws.close(1000, reason);
     });
 
     targetWs.on('error', (error) => {
       console.warn('⚠️  Supabase realtime connection error', error);
-      ws.close();
+      ws.close(1000, `Supabase realtime connection error: ${error.message}`);
     });
 
-    ws.on('close', () => {
-      console.warn('⚠️  Client WebSocket connection closed');
-      targetWs.close();
+    ws.on('close', (code) => {
+      console.warn('⚠️  Client WebSocket connection closed', { code });
+      const reason = `Client web socket was closed with code ${code}`;
+      targetWs.close(1000, reason);
     });
   });
 };
