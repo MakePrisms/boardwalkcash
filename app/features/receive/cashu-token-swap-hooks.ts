@@ -143,6 +143,8 @@ export function useTokenSwap({
     queryKey: [cashuTokenSwapQueryKey, tokenHash],
     queryFn: () => cache.get(tokenHash ?? ''),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     enabled,
   });
 
@@ -242,6 +244,8 @@ function usePendingCashuTokenSwaps() {
     queryKey: [pendingCashuTokenSwapsQueryKey, userRef.current.id],
     queryFn: () => tokenSwapRepository.getPending(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     throwOnError: true,
   });
 

@@ -201,6 +201,8 @@ export function useCashuSendQuote({
     queryKey: [cashuSendQuoteQueryKey, sendQuoteId],
     queryFn: () => cache.get(sendQuoteId ?? ''),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     enabled,
   });
 
@@ -285,6 +287,8 @@ function useUnresolvedCashuSendQuotes() {
     queryKey: [unresolvedCashuSendQuotesQueryKey, userRef.current.id],
     queryFn: () => cashuSendQuoteRepository.getUnresolved(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     throwOnError: true,
   });
 
