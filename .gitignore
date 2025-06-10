@@ -30,3 +30,6 @@ node_modules
 .DS_Store
 
 .react-router/
+
+# Local SSL certificates
+/certs/

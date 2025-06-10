@@ -38,6 +38,19 @@ bun run supabase start
 bun run dev
 ```
 
+When testing the app on an actual mobile device, you need to connect to the same Wi-Fi as the machine hosting the app 
+and access it via local IP or hostname. Unlike localhost or 127.0.0.1 those are not considered as safe context by the
+browser so the browser APIs which require safe context won't work. To solve this issue you need to run the app on HTTPS
+instead. To run the dev server on HTTPS execute:
+
+```sh
+bun run dev --https
+```
+
+A self-signed certificate is used for HTTPS. The certificate is managed by devenv automatically. If you need to
+regenerate the certificate (for example, if your local IP has changed), reload devenv by executing `direnv reload`
+or run the certificate script directly by executing `generate-ssl-cert`. 
+
 `master` is the main branch. When working on a feature, branch of `master` and when ready make a PR back to `master`.
 Try to make feature branches short-lived and concise (avoid implementing multiple features in one PR).
 

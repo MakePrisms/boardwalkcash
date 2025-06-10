@@ -45,9 +45,9 @@
     "@react-router/express": "7.6.0",
     "@react-router/fs-routes": "7.6.0",
     "@react-router/node": "7.6.0",
-    "@supabase/supabase-js": "2.49.8",
     "@scure/bip32": "1.6.2",
     "@scure/bip39": "1.5.4",
+    "@supabase/supabase-js": "2.49.8",
     "@tanstack/react-query": "5.76.1",
     "@tanstack/react-query-devtools": "5.76.1",
     "@vercel/analytics": "1.4.1",
@@ -89,6 +89,7 @@
     "@types/jwt-encode": "1.0.3",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
+    "@types/ws": "8.18.1",
     "autoprefixer": "10.4.20",
     "dotenv": "16.4.7",
     "jwt-encode": "1.0.1",
@@ -100,7 +101,8 @@
     "type-fest": "4.34.1",
     "typescript": "5.7.2",
     "vite": "5.4.11",
-    "vite-tsconfig-paths": "4.3.2"
+    "vite-tsconfig-paths": "4.3.2",
+    "ws": "8.18.2"
   },
   "engines": {
     "bun": "1.2.13",
