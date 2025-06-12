@@ -2,6 +2,7 @@
 
 // Inspired by react-hot-toast library
 import * as React from 'react';
+import type { SetOptional } from 'type-fest';
 
 import type { ToastActionElement, ToastProps } from '~/components/ui/toast';
 
@@ -137,10 +138,10 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, 'id'>;
+type Toast = SetOptional<ToasterToast, 'id'>;
 
 function toast({ ...props }: Toast) {
-  const id = genId();
+  const id = props.id ?? genId();
 
   const update = (props: ToasterToast) =>
     dispatch({
