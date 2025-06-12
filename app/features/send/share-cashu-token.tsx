@@ -55,6 +55,7 @@ export function ShareCashuToken({ token }: Props) {
                     toast({
                       title: 'Copied Shareable Link to clipboard',
                       description: shortShareableLink,
+                      duration: 1000,
                     });
                   }}
                 />
@@ -69,6 +70,7 @@ export function ShareCashuToken({ token }: Props) {
                     toast({
                       title: 'Copied eCash Token to clipboard',
                       description: shortToken,
+                      duration: 1000,
                     });
                   }}
                 />

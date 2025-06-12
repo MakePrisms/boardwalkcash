@@ -52,6 +52,7 @@ function CashuRequestCarouselItem({ account, amount }: CashuRequestItemProps) {
           toast({
             title: 'Copied Cashu Payment Request',
             description: `${cashuRequest?.slice(0, 5)}...${cashuRequest?.slice(-5)}`,
+            duration: 1000,
           });
         }}
       />
@@ -107,6 +108,7 @@ function MintQuoteCarouselItem({ account, amount, onPaid }: MintQuoteProps) {
                 toast({
                   title: 'Copied Lightning invoice',
                   description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
+                  duration: 1000,
                 });
               }
             : undefined
