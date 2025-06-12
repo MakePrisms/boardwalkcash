@@ -99,6 +99,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "include": ["app/components/markdown.tsx"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": { "quoteStyle": "single" },
     "globals": ["React"]

@@ -53,7 +53,6 @@ export function Markdown({ content }: MarkdownProps) {
               <h1
                 key={key}
                 className="font-bold text-2xl"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: Allow HTML in markdown content
                 dangerouslySetInnerHTML={{ __html: line.content }}
               />
             );
@@ -62,7 +61,6 @@ export function Markdown({ content }: MarkdownProps) {
               <h2
                 key={key}
                 className="mt-6 mb-3 font-bold text-xl"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: Allow HTML in markdown content
                 dangerouslySetInnerHTML={{ __html: line.content }}
               />
             );
@@ -71,7 +69,6 @@ export function Markdown({ content }: MarkdownProps) {
               <h3
                 key={key}
                 className="mt-4 mb-2 font-bold text-lg"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: Allow HTML in markdown content
                 dangerouslySetInnerHTML={{ __html: line.content }}
               />
             );
@@ -79,10 +76,7 @@ export function Markdown({ content }: MarkdownProps) {
             return (
               <div key={key} className="mb-2 ml-4 flex">
                 <span className="mr-2">•</span>
-                <span
-                  // biome-ignore lint/security/noDangerouslySetInnerHtml: Allow HTML in markdown content
-                  dangerouslySetInnerHTML={{ __html: line.content }}
-                />
+                <span dangerouslySetInnerHTML={{ __html: line.content }} />
               </div>
             );
           case 'paragraph':
@@ -90,7 +84,6 @@ export function Markdown({ content }: MarkdownProps) {
               <p
                 key={key}
                 className="mb-4"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: Allow HTML in markdown content
                 dangerouslySetInnerHTML={{ __html: line.content }}
               />
             );
