@@ -471,23 +471,12 @@ type MintInfoQueryResult = UseQueryResult<
 >;
 
 const combineMintInfoQueryResults = (results: MintInfoQueryResult[]) => {
-  const map = results.reduce((acc, curr) => {
+  return results.reduce((acc, curr) => {
     if (curr.data) {
       acc.set(curr.data.mintUrl, curr);
     }
     return acc;
   }, new Map<string, MintInfoQueryResult>());
-
-  const isPending = results.some(
-    (result) => result.isFetching && !result.data?.mintInfo,
-  );
-
-  const result = {
-    isPending,
-    results: map,
-  };
-
-  return result;
 };
 
 const mintInfoStaleTimeInMs = 30 * 60 * 1000;
@@ -516,7 +505,7 @@ const usePartitionQuotesByStateCheckType = ({
     return [...new Set(accounts.map((x) => x.mintUrl))];
   }, [quotes, getCashuAccount]);
 
-  const mintInfoQueryResult = useQueries({
+  const mintInfoMap = useQueries({
     queries: mintUrls.map((mintUrl) => ({
       queryKey: ['mint-info', mintUrl],
       queryFn: async () => {
@@ -538,17 +527,17 @@ const usePartitionQuotesByStateCheckType = ({
     const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
     const quotesToPoll: CashuReceiveQuote[] = [];
 
-    const { isPending, results } = mintInfoQueryResult;
-
-    if (isPending || results.size === 0) {
-      return { quotesToSubscribeTo, quotesToPoll };
-    }
-
     quotes.forEach((quote) => {
       const account = getCashuAccount(quote.accountId);
-      const mintInfoQueryResult = results.get(account.mintUrl);
-      if (!mintInfoQueryResult) {
-        throw new Error(`Query result not found for mint ${account.mintUrl}`);
+      const mintInfoQueryResult = mintInfoMap.get(account.mintUrl);
+      if (
+        !mintInfoQueryResult ||
+        mintInfoQueryResult.isPending ||
+        !mintInfoQueryResult.data?.mintInfo
+      ) {
+        // Mint info query result is not available yet or pending so this quote is not partitioned yet.
+        // When the query result is available, this will be re-run and the quote will be partitioned.
+        return;
       }
 
       if (mintInfoQueryResult.isError) {
@@ -563,10 +552,7 @@ const usePartitionQuotesByStateCheckType = ({
         return;
       }
 
-      const mintInfo = mintInfoQueryResult.data?.mintInfo;
-      if (!mintInfo) {
-        throw new Error(`Mint info data not found for mint ${account.mintUrl}`);
-      }
+      const mintInfo = mintInfoQueryResult.data.mintInfo;
 
       const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
         account.mintUrl,
@@ -583,7 +569,7 @@ const usePartitionQuotesByStateCheckType = ({
     });
 
     return { quotesToSubscribeTo, quotesToPoll };
-  }, [mintInfoQueryResult, quotes, getCashuAccount]);
+  }, [mintInfoMap, quotes, getCashuAccount]);
 };
 
 type OnMintQuoteStateChangeProps = {
