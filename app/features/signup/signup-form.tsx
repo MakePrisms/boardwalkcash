@@ -11,6 +11,7 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useAuthActions } from '~/features/user/auth';
+import { useGetCashuTokenFromUrlHash } from '~/hooks/use-get-cashu-token-from-url-hash';
 import { useToast } from '~/hooks/use-toast';
 import { buildEmailValidator } from '~/lib/validation';
 
@@ -23,6 +24,7 @@ const validateEmail = buildEmailValidator('Invalid email');
 export function SignupForm({ onBack }: Props) {
   const { signUp } = useAuthActions();
   const { toast } = useToast();
+  const { withTokenHash } = useGetCashuTokenFromUrlHash();
   const {
     register,
     handleSubmit,
@@ -151,7 +153,7 @@ export function SignupForm({ onBack }: Props) {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have a wallet?{' '}
-          <Link to="/login" className="underline">
+          <Link to={withTokenHash('/login')} className="underline">
             Log in
           </Link>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { SignupForm } from '~/features/signup/signup-form';
 import { SignupOptions } from '~/features/signup/signup-options';
-import { SignupForm } from '~/features/signup/singup-form';
 import { useAuthActions } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
 import { getErrorMessage } from '../shared/error';

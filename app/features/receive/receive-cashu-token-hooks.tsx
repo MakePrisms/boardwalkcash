@@ -1,6 +1,6 @@
 import type { Token } from '@cashu/cashu-ts';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type {
   Account,
   CashuAccount,
@@ -35,7 +35,7 @@ type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
 type UseGetClaimableTokenProps = {
   token: Token;
-  cashuPubKey: string;
+  cashuPubKey?: string;
 };
 
 type TokenQueryResult =
@@ -135,7 +135,7 @@ export function useTokenWithClaimableProofs({
 
       const { claimableProofs, cannotClaimReason } = getClaimableProofs(
         unspentProofs,
-        [cashuPubKey],
+        cashuPubKey ? [cashuPubKey] : [],
       );
 
       return claimableProofs
@@ -279,20 +279,21 @@ export function useReceiveCashuTokenAccounts(token: Token) {
     setReceiveAccountId(account.id);
   };
 
-  const addAndSetReceiveAccount = async (
-    accountToAdd: CashuAccount,
-  ): Promise<CashuAccount> => {
-    const newAccount = await addCashuAccount(accountToAdd);
-    setReceiveAccountId(newAccount.id);
-    return newAccount;
-  };
+  const addAndSetReceiveAccount = useRef(
+    async (accountToAdd: CashuAccount): Promise<CashuAccount> => {
+      const newAccount = await addCashuAccount(accountToAdd);
+      setReceiveAccountId(newAccount.id);
+      return newAccount;
+    },
+  );
 
   return {
     selectableAccounts,
     receiveAccount,
     isCrossMintSwapDisabled,
+    sourceAccount,
     setReceiveAccount,
-    addAndSetReceiveAccount,
+    addAndSetReceiveAccount: addAndSetReceiveAccount.current,
   };
 }
 
@@ -325,29 +326,33 @@ export function useReceiveCashuToken({
     transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
   });
 
-  const claimToken = async ({
-    token,
-    account,
-  }: {
-    token: Token;
-    account: CashuAccount;
-  }) => {
-    try {
-      const isSourceMint = areMintUrlsEqual(account.mintUrl, token.mint);
+  const claimToken = useRef(
+    async ({
+      token,
+      account,
+    }: {
+      token: Token;
+      account: CashuAccount;
+    }) => {
+      try {
+        const isSourceMint = areMintUrlsEqual(account.mintUrl, token.mint);
 
-      if (isSourceMint) {
-        await createCashuTokenSwap({ token, accountId: account.id });
-      } else {
-        await meltTokenToCashuAccount({ token, account });
+        if (isSourceMint) {
+          await createCashuTokenSwap({ token, accountId: account.id });
+        } else {
+          await meltTokenToCashuAccount({ token, account });
+        }
+      } catch (error) {
+        console.error('Failed to claim token', error);
+
+        onErrorRef.current?.(
+          error instanceof Error
+            ? error
+            : new Error('An unknown error occurred'),
+        );
       }
-    } catch (error) {
-      console.error('Failed to claim token', error);
-
-      onErrorRef.current?.(
-        error instanceof Error ? error : new Error('An unknown error occurred'),
-      );
-    }
-  };
+    },
+  );
 
   const status: ClaimStatus = (() => {
     const isCreatingTransaction =
@@ -385,6 +390,6 @@ export function useReceiveCashuToken({
 
   return {
     status,
-    claimToken,
+    claimToken: claimToken.current,
   };
 }
