@@ -6,8 +6,10 @@ import {
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { Button } from '~/components/ui/button';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import type { Money } from '~/lib/money';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import type { Account } from '../accounts/account';
 import { getDefaultUnit } from '../shared/currencies';
 
@@ -47,7 +49,7 @@ export function SuccessfulSendPage({
           <div className="mb-2 flex justify-center">
             <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
-          <div className="flex w-full flex-col gap-8">
+          <div className="flex w-full flex-col gap-6">
             <TransactionDetail label="Account" value={account.name} />
             <TransactionDetail label="Destination" value={destination} />
             <TransactionDetail
@@ -65,6 +67,14 @@ export function SuccessfulSendPage({
           </div>
         </div>
       </PageContent>
+      <Button
+        asChild
+        className="absolute right-0 bottom-16 left-0 mx-auto w-[80px]"
+      >
+        <LinkWithViewTransition to="/" transition="slideDown" applyTo="oldView">
+          OK
+        </LinkWithViewTransition>
+      </Button>
     </Page>
   );
 }
