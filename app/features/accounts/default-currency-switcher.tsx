@@ -52,7 +52,7 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
         <MoneyWithConvertedAmount money={balance} variant="inline" />
       </div>
       <RadioGroup value={isSelected ? currency : undefined}>
-        <RadioGroupItem value={currency} />
+        <RadioGroupItem className="text-foreground" value={currency} />
       </RadioGroup>
     </button>
   );
