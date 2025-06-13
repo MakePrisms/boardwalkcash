@@ -350,33 +350,47 @@ export function useReceiveCashuToken({
   };
 
   const status: ClaimStatus = (() => {
-    const isCreatingTransaction =
+    // Check if either mutation is currently running
+    const isMutationPending =
       createCashuTokenSwapStatus === 'pending' ||
       meltTokenToCashuAccountStatus === 'pending';
 
-    if (isCreatingTransaction) {
+    if (isMutationPending) {
       return 'CLAIMING';
     }
 
-    const creationFailed =
+    // Check if either mutation failed
+    const hasMutationFailed =
       createCashuTokenSwapStatus === 'error' ||
       meltTokenToCashuAccountStatus === 'error';
 
-    if (creationFailed) {
+    if (hasMutationFailed) {
       return 'ERROR';
     }
 
+    // Check if mutation succeeded but we don't have transaction data yet
+    // This handles the gap between mutation completion and transaction loading
+    const hasMutationSucceeded =
+      createCashuTokenSwapStatus === 'success' ||
+      meltTokenToCashuAccountStatus === 'success';
+
+    if (hasMutationSucceeded && !transaction) {
+      return 'CLAIMING';
+    }
+
+    // Handle transaction states
     if (transaction) {
-      if (transaction.state === 'DRAFT' || transaction.state === 'PENDING') {
-        return 'CLAIMING';
-      }
-
-      if (transaction.state === 'COMPLETED') {
-        return 'SUCCESS';
-      }
-
-      if (transaction.state === 'FAILED') {
-        return 'ERROR';
+      switch (transaction.state) {
+        case 'DRAFT':
+        case 'PENDING':
+          return 'CLAIMING';
+        case 'COMPLETED':
+          return 'SUCCESS';
+        case 'FAILED':
+        case 'REVERSED':
+          return 'ERROR';
+        default:
+          return 'IDLE';
       }
     }
 
