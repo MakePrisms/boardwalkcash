@@ -88,6 +88,8 @@ export function useContacts(select?: (contacts: Contact[]) => Contact[]) {
     queryKey: [contactsQueryKey, userRef.current.id],
     queryFn: async () => contactRepository.getAll(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     select,
   });
 

@@ -290,6 +290,8 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
     queryKey: [accountsQueryKey, user.id],
     queryFn: () => accountRepository.getAll(user.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     select: (data) => {
       const extendedData = data
         .map((x) => ({

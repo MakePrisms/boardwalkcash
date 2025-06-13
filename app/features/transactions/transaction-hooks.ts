@@ -41,6 +41,8 @@ export function useTransaction({
     queryFn: () => transactionRepository.get(transactionId ?? ''),
     enabled,
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 }
 
@@ -53,6 +55,8 @@ export function useSuspenseTransaction(id: string) {
     queryKey: [transactionQueryKey, id],
     queryFn: () => transactionRepository.get(id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 }
 

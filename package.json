@@ -8,7 +8,7 @@
     "build:client": "react-router build",
     "build:server": "cross-env NODE_ENV=production bun build ./app/server.ts --target=node --format=esm --outdir=./build --external=build/server/index.js",
     "dev": "cross-env NODE_OPTIONS='--max-old-space-size=8192' tsx watch --exclude 'vite.config.ts.timestamp-*' ./app/server.ts",
-    "start": "cross-env NODE_ENV=production node ./build/server.js",
+    "start": "cross-env NODE_ENV=production node -r dotenv/config ./build/server.js",
     "typecheck": "react-router typegen && tsc",
     "lint": "biome lint --write",
     "lint:check": "biome lint",
@@ -28,7 +28,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@cashu/cashu-ts": "2.5.2",
+    "@cashu/cashu-ts": "jbojcic1/cashu-ts#socket-onclose-callback-with-build-artifacts",
     "@cashu/crypto": "0.3.4",
     "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
     "@opensecret/react": "1.1.0",

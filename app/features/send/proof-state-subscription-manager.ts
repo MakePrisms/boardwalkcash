@@ -85,6 +85,11 @@ export class ProofStateSubscriptionManager {
 
     try {
       await subscriptionPromise;
+
+      wallet.mint.webSocketConnection?.onClose((event) => {
+        console.debug('Mint socket closed', { mintUrl, event });
+        this.subscriptions.delete(mintUrl);
+      });
     } catch (error) {
       this.subscriptions.delete(mintUrl);
       throw error;

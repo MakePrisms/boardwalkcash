@@ -207,6 +207,8 @@ export function useCashuReceiveQuote({
     queryKey: [cashuReceiveQuoteQueryKey, quoteId],
     queryFn: () => cache.get(quoteId ?? ''),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     enabled,
   });
 
@@ -280,6 +282,8 @@ const usePendingCashuReceiveQuotes = () => {
     queryKey: [pendingCashuReceiveQuotesQueryKey, userRef.current.id],
     queryFn: () => cashuReceiveQuoteRepository.getPending(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     throwOnError: true,
   });
 

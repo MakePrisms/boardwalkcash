@@ -223,6 +223,8 @@ export function useUnresolvedCashuSendSwaps() {
     queryKey: [unresolvedCashuSendSwapsQueryKey, userRef.current.id],
     queryFn: () => cashuSendSwapRepository.getUnresolved(userRef.current.id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 
   return useMemo(() => {
@@ -260,6 +262,8 @@ export function useCashuSendSwap(id: string) {
       return failureCount <= 3;
     },
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 
   const account = useAccount(result.data.accountId) as CashuAccount;
@@ -306,6 +310,8 @@ export function useTrackCashuSendSwap({
     queryKey: [cashuSendSwapQueryKey, id],
     queryFn: () => cashuSendSwapCache.get(id),
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     enabled,
   });
 
