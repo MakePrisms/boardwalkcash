@@ -92,7 +92,7 @@ const BaseConfirmation = ({
             </CardContent>
           </Card>
         </div>
-        <div className="z-10 mt-auto mb-28">
+        <div className="absolute bottom-16 z-10 mt-auto flex w-full max-w-sm justify-center">
           <Button onClick={onConfirm} loading={loading} disabled={!!error}>
             Confirm
           </Button>

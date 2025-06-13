@@ -130,7 +130,7 @@ export default function ReceiveToken({ token }: Props) {
         </div>
 
         {claimableToken && (
-          <div className="z-10 mt-auto mb-28">
+          <div className="absolute bottom-16 z-10 mt-auto flex w-full max-w-sm justify-center">
             <Button
               disabled={receiveAccount.selectable === false}
               onClick={handleClaim}
