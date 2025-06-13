@@ -8,13 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
+import { useGetCashuTokenFromUrlHash } from '~/hooks/use-get-cashu-token-from-url-hash';
 
 type Option = 'email' | 'google';
 type Props = { onSelect: (option: Option) => Promise<void> };
 
 export function LoginOptions({ onSelect }: Props) {
   const [submitting, setSubmitting] = useState<Option | null>(null);
-
+  const { withTokenHash } = useGetCashuTokenFromUrlHash();
   const handeSelect = async (option: Option) => {
     if (submitting) return;
 
@@ -49,7 +50,7 @@ export function LoginOptions({ onSelect }: Props) {
         </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{' '}
-          <Link to="/signup" className="underline">
+          <Link to={withTokenHash('/signup')} className="underline">
             Sign up
           </Link>
         </div>

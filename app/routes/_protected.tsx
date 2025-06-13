@@ -1,8 +1,10 @@
 import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
+import { PublicReceiveCashuToken } from '~/features/receive/receive-cashu-token';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { WalletSetup } from '~/features/wallet/wallet';
+import { useGetCashuTokenFromUrlHash } from '~/hooks/use-get-cashu-token-from-url-hash';
 
 const shouldUserVerifyEmail = (user: AuthUser) => {
   const isGuest = !user.email;
@@ -21,6 +23,7 @@ export default function ProtectedRoute() {
   const shouldVerifyEmail = user ? shouldUserVerifyEmail(user) : false;
   const isVerifyEmailRoute = location.pathname.startsWith('/verify-email');
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
+  const { token } = useGetCashuTokenFromUrlHash();
 
   console.debug('Rendering protected layout', {
     location: location.pathname,
@@ -34,6 +37,9 @@ export default function ProtectedRoute() {
   });
 
   if (shouldRedirectToSignup) {
+    if (token) {
+      return <PublicReceiveCashuToken token={token} />;
+    }
     return (
       <Redirect
         to="/signup"
