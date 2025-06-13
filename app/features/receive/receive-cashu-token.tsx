@@ -100,6 +100,7 @@ export default function ReceiveToken({ token }: Props) {
             copyToClipboard(getEncodedToken(claimableToken ?? token));
             toast({
               title: 'Token copied to clipboard',
+              duration: 1000,
             });
           }}
         >

@@ -50,6 +50,7 @@ export function SingleContact({ contact }: { contact: Contact }) {
         .then(() => {
           toast({
             title: 'Profile link copied to clipboard',
+            duration: 1000,
           });
         })
         .catch((error) => {
