@@ -484,8 +484,6 @@ export function useTrackUnresolvedCashuSendQuotes() {
     [queryClient],
   );
   const cashuSendQuoteCache = useCashuSendQuoteCache();
-  const cashuSendService = useCashuSendQuoteService();
-  const unresolvedSendQuotes = useUnresolvedCashuSendQuotes();
 
   useOnCashuSendQuoteChange({
     onCreated: (send) => {
@@ -501,6 +499,11 @@ export function useTrackUnresolvedCashuSendQuotes() {
       }
     },
   });
+}
+
+export function useProcessCashuSendQuoteTasks() {
+  const cashuSendService = useCashuSendQuoteService();
+  const unresolvedSendQuotes = useUnresolvedCashuSendQuotes();
 
   useOnMeltQuoteStateChange({
     sendQuotes: unresolvedSendQuotes,

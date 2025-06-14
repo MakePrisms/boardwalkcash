@@ -259,8 +259,6 @@ export function useTrackPendingCashuTokenSwaps() {
     [queryClient],
   );
   const tokenSwapCache = useCashuTokenSwapCache();
-  const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useOnCashuTokenSwapChange({
     onCreated: (swap) => {
@@ -277,6 +275,11 @@ export function useTrackPendingCashuTokenSwaps() {
       }
     },
   });
+}
+
+export function useProcessCashuTokenSwapTasks() {
+  const pendingSwaps = usePendingCashuTokenSwaps();
+  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
 
   useQueries({
     queries: pendingSwaps.map((swap) => ({

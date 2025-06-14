@@ -1,16 +1,30 @@
 import { useOpenSecret } from '@opensecret/react';
-import { type PropsWithChildren, Suspense, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { type PropsWithChildren, Suspense, useEffect, useState } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
 import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
-import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
-import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
-import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
-import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
+import {
+  useProcessCashuReceiveQuoteTasks,
+  useTrackPendingCashuReceiveQuotes,
+} from '../receive/cashu-receive-quote-hooks';
+import {
+  useProcessCashuTokenSwapTasks,
+  useTrackPendingCashuTokenSwaps,
+} from '../receive/cashu-token-swap-hooks';
+import {
+  useProcessCashuSendQuoteTasks,
+  useTrackUnresolvedCashuSendQuotes,
+} from '../send/cashu-send-quote-hooks';
+import {
+  useProcessCashuSendSwapTasks,
+  useTrackUnresolvedCashuSendSwaps,
+} from '../send/cashu-send-swap-hooks';
 import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
+import { useTaskProcessingLockRepository } from './task-processing-lock-repository';
 
 const useInitializeSupabaseSessionStore = () => {
   const { generateThirdPartyToken } = useOpenSecret();
@@ -53,6 +67,14 @@ const useUpsertAgicashUser = (authUser: AuthUser) => {
   return user ?? null;
 };
 
+const TaskProcessor = () => {
+  useProcessCashuReceiveQuoteTasks();
+  useProcessCashuTokenSwapTasks();
+  useProcessCashuSendQuoteTasks();
+  useProcessCashuSendSwapTasks();
+  return null;
+};
+
 const Wallet = ({ children }: PropsWithChildren) => {
   const { toast } = useToast();
   const isGuestAccount = useUser((user) => user.isGuest);
@@ -76,7 +98,42 @@ const Wallet = ({ children }: PropsWithChildren) => {
   useTrackUnresolvedCashuSendQuotes();
   useTrackUnresolvedCashuSendSwaps();
 
-  return children;
+  const isLead = useTakeLead();
+
+  return (
+    <>
+      {isLead && <TaskProcessor />}
+      {children}
+    </>
+  );
+};
+
+const useTakeLead = () => {
+  const taskProcessingLockRepository = useTaskProcessingLockRepository();
+  const userId = useUser((user) => user.id);
+  const [clientId] = useState(() => crypto.randomUUID());
+
+  const { data: takeLeadResult, error } = useQuery({
+    queryKey: ['take-lead', userId, clientId],
+    queryFn: () => {
+      return taskProcessingLockRepository.takeLead(userId, clientId);
+    },
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+  });
+
+  useEffect(() => {
+    if (error) {
+      console.warn(
+        'Error. Take lead request failed. Will retry in 5 seconds.',
+        {
+          cause: error,
+        },
+      );
+    }
+  }, [error]);
+
+  return takeLeadResult ?? false;
 };
 
 /**
