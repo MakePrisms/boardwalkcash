@@ -662,8 +662,6 @@ const useOnMintQuoteStateChange = ({
 export function useTrackPendingCashuReceiveQuotes() {
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
-  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
-  const pendingQuotes = usePendingCashuReceiveQuotes();
 
   useOnCashuReceiveQuoteChange({
     onCreated: (quote) => {
@@ -680,6 +678,11 @@ export function useTrackPendingCashuReceiveQuotes() {
       }
     },
   });
+}
+
+export function useProcessCashuReceiveQuoteTasks() {
+  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
+  const pendingQuotes = usePendingCashuReceiveQuotes();
 
   useOnMintQuoteStateChange({
     quotes: pendingQuotes,
