@@ -134,7 +134,7 @@ export function useCreateCashuReceiveQuote() {
   return useMutation({
     mutationKey: ['create-cashu-receive-quote'],
     scope: {
-      id: 'create-cashu-receive-quote',
+      id: 'account-mutation',
     },
     mutationFn: ({ account, amount, description }: CreateProps) =>
       cashuReceiveQuoteService.createLightningQuote({
@@ -158,7 +158,7 @@ export function useMeltTokenToCashuAccount() {
   return useMutation({
     mutationKey: ['melt-token-to-cashu-account'],
     scope: {
-      id: 'melt-token-to-cashu-account',
+      id: 'account-mutation',
     },
     mutationFn: ({ token, account }: { token: Token; account: CashuAccount }) =>
       cashuReceiveQuoteService.meltTokenToCashuAccount({
@@ -662,8 +662,6 @@ const useOnMintQuoteStateChange = ({
 export function useTrackPendingCashuReceiveQuotes() {
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
-  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
-  const pendingQuotes = usePendingCashuReceiveQuotes();
 
   useOnCashuReceiveQuoteChange({
     onCreated: (quote) => {
@@ -680,20 +678,43 @@ export function useTrackPendingCashuReceiveQuotes() {
       }
     },
   });
+}
+
+export function useProcessCashuReceiveQuoteTasks() {
+  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
+  const pendingQuotes = usePendingCashuReceiveQuotes();
+
+  const { mutate: completeReceive } = useMutation({
+    mutationKey: ['complete-cashu-receive-quote'],
+    scope: {
+      id: 'account-mutation',
+    },
+    mutationFn: ({
+      account,
+      quote,
+    }: { account: CashuAccount; quote: CashuReceiveQuote }) =>
+      cashuReceiveQuoteService.completeReceive(account, quote),
+  });
+
+  const { mutate: expire } = useMutation({
+    mutationKey: ['expire-cashu-receive-quote'],
+    scope: {
+      id: 'account-mutation',
+    },
+    mutationFn: (quote: CashuReceiveQuote) =>
+      cashuReceiveQuoteService.expire(quote),
+  });
 
   useOnMintQuoteStateChange({
     quotes: pendingQuotes,
     onPaid: (account, quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.completeReceive(account, quote);
+      completeReceive({ account, quote });
     },
     onIssued: (account, quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.completeReceive(account, quote);
+      completeReceive({ account, quote });
     },
     onExpired: (quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.expire(quote);
+      expire(quote);
     },
   });
 }

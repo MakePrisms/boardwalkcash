@@ -392,9 +392,6 @@ export function useTrackUnresolvedCashuSendSwaps() {
     () => new UnresolvedCashuSendSwapsCache(queryClient),
     [queryClient],
   );
-  const { draft, pending } = useUnresolvedCashuSendSwaps();
-  const { mutate: swapForProofsToSend } = useSwapForProofsToSend();
-  const cashuSendSwapService = useCashuSendSwapService();
 
   useOnCashuSendSwapChange({
     onCreated: (swap) => {
@@ -410,6 +407,12 @@ export function useTrackUnresolvedCashuSendSwaps() {
       }
     },
   });
+}
+
+export function useProcessCashuSendSwapTasks() {
+  const { draft, pending } = useUnresolvedCashuSendSwaps();
+  const { mutate: swapForProofsToSend } = useSwapForProofsToSend();
+  const cashuSendSwapService = useCashuSendSwapService();
 
   useOnProofStateChange({
     swaps: pending,

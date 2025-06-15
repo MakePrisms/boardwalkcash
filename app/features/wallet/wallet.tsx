@@ -11,6 +11,7 @@ import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks'
 import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
+import { TaskProcessor, useTakeTaskProcessingLead } from './task-processing';
 
 const useInitializeSupabaseSessionStore = () => {
   const { generateThirdPartyToken } = useOpenSecret();
@@ -76,7 +77,14 @@ const Wallet = ({ children }: PropsWithChildren) => {
   useTrackUnresolvedCashuSendQuotes();
   useTrackUnresolvedCashuSendSwaps();
 
-  return children;
+  const isLead = useTakeTaskProcessingLead();
+
+  return (
+    <>
+      {isLead && <TaskProcessor />}
+      {children}
+    </>
+  );
 };
 
 /**
