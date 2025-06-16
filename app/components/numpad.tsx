@@ -1,5 +1,4 @@
 import { Delete } from 'lucide-react';
-import { useEffect } from 'react';
 import { getLocaleDecimalSeparator } from '~/lib/locale';
 import { Button } from './ui/button';
 
@@ -20,7 +19,7 @@ const buttons = [
 
 export type NumpadButton = (typeof buttons)[number];
 
-const isValidButton = (button: string): button is NumpadButton => {
+export const isValidNumpadButton = (button: string): button is NumpadButton => {
   return (buttons as readonly string[]).includes(button);
 };
 
@@ -43,26 +42,26 @@ type NumpadProps = {
   showDecimal: boolean;
   /** Callback when a button is clicked */
   onButtonClick: (button: NumpadButton) => void;
+  /** ID of the input element this numpad controls */
+  ariaControls?: string;
+  /** ID for this numpad group */
+  id?: string;
 };
 
-/** A component that displays a numpad and handles keyboard input */
-export const Numpad = ({ showDecimal, onButtonClick }: NumpadProps) => {
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const key = event.key;
-      if (isValidButton(key)) {
-        onButtonClick(key);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onButtonClick]);
-
+/** A component that displays a numpad */
+export const Numpad = ({
+  showDecimal,
+  onButtonClick,
+  ariaControls,
+  id,
+}: NumpadProps) => {
   return (
-    <div
-      aria-label="Number pad"
+    <fieldset
+      id={id}
+      aria-controls={ariaControls}
       className="flex w-full flex-col items-center gap-4 sm:hidden"
     >
+      <legend className="sr-only">Number pad</legend>
       <div className="grid w-full max-w-sm grid-cols-3 gap-4 sm:w-auto">
         {buttons.map((button) => {
           if (button === 'Backspace') {
@@ -93,6 +92,6 @@ export const Numpad = ({ showDecimal, onButtonClick }: NumpadProps) => {
           );
         })}
       </div>
-    </div>
+    </fieldset>
   );
 };

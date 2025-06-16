@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import type { Currency, CurrencyUnit } from '~/lib/money';
 import { Money } from '~/lib/money';
 import { cn } from '~/lib/utils';
+import { type NumpadButton, isValidNumpadButton } from './numpad';
 
 interface MoneyInputDisplayProps<C extends Currency = Currency> {
   /** Raw input value from user (e.g., "1", "1.", "1.0") */
@@ -8,6 +10,11 @@ interface MoneyInputDisplayProps<C extends Currency = Currency> {
   currency: C;
   unit: CurrencyUnit<C>;
   locale?: string;
+  onNumpadInput?: (button: NumpadButton) => void;
+  /** ID for the input element for accessibility connections */
+  inputId?: string;
+  /** ID for ARIA describedby connections */
+  ariaDescribedBy?: string;
 }
 
 export function MoneyInputDisplay<C extends Currency>({
@@ -15,6 +22,9 @@ export function MoneyInputDisplay<C extends Currency>({
   currency,
   unit,
   locale,
+  onNumpadInput,
+  inputId,
+  ariaDescribedBy,
 }: MoneyInputDisplayProps<C>) {
   const money = new Money({ amount: inputValue, currency, unit });
   const {
@@ -48,10 +58,57 @@ export function MoneyInputDisplay<C extends Currency>({
     <span className="text-[3.45rem] text-currencySymbol">{currencySymbol}</span>
   );
 
+  // Global keyboard listener for numpad input
+  useEffect(() => {
+    if (!onNumpadInput) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't handle keyboard input if another input element is focused
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement &&
+        (activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.tagName === 'SELECT' ||
+          activeElement.getAttribute('contenteditable') === 'true');
+
+      if (isInputFocused) {
+        return;
+      }
+
+      const key = event.key;
+      if (isValidNumpadButton(key)) {
+        onNumpadInput(key);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onNumpadInput]);
+
   return (
-    <span className="font-bold">
+    <div className="relative font-bold">
       {currencySymbolPosition === 'prefix' && symbol}
-      <span className="pt-2 font-numeric text-6xl">
+
+      {/* Semantic input for accessibility - keyboard input handled by useEffect */}
+      <input
+        type="text"
+        inputMode="decimal"
+        id={inputId}
+        value={inputValue}
+        className="absolute inset-0 h-full w-full caret-transparent opacity-0"
+        aria-label={`Amount input in ${currency}`}
+        aria-describedby={ariaDescribedBy}
+        readOnly={true} // Prevent direct input, handled by keyboard listener
+        tabIndex={0} // Keep focusable for accessibility
+        autoComplete="off"
+      />
+
+      {/* Visual display */}
+      <span
+        className="pointer-events-none pt-2 font-numeric text-6xl"
+        aria-hidden="true" // Prevent screen readers from reading
+      >
         {integer}
         {(inputDecimals || needsPaddedZeros) && (
           <>
@@ -63,8 +120,9 @@ export function MoneyInputDisplay<C extends Currency>({
           </>
         )}
       </span>
+
       {currencySymbolPosition === 'suffix' && symbol}
-    </span>
+    </div>
   );
 }
 
