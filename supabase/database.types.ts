@@ -465,6 +465,32 @@ export type Database = {
           },
         ]
       }
+      task_processing_locks: {
+        Row: {
+          expires_at: string
+          lead_client_id: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          lead_client_id: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          lead_client_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_processing_locks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -919,6 +945,10 @@ export type Database = {
           p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
+      }
+      take_lead: {
+        Args: { p_user_id: string; p_client_id: string }
+        Returns: boolean
       }
       upsert_user_with_accounts: {
         Args: {
