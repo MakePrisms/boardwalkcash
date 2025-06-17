@@ -12,6 +12,7 @@ import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useAuthActions } from '~/features/user/auth';
 import { useToast } from '~/hooks/use-toast';
+import { useUrlNavigation } from '~/hooks/use-url-navigation';
 import { buildEmailValidator } from '~/lib/validation';
 
 type Props = { onBack: () => void };
@@ -23,6 +24,7 @@ const validateEmail = buildEmailValidator('Invalid email');
 export function SignupForm({ onBack }: Props) {
   const { signUp } = useAuthActions();
   const { toast } = useToast();
+  const { preserveParams } = useUrlNavigation();
   const {
     register,
     handleSubmit,
@@ -151,7 +153,7 @@ export function SignupForm({ onBack }: Props) {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have a wallet?{' '}
-          <Link to="/login" className="underline">
+          <Link to={preserveParams('/login')} className="underline">
             Log in
           </Link>
         </div>

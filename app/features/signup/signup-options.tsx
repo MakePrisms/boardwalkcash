@@ -8,12 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
+import { useUrlNavigation } from '~/hooks/use-url-navigation';
 
 type Option = 'email' | 'google' | 'guest';
 type Props = { onSelect: (option: Option) => Promise<void> };
 
 export function SignupOptions({ onSelect }: Props) {
   const [submitting, setSubmitting] = useState<Option | null>(null);
+  const { preserveParams } = useUrlNavigation();
 
   const handeSelect = async (option: Option) => {
     if (submitting) return;
@@ -55,7 +57,7 @@ export function SignupOptions({ onSelect }: Props) {
         </div>
         <div className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <Link to="/login" className="underline">
+          <Link to={preserveParams('/login')} className="underline">
             Log in
           </Link>
         </div>
