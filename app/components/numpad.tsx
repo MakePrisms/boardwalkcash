@@ -49,6 +49,19 @@ type NumpadProps = {
 export const Numpad = ({ showDecimal, onButtonClick }: NumpadProps) => {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      // Don't handle keyboard event if user is focused on an input element
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement &&
+        (activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.tagName === 'SELECT' ||
+          activeElement.getAttribute('contenteditable') === 'true');
+
+      if (isInputFocused) {
+        return;
+      }
+
       const key = event.key;
       if (isValidButton(key)) {
         onButtonClick(key);
