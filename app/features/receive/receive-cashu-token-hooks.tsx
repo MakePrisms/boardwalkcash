@@ -35,7 +35,7 @@ type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
 type UseGetClaimableTokenProps = {
   token: Token;
-  cashuPubKey: string;
+  cashuPubKey?: string;
 };
 
 type TokenQueryResult =
@@ -135,7 +135,7 @@ export function useTokenWithClaimableProofs({
 
       const { claimableProofs, cannotClaimReason } = getClaimableProofs(
         unspentProofs,
-        [cashuPubKey],
+        cashuPubKey ? [cashuPubKey] : [],
       );
 
       return claimableProofs
@@ -291,6 +291,7 @@ export function useReceiveCashuTokenAccounts(token: Token) {
     selectableAccounts,
     receiveAccount,
     isCrossMintSwapDisabled,
+    sourceAccount,
     setReceiveAccount,
     addAndSetReceiveAccount,
   };

@@ -1,17 +1,30 @@
 import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
+  ClosePageButton,
   PageBackButton,
   PageContent,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
+import { useUrlNavigation } from '~/hooks/use-url-navigation';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
+import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import { useAuthActions } from '../user/auth';
+import {
+  useSetDefaultAccount,
+  useSetDefaultCurrency,
+} from '../user/user-hooks';
 import {
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
@@ -21,11 +34,56 @@ import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
+  autoClaimToken: boolean;
 };
 
-export default function ReceiveToken({ token }: Props) {
+/**
+ * Shared component for displaying the token amount with copy functionality
+ */
+function TokenAmountDisplay({
+  token,
+  claimableToken,
+}: { token: Token; claimableToken: Token | null }) {
   const [_, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
+
+  return (
+    <button
+      type="button"
+      className="z-10 transition-transform active:scale-95"
+      onClick={() => {
+        copyToClipboard(getEncodedToken(claimableToken ?? token));
+        toast({
+          title: 'Token copied to clipboard',
+          duration: 1000,
+        });
+      }}
+    >
+      <MoneyWithConvertedAmount money={tokenToMoney(claimableToken ?? token)} />
+    </button>
+  );
+}
+
+/**
+ * Shared component for displaying error when token cannot be claimed
+ */
+function TokenErrorDisplay({
+  cannotClaimReason,
+}: { cannotClaimReason: string }) {
+  return (
+    <div className="mx-4 flex w-full flex-col items-center justify-center gap-2 rounded-lg border bg-card p-4">
+      <AlertCircle className="h-8 w-8 text-foreground" />
+      <p className="text-center text-muted-foreground text-sm">
+        {cannotClaimReason}
+      </p>
+    </div>
+  );
+}
+
+export default function ReceiveToken({ token, autoClaimToken }: Props) {
+  const { toast } = useToast();
+  const setDefaultAccount = useSetDefaultAccount();
+  const setDefaultCurrency = useSetDefaultCurrency();
   const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
     token,
     cashuPubKey: // TODO: replace with user's pubkey from OS
@@ -35,6 +93,7 @@ export default function ReceiveToken({ token }: Props) {
     selectableAccounts,
     receiveAccount,
     isCrossMintSwapDisabled,
+    sourceAccount,
     setReceiveAccount,
     addAndSetReceiveAccount,
   } = useReceiveCashuTokenAccounts(token);
@@ -47,6 +106,51 @@ export default function ReceiveToken({ token }: Props) {
         title: 'Failed to claim token',
         description: error.message,
         variant: 'destructive',
+      });
+    },
+  });
+
+  // TODO: I think we can make this mutation be used for both auto claim
+  // and manual claim.
+  const { mutate: autoClaim } = useMutation({
+    scope: {
+      id: 'auto-claim-token',
+    },
+    mutationFn: async ({ token }: { token: Token }) => {
+      const isReceiveAccountAdded = receiveAccount.id !== '';
+
+      // TODO: remove this. I think we need it because we are waiting for supabase realtime updates to be ready.
+      // If we claim too fast, then we never make it to the successful receive page
+      // because we never got the realtime updates.
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      let account = receiveAccount;
+      if (!isReceiveAccountAdded) {
+        // TODO: check to see if receive account and source account are the same.
+        account = await addAndSetReceiveAccount(sourceAccount);
+      }
+
+      // TODO: remove redirected=1 from URL before claiming.
+      // I think we need a sepearate route for success just like we do with sends
+      await claimToken({ token, account });
+
+      return account;
+    },
+    onSuccess: async (account) => {
+      try {
+        await setDefaultAccount(account);
+        await setDefaultCurrency(account.currency);
+      } catch (error) {
+        console.error('Error setting defaults after auto claim', {
+          cause: error,
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Error auto claiming token', { cause: error });
+      toast({
+        title: 'Failed to auto claim token',
+        description: getErrorMessage(error),
       });
     },
   });
@@ -73,6 +177,12 @@ export default function ReceiveToken({ token }: Props) {
     await claimToken({ token: claimableToken, account });
   };
 
+  useEffectNoStrictMode(() => {
+    if (!claimableToken || !autoClaimToken) return;
+
+    autoClaim({ token: claimableToken });
+  }, [autoClaimToken, claimableToken, autoClaim]);
+
   if (status === 'SUCCESS') {
     return (
       <SuccessfulReceivePage
@@ -93,21 +203,7 @@ export default function ReceiveToken({ token }: Props) {
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center">
-        <button
-          type="button"
-          className="z-10 transition-transform active:scale-95"
-          onClick={() => {
-            copyToClipboard(getEncodedToken(claimableToken ?? token));
-            toast({
-              title: 'Token copied to clipboard',
-              duration: 1000,
-            });
-          }}
-        >
-          <MoneyWithConvertedAmount
-            money={tokenToMoney(claimableToken ?? token)}
-          />
-        </button>
+        <TokenAmountDisplay token={token} claimableToken={claimableToken} />
 
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           {claimableToken ? (
@@ -120,12 +216,7 @@ export default function ReceiveToken({ token }: Props) {
               />
             </div>
           ) : (
-            <div className="mx-4 flex w-full flex-col items-center justify-center gap-2 rounded-lg border bg-card p-4">
-              <AlertCircle className="h-8 w-8 text-foreground" />
-              <p className="text-center text-muted-foreground text-sm">
-                {cannotClaimReason}
-              </p>
-            </div>
+            <TokenErrorDisplay cannotClaimReason={cannotClaimReason} />
           )}
         </div>
 
@@ -139,6 +230,84 @@ export default function ReceiveToken({ token }: Props) {
             >
               {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
             </Button>
+          </div>
+        )}
+      </PageContent>
+    </>
+  );
+}
+
+export function PublicReceiveCashuToken({ token }: { token: Token }) {
+  const [signingUpGuest, setSigningUpGuest] = useState(false);
+  const { signUpGuest } = useAuthActions();
+  const navigate = useNavigate();
+  const { withRedirection } = useUrlNavigation();
+  const { toast } = useToast();
+  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
+    token,
+  });
+
+  const encodedToken = getEncodedToken(claimableToken ?? token);
+
+  const handleClaimAsGuest = async () => {
+    if (!claimableToken) {
+      return;
+    }
+
+    setSigningUpGuest(true);
+    try {
+      await signUpGuest();
+      // Navigate to the same page with redirection marker
+      navigate(withRedirection({ hash: `#${encodedToken}` }));
+    } catch (error) {
+      console.error('Error signing up guest', { cause: error });
+      toast({
+        title: 'Failed to create guest account',
+        description: 'Please try again or contact support',
+        variant: 'destructive',
+      });
+    } finally {
+      setSigningUpGuest(false);
+    }
+  };
+
+  return (
+    <>
+      <PageHeader className="z-10">
+        <ClosePageButton
+          to="/signup"
+          transition="slideDown"
+          applyTo="oldView"
+        />
+        <PageHeaderTitle>Receive</PageHeaderTitle>
+      </PageHeader>
+      <PageContent className="flex flex-col items-center">
+        <TokenAmountDisplay token={token} claimableToken={claimableToken} />
+
+        {!claimableToken && (
+          <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
+            <TokenErrorDisplay cannotClaimReason={cannotClaimReason} />
+          </div>
+        )}
+
+        {claimableToken && (
+          <div className="z-10 mt-auto mb-28 flex flex-col gap-4">
+            <Button
+              onClick={handleClaimAsGuest}
+              className="min-w-[200px]"
+              loading={signingUpGuest}
+            >
+              Claim as Guest
+            </Button>
+
+            <LinkWithViewTransition
+              to={`/login?redirectTo=receive-cashu-token#${encodeURIComponent(encodedToken)}`}
+              className="min-w-[200px]"
+              transition="slideUp"
+              applyTo="newView"
+            >
+              <Button className="min-w-[200px] ">Log In and Claim</Button>
+            </LinkWithViewTransition>
           </div>
         )}
       </PageContent>
