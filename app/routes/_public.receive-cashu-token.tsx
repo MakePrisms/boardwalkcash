@@ -6,7 +6,6 @@ import { ReceiveCashuToken } from '~/features/receive';
 import { PublicReceiveCashuToken } from '~/features/receive/receive-cashu-token';
 import { useAuthState } from '~/features/user/auth';
 import { WalletSetup } from '~/features/wallet/wallet';
-import { useUrlNavigation } from '~/hooks/use-url-navigation';
 import { extractCashuToken } from '~/lib/cashu';
 
 /**
@@ -30,8 +29,8 @@ function useShouldAutoClaim() {
 
   // wdyt Josip?.
 
-  const { isRedirected } = useUrlNavigation();
-  return isRedirected();
+  const location = useLocation();
+  return location.search.includes('redirected=1');
 }
 
 export default function ReceiveCashuTokenPage() {

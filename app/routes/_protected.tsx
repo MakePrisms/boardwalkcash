@@ -3,7 +3,6 @@ import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { type AuthUser, useAuthState } from '~/features/user/auth';
 import { WalletSetup } from '~/features/wallet/wallet';
-import { useUrlNavigation } from '~/hooks/use-url-navigation';
 
 const shouldUserVerifyEmail = (user: AuthUser) => {
   const isGuest = !user.email;
@@ -22,7 +21,6 @@ export default function ProtectedRoute() {
   const shouldVerifyEmail = user ? shouldUserVerifyEmail(user) : false;
   const isVerifyEmailRoute = location.pathname.startsWith('/verify-email');
   const shouldRedirectToVerifyEmail = shouldVerifyEmail && !isVerifyEmailRoute;
-  const { preserveParams } = useUrlNavigation();
 
   console.debug('Rendering protected layout', {
     location: location.pathname,
@@ -47,9 +45,16 @@ export default function ProtectedRoute() {
   }
 
   if (shouldRedirectToVerifyEmail) {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('redirectTo', location.pathname);
+
     return (
       <Redirect
-        to={preserveParams('/verify-email')}
+        to={{
+          ...location,
+          pathname: '/verify-email',
+          search: searchParams.toString(),
+        }}
         logMessage="Redirecting from protected page to verify email"
       >
         <LoadingScreen />

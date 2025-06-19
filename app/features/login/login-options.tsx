@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -8,14 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
-import { useUrlNavigation } from '~/hooks/use-url-navigation';
 
 type Option = 'email' | 'google';
 type Props = { onSelect: (option: Option) => Promise<void> };
 
 export function LoginOptions({ onSelect }: Props) {
   const [submitting, setSubmitting] = useState<Option | null>(null);
-  const { preserveParams } = useUrlNavigation();
+  const location = useLocation();
   const handeSelect = async (option: Option) => {
     if (submitting) return;
 
@@ -50,7 +49,7 @@ export function LoginOptions({ onSelect }: Props) {
         </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{' '}
-          <Link to={preserveParams('/signup')} className="underline">
+          <Link to={{ ...location, pathname: '/signup' }} className="underline">
             Sign up
           </Link>
         </div>

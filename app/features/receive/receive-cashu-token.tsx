@@ -14,7 +14,6 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
-import { useUrlNavigation } from '~/hooks/use-url-navigation';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
@@ -241,7 +240,6 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
   const [signingUpGuest, setSigningUpGuest] = useState(false);
   const { signUpGuest } = useAuthActions();
   const navigate = useNavigate();
-  const { withRedirection } = useUrlNavigation();
   const { toast } = useToast();
   const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
     token,
@@ -258,7 +256,7 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
     try {
       await signUpGuest();
       // Navigate to the same page with redirection marker
-      navigate(withRedirection({ hash: `#${encodedToken}` }));
+      navigate({ hash: encodedToken, search: 'redirected=1' });
     } catch (error) {
       console.error('Error signing up guest', { cause: error });
       toast({

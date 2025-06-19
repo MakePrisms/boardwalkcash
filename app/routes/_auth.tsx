@@ -2,12 +2,10 @@ import { Outlet, useLocation } from 'react-router';
 import { Redirect } from '~/components/redirect';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { useAuthState } from '~/features/user/auth';
-import { useUrlNavigation } from '~/hooks/use-url-navigation';
 
 export default function AuthRoute() {
   const location = useLocation();
   const { loading, isLoggedIn, user } = useAuthState();
-  const { buildRedirect } = useUrlNavigation();
 
   console.debug('Rendering auth layout', {
     location: location.pathname,
@@ -21,8 +19,14 @@ export default function AuthRoute() {
   }
 
   if (isLoggedIn) {
+    const searchParams = new URLSearchParams(location.search);
+    const redirectTo = searchParams.get('redirectTo') || '/';
+
     return (
-      <Redirect to={buildRedirect('/')} logMessage="Redirecting from auth page">
+      <Redirect
+        to={{ ...location, pathname: redirectTo }}
+        logMessage="Redirecting from auth page"
+      >
         <LoadingScreen />
       </Redirect>
     );
