@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -14,6 +14,7 @@ type Props = { onSelect: (option: Option) => Promise<void> };
 
 export function SignupOptions({ onSelect }: Props) {
   const [submitting, setSubmitting] = useState<Option | null>(null);
+  const location = useLocation();
 
   const handeSelect = async (option: Option) => {
     if (submitting) return;
@@ -55,7 +56,7 @@ export function SignupOptions({ onSelect }: Props) {
         </div>
         <div className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <Link to="/login" className="underline">
+          <Link to={{ ...location, pathname: '/login' }} className="underline">
             Log in
           </Link>
         </div>

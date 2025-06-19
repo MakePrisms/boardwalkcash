@@ -19,8 +19,14 @@ export default function AuthRoute() {
   }
 
   if (isLoggedIn) {
+    const searchParams = new URLSearchParams(location.search);
+    const redirectTo = searchParams.get('redirectTo') || '/';
+
     return (
-      <Redirect to="/" logMessage="Redirecting from auth page to /">
+      <Redirect
+        to={{ ...location, pathname: redirectTo }}
+        logMessage="Redirecting from auth page"
+      >
         <LoadingScreen />
       </Redirect>
     );
