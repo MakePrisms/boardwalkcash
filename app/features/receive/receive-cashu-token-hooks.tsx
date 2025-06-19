@@ -13,6 +13,7 @@ import {
 } from '~/features/accounts/account-hooks';
 import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
 import {
+  areMintUrlsEqual,
   getCashuProtocolUnit,
   getClaimableProofs,
   getUnspentProofsFromToken,
@@ -23,13 +24,6 @@ import type { AccountWithBadges } from '../accounts/account-selector';
 import { useTransaction } from '../transactions/transaction-hooks';
 import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
 import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
-
-const areMintUrlsEqual = (a: string, b: string) => {
-  return (
-    a.toLowerCase().replace(/\/+$/, '').trim() ===
-    b.toLowerCase().replace(/\/+$/, '').trim()
-  );
-};
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 

@@ -7,6 +7,7 @@ import {
 import {
   CashuErrorCodes,
   amountsFromOutputData,
+  areMintUrlsEqual,
   getCashuUnit,
   getCashuWallet,
   sumProofs,
@@ -41,7 +42,7 @@ export class CashuTokenSwapService {
     account: CashuAccount;
     reversedTransactionId?: string;
   }) {
-    if (account.mintUrl !== token.mint) {
+    if (!areMintUrlsEqual(account.mintUrl, token.mint)) {
       throw new Error('Cannot swap a token to a different mint');
     }
 

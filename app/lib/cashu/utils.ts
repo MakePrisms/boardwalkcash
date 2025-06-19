@@ -237,3 +237,16 @@ export const getKeysets = async (
 export const amountsFromOutputData = (outputData: OutputData[]) => {
   return outputData.map((output) => output.blindedMessage.amount);
 };
+
+/**
+ * Check if two mint URLs are equal by normalizing them then comparing them.
+ * @param a - The first mint URL
+ * @param b - The second mint URL
+ * @returns True if the mint URLs are equal
+ */
+export const areMintUrlsEqual = (a: string, b: string) => {
+  return (
+    a.toLowerCase().replace(/\/+$/, '').trim() ===
+    b.toLowerCase().replace(/\/+$/, '').trim()
+  );
+};
