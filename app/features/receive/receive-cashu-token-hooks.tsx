@@ -35,7 +35,7 @@ type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
 type UseGetClaimableTokenProps = {
   token: Token;
-  cashuPubKey: string;
+  cashuPubKey?: string;
 };
 
 type TokenQueryResult =
@@ -51,30 +51,17 @@ type TokenQueryResult =
     };
 
 /**
- * Takes a token and returns the account that the token is from.
- * If the account does not exist, we construct and return an account, but we do not store it in the database.
+ * Hook that uses a suspense query to fetch mint info and validates it against our required features.
  */
-function useCashuTokenSourceAccount(token: Token) {
+export function useTokenSourceAccountQuery(token: Token) {
   const tokenCurrency = tokenToMoney(token).currency;
-  const { data: allAccounts } = useAccounts({ type: 'cashu' });
-  const existingAccount = allAccounts.find(
-    (a) =>
-      areMintUrlsEqual(a.mintUrl, token.mint) && a.currency === tokenCurrency,
-  );
 
-  const { data } = useSuspenseQuery({
+  return useSuspenseQuery({
     queryKey: ['token-source-account', token.mint, tokenCurrency],
     queryFn: async (): Promise<{
       isValid: boolean;
       sourceAccount: ExtendedCashuAccount;
     }> => {
-      if (existingAccount) {
-        return {
-          isValid: true,
-          sourceAccount: existingAccount,
-        };
-      }
-
       const [info, isTestMint] = await Promise.all([
         getMintInfo(token.mint),
         checkIsTestMint(token.mint),
@@ -106,6 +93,28 @@ function useCashuTokenSourceAccount(token: Token) {
     staleTime: 3 * 60 * 1000,
     retry: 1,
   });
+}
+
+/**
+ * Takes a token and returns the account that the token is from.
+ * If the account does not exist, we construct and return an account, but we do not store it in the database.
+ */
+function useCashuTokenSourceAccount(token: Token) {
+  const tokenCurrency = tokenToMoney(token).currency;
+  const { data: allAccounts } = useAccounts({ type: 'cashu' });
+  const existingAccount = allAccounts.find(
+    (a) =>
+      areMintUrlsEqual(a.mintUrl, token.mint) && a.currency === tokenCurrency,
+  );
+
+  const { data } = useTokenSourceAccountQuery(token);
+
+  if (existingAccount) {
+    return {
+      isValid: true,
+      sourceAccount: existingAccount,
+    };
+  }
 
   return data;
 }
@@ -135,7 +144,7 @@ export function useTokenWithClaimableProofs({
 
       const { claimableProofs, cannotClaimReason } = getClaimableProofs(
         unspentProofs,
-        [cashuPubKey],
+        cashuPubKey ? [cashuPubKey] : [],
       );
 
       return claimableProofs
@@ -291,6 +300,7 @@ export function useReceiveCashuTokenAccounts(token: Token) {
     selectableAccounts,
     receiveAccount,
     isCrossMintSwapDisabled,
+    sourceAccount: selectableAccounts.find((a) => a.id === sourceAccount.id),
     setReceiveAccount,
     addAndSetReceiveAccount,
   };
