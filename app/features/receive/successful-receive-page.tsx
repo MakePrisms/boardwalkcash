@@ -2,11 +2,14 @@ import { CheckCircle } from 'lucide-react';
 import {
   ClosePageButton,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
+import { Button } from '~/components/ui/button';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import type { Money } from '~/lib/money';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import type { Account } from '../accounts/account';
 
 function TransactionDetail({ label, value }: { label: string; value: string }) {
@@ -51,6 +54,17 @@ export function SuccessfulReceivePage({ amount, account }: Props) {
           </div>
         </div>
       </PageContent>
+      <PageFooter className="pb-14">
+        <Button asChild className="w-[80px]">
+          <LinkWithViewTransition
+            to="/"
+            transition="slideDown"
+            applyTo="oldView"
+          >
+            OK
+          </LinkWithViewTransition>
+        </Button>
+      </PageFooter>
     </>
   );
 }

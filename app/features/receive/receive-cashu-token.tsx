@@ -4,6 +4,7 @@ import { useCopyToClipboard } from 'usehooks-ts';
 import {
   PageBackButton,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
@@ -128,20 +129,18 @@ export default function ReceiveToken({ token }: Props) {
             </div>
           )}
         </div>
-
-        {claimableToken && (
-          <div className="z-10 mt-auto mb-28">
-            <Button
-              disabled={receiveAccount.selectable === false}
-              onClick={handleClaim}
-              className="min-w-[200px]"
-              loading={status === 'CLAIMING'}
-            >
-              {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
-            </Button>
-          </div>
-        )}
       </PageContent>
+      {claimableToken && (
+        <PageFooter className="pb-14">
+          <Button
+            disabled={receiveAccount.selectable === false}
+            onClick={handleClaim}
+            loading={status === 'CLAIMING'}
+          >
+            {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
+          </Button>
+        </PageFooter>
+      )}
     </>
   );
 }

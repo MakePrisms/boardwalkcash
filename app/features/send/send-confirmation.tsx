@@ -7,7 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
-import { PageHeaderTitle } from '~/components/page';
+import { PageFooter, PageHeaderTitle } from '~/components/page';
 import { PageBackButton } from '~/components/page';
 import { PageHeader } from '~/components/page';
 import { Page } from '~/components/page';
@@ -92,12 +92,12 @@ const BaseConfirmation = ({
             </CardContent>
           </Card>
         </div>
-        <div className="z-10 mt-auto mb-28">
-          <Button onClick={onConfirm} loading={loading} disabled={!!error}>
-            Confirm
-          </Button>
-        </div>
       </PageContent>
+      <PageFooter className="pb-14">
+        <Button onClick={onConfirm} loading={loading} disabled={!!error}>
+          Confirm
+        </Button>
+      </PageFooter>
     </Page>
   );
 };
