@@ -66,8 +66,8 @@ export default function Index() {
 
   return (
     <Page>
-      <PageHeader className="z-10 flex w-full items-center justify-end gap-4 pr-2">
-        <div className="flex items-center gap-4">
+      <PageHeader className="z-10 flex w-full items-center justify-end gap-4 pr-4">
+        <div className="flex items-center gap-6">
           <LinkWithViewTransition
             to="/transactions"
             transition="slideLeft"
