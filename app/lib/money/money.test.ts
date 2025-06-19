@@ -45,12 +45,12 @@ describe('Money', () => {
       expect(money.amount().toString()).toBe('0.00123456');
       expect(money.amount('sat').toString()).toBe('123456');
       expect(money.toString('sat')).toBe('123456');
-      expect(money.toLocaleString({ unit: 'sat' })).toBe('123,456₿');
+      expect(money.toLocaleString({ unit: 'sat' })).toBe('₿123,456');
 
       // Same amount created in bitcoin
       const moneyInBtc = new Money({ amount: 0.00123456, currency: 'BTC' });
       expect(moneyInBtc.amount('sat').toString()).toBe('123456');
-      expect(moneyInBtc.toLocaleString({ unit: 'sat' })).toBe('123,456₿');
+      expect(moneyInBtc.toLocaleString({ unit: 'sat' })).toBe('₿123,456');
     });
 
     it('handles millisatoshis', () => {

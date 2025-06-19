@@ -158,12 +158,12 @@ const currencyDataMap: CurrencyDataMap = {
           );
           const trimmedPartsWithoutSymbol =
             trimWhitespaceFromEnds(partsWithoutSymbol);
-          const partsWithNewSymbolAppended = [
-            ...trimmedPartsWithoutSymbol,
+          const partsWithNewSymbolPrepended = [
             { type: 'currency' as const, value: this.symbol },
+            ...trimmedPartsWithoutSymbol,
           ];
 
-          return partsWithNewSymbolAppended;
+          return partsWithNewSymbolPrepended;
         },
         format: function (value: number, options: FormatOptions = {}) {
           return this.formatToParts(value, options)
