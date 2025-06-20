@@ -2,7 +2,6 @@ import { PageContent } from '~/components/page';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import {
-  type Account,
   type ExtendedCashuAccount,
   getAccountBalance,
 } from '~/features/accounts/account';
@@ -11,7 +10,6 @@ import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header'
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
-import { Money } from '~/lib/money';
 
 function AccountDetailItem({ label, value }: { label: string; value: string }) {
   return (
@@ -79,23 +77,6 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
   );
 }
 
-function NwcAccount({
-  account,
-}: { account: Account & { type: 'nwc'; isDefault: boolean } }) {
-  return (
-    <div>
-      <p>Account type: {account.type}</p>
-      <p>Currency: {account.currency}</p>
-      <p>NWC URL: {account.nwcUrl}</p>
-      <p>
-        {/* TODO: see about balance */}
-        Balance:{' '}
-        {new Money({ amount: 0, currency: account.currency }).toLocaleString()}
-      </p>
-    </div>
-  );
-}
-
 export default function SingleAccount({ accountId }: { accountId: string }) {
   const account = useAccount(accountId);
   return (
@@ -109,7 +90,6 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
       />
       <PageContent>
         {account.type === 'cashu' && <CashuAccount account={account} />}
-        {account.type === 'nwc' && <NwcAccount account={account} />}
       </PageContent>
     </>
   );

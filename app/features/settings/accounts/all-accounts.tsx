@@ -91,7 +91,7 @@ export default function AllAccounts() {
       <div className="fixed inset-x-0 bottom-16 flex justify-center">
         <Button asChild size="lg">
           <LinkWithViewTransition
-            to="/settings/accounts/create"
+            to="/settings/accounts/create/cashu"
             transition="slideLeft"
             applyTo="newView"
           >
