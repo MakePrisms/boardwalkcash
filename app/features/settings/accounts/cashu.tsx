@@ -8,7 +8,7 @@ export default function AddCashuAccountView() {
       <SettingsViewHeader
         title="Create Cashu Account"
         navBack={{
-          to: '/settings/accounts/create',
+          to: '/settings/accounts',
           transition: 'slideRight',
           applyTo: 'oldView',
         }}
