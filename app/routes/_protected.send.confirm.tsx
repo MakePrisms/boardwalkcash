@@ -2,7 +2,6 @@ import { Redirect } from '~/components/redirect';
 import {
   CreateCashuTokenConfirmation,
   PayBolt11Confirmation,
-  PayCashuRequestConfirmation,
 } from '~/features/send';
 import { useSendStore } from '~/features/send';
 
@@ -23,22 +22,6 @@ export default function SendConfirmationPage() {
 
   if (sendAccount.type !== 'cashu') {
     return <Redirect to="/send" logMessage="Invalid sending account" />;
-  }
-
-  if (sendType === 'CASHU_PAYMENT_REQUEST') {
-    if (!destination || sendAccount.type !== 'cashu') {
-      return (
-        <Redirect to="/send" logMessage="Invalid cashu payment request send" />
-      );
-    }
-
-    return (
-      <PayCashuRequestConfirmation
-        amount={sendAmount}
-        paymentRequest={destination}
-        account={sendAccount}
-      />
-    );
   }
 
   if (
