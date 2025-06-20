@@ -1,5 +1,5 @@
-import { useDebounceCallback } from 'usehooks-ts';
 import { LoaderCircle } from 'lucide-react';
+import { useDebounceCallback } from 'usehooks-ts';
 import { Input } from '~/components/ui/input';
 
 type SearchBarProps = {
@@ -23,6 +23,7 @@ export function SearchBar({
         onChange={(e) => debouncedSearch(e.target.value)}
         placeholder={placeholder}
         type="text"
+        autoCapitalize="none"
       />
       {isLoading && (
         <div className="-translate-y-1/2 absolute top-1/2 right-3 transform">

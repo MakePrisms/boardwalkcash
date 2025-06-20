@@ -113,8 +113,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      {/* overscroll-none prevents rubberbanding on scroll */}
-      <body className="overscroll-none">
+      {/* overflow-hidden prevents rubberbanding on scroll */}
+      <body className="overflow-hidden">
         {children}
         <ScrollRestoration />
         <Scripts />
