@@ -1,4 +1,5 @@
-import { ArrowUpDown, Clipboard, QrCode, Scan } from 'lucide-react';
+import { getEncodedToken } from '@cashu/cashu-ts';
+import { ArrowUpDown, Clipboard, Scan } from 'lucide-react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
 import {
@@ -122,7 +123,7 @@ export default function ReceiveInput() {
       return;
     }
 
-    navigate(`/receive/cashu-token#${token}`, {
+    navigate(`/receive-cashu-token#${getEncodedToken(token)}`, {
       transition: 'slideLeft',
       applyTo: 'newView',
     });
@@ -179,14 +180,6 @@ export default function ReceiveInput() {
                 applyTo="newView"
               >
                 <Scan />
-              </LinkWithViewTransition>
-
-              <LinkWithViewTransition
-                to={`/receive/request/${receiveAccount.id}`}
-                transition="slideUp"
-                applyTo="newView"
-              >
-                <QrCode />
               </LinkWithViewTransition>
             </div>
             <div /> {/* spacer */}

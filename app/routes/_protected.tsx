@@ -36,7 +36,7 @@ export default function ProtectedRoute() {
   if (shouldRedirectToSignup) {
     return (
       <Redirect
-        to="/signup"
+        to={`/signup?redirectTo=${location.pathname}`}
         logMessage="Redirecting from protected page to signup"
       >
         <LoadingScreen />
@@ -45,9 +45,16 @@ export default function ProtectedRoute() {
   }
 
   if (shouldRedirectToVerifyEmail) {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('redirectTo', location.pathname);
+
     return (
       <Redirect
-        to="/verify-email"
+        to={{
+          ...location,
+          pathname: '/verify-email',
+          search: searchParams.toString(),
+        }}
         logMessage="Redirecting from protected page to verify email"
       >
         <LoadingScreen />

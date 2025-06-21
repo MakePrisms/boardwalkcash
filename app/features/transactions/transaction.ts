@@ -16,7 +16,7 @@ export type Transaction = {
   /**
    * Type of the transaction.
    */
-  type: 'CASHU_LIGHTNING' | 'CASHU_TOKEN' | 'CASHU_PAYMENT_REQUEST';
+  type: 'CASHU_LIGHTNING' | 'CASHU_TOKEN';
   /**
    * State of the transaction.
    * Transaction states are:
