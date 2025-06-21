@@ -1,6 +1,5 @@
 import type { Proof, Token } from '@cashu/cashu-ts';
 import { Money } from '~/lib/money';
-import { sum } from '~/lib/utils';
 import {
   type AgicashDb,
   type AgicashDbCashuTokenSwap,
@@ -106,7 +105,7 @@ export class CashuTokenSwapRepository {
       p_keyset_counter: keysetCounter,
       p_output_amounts: outputAmounts,
       p_input_amount: inputAmount,
-      p_receive_amount: sum(outputAmounts),
+      p_receive_amount: amount.toNumber(unit),
       p_fee_amount: fee,
       p_account_version: accountVersion,
       p_reversed_transaction_id: reversedTransactionId,
