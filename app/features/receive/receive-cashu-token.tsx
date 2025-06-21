@@ -16,7 +16,6 @@ import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { getErrorMessage } from '../shared/error';
@@ -84,7 +83,6 @@ function TokenErrorDisplay({
 
 export default function ReceiveToken({ token, autoClaimToken }: Props) {
   const { toast } = useToast();
-  const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
   const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
@@ -119,11 +117,15 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
       token: Token;
       isAutoClaim: boolean;
     }) => {
-      const isReceiveAccountAdded = receiveAccount.id !== '';
+      if (isAutoClaim) {
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+      }
 
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-
-      let account = receiveAccount;
+      let account =
+        isAutoClaim && sourceAccount?.selectable
+          ? sourceAccount
+          : receiveAccount;
+      const isReceiveAccountAdded = account.id !== '';
       if (!isReceiveAccountAdded) {
         // For auto claim, prefer source account if selectable, otherwise use receive account
         // For manual claim, always use receive account
@@ -131,6 +133,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
           isAutoClaim && sourceAccount?.selectable
             ? sourceAccount
             : receiveAccount;
+
         account = await addAndSetReceiveAccount(accountToAdd);
       }
 
@@ -138,17 +141,14 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
 
       return { account, isAutoClaim };
     },
-    onSuccess: async ({ account, isAutoClaim }) => {
-      // Only set defaults for auto claim and if the account is different from current default
-      if (isAutoClaim && account.id !== defaultAccount.id) {
-        try {
-          await setDefaultAccount(account);
-          await setDefaultCurrency(account.currency);
-        } catch (error) {
-          console.error('Error setting defaults after auto claim', {
-            cause: error,
-          });
-        }
+    onSuccess: async ({ account }) => {
+      try {
+        await setDefaultAccount(account);
+        await setDefaultCurrency(account.currency);
+      } catch (error) {
+        console.error('Error setting defaults after auto claim', {
+          cause: error,
+        });
       }
     },
     onError: (error) => {
@@ -202,7 +202,11 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
             <div className="w-full max-w-sm px-4">
               <AccountSelector
                 accounts={selectableAccounts}
-                selectedAccount={receiveAccount}
+                selectedAccount={
+                  autoClaimToken && sourceAccount
+                    ? sourceAccount
+                    : receiveAccount
+                }
                 disabled={isCrossMintSwapDisabled}
                 onSelect={setReceiveAccount}
               />

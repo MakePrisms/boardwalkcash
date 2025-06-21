@@ -411,6 +411,7 @@ export function useDefaultAccount() {
 export function useAddCashuAccount() {
   const userId = useUser((x) => x.id);
   const accountRepository = useAccountRepository();
+  const accountCache = useAccountsCache();
 
   const { mutateAsync } = useMutation({
     mutationFn: async (
@@ -433,6 +434,9 @@ export function useAddCashuAccount() {
         keysetCounters: {},
         proofs: [],
       });
+    },
+    onSuccess: (account) => {
+      accountCache.add(account);
     },
   });
 
