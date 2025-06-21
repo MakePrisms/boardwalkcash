@@ -1,4 +1,4 @@
-import { ArrowUpDown, Clipboard, QrCode, Scan } from 'lucide-react';
+import { ArrowUpDown, Clipboard, Scan } from 'lucide-react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
 import {
@@ -179,14 +179,6 @@ export default function ReceiveInput() {
                 applyTo="newView"
               >
                 <Scan />
-              </LinkWithViewTransition>
-
-              <LinkWithViewTransition
-                to={`/receive/request/${receiveAccount.id}`}
-                transition="slideUp"
-                applyTo="newView"
-              >
-                <QrCode />
               </LinkWithViewTransition>
             </div>
             <div /> {/* spacer */}
