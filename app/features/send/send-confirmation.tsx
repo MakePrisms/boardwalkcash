@@ -215,9 +215,10 @@ export const PayBolt11Confirmation = ({
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
       {description && (
-        <p className="text-center text-muted-foreground text-sm">
-          {description}
-        </p>
+        <div className="flex items-center justify-between gap-12">
+          <p className="text-muted-foreground">Memo</p>
+          <p className=" truncate ">{description}</p>
+        </div>
       )}
     </BaseConfirmation>
   );

@@ -230,27 +230,25 @@ export function TransactionList() {
   } = usePartitionTransactions(allTransactions);
 
   return (
-    <ScrollArea className="h-full min-h-0 ">
-      <div className="pr-4">
-        <div className="w-full space-y-6">
-          <TransactionSection
-            title="Pending"
-            transactions={pendingTransactions}
-          />
-          <TransactionSection title="Today" transactions={todayTransactions} />
-          <TransactionSection
-            title="This Week"
-            transactions={thisWeekTransactions}
-          />
-          <TransactionSection title="Older" transactions={olderTransactions} />
-        </div>
-        {hasNextPage && (
-          <LoadMore
-            onEndReached={() => !isFetchingNextPage && fetchNextPage()}
-            isLoading={isFetchingNextPage}
-          />
-        )}
+    <ScrollArea className="h-full min-h-0 " hideScrollbar>
+      <div className="w-full space-y-6">
+        <TransactionSection
+          title="Pending"
+          transactions={pendingTransactions}
+        />
+        <TransactionSection title="Today" transactions={todayTransactions} />
+        <TransactionSection
+          title="This Week"
+          transactions={thisWeekTransactions}
+        />
+        <TransactionSection title="Older" transactions={olderTransactions} />
       </div>
+      {hasNextPage && (
+        <LoadMore
+          onEndReached={() => !isFetchingNextPage && fetchNextPage()}
+          isLoading={isFetchingNextPage}
+        />
+      )}
     </ScrollArea>
   );
 }
