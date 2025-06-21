@@ -111,7 +111,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     },
   });
 
-  const { mutate: claimTokenMutation } = useMutation({
+  const { mutate: claimTokenMutation, isPending: isClaiming } = useMutation({
     mutationFn: async ({
       token,
       isAutoClaim,
@@ -120,6 +120,8 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
       isAutoClaim: boolean;
     }) => {
       const isReceiveAccountAdded = receiveAccount.id !== '';
+
+      await new Promise((resolve) => setTimeout(resolve, 4000));
 
       let account = receiveAccount;
       if (!isReceiveAccountAdded) {
@@ -217,7 +219,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={status === 'CLAIMING'}
+            loading={status === 'CLAIMING' || isClaiming}
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>
@@ -292,7 +294,7 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
       </PageContent>
 
       {claimableToken && (
-        <PageFooter>
+        <PageFooter className="pb-14">
           <div className="flex flex-col gap-4">
             <Button
               onClick={handleClaimAsGuest}
