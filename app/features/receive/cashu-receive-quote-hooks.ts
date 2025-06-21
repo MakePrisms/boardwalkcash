@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type MintInfo,
+  areMintUrlsEqual,
   getCashuUnit,
   getCashuWallet,
   getWalletCurrency,
@@ -290,11 +291,20 @@ const usePendingCashuReceiveQuotes = () => {
   return data ?? [];
 };
 
+const mintsToExcludeFromWebSockets = [
+  // The reason that we need to exlude cubabitcoin is that there was a bug which would not update the invoice state unless a GET request
+  // is made to check the quote status. We can remove this when cubabitcoin is updated to nutshell > 0.17.1 - https://github.com/cashubtc/nutshell/releases/tag/0.17.1
+  'https://mint.cubabitcoin.org',
+];
+
 const checkIfMintSupportsWebSocketsForMintQuotes = (
   mintUrl: string,
   mintInfo: MintInfo,
   currency: string,
 ): boolean => {
+  if (mintsToExcludeFromWebSockets.some((x) => areMintUrlsEqual(x, mintUrl))) {
+    return false;
+  }
   const wallet = getCashuWallet(mintUrl);
   const walletCurrency = getWalletCurrency(wallet);
   const nut17Info = mintInfo.isSupported(17);
