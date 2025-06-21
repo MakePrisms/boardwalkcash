@@ -1,5 +1,6 @@
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { ErrorBoundary } from '~/components/error-boundary';
 import { Skeleton } from '~/components/ui/skeleton';
 import { AnimatedQRCode } from '~/lib/cashu/animated-qr-code';
 import { cn } from '~/lib/utils';
@@ -32,6 +33,25 @@ type QRCodeProps = {
   className?: string;
 };
 
+const baseClasses =
+  'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
+
+function QRCodeFallback({ value }: { value: string }) {
+  return (
+    <div className={cn(baseClasses, 'border bg-card')}>
+      <div className="flex flex-col items-center justify-center gap-4 p-4">
+        <Copy className="h-8 w-8 text-foreground" />
+        <p className="text-center text-muted-foreground text-sm">
+          QR code unavailable
+        </p>
+        <div className="max-w-full break-all rounded bg-muted px-2 py-1 font-mono text-xs">
+          {value.length > 50 ? `${value.slice(0, 50)}...` : value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Displays a QR code with an optional description and various states.
  * If error is defined, the error will be displayed.
@@ -47,9 +67,6 @@ export function QRCode({
   onClick,
   className,
 }: QRCodeProps) {
-  const baseClasses =
-    'flex h-[256px] w-[256px] items-center justify-center rounded-lg';
-
   return (
     <div
       className={cn(
@@ -85,12 +102,14 @@ export function QRCode({
               className="rounded-lg bg-foreground"
             />
           ) : (
-            <QRCodeSVG
-              value={value}
-              size={256}
-              marginSize={3}
-              className="rounded-lg bg-foreground"
-            />
+            <ErrorBoundary fallback={<QRCodeFallback value={value} />}>
+              <QRCodeSVG
+                value={value}
+                size={256}
+                marginSize={3}
+                className="rounded-lg bg-foreground"
+              />
+            </ErrorBoundary>
           )}
         </button>
       )}
