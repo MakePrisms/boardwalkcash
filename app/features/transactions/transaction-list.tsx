@@ -92,7 +92,6 @@ const getTransactionDescription = (transaction: Transaction) => {
 
 const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
   CASHU_LIGHTNING: <ZapIcon className="h-4 w-4" />,
-  CASHU_PAYMENT_REQUEST: <BanknoteIcon className="h-4 w-4" />,
   CASHU_TOKEN: <BanknoteIcon className="h-4 w-4" />,
 };
 function TransactionRow({ transaction }: { transaction: Transaction }) {

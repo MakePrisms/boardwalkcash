@@ -1,11 +1,4 @@
-import {
-  type PaymentRequest as CashuPaymentRequest,
-  type Proof,
-  decodePaymentRequest,
-} from '@cashu/cashu-ts';
-import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
 import { MoneyDisplay } from '~/components/money-display';
 import { PageFooter, PageHeaderTitle } from '~/components/page';
 import { PageBackButton } from '~/components/page';
@@ -14,12 +7,11 @@ import { Page } from '~/components/page';
 import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
-import { Skeleton } from '~/components/ui/skeleton';
 import type { CashuAccount } from '~/features/accounts/account';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
-import { Money } from '~/lib/money';
+import type { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
@@ -309,141 +301,6 @@ export const CreateCashuTokenConfirmation = ({
       ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
-    </BaseConfirmation>
-  );
-};
-
-/**
- * Determine the mint to send to
- * Use mints from the payment request if available, otherwise use the account's mint
- * TODO: later account could be any type and might not have a mintUrl
- */
-const getSendToMintUrl = (
-  paymentRequest: CashuPaymentRequest,
-  account: CashuAccount,
-) => {
-  const mintOptions = paymentRequest.mints?.length
-    ? paymentRequest.mints
-    : [account.mintUrl];
-  if (mintOptions.includes(account.mintUrl)) {
-    // Use selected account's mint if it's in the list or not specified in the request
-    return account.mintUrl;
-  }
-  // payment request specified mints to send to, so we have to respect that
-
-  // TODO: should we check if the user has another account that matches one of the requested mints?
-  // Then we could send from that account instead of the one selected to avoid making a lightning payment
-  // This would probably be a weird UX because the user already selected the account, we'd be making the decision for them
-  return mintOptions[0];
-};
-
-/**
- * This component is used to pay a cashu request.
- *
- * If the request specifies mint(s), then we must sent to one of those mints.
- * We will try to send to the mint matching the send account, otherwise just pick one from the list.
- * If the selected mint does not match the send account, then we need to make a lightning payment
- * to the destination mint.
- *
- * This component should first estimate the fee for the swap, then once the user confirms
- * the payment details, it should get the needed proofs and pay the request.
- */
-export const PayCashuRequestConfirmation = ({
-  amount,
-  paymentRequest,
-  account,
-}: {
-  amount: Money;
-  paymentRequest: string;
-  account: CashuAccount;
-}) => {
-  const decoded = decodePaymentRequest(paymentRequest);
-  decoded.description =
-    decoded.description ?? 'This is a test to make sure the UI looks good';
-
-  const sendToMintUrl = getSendToMintUrl(decoded, account);
-
-  // always sending from account mint
-  // TODO: later account could be anything. If not cashu, then lightning payment is always needed
-  const needsCrossMintSwap = sendToMintUrl !== account.mintUrl;
-
-  const { mutate, data } = useMutation({
-    mutationFn: async () => {
-      if (needsCrossMintSwap) {
-        throw new Error('Not implemented');
-      }
-
-      return {
-        quotes: undefined,
-        fee: Money.zero(account.currency),
-      };
-    },
-    onError: (error) => {
-      console.error('Error getting quotes', error);
-    },
-    onSuccess: (data) => {
-      console.log('quotes', data);
-    },
-  });
-
-  useEffect(() => {
-    mutate();
-  }, [mutate]);
-
-  const handleConfirm = async () => {
-    let proofs: Proof[];
-    if (needsCrossMintSwap) {
-      if (!data?.quotes) {
-        throw new Error('Trying to swap, but cross mint quotes are not loaded');
-      }
-
-      // TODO: swap the proofs to the mint in the payment request to get the proofs
-      proofs = [];
-    } else {
-      // create proofs from same mint
-      proofs = []; // TODO: create proofs from account for amount
-    }
-
-    // TODO: use the proofs to pay the request
-    // 1. get transports from the payment request
-    // 2. send proofs via nostr or POST
-    console.log('proofs', proofs);
-  };
-
-  const confirmationRowData = [
-    {
-      label: 'Estimated fee',
-      value: data?.fee ? (
-        <MoneyDisplay
-          variant="secondary"
-          money={data.fee}
-          unit={getDefaultUnit(data.fee.currency)}
-        />
-      ) : (
-        <Skeleton className="h-[33px] w-[20px]" />
-      ),
-    },
-    { label: 'From', value: account.name },
-    {
-      label: 'To',
-      value: formatDestination(
-        sendToMintUrl.replace('https://', '').replace('http://', ''),
-      ),
-    },
-    { label: 'Paying', value: formatDestination(paymentRequest) },
-  ];
-
-  return (
-    <BaseConfirmation amount={amount} onConfirm={handleConfirm}>
-      {confirmationRowData.map((row) => (
-        <ConfirmationRow key={row.label} label={row.label} value={row.value} />
-      ))}
-
-      {decoded.description && (
-        <p className="text-center text-muted-foreground text-sm">
-          {decoded.description}
-        </p>
-      )}
     </BaseConfirmation>
   );
 };
