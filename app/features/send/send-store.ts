@@ -1,4 +1,3 @@
-import type { PaymentRequest } from '@cashu/cashu-ts';
 import { create } from 'zustand';
 import type { Account, CashuAccount } from '~/features/accounts/account';
 import { type DecodedBolt11, parseBolt11Invoice } from '~/lib/bolt11';
@@ -8,7 +7,6 @@ import {
   isValidLightningAddress,
 } from '~/lib/lnurl';
 import { type Currency, Money } from '~/lib/money';
-import type { BtcUnit, UsdUnit } from '~/lib/money/types';
 import type { AccountsCache } from '../accounts/account-hooks';
 import { type Contact, isContact } from '../contacts/contact';
 import { DomainError } from '../shared/error';
@@ -19,20 +17,6 @@ const validateLightningAddressFormat = buildLightningAddressFormatValidator({
   message: 'Invalid lightning address',
   allowLocalhost: import.meta.env.MODE === 'development',
 });
-
-const getAppCurrencyAndUnitFromCashuUnit = (
-  unit: string,
-):
-  | { currency: 'BTC'; unit: Extract<BtcUnit, 'sat'> }
-  | { currency: 'USD'; unit: Extract<UsdUnit, 'cent'> } => {
-  switch (unit) {
-    case 'sat':
-      return { currency: 'BTC', unit: 'sat' };
-    case 'usd':
-      return { currency: 'USD', unit: 'cent' };
-  }
-  throw new Error(`Invalid Cashu unit ${unit}`);
-};
 
 type ValidateResult =
   | {
@@ -88,30 +72,6 @@ const validateBolt11 = ({
   };
 };
 
-const validateCashuRequest = (request: PaymentRequest): ValidateResult => {
-  if (!request.unit) {
-    return {
-      valid: false,
-      error: 'Payment request is missing unit',
-    };
-  }
-
-  const { currency, unit } = getAppCurrencyAndUnitFromCashuUnit(request.unit);
-
-  return {
-    valid: true,
-    amount: request.amount
-      ? new Money({
-          amount: request.amount,
-          currency,
-          unit,
-        })
-      : null,
-    unit,
-    currency,
-  };
-};
-
 const pickAmountByCurrency = <T extends Currency>(
   amounts: Money[],
   currency: T,
@@ -125,7 +85,6 @@ const pickAmountByCurrency = <T extends Currency>(
 
 type SendType =
   | 'CASHU_TOKEN'
-  | 'CASHU_PAYMENT_REQUEST'
   | 'BOLT11_INVOICE'
   | 'LN_ADDRESS'
   | 'AGICASH_CONTACT';
@@ -172,11 +131,7 @@ type State = {
       quote: CashuSwapQuote | null;
     }
   | {
-      sendType:
-        | 'CASHU_PAYMENT_REQUEST'
-        | 'BOLT11_INVOICE'
-        | 'LN_ADDRESS'
-        | 'AGICASH_CONTACT';
+      sendType: 'BOLT11_INVOICE' | 'LN_ADDRESS' | 'AGICASH_CONTACT';
       /**
        * Quote to make a lightning payment.
        */
@@ -330,20 +285,9 @@ export const createSendStore = ({
 
         const cashuRequestParseResult = parseCashuPaymentRequest(destination);
         if (cashuRequestParseResult.valid) {
-          const result = validateCashuRequest(cashuRequestParseResult.decoded);
-          if (!result.valid) {
-            return { success: false, error: result.error };
-          }
-
-          set({
-            sendType: 'CASHU_PAYMENT_REQUEST',
-            destination: destination,
-            destinationDisplay: `${destination.slice(0, 6)}...${destination.slice(-4)}`,
-          });
-
           return {
-            success: true,
-            data: { type: 'CASHU_PAYMENT_REQUEST', amount: result.amount },
+            success: false,
+            error: 'Cashu payment requests are not supported',
           };
         }
 
