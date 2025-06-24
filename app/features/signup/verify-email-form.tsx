@@ -67,7 +67,7 @@ export function VerifyEmailForm({ user, code }: Props) {
         <CardTitle className="text-2xl">Verify Your Email</CardTitle>
         <CardDescription>
           Please check your email ({user.email}) to verify your account. You'll
-          need to verify your email to continue using Maple AI.
+          need to verify your email to continue using Agicash.
         </CardDescription>
       </CardHeader>
       <CardContent>
