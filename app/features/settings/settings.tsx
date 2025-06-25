@@ -1,4 +1,9 @@
-import { Edit, QrCode, Share, Users } from 'lucide-react';
+import { Copy, Edit, Share, SunMoon, Users } from 'lucide-react';
+import { useCopyToClipboard } from 'usehooks-ts';
+import DiscordLogo from '~/assets/discord_logo.svg';
+import GithubLogo from '~/assets/github.svg';
+import NostrLogo from '~/assets/nostr_logo.svg';
+import XLogo from '~/assets/x_logo.svg';
 import {
   ClosePageButton,
   PageContent,
@@ -8,23 +13,77 @@ import {
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
+import useLocationData from '~/hooks/use-location';
+import { useToast } from '~/hooks/use-toast';
 import { canShare, shareContent } from '~/lib/share';
-import { LinkWithViewTransition } from '~/lib/transitions';
+import { cn } from '~/lib/utils';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountTypeIcon } from '../accounts/account-icons';
 import { ColorModeToggle } from '../theme/color-mode-toggle';
 import { useAuthActions } from '../user/auth';
 import { useUser } from '../user/user-hooks';
 
+function LnAddressDisplay({
+  username,
+  domain,
+}: { username: string; domain: string }) {
+  const { toast } = useToast();
+  const [_, copyToClipboard] = useCopyToClipboard();
+
+  const lightningAddress = `${username}@${domain}`;
+
+  const handleCopyLightningAddress = async () => {
+    try {
+      await copyToClipboard(lightningAddress);
+      toast({
+        title: 'Lightning address copied to clipboard',
+      });
+    } catch {
+      toast({
+        title: 'Unable to copy to clipboard',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopyLightningAddress}
+      className="flex w-full items-center justify-between"
+    >
+      <div
+        className={cn(
+          // These lengths are based on a screen width of 375px. We shrink the font size
+          // as the username gets longer so that it all fits on a single line. text-lg
+          // is the smallest font size, then we just truncate
+          'mr-1 truncate',
+          lightningAddress.length > 23
+            ? 'text-lg'
+            : lightningAddress.length > 18
+              ? 'text-xl'
+              : 'text-2xl',
+        )}
+      >
+        <span>{username}</span>
+        <span className="text-muted-foreground/50">@{domain}</span>
+      </div>
+      <Copy className="mr-4 ml-2 h-4 w-4" />
+    </button>
+  );
+}
+
 export default function Settings() {
   const { signOut } = useAuthActions();
   const defaultAccount = useDefaultAccount();
   const username = useUser((s) => s.username);
 
+  const { domain } = useLocationData();
+  const lightningAddress = `${username}@${domain}`;
+
   const handleShare = async () => {
     const data = {
-      title: `${username}'s Agicash`,
-      url: `https://boardwalkcash.com/${username}`,
+      text: `Pay me to my Agicash Lightning Address at ${lightningAddress}`,
     };
     await shareContent(data);
   };
@@ -33,22 +92,15 @@ export default function Settings() {
     <>
       <PageHeader>
         <ClosePageButton to="/" transition="slideRight" applyTo="oldView" />
-        <LinkWithViewTransition
-          to="/settings/qr"
-          transition="slideUp"
-          applyTo="newView"
-        >
-          <QrCode />
-        </LinkWithViewTransition>
         {canShare() && (
-          <button type="button" onClick={handleShare}>
+          <button type="button" onClick={handleShare} className="px-6">
             <Share />
           </button>
         )}
       </PageHeader>
 
       <PageContent>
-        <div className="font-semibold text-2xl">{username}</div>
+        <LnAddressDisplay username={username} domain={domain} />
         <SettingsNavButton to="/settings/profile/edit">
           <Edit />
           <span>Edit profile</span>
@@ -59,78 +111,75 @@ export default function Settings() {
           <span>{defaultAccount.name}</span>
         </SettingsNavButton>
 
+        <Separator />
+
         <SettingsNavButton to="/settings/contacts">
           <Users />
           Contacts
         </SettingsNavButton>
 
-        <Separator />
-
-        <div className="flex items-center justify-between px-1 py-2">
-          <span>Theme</span>
-          <ColorModeToggle />
-        </div>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between pl-4"
+        >
+          <div className="flex items-center gap-2">
+            <SunMoon className="h-4 w-4" />
+            <span>Theme</span>
+          </div>
+          <ColorModeToggle className="mr-1" />
+        </button>
       </PageContent>
 
-      <PageFooter>
-        <Button className="mx-auto mb-8 w-32" onClick={signOut}>
+      <PageFooter className="mx-auto flex w-36 flex-col gap-6 pb-10">
+        <Button className="mx-auto w-full" onClick={signOut}>
           Sign Out
         </Button>
-        <div className="flex w-full flex-col items-center gap-2 text-sidebar-foreground/70 text-xs">
-          <div className="flex justify-between gap-4">
-            <LinkWithViewTransition
-              to="/terms"
-              className="hover:underline"
-              transition="slideUp"
-              applyTo="newView"
-            >
-              Terms
-            </LinkWithViewTransition>
-            <LinkWithViewTransition
-              to="/privacy"
-              className="hover:underline"
-              transition="slideUp"
-              applyTo="newView"
-            >
-              Privacy
-            </LinkWithViewTransition>
-          </div>
-          <div className="flex gap-4">
-            <a
-              href="https://x.com/boardwalkcash"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
-              X
-            </a>
-            <a
-              href="https://njump.me/nprofile1qqsw3u8v7rz83txuy8nc0eth6rsqh4z935fs3t6ugwc7364gpzy5psce64r7c"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
-              Nostr
-            </a>
-            <a
-              href="https://github.com/MakePrisms/boardwalkcash"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
-              GitHub
-            </a>
-            <a
-              href="https://discord.gg/boardwalkcash"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
-              Discord
-            </a>
-          </div>
-          <a href="mailto:contact@agi.cash" className="hover:underline">
-            contact@agi.cash
+        <div className="flex w-full justify-between gap-4 text-muted-foreground text-sm">
+          <a
+            href={'/terms'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Terms
+          </a>
+          <a
+            href={'/privacy'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Privacy
+          </a>
+        </div>
+        <div className="flex w-full justify-between">
+          <a
+            href="https://x.com/boardwalkcash"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src={XLogo} alt="X" className="h-5 w-5 invert" />
+          </a>
+          <a
+            href="https://njump.me/nprofile1qqsw3u8v7rz83txuy8nc0eth6rsqh4z935fs3t6ugwc7364gpzy5psce64r7c"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src={NostrLogo} alt="Nostr" className="h-5 w-5" />
+          </a>
+          <a
+            href="https://github.com/MakePrisms/boardwalkcash"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src={GithubLogo} alt="GitHub" className="h-5 w-5 invert" />
+          </a>
+          <a
+            href="https://discord.gg/boardwalkcash"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src={DiscordLogo} alt="Discord" className="h-5 w-5 invert" />
           </a>
         </div>
       </PageFooter>

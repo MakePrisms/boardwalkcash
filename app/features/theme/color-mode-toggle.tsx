@@ -10,7 +10,7 @@ import { colorModes } from './theme.constants';
 import type { ColorMode } from './theme.types';
 import { useTheme } from './use-theme';
 
-export function ColorModeToggle() {
+export function ColorModeToggle({ className }: { className?: string }) {
   const { colorMode, setColorMode } = useTheme();
 
   const getIcon = (mode: ColorMode) => {
@@ -33,6 +33,7 @@ export function ColorModeToggle() {
           variant="ghost"
           size="icon"
           aria-label={`Current color mode: ${colorMode}. Click to switch.`}
+          className={className}
         >
           {getIcon(colorMode)}
         </Button>
