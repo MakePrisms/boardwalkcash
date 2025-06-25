@@ -122,7 +122,7 @@ export const useAuthActions = (): AuthActions => {
 
   // We are doing this to keep references for these actions constant. Open secret implementation currently creates a new
   // reference for each render. See https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L350
-  const signUpRef = useRef<AuthActions['signUp']>();
+  const signUpRef = useRef<AuthActions['signUp']>(null);
   if (!signUpRef.current) {
     signUpRef.current = (email: string, password: string) =>
       openSecret.signUp(email, password, '');
@@ -133,7 +133,7 @@ export const useAuthActions = (): AuthActions => {
   const signOutRef = useRef(openSecret.signOut);
   const requestPasswordResetRef = useRef(openSecret.requestPasswordReset);
   const confirmPasswordResetRef = useRef(openSecret.confirmPasswordReset);
-  const initiateGoogleAuthRef = useRef<AuthActions['initiateGoogleAuth']>();
+  const initiateGoogleAuthRef = useRef<AuthActions['initiateGoogleAuth']>(null);
   if (!initiateGoogleAuthRef.current) {
     initiateGoogleAuthRef.current = () =>
       openSecret.initiateGoogleAuth('').then((response) => ({
@@ -141,7 +141,7 @@ export const useAuthActions = (): AuthActions => {
       }));
   }
   const handleGoogleAuthCallbackRef =
-    useRef<AuthActions['handleGoogleAuthCallback']>();
+    useRef<AuthActions['handleGoogleAuthCallback']>(null);
   if (!handleGoogleAuthCallbackRef.current) {
     handleGoogleAuthCallbackRef.current = (code: string, state: string) =>
       openSecret.handleGoogleCallback(code, state, '');

@@ -44,7 +44,7 @@ type QRScannerProps = {
  */
 export const QRScanner = ({ onDecode }: QRScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const scanner = useRef<Scanner | null>(null);
+  const scanner = useRef<Scanner>(null);
   const [currentFragment, setCurrentFragment] = useState('');
   const decodeRef = useLatest(onDecode);
 
