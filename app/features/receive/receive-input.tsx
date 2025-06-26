@@ -1,3 +1,4 @@
+import { getEncodedToken } from '@cashu/cashu-ts';
 import { ArrowUpDown, Clipboard, Scan } from 'lucide-react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
@@ -122,7 +123,7 @@ export default function ReceiveInput() {
       return;
     }
 
-    navigate(`/receive/cashu-token#${token}`, {
+    navigate(`/receive-cashu-token#${getEncodedToken(token)}`, {
       transition: 'slideLeft',
       applyTo: 'newView',
     });

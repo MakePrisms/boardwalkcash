@@ -51,7 +51,7 @@ function AccountItem({ account }: { account: AccountWithBadges }) {
 type AccountSelectorProps<T extends Account> = {
   accounts: AccountWithBadges<T>[];
   selectedAccount: AccountWithBadges<T>;
-  onSelect: (account: T) => void;
+  onSelect?: (account: T) => void;
   disabled?: boolean;
 };
 
@@ -65,7 +65,7 @@ export function AccountSelector<T extends Account>({
 
   const handleAccountSelect = (account: T) => {
     setOpen(false);
-    onSelect(account);
+    onSelect?.(account);
   };
 
   return (

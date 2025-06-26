@@ -57,7 +57,7 @@ const getDecodedTokenSafe = (
  * @param content - The content to extract the encoded cashu token from (a string like a URL or a direct token)
  * @returns The extracted token if found and valid, otherwise null
  */
-export const extractCashuToken = (content: string): string | null => {
+export const extractCashuToken = (content: string): Token | null => {
   // Look for V3 (cashuA) or V4 (cashuB) tokens anywhere in the content
   // Tokens are base64_urlsafe encoded, so they can contain: A-Z, a-z, 0-9, -, _, and optional = padding
   // See https://github.com/cashubtc/nuts/blob/main/00.md#serialization-of-tokens for more details
@@ -66,7 +66,7 @@ export const extractCashuToken = (content: string): string | null => {
     const extractedToken = tokenMatch[0];
     const result = getDecodedTokenSafe(extractedToken);
     if (result.success) {
-      return extractedToken;
+      return result.token;
     }
   }
 
