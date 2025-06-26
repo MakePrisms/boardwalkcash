@@ -9,6 +9,10 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import type { Money } from '~/lib/money';
+import {
+  createSupabaseRealtimeChannelHook,
+  createSupabaseRealtimeSubscriptionStore,
+} from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import {
@@ -172,6 +176,13 @@ function useSwapForProofsToSend() {
   });
 }
 
+const useCashuSendSwapsSubscriptionStore =
+  createSupabaseRealtimeSubscriptionStore();
+
+const useCashuSendSwapsSubscription = createSupabaseRealtimeChannelHook({
+  useStore: useCashuSendSwapsSubscriptionStore,
+});
+
 function useOnCashuSendSwapChange({
   onCreated,
   onUpdated,
@@ -179,12 +190,12 @@ function useOnCashuSendSwapChange({
   onCreated: (swap: CashuSendSwap) => void;
   onUpdated: (swap: CashuSendSwap) => void;
 }) {
-  const encryption = useCashuCryptography();
+  const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
+  useCashuSendSwapsSubscription(() =>
+    agicashDb
       .channel('cashu-send-swaps')
       .on(
         'postgres_changes',
@@ -195,24 +206,19 @@ function useOnCashuSendSwapChange({
           if (payload.eventType === 'INSERT') {
             const addedSwap = await CashuSendSwapRepository.toSwap(
               payload.new,
-              encryption.decrypt,
+              cashuCryptography.decrypt,
             );
             onCreatedRef.current(addedSwap);
           } else if (payload.eventType === 'UPDATE') {
             const updatedSwap = await CashuSendSwapRepository.toSwap(
               payload.new,
-              encryption.decrypt,
+              cashuCryptography.decrypt,
             );
             onUpdatedRef.current(updatedSwap);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [encryption]);
+      ),
+  );
 }
 
 export function useUnresolvedCashuSendSwaps() {

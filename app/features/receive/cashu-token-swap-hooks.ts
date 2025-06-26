@@ -8,6 +8,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
+import {
+  createSupabaseRealtimeChannelHook,
+  createSupabaseRealtimeSubscriptionStore,
+} from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import {
@@ -189,6 +193,13 @@ function useCompleteCashuTokenSwap() {
   });
 }
 
+const useCashuTokenSwapsSubscriptionStore =
+  createSupabaseRealtimeSubscriptionStore();
+
+const useCashuTokenSwapsSubscription = createSupabaseRealtimeChannelHook({
+  useStore: useCashuTokenSwapsSubscriptionStore,
+});
+
 function useOnCashuTokenSwapChange({
   onCreated,
   onUpdated,
@@ -200,40 +211,33 @@ function useOnCashuTokenSwapChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-token-swaps')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'cashu_token_swaps',
-        },
-        async (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuTokenSwap>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const swap = await CashuTokenSwapRepository.toTokenSwap(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onCreatedRef.current(swap);
-          } else if (payload.eventType === 'UPDATE') {
-            const swap = await CashuTokenSwapRepository.toTokenSwap(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onUpdatedRef.current(swap);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography]);
+  useCashuTokenSwapsSubscription(() =>
+    agicashDb.channel('cashu-token-swaps').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'cashu_token_swaps',
+      },
+      async (
+        payload: RealtimePostgresChangesPayload<AgicashDbCashuTokenSwap>,
+      ) => {
+        if (payload.eventType === 'INSERT') {
+          const swap = await CashuTokenSwapRepository.toTokenSwap(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onCreatedRef.current(swap);
+        } else if (payload.eventType === 'UPDATE') {
+          const swap = await CashuTokenSwapRepository.toTokenSwap(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onUpdatedRef.current(swap);
+        }
+      },
+    ),
+  );
 }
 
 function usePendingCashuTokenSwaps() {

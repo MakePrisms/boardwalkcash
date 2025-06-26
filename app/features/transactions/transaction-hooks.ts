@@ -6,11 +6,11 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import {
   type AgicashDbTransaction,
   agicashDb,
 } from '~/features/agicash-db/database';
+import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import { useCashuSendSwapRepository } from '../send/cashu-send-swap-repository';
@@ -152,7 +152,7 @@ function useOnTransactionChange({
 }) {
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
+  useEffectNoStrictMode(() => {
     if (!transactionId) return;
 
     const channel = agicashDb

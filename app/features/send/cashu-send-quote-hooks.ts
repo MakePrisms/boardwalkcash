@@ -11,6 +11,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
+  createSupabaseRealtimeChannelHook,
+  createSupabaseRealtimeSubscriptionStore,
+} from '~/lib/supabase/supabase-realtime';
+import {
   type LongTimeout,
   clearLongTimeout,
   setLongTimeout,
@@ -232,6 +236,13 @@ export function useCashuSendQuote({
   };
 }
 
+const useCashuSendQuotesSubscriptionStore =
+  createSupabaseRealtimeSubscriptionStore();
+
+const useCashuSendQuotesSubscription = createSupabaseRealtimeChannelHook({
+  useStore: useCashuSendQuotesSubscriptionStore,
+});
+
 function useOnCashuSendQuoteChange({
   onCreated,
   onUpdated,
@@ -243,40 +254,33 @@ function useOnCashuSendQuoteChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-send-quotes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'cashu_send_quotes',
-        },
-        async (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const addedQuote = await CashuSendQuoteRepository.toSend(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onCreatedRef.current(addedQuote);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = await CashuSendQuoteRepository.toSend(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onUpdatedRef.current(updatedQuote);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography]);
+  useCashuSendQuotesSubscription(() =>
+    agicashDb.channel('cashu-send-quotes').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'cashu_send_quotes',
+      },
+      async (
+        payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
+      ) => {
+        if (payload.eventType === 'INSERT') {
+          const addedQuote = await CashuSendQuoteRepository.toSend(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onCreatedRef.current(addedQuote);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedQuote = await CashuSendQuoteRepository.toSend(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onUpdatedRef.current(updatedQuote);
+        }
+      },
+    ),
+  );
 }
 
 function useUnresolvedCashuSendQuotes() {

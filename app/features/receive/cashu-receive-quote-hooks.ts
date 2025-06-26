@@ -24,6 +24,10 @@ import {
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import {
+  createSupabaseRealtimeChannelHook,
+  createSupabaseRealtimeSubscriptionStore,
+} from '~/lib/supabase/supabase-realtime';
+import {
   type LongTimeout,
   clearLongTimeout,
   setLongTimeout,
@@ -233,6 +237,13 @@ export function useCashuReceiveQuote({
   };
 }
 
+const useCashuReceiveQuotesSubscriptionStore =
+  createSupabaseRealtimeSubscriptionStore();
+
+const useSupabaseRealtimeChannel = createSupabaseRealtimeChannelHook({
+  useStore: useCashuReceiveQuotesSubscriptionStore,
+});
+
 function useOnCashuReceiveQuoteChange({
   onCreated,
   onUpdated,
@@ -243,36 +254,25 @@ function useOnCashuReceiveQuoteChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-receive-quotes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'cashu_receive_quotes',
-        },
-        (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
-            onCreatedRef.current(addedQuote);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = CashuReceiveQuoteRepository.toQuote(
-              payload.new,
-            );
-            onUpdatedRef.current(updatedQuote);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+  useSupabaseRealtimeChannel(() =>
+    agicashDb.channel('cashu-receive-quotes').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'cashu_receive_quotes',
+      },
+      (payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>) => {
+        if (payload.eventType === 'INSERT') {
+          const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onCreatedRef.current(addedQuote);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onUpdatedRef.current(updatedQuote);
+        }
+      },
+    ),
+  );
 }
 
 const usePendingCashuReceiveQuotes = () => {
