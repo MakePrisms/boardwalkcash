@@ -1,5 +1,8 @@
 import { type MeltQuoteResponse, MintOperationError } from '@cashu/cashu-ts';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import {
   type QueryClient,
   useMutation,
@@ -232,6 +235,15 @@ export function useCashuSendQuote({
   };
 }
 
+type SubscriptionState =
+  | {
+      status: 'subscribing' | 'subscribed' | 'closed';
+    }
+  | {
+      status: 'error';
+      error: Error;
+    };
+
 function useOnCashuSendQuoteChange({
   onCreated,
   onUpdated,
@@ -239,6 +251,9 @@ function useOnCashuSendQuoteChange({
   onCreated: (send: CashuSendQuote) => void;
   onUpdated: (send: CashuSendQuote) => void;
 }) {
+  const [state, setState] = useState<SubscriptionState>({
+    status: 'subscribing',
+  });
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
@@ -271,12 +286,32 @@ function useOnCashuSendQuoteChange({
           }
         },
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          setState({ status: 'subscribed' });
+        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
+          setState({ status: 'closed' });
+        } else {
+          setState({
+            status: 'error',
+            error: new Error(
+              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
+              { cause: error },
+            ),
+          });
+        }
+      });
 
     return () => {
       channel.unsubscribe();
     };
   }, [cashuCryptography]);
+
+  if (state.status === 'error') {
+    throw state.error;
+  }
+
+  return state.status;
 }
 
 function useUnresolvedCashuSendQuotes() {
@@ -485,7 +520,7 @@ export function useTrackUnresolvedCashuSendQuotes() {
   );
   const cashuSendQuoteCache = useCashuSendQuoteCache();
 
-  useOnCashuSendQuoteChange({
+  return useOnCashuSendQuoteChange({
     onCreated: (send) => {
       unresolvedSendQuotesCache.add(send);
     },

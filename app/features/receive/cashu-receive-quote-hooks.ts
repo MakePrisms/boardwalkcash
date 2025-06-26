@@ -4,7 +4,10 @@ import {
   type Token,
   type WebSocketSupport,
 } from '@cashu/cashu-ts';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import {
   type Query,
   type QueryClient,
@@ -233,6 +236,15 @@ export function useCashuReceiveQuote({
   };
 }
 
+type SubscriptionState =
+  | {
+      status: 'subscribing' | 'subscribed' | 'closed';
+    }
+  | {
+      status: 'error';
+      error: Error;
+    };
+
 function useOnCashuReceiveQuoteChange({
   onCreated,
   onUpdated,
@@ -240,6 +252,9 @@ function useOnCashuReceiveQuoteChange({
   onCreated: (quote: CashuReceiveQuote) => void;
   onUpdated: (quote: CashuReceiveQuote) => void;
 }) {
+  const [state, setState] = useState<SubscriptionState>({
+    status: 'subscribing',
+  });
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
@@ -267,12 +282,32 @@ function useOnCashuReceiveQuoteChange({
           }
         },
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          setState({ status: 'subscribed' });
+        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
+          setState({ status: 'closed' });
+        } else {
+          setState({
+            status: 'error',
+            error: new Error(
+              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
+              { cause: error },
+            ),
+          });
+        }
+      });
 
     return () => {
       channel.unsubscribe();
     };
   }, []);
+
+  if (state.status === 'error') {
+    throw state.error;
+  }
+
+  return state.status;
 }
 
 const usePendingCashuReceiveQuotes = () => {
@@ -673,7 +708,7 @@ export function useTrackPendingCashuReceiveQuotes() {
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
-  useOnCashuReceiveQuoteChange({
+  return useOnCashuReceiveQuoteChange({
     onCreated: (quote) => {
       pendingQuotesCache.add(quote);
     },

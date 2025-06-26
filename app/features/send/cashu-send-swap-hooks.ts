@@ -1,4 +1,7 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import {
   type QueryClient,
   useMutation,
@@ -172,6 +175,15 @@ function useSwapForProofsToSend() {
   });
 }
 
+type SubscriptionState =
+  | {
+      status: 'subscribing' | 'subscribed' | 'closed';
+    }
+  | {
+      status: 'error';
+      error: Error;
+    };
+
 function useOnCashuSendSwapChange({
   onCreated,
   onUpdated,
@@ -179,6 +191,9 @@ function useOnCashuSendSwapChange({
   onCreated: (swap: CashuSendSwap) => void;
   onUpdated: (swap: CashuSendSwap) => void;
 }) {
+  const [state, setState] = useState<SubscriptionState>({
+    status: 'subscribing',
+  });
   const encryption = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
@@ -207,12 +222,32 @@ function useOnCashuSendSwapChange({
           }
         },
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          setState({ status: 'subscribed' });
+        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
+          setState({ status: 'closed' });
+        } else {
+          setState({
+            status: 'error',
+            error: new Error(
+              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
+              { cause: error },
+            ),
+          });
+        }
+      });
 
     return () => {
       channel.unsubscribe();
     };
   }, [encryption]);
+
+  if (state.status === 'error') {
+    throw state.error;
+  }
+
+  return state.status;
 }
 
 export function useUnresolvedCashuSendSwaps() {
@@ -393,7 +428,7 @@ export function useTrackUnresolvedCashuSendSwaps() {
     [queryClient],
   );
 
-  useOnCashuSendSwapChange({
+  return useOnCashuSendSwapChange({
     onCreated: (swap) => {
       unresolvedSwapsCache.add(swap);
     },

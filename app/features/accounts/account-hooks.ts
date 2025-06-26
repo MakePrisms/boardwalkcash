@@ -1,4 +1,7 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import {
   type QueryClient,
   type UseSuspenseQueryResult,
@@ -6,7 +9,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
@@ -216,6 +219,15 @@ function isDefaultAccount(user: User, account: Account) {
   return false;
 }
 
+type SubscriptionState =
+  | {
+      status: 'subscribing' | 'subscribed' | 'closed';
+    }
+  | {
+      status: 'error';
+      error: Error;
+    };
+
 function useOnAccountChange({
   onCreated,
   onUpdated,
@@ -223,6 +235,9 @@ function useOnAccountChange({
   onCreated: (account: Account) => void;
   onUpdated: (account: Account) => void;
 }) {
+  const [state, setState] = useState<SubscriptionState>({
+    status: 'subscribing',
+  });
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
@@ -259,12 +274,32 @@ function useOnAccountChange({
           }
         },
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          setState({ status: 'subscribed' });
+        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
+          setState({ status: 'closed' });
+        } else {
+          setState({
+            status: 'error',
+            error: new Error(
+              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
+              { cause: error },
+            ),
+          });
+        }
+      });
 
     return () => {
       channel.unsubscribe();
     };
   }, [cashuCryptography, accountCache]);
+
+  if (state.status === 'error') {
+    throw state.error;
+  }
+
+  return state.status;
 }
 
 export function useTrackAccounts() {
@@ -273,7 +308,7 @@ export function useTrackAccounts() {
 
   const accountCache = useAccountsCache();
 
-  useOnAccountChange({
+  return useOnAccountChange({
     onCreated: (account) => accountCache.add(account),
     onUpdated: (account) => accountCache.update(account),
   });

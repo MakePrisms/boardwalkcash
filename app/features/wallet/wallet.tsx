@@ -71,13 +71,26 @@ const Wallet = ({ children }: PropsWithChildren) => {
 
   useSyncThemeWithDefaultCurrency();
 
-  useTrackAccounts();
-  useTrackPendingCashuReceiveQuotes();
-  useTrackPendingCashuTokenSwaps();
-  useTrackUnresolvedCashuSendQuotes();
-  useTrackUnresolvedCashuSendSwaps();
-
   const isLead = useTakeTaskProcessingLead();
+
+  const accountsSubscription = useTrackAccounts();
+  const pendingCashuReceiveQuotesSubscription =
+    useTrackPendingCashuReceiveQuotes();
+  const pendingCashuTokenSwapsSubscription = useTrackPendingCashuTokenSwaps();
+  const unresolvedCashuSendQuotesSubscription =
+    useTrackUnresolvedCashuSendQuotes();
+  const unresolvedCashuSendSwapsSubscription =
+    useTrackUnresolvedCashuSendSwaps();
+
+  if (
+    accountsSubscription !== 'subscribed' ||
+    pendingCashuReceiveQuotesSubscription !== 'subscribed' ||
+    pendingCashuTokenSwapsSubscription !== 'subscribed' ||
+    unresolvedCashuSendQuotesSubscription !== 'subscribed' ||
+    unresolvedCashuSendSwapsSubscription !== 'subscribed'
+  ) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>

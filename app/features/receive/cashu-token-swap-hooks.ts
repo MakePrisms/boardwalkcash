@@ -1,5 +1,8 @@
 import type { Token } from '@cashu/cashu-ts';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import {
   type QueryClient,
   useMutation,
@@ -7,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import {
@@ -189,6 +192,15 @@ function useCompleteCashuTokenSwap() {
   });
 }
 
+type SubscriptionState =
+  | {
+      status: 'subscribing' | 'subscribed' | 'closed';
+    }
+  | {
+      status: 'error';
+      error: Error;
+    };
+
 function useOnCashuTokenSwapChange({
   onCreated,
   onUpdated,
@@ -196,6 +208,9 @@ function useOnCashuTokenSwapChange({
   onCreated: (swap: CashuTokenSwap) => void;
   onUpdated: (swap: CashuTokenSwap) => void;
 }) {
+  const [state, setState] = useState<SubscriptionState>({
+    status: 'subscribing',
+  });
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
@@ -228,12 +243,32 @@ function useOnCashuTokenSwapChange({
           }
         },
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          setState({ status: 'subscribed' });
+        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
+          setState({ status: 'closed' });
+        } else {
+          setState({
+            status: 'error',
+            error: new Error(
+              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
+              { cause: error },
+            ),
+          });
+        }
+      });
 
     return () => {
       channel.unsubscribe();
     };
   }, [cashuCryptography]);
+
+  if (state.status === 'error') {
+    throw state.error;
+  }
+
+  return state.status;
 }
 
 function usePendingCashuTokenSwaps() {
@@ -260,7 +295,7 @@ export function useTrackPendingCashuTokenSwaps() {
   );
   const tokenSwapCache = useCashuTokenSwapCache();
 
-  useOnCashuTokenSwapChange({
+  return useOnCashuTokenSwapChange({
     onCreated: (swap) => {
       pendingSwapsCache.add(swap);
     },
