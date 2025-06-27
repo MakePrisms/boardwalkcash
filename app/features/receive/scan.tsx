@@ -37,7 +37,7 @@ export default function Scan() {
               return;
             }
 
-            navigate(`/receive-cashu-token#${getEncodedToken(token)}`, {
+            navigate(`/receive/cashu/token#${getEncodedToken(token)}`, {
               transition: 'slideLeft',
               applyTo: 'newView',
             });

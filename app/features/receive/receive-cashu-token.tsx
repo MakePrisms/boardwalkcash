@@ -111,53 +111,52 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     },
   });
 
-  const { mutate: claimTokenMutation } = useMutation({
-    mutationFn: async ({
-      token,
-      isAutoClaim,
-    }: {
-      token: Token;
-      isAutoClaim: boolean;
-    }) => {
-      const isReceiveAccountAdded = receiveAccount.id !== '';
-
-      let account = receiveAccount;
-      if (!isReceiveAccountAdded) {
-        // For auto claim, prefer source account if selectable, otherwise use receive account
-        // For manual claim, always use receive account
-        const accountToAdd =
+  const { mutate: claimTokenMutation, isPending: isClaimingToken } =
+    useMutation({
+      mutationFn: async ({
+        token,
+        isAutoClaim,
+      }: {
+        token: Token;
+        isAutoClaim: boolean;
+      }) => {
+        const preferredAccount =
           isAutoClaim && sourceAccount?.selectable
             ? sourceAccount
             : receiveAccount;
-        account = await addAndSetReceiveAccount(accountToAdd);
-      }
 
-      await claimToken({ token, account });
-
-      return { account, isAutoClaim };
-    },
-    onSuccess: async ({ account, isAutoClaim }) => {
-      // Only set defaults for auto claim and if the account is different from current default
-      if (isAutoClaim && account.id !== defaultAccount.id) {
-        try {
-          await setDefaultAccount(account);
-          await setDefaultCurrency(account.currency);
-        } catch (error) {
-          console.error('Error setting defaults after auto claim', {
-            cause: error,
-          });
+        // Use the preferred account if it exists, otherwise create it
+        let account = preferredAccount;
+        if (account.id === '') {
+          account = await addAndSetReceiveAccount(preferredAccount);
         }
-      }
-    },
-    onError: (error) => {
-      console.error('Error claiming token', { cause: error });
-      toast({
-        title: 'Failed to claim token',
-        description: getErrorMessage(error),
-        variant: 'destructive',
-      });
-    },
-  });
+
+        await claimToken({ token, account });
+
+        return { account, isAutoClaim };
+      },
+      onSuccess: async ({ account, isAutoClaim }) => {
+        // Only set defaults for auto claim and if the account is different from current default
+        if (isAutoClaim && account.id !== defaultAccount.id) {
+          try {
+            await setDefaultAccount(account);
+            await setDefaultCurrency(account.currency);
+          } catch (error) {
+            console.error('Error setting defaults after auto claim', {
+              cause: error,
+            });
+          }
+        }
+      },
+      onError: (error) => {
+        console.error('Error claiming token', { cause: error });
+        toast({
+          title: 'Failed to claim token',
+          description: getErrorMessage(error),
+          variant: 'destructive',
+        });
+      },
+    });
 
   const handleClaim = async () => {
     if (!claimableToken) {
@@ -217,7 +216,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={status === 'CLAIMING'}
+            loading={status === 'CLAIMING' || isClaimingToken}
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>
@@ -248,9 +247,13 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
 
     setSigningUpGuest(true);
     try {
+      // Modify the URL before signing up because as soon as the user is logged in,
+      // they will be redirected to the protected receive cashu token page
+      navigate(
+        { hash: encodedToken, search: 'autoClaim=true' },
+        { replace: true },
+      );
       await signUpGuest();
-      // Navigate to the same page with autoClaim flag
-      navigate({ hash: encodedToken, search: 'autoClaim=true' });
     } catch (error) {
       console.error('Error signing up guest', { cause: error });
       toast({

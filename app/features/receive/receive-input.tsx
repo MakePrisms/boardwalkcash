@@ -123,7 +123,7 @@ export default function ReceiveInput() {
       return;
     }
 
-    navigate(`/receive-cashu-token#${getEncodedToken(token)}`, {
+    navigate(`/receive/cashu/token#${getEncodedToken(token)}`, {
       transition: 'slideLeft',
       applyTo: 'newView',
     });
