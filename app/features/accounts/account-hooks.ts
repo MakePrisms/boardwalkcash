@@ -212,7 +212,7 @@ export class AccountsCache {
 export function useAccountsCache() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
-  // The query client is a singleton created in the root of the app (see ).
+  // The query client is a singleton created in the root of the app (see App component in root.tsx).
   return useMemo(
     () => new AccountsCache(queryClient, userId),
     [queryClient, userId],
@@ -279,7 +279,7 @@ export function useTrackAccounts() {
 
   const accountCache = useAccountsCache();
 
-  useOnAccountChange({
+  return useOnAccountChange({
     onCreated: (account) => accountCache.upsert(account),
     onUpdated: (account) => accountCache.update(account),
   });

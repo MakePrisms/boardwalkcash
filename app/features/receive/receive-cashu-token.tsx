@@ -292,7 +292,7 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
       </PageContent>
 
       {claimableToken && (
-        <PageFooter>
+        <PageFooter className="pb-14">
           <div className="flex flex-col gap-4">
             <Button
               onClick={handleClaimAsGuest}
