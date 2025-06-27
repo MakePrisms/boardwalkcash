@@ -87,7 +87,7 @@ export class AccountsCache {
     this.accountVersionsCache = new AccountVersionsCache(queryClient, this);
   }
 
-  add(account: Account) {
+  upsert(account: Account) {
     this.accountVersionsCache.updateLatestVersionIfStale(
       account.id,
       account.version,
@@ -95,7 +95,13 @@ export class AccountsCache {
 
     this.queryClient.setQueryData(
       [accountsQueryKey, this.userId],
-      (curr: Account[]) => [...curr, account],
+      (curr: Account[]) => {
+        const existingAccountIndex = curr.findIndex((x) => x.id === account.id);
+        if (existingAccountIndex !== -1) {
+          return curr.map((x) => (x.id === account.id ? account : x));
+        }
+        return [...curr, account];
+      },
     );
   }
 
@@ -273,8 +279,8 @@ export function useTrackAccounts() {
 
   const accountCache = useAccountsCache();
 
-  return useOnAccountChange({
-    onCreated: (account) => accountCache.add(account),
+  useOnAccountChange({
+    onCreated: (account) => accountCache.upsert(account),
     onUpdated: (account) => accountCache.update(account),
   });
 }
@@ -411,6 +417,7 @@ export function useDefaultAccount() {
 export function useAddCashuAccount() {
   const userId = useUser((x) => x.id);
   const accountRepository = useAccountRepository();
+  const accountCache = useAccountsCache();
 
   const { mutateAsync } = useMutation({
     mutationFn: async (
@@ -433,6 +440,11 @@ export function useAddCashuAccount() {
         keysetCounters: {},
         proofs: [],
       });
+    },
+    onSuccess: (account) => {
+      // We add the account as soon as it is created so that it is available in the cache immediately.
+      // This is important when using other hooks that are trying to use the account immediately after it is created.
+      accountCache.upsert(account);
     },
   });
 
