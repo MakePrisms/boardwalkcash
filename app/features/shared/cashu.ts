@@ -68,6 +68,11 @@ const cashuSeedStore = create<CashuSeedStore>((set) => ({
   setSeedPromise: (promise) => set({ seedPromise: promise }),
 }));
 
+/**
+ * Hook that provides the Cashu cryptography functions.
+ * Reference of the returned data is stable and doesn't change between renders.
+ * @returns The Cashu cryptography functions.
+ */
 export function useCashuCryptography(): CashuCryptography {
   const { encrypt, decrypt } = useEncryption();
   const crypto = useCryptography();

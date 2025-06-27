@@ -23,6 +23,7 @@ import {
   getWalletCurrency,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
   type LongTimeout,
   clearLongTimeout,
@@ -243,36 +244,25 @@ function useOnCashuReceiveQuoteChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-receive-quotes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'cashu_receive_quotes',
-        },
-        (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
-            onCreatedRef.current(addedQuote);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = CashuReceiveQuoteRepository.toQuote(
-              payload.new,
-            );
-            onUpdatedRef.current(updatedQuote);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+  return useSupabaseRealtimeSubscription(() =>
+    agicashDb.channel('cashu-receive-quotes').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'cashu_receive_quotes',
+      },
+      (payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>) => {
+        if (payload.eventType === 'INSERT') {
+          const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onCreatedRef.current(addedQuote);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onUpdatedRef.current(updatedQuote);
+        }
+      },
+    ),
+  );
 }
 
 const usePendingCashuReceiveQuotes = () => {
@@ -673,7 +663,7 @@ export function useTrackPendingCashuReceiveQuotes() {
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
-  useOnCashuReceiveQuoteChange({
+  return useOnCashuReceiveQuoteChange({
     onCreated: (quote) => {
       pendingQuotesCache.add(quote);
     },
