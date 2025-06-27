@@ -4,10 +4,7 @@ import {
   type Token,
   type WebSocketSupport,
 } from '@cashu/cashu-ts';
-import {
-  REALTIME_SUBSCRIBE_STATES,
-  type RealtimePostgresChangesPayload,
-} from '@supabase/supabase-js';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type Query,
   type QueryClient,
@@ -26,6 +23,7 @@ import {
   getWalletCurrency,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
   type LongTimeout,
   clearLongTimeout,
@@ -236,15 +234,6 @@ export function useCashuReceiveQuote({
   };
 }
 
-type SubscriptionState =
-  | {
-      status: 'subscribing' | 'subscribed' | 'closed';
-    }
-  | {
-      status: 'error';
-      error: Error;
-    };
-
 function useOnCashuReceiveQuoteChange({
   onCreated,
   onUpdated,
@@ -252,62 +241,28 @@ function useOnCashuReceiveQuoteChange({
   onCreated: (quote: CashuReceiveQuote) => void;
   onUpdated: (quote: CashuReceiveQuote) => void;
 }) {
-  const [state, setState] = useState<SubscriptionState>({
-    status: 'subscribing',
-  });
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-receive-quotes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'cashu_receive_quotes',
-        },
-        (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
-            onCreatedRef.current(addedQuote);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = CashuReceiveQuoteRepository.toQuote(
-              payload.new,
-            );
-            onUpdatedRef.current(updatedQuote);
-          }
-        },
-      )
-      .subscribe((status, error) => {
-        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
-          setState({ status: 'subscribed' });
-        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
-          setState({ status: 'closed' });
-        } else {
-          setState({
-            status: 'error',
-            error: new Error(
-              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
-              { cause: error },
-            ),
-          });
+  return useSupabaseRealtimeSubscription(() =>
+    agicashDb.channel('cashu-receive-quotes').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'cashu_receive_quotes',
+      },
+      (payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>) => {
+        if (payload.eventType === 'INSERT') {
+          const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onCreatedRef.current(addedQuote);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+          onUpdatedRef.current(updatedQuote);
         }
-      });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
-
-  if (state.status === 'error') {
-    throw state.error;
-  }
-
-  return state.status;
+      },
+    ),
+  );
 }
 
 const usePendingCashuReceiveQuotes = () => {

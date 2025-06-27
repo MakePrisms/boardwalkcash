@@ -1,7 +1,4 @@
-import {
-  REALTIME_SUBSCRIBE_STATES,
-  type RealtimePostgresChangesPayload,
-} from '@supabase/supabase-js';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type QueryClient,
   type UseSuspenseQueryResult,
@@ -9,10 +6,11 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
@@ -200,9 +198,15 @@ export class AccountsCache {
   }
 }
 
+/**
+ * Hook that provides the accounts cache.
+ * Reference of the returned data is stable as long as the logged in user doesn't change (see App component in root.tsx).
+ * @returns The accounts cache.
+ */
 export function useAccountsCache() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
+  // The query client is a singleton created in the root of the app (see ).
   return useMemo(
     () => new AccountsCache(queryClient, userId),
     [queryClient, userId],
@@ -219,15 +223,6 @@ function isDefaultAccount(user: User, account: Account) {
   return false;
 }
 
-type SubscriptionState =
-  | {
-      status: 'subscribing' | 'subscribed' | 'closed';
-    }
-  | {
-      status: 'error';
-      error: Error;
-    };
-
 function useOnAccountChange({
   onCreated,
   onUpdated,
@@ -235,71 +230,41 @@ function useOnAccountChange({
   onCreated: (account: Account) => void;
   onUpdated: (account: Account) => void;
 }) {
-  const [state, setState] = useState<SubscriptionState>({
-    status: 'subscribing',
-  });
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const accountCache = useAccountsCache();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('accounts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'accounts',
-        },
-        async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
-          if (payload.eventType === 'INSERT') {
-            const addedAccount = await AccountRepository.toAccount(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onCreatedRef.current(addedAccount);
-          } else if (payload.eventType === 'UPDATE') {
-            // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
-            // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
-            accountCache.setLatestVersion(payload.new.id, payload.new.version);
+  return useSupabaseRealtimeSubscription(() =>
+    agicashDb.channel('accounts').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'accounts',
+      },
+      async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
+        if (payload.eventType === 'INSERT') {
+          const addedAccount = await AccountRepository.toAccount(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onCreatedRef.current(addedAccount);
+        } else if (payload.eventType === 'UPDATE') {
+          // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
+          // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
+          accountCache.setLatestVersion(payload.new.id, payload.new.version);
 
-            const updatedAccount = await AccountRepository.toAccount(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
+          const updatedAccount = await AccountRepository.toAccount(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
 
-            onUpdatedRef.current(updatedAccount);
-          }
-        },
-      )
-      .subscribe((status, error) => {
-        if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
-          setState({ status: 'subscribed' });
-        } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
-          setState({ status: 'closed' });
-        } else {
-          setState({
-            status: 'error',
-            error: new Error(
-              `Error with "${channel.topic}" channel subscription. Status: ${status}`,
-              { cause: error },
-            ),
-          });
+          onUpdatedRef.current(updatedAccount);
         }
-      });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography, accountCache]);
-
-  if (state.status === 'error') {
-    throw state.error;
-  }
-
-  return state.status;
+      },
+    ),
+  );
 }
 
 export function useTrackAccounts() {

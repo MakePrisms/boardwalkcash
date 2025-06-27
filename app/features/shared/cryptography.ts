@@ -2,6 +2,11 @@ import { useOpenSecret } from '@opensecret/react';
 import { HDKey } from '@scure/bip32';
 import { useMemo } from 'react';
 
+/**
+ * Hook that provides the OpenSecret cryptography functions.
+ * Reference of the returned data is stable and doesn't change between renders.
+ * @returns The OpenSecret cryptography functions.
+ */
 export const useCryptography = () => {
   const {
     // getPrivateKey returns a mnemonic (not a private key) that can derive the seed, so we rename it to getMnemonic
@@ -11,6 +16,8 @@ export const useCryptography = () => {
     getPrivateKeyBytes,
   } = useOpenSecret();
 
+  // All OpenSecret functions used here are stable and don't change between renders.
+  // See: https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L929
   return useMemo(() => {
     return {
       getMnemonic,
