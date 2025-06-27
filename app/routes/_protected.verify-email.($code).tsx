@@ -1,4 +1,4 @@
-import { useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { Page, PageContent } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { VerifyEmailForm } from '~/features/signup/verify-email-form';
@@ -7,11 +7,20 @@ import { useUser } from '~/features/user/user-hooks';
 
 export default function VerifyEmail() {
   const user = useUser();
+  const location = useLocation();
   const { code } = useParams<{ code?: string }>();
   const shouldVerifyEmail = shouldUserVerifyEmail(user);
 
   if (!shouldVerifyEmail) {
-    return <Redirect to="/" logMessage="Redirecting from verify email to /" />;
+    const searchParams = new URLSearchParams(location.search);
+    const redirectTo = searchParams.get('redirectTo') || '/';
+
+    return (
+      <Redirect
+        to={{ ...location, pathname: redirectTo }}
+        logMessage="Redirecting from verify email to /"
+      />
+    );
   }
 
   return (

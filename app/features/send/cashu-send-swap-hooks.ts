@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import type { Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import {
@@ -183,8 +184,8 @@ function useOnCashuSendSwapChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
 
-  useEffect(() => {
-    const channel = agicashDb
+  return useSupabaseRealtimeSubscription(() =>
+    agicashDb
       .channel('cashu-send-swaps')
       .on(
         'postgres_changes',
@@ -206,13 +207,8 @@ function useOnCashuSendSwapChange({
             onUpdatedRef.current(updatedSwap);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [encryption]);
+      ),
+  );
 }
 
 export function useUnresolvedCashuSendSwaps() {
@@ -393,7 +389,7 @@ export function useTrackUnresolvedCashuSendSwaps() {
     [queryClient],
   );
 
-  useOnCashuSendSwapChange({
+  return useOnCashuSendSwapChange({
     onCreated: (swap) => {
       unresolvedSwapsCache.add(swap);
     },

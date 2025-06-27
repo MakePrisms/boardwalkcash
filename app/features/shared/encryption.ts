@@ -28,9 +28,16 @@ function preprocessData(obj: unknown): unknown {
   return result;
 }
 
+/**
+ * Hook that provides the encryption functions.
+ * Reference of the returned data is stable and doesn't change between renders.
+ * @returns The encryption functions.
+ */
 export const useEncryption = () => {
   const { encryptData, decryptData } = useOpenSecret();
 
+  // All OpenSecret functions used here are stable and don't change between renders.
+  // See: https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L943
   return useMemo(() => {
     return {
       encrypt: async <T = unknown>(

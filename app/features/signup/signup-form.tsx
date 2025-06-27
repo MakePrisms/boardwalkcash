@@ -1,5 +1,5 @@
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -23,6 +23,7 @@ const validateEmail = buildEmailValidator('Invalid email');
 export function SignupForm({ onBack }: Props) {
   const { signUp } = useAuthActions();
   const { toast } = useToast();
+  const location = useLocation();
   const {
     register,
     handleSubmit,
@@ -151,7 +152,7 @@ export function SignupForm({ onBack }: Props) {
         </form>
         <div className="mt-4 text-center text-sm">
           Already have a wallet?{' '}
-          <Link to="/login" className="underline">
+          <Link to={{ ...location, pathname: '/login' }} className="underline">
             Log in
           </Link>
         </div>
