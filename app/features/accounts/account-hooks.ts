@@ -6,10 +6,14 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
+import {
+  createSupabaseRealtimeChannelHook,
+  createSupabaseRealtimeSubscriptionStore,
+} from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
@@ -216,6 +220,12 @@ function isDefaultAccount(user: User, account: Account) {
   return false;
 }
 
+const useAccountsSubscriptionStore = createSupabaseRealtimeSubscriptionStore();
+
+const useSupabaseRealtimeChannel = createSupabaseRealtimeChannelHook({
+  useStore: useAccountsSubscriptionStore,
+});
+
 function useOnAccountChange({
   onCreated,
   onUpdated,
@@ -226,45 +236,38 @@ function useOnAccountChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
-  const accountCache = useAccountsCache();
+  const accountsCache = useAccountsCache();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('accounts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'wallet',
-          table: 'accounts',
-        },
-        async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
-          if (payload.eventType === 'INSERT') {
-            const addedAccount = await AccountRepository.toAccount(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
-            onCreatedRef.current(addedAccount);
-          } else if (payload.eventType === 'UPDATE') {
-            // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
-            // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
-            accountCache.setLatestVersion(payload.new.id, payload.new.version);
+  useSupabaseRealtimeChannel(() =>
+    agicashDb.channel('accounts').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'wallet',
+        table: 'accounts',
+      },
+      async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
+        if (payload.eventType === 'INSERT') {
+          const addedAccount = await AccountRepository.toAccount(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
+          onCreatedRef.current(addedAccount);
+        } else if (payload.eventType === 'UPDATE') {
+          // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
+          // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
+          accountsCache.setLatestVersion(payload.new.id, payload.new.version);
 
-            const updatedAccount = await AccountRepository.toAccount(
-              payload.new,
-              cashuCryptography.decrypt,
-            );
+          const updatedAccount = await AccountRepository.toAccount(
+            payload.new,
+            cashuCryptography.decrypt,
+          );
 
-            onUpdatedRef.current(updatedAccount);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography, accountCache]);
+          onUpdatedRef.current(updatedAccount);
+        }
+      },
+    ),
+  );
 }
 
 export function useTrackAccounts() {
