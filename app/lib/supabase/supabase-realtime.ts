@@ -31,11 +31,29 @@ export function useSupabaseRealtimeSubscription(
 
   useEffect(() => {
     const channel = channelFactoryRef.current().subscribe((status, error) => {
+      console.debug(
+        `Supabase realtime subscription for "${channel.topic}"`,
+        status,
+        error,
+      );
+
       if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
         setState({ status: 'subscribed' });
       } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
         setState({ status: 'closed' });
       } else {
+        // Don't treat errors as errors if the browser tab is not in the foreground
+        // because the error is caused by closed connection. Supabase realtime will automatically reconnect.
+        const isPageVisible = document.visibilityState === 'visible';
+        if (!isPageVisible) {
+          console.debug(
+            `Ignoring subscription error for "${channel.topic}" because page is not visible`,
+            status,
+            error,
+          );
+          return;
+        }
+
         setState({
           status: 'error',
           error: new Error(
@@ -45,8 +63,10 @@ export function useSupabaseRealtimeSubscription(
         });
       }
     });
+    console.debug('Subscribed to supabase realtime', channel.topic);
 
     return () => {
+      console.debug('Unsubscribing from supabase realtime', channel.topic);
       channel.unsubscribe();
     };
   }, []);

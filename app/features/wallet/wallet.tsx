@@ -121,11 +121,11 @@ const Wallet = ({ children }: PropsWithChildren) => {
     useTrackUnresolvedCashuSendSwaps();
 
   if (
-    accountsSubscription !== 'subscribed' ||
-    pendingCashuReceiveQuotesSubscription !== 'subscribed' ||
-    pendingCashuTokenSwapsSubscription !== 'subscribed' ||
-    unresolvedCashuSendQuotesSubscription !== 'subscribed' ||
-    unresolvedCashuSendSwapsSubscription !== 'subscribed'
+    accountsSubscription === 'subscribing' ||
+    pendingCashuReceiveQuotesSubscription === 'subscribing' ||
+    pendingCashuTokenSwapsSubscription === 'subscribing' ||
+    unresolvedCashuSendQuotesSubscription === 'subscribing' ||
+    unresolvedCashuSendSwapsSubscription === 'subscribing'
   ) {
     return <LoadingScreen />;
   }
