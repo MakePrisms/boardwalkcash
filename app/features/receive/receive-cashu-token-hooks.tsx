@@ -46,8 +46,12 @@ type TokenQueryResult =
 
 /**
  * Hook that uses a suspense query to fetch mint info and validates it against our required features.
+ * If an existing account is provided, it will be used instead of fetching the mint info.
  */
-export function useTokenSourceAccountQuery(token: Token) {
+export function useTokenSourceAccountQuery(
+  token: Token,
+  existingAccount?: ExtendedCashuAccount,
+) {
   const tokenCurrency = tokenToMoney(token).currency;
 
   return useSuspenseQuery({
@@ -56,6 +60,13 @@ export function useTokenSourceAccountQuery(token: Token) {
       isValid: boolean;
       sourceAccount: ExtendedCashuAccount;
     }> => {
+      if (existingAccount) {
+        return {
+          isValid: true,
+          sourceAccount: existingAccount,
+        };
+      }
+
       const [info, isTestMint] = await Promise.all([
         getMintInfo(token.mint),
         checkIsTestMint(token.mint),
@@ -101,14 +112,7 @@ function useCashuTokenSourceAccount(token: Token) {
       areMintUrlsEqual(a.mintUrl, token.mint) && a.currency === tokenCurrency,
   );
 
-  const { data } = useTokenSourceAccountQuery(token);
-
-  if (existingAccount) {
-    return {
-      isValid: true,
-      sourceAccount: existingAccount,
-    };
-  }
+  const { data } = useTokenSourceAccountQuery(token, existingAccount);
 
   return data;
 }

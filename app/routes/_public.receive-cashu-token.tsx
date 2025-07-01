@@ -21,7 +21,6 @@ export default function ReceiveCashuTokenPage() {
         to={{
           ...location,
           pathname: '/receive/cashu/token',
-          search: location.search,
         }}
         logMessage="User is logged in. Redirecting to protected receive cashu token page."
       />

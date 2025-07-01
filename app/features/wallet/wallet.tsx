@@ -13,7 +13,6 @@ import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 import { TaskProcessor, useTakeTaskProcessingLead } from './task-processing';
-// import { agicashDb } from '../agicash-db/database';
 
 type SupabaseInitializationState =
   | {
