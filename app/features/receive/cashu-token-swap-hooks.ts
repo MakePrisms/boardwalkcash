@@ -200,34 +200,43 @@ function useOnCashuTokenSwapChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  return useSupabaseRealtimeSubscription(() =>
-    agicashDb.channel('cashu-token-swaps').on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'wallet',
-        table: 'cashu_token_swaps',
-      },
-      async (
-        payload: RealtimePostgresChangesPayload<AgicashDbCashuTokenSwap>,
-      ) => {
-        if (payload.eventType === 'INSERT') {
-          const swap = await CashuTokenSwapRepository.toTokenSwap(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
-          onCreatedRef.current(swap);
-        } else if (payload.eventType === 'UPDATE') {
-          const swap = await CashuTokenSwapRepository.toTokenSwap(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
-          onUpdatedRef.current(swap);
-        }
-      },
-    ),
-  );
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-token-swaps').on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'wallet',
+          table: 'cashu_token_swaps',
+        },
+        async (
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuTokenSwap>,
+        ) => {
+          if (payload.eventType === 'INSERT') {
+            const swap = await CashuTokenSwapRepository.toTokenSwap(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
+            onCreatedRef.current(swap);
+          } else if (payload.eventType === 'UPDATE') {
+            const swap = await CashuTokenSwapRepository.toTokenSwap(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
+            onUpdatedRef.current(swap);
+          }
+        },
+      ),
+    onReconnected: () => {
+      // Invalidate the pending cashu token swaps query so that the swaps are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [pendingCashuTokenSwapsQueryKey],
+      });
+    },
+  });
 }
 
 function usePendingCashuTokenSwaps() {

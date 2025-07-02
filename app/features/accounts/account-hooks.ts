@@ -240,37 +240,44 @@ function useOnAccountChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const accountCache = useAccountsCache();
+  const queryClient = useQueryClient();
 
-  return useSupabaseRealtimeSubscription(() =>
-    agicashDb.channel('accounts').on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'wallet',
-        table: 'accounts',
-      },
-      async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
-        if (payload.eventType === 'INSERT') {
-          const addedAccount = await AccountRepository.toAccount(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
-          onCreatedRef.current(addedAccount);
-        } else if (payload.eventType === 'UPDATE') {
-          // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
-          // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
-          accountCache.setLatestVersion(payload.new.id, payload.new.version);
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('accounts').on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'wallet',
+          table: 'accounts',
+        },
+        async (payload: RealtimePostgresChangesPayload<AgicashDbAccount>) => {
+          if (payload.eventType === 'INSERT') {
+            const addedAccount = await AccountRepository.toAccount(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
+            onCreatedRef.current(addedAccount);
+          } else if (payload.eventType === 'UPDATE') {
+            // We are updating the latest known version of the account here so anyone who needs the latest version (who uses account cache `getLatest`)
+            // can know as soon as possible and thus can wait for the account data to be decrypted and updated in the cache instead of processing the old version.
+            accountCache.setLatestVersion(payload.new.id, payload.new.version);
 
-          const updatedAccount = await AccountRepository.toAccount(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
+            const updatedAccount = await AccountRepository.toAccount(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
 
-          onUpdatedRef.current(updatedAccount);
-        }
-      },
-    ),
-  );
+            onUpdatedRef.current(updatedAccount);
+          }
+        },
+      ),
+    onReconnected: () => {
+      // Invalidate the accounts query so that the accounts are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({ queryKey: [accountsQueryKey] });
+    },
+  });
 }
 
 export function useTrackAccounts() {

@@ -183,32 +183,41 @@ function useOnCashuSendSwapChange({
   const encryption = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  return useSupabaseRealtimeSubscription(() =>
-    agicashDb
-      .channel('cashu-send-swaps')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'wallet', table: 'cashu_send_swaps' },
-        async (
-          payload: RealtimePostgresChangesPayload<AgicashDbCashuSendSwap>,
-        ) => {
-          if (payload.eventType === 'INSERT') {
-            const addedSwap = await CashuSendSwapRepository.toSwap(
-              payload.new,
-              encryption.decrypt,
-            );
-            onCreatedRef.current(addedSwap);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedSwap = await CashuSendSwapRepository.toSwap(
-              payload.new,
-              encryption.decrypt,
-            );
-            onUpdatedRef.current(updatedSwap);
-          }
-        },
-      ),
-  );
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb
+        .channel('cashu-send-swaps')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'wallet', table: 'cashu_send_swaps' },
+          async (
+            payload: RealtimePostgresChangesPayload<AgicashDbCashuSendSwap>,
+          ) => {
+            if (payload.eventType === 'INSERT') {
+              const addedSwap = await CashuSendSwapRepository.toSwap(
+                payload.new,
+                encryption.decrypt,
+              );
+              onCreatedRef.current(addedSwap);
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedSwap = await CashuSendSwapRepository.toSwap(
+                payload.new,
+                encryption.decrypt,
+              );
+              onUpdatedRef.current(updatedSwap);
+            }
+          },
+        ),
+    onReconnected: () => {
+      // Invalidate the unresolved cashu send swap query so that the swaps are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [unresolvedCashuSendSwapsQueryKey],
+      });
+    },
+  });
 }
 
 export function useUnresolvedCashuSendSwaps() {
