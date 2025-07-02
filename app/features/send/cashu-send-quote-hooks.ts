@@ -10,6 +10,7 @@ import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
   type LongTimeout,
   clearLongTimeout,
@@ -242,11 +243,11 @@ function useOnCashuSendQuoteChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-send-quotes')
-      .on(
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-send-quotes').on(
         'postgres_changes',
         {
           event: '*',
@@ -270,13 +271,15 @@ function useOnCashuSendQuoteChange({
             onUpdatedRef.current(updatedQuote);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography]);
+      ),
+    onReconnected: () => {
+      // Invalidate the unresolved cashu send quote query so that the quote is re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [unresolvedCashuSendQuotesQueryKey],
+      });
+    },
+  });
 }
 
 function useUnresolvedCashuSendQuotes() {
@@ -485,7 +488,7 @@ export function useTrackUnresolvedCashuSendQuotes() {
   );
   const cashuSendQuoteCache = useCashuSendQuoteCache();
 
-  useOnCashuSendQuoteChange({
+  return useOnCashuSendQuoteChange({
     onCreated: (send) => {
       unresolvedSendQuotesCache.add(send);
     },

@@ -6,10 +6,11 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { DistributedOmit } from 'type-fest';
 import { checkIsTestMint } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
@@ -86,7 +87,7 @@ export class AccountsCache {
     this.accountVersionsCache = new AccountVersionsCache(queryClient, this);
   }
 
-  add(account: Account) {
+  upsert(account: Account) {
     this.accountVersionsCache.updateLatestVersionIfStale(
       account.id,
       account.version,
@@ -94,7 +95,13 @@ export class AccountsCache {
 
     this.queryClient.setQueryData(
       [accountsQueryKey, this.userId],
-      (curr: Account[]) => [...curr, account],
+      (curr: Account[]) => {
+        const existingAccountIndex = curr.findIndex((x) => x.id === account.id);
+        if (existingAccountIndex !== -1) {
+          return curr.map((x) => (x.id === account.id ? account : x));
+        }
+        return [...curr, account];
+      },
     );
   }
 
@@ -197,9 +204,15 @@ export class AccountsCache {
   }
 }
 
+/**
+ * Hook that provides the accounts cache.
+ * Reference of the returned data is stable as long as the logged in user doesn't change (see App component in root.tsx).
+ * @returns The accounts cache.
+ */
 export function useAccountsCache() {
   const queryClient = useQueryClient();
   const userId = useUser((x) => x.id);
+  // The query client is a singleton created in the root of the app (see App component in root.tsx).
   return useMemo(
     () => new AccountsCache(queryClient, userId),
     [queryClient, userId],
@@ -227,11 +240,11 @@ function useOnAccountChange({
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const accountCache = useAccountsCache();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('accounts')
-      .on(
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('accounts').on(
         'postgres_changes',
         {
           event: '*',
@@ -258,13 +271,13 @@ function useOnAccountChange({
             onUpdatedRef.current(updatedAccount);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography, accountCache]);
+      ),
+    onReconnected: () => {
+      // Invalidate the accounts query so that the accounts are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({ queryKey: [accountsQueryKey] });
+    },
+  });
 }
 
 export function useTrackAccounts() {
@@ -273,8 +286,8 @@ export function useTrackAccounts() {
 
   const accountCache = useAccountsCache();
 
-  useOnAccountChange({
-    onCreated: (account) => accountCache.add(account),
+  return useOnAccountChange({
+    onCreated: (account) => accountCache.upsert(account),
     onUpdated: (account) => accountCache.update(account),
   });
 }
@@ -411,6 +424,7 @@ export function useDefaultAccount() {
 export function useAddCashuAccount() {
   const userId = useUser((x) => x.id);
   const accountRepository = useAccountRepository();
+  const accountCache = useAccountsCache();
 
   const { mutateAsync } = useMutation({
     mutationFn: async (
@@ -433,6 +447,11 @@ export function useAddCashuAccount() {
         keysetCounters: {},
         proofs: [],
       });
+    },
+    onSuccess: (account) => {
+      // We add the account as soon as it is created so that it is available in the cache immediately.
+      // This is important when using other hooks that are trying to use the account immediately after it is created.
+      accountCache.upsert(account);
     },
   });
 

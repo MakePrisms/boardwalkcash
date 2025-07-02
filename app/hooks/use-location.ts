@@ -1,11 +1,14 @@
 import { useRouteLoaderData } from 'react-router';
-import type { Info as RootInfo } from '../+types/root';
 
 const useLocationData = () => {
-  const { domain, origin } =
-    useRouteLoaderData<RootInfo['loaderData']>('root') ?? {};
+  const { domain, origin } = useRouteLoaderData('root') ?? {};
 
-  if (!domain || !origin) {
+  if (
+    !domain ||
+    typeof domain !== 'string' ||
+    !origin ||
+    typeof origin !== 'string'
+  ) {
     throw new Error('Domain or origin not found');
   }
 

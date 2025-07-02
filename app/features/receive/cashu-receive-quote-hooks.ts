@@ -23,6 +23,7 @@ import {
   getWalletCurrency,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
   type LongTimeout,
   clearLongTimeout,
@@ -242,11 +243,11 @@ function useOnCashuReceiveQuoteChange({
 }) {
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-receive-quotes')
-      .on(
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-receive-quotes').on(
         'postgres_changes',
         {
           event: '*',
@@ -266,13 +267,15 @@ function useOnCashuReceiveQuoteChange({
             onUpdatedRef.current(updatedQuote);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+      ),
+    onReconnected: () => {
+      // Invalidate the pending cashu receive quotes query so that the quotes are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [pendingCashuReceiveQuotesQueryKey],
+      });
+    },
+  });
 }
 
 const usePendingCashuReceiveQuotes = () => {
@@ -673,7 +676,7 @@ export function useTrackPendingCashuReceiveQuotes() {
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
-  useOnCashuReceiveQuoteChange({
+  return useOnCashuReceiveQuoteChange({
     onCreated: (quote) => {
       pendingQuotesCache.add(quote);
     },

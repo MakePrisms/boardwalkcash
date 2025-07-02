@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
+import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import {
@@ -199,11 +200,11 @@ function useOnCashuTokenSwapChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const channel = agicashDb
-      .channel('cashu-token-swaps')
-      .on(
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-token-swaps').on(
         'postgres_changes',
         {
           event: '*',
@@ -227,13 +228,15 @@ function useOnCashuTokenSwapChange({
             onUpdatedRef.current(swap);
           }
         },
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [cashuCryptography]);
+      ),
+    onReconnected: () => {
+      // Invalidate the pending cashu token swaps query so that the swaps are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [pendingCashuTokenSwapsQueryKey],
+      });
+    },
+  });
 }
 
 function usePendingCashuTokenSwaps() {
@@ -260,7 +263,7 @@ export function useTrackPendingCashuTokenSwaps() {
   );
   const tokenSwapCache = useCashuTokenSwapCache();
 
-  useOnCashuTokenSwapChange({
+  return useOnCashuTokenSwapChange({
     onCreated: (swap) => {
       pendingSwapsCache.add(swap);
     },

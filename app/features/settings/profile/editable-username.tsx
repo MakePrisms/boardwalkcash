@@ -47,7 +47,7 @@ export default function EditableUsername() {
   });
   const usernameRegister = register('username', { validate: validateUsername });
   const [isEditing, setIsEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isEditing) {

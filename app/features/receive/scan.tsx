@@ -1,3 +1,4 @@
+import { getEncodedToken } from '@cashu/cashu-ts';
 import {
   PageBackButton,
   PageContent,
@@ -36,7 +37,7 @@ export default function Scan() {
               return;
             }
 
-            navigate(`/receive/cashu-token#${token}`, {
+            navigate(`/receive/cashu/token#${getEncodedToken(token)}`, {
               transition: 'slideLeft',
               applyTo: 'newView',
             });
