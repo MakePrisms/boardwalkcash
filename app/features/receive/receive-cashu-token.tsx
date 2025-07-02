@@ -27,10 +27,10 @@ import {
   useSetDefaultCurrency,
 } from '../user/user-hooks';
 import {
+  useCashuTokenWithClaimableProofs,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
   useTokenSourceAccountQuery,
-  useTokenWithClaimableProofs,
 } from './receive-cashu-token-hooks';
 import { SuccessfulReceivePage } from './successful-receive-page';
 
@@ -87,9 +87,10 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
-  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
-    token,
-  });
+  const { claimableToken, cannotClaimReason } =
+    useCashuTokenWithClaimableProofs({
+      token,
+    });
   const {
     selectableAccounts,
     receiveAccount,
@@ -234,9 +235,10 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
   const {
     data: { sourceAccount },
   } = useTokenSourceAccountQuery(token);
-  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
-    token,
-  });
+  const { claimableToken, cannotClaimReason } =
+    useCashuTokenWithClaimableProofs({
+      token,
+    });
 
   const encodedToken = getEncodedToken(claimableToken ?? token);
 

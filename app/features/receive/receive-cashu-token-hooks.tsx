@@ -125,7 +125,7 @@ function useCashuTokenSourceAccount(token: Token) {
  * @returns A token with only proofs that can be claimed. If the token cannot be claimed,
  * the hook will return a reason why and a null token.
  */
-export function useTokenWithClaimableProofs({
+export function useCashuTokenWithClaimableProofs({
   token,
   cashuPubKey,
 }: UseGetClaimableTokenProps) {
