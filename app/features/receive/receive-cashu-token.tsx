@@ -27,10 +27,10 @@ import {
   useSetDefaultCurrency,
 } from '../user/user-hooks';
 import {
+  useCashuTokenSourceAccountQuery,
   useCashuTokenWithClaimableProofs,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
-  useTokenSourceAccountQuery,
 } from './receive-cashu-token-hooks';
 import { SuccessfulReceivePage } from './successful-receive-page';
 
@@ -234,7 +234,7 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
   const { toast } = useToast();
   const {
     data: { sourceAccount },
-  } = useTokenSourceAccountQuery(token);
+  } = useCashuTokenSourceAccountQuery(token);
   const { claimableToken, cannotClaimReason } =
     useCashuTokenWithClaimableProofs({
       token,

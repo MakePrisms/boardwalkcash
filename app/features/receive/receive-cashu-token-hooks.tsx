@@ -48,7 +48,7 @@ type TokenQueryResult =
  * Hook that uses a suspense query to fetch mint info and validates it against our required features.
  * If an existing account is provided, it will be used instead of fetching the mint info.
  */
-export function useTokenSourceAccountQuery(
+export function useCashuTokenSourceAccountQuery(
   token: Token,
   existingAccount?: ExtendedCashuAccount,
 ) {
@@ -112,7 +112,7 @@ function useCashuTokenSourceAccount(token: Token) {
       areMintUrlsEqual(a.mintUrl, token.mint) && a.currency === tokenCurrency,
   );
 
-  const { data } = useTokenSourceAccountQuery(token, existingAccount);
+  const { data } = useCashuTokenSourceAccountQuery(token, existingAccount);
 
   return data;
 }
