@@ -243,26 +243,39 @@ function useOnCashuReceiveQuoteChange({
 }) {
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  return useSupabaseRealtimeSubscription(() =>
-    agicashDb.channel('cashu-receive-quotes').on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'wallet',
-        table: 'cashu_receive_quotes',
-      },
-      (payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>) => {
-        if (payload.eventType === 'INSERT') {
-          const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
-          onCreatedRef.current(addedQuote);
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
-          onUpdatedRef.current(updatedQuote);
-        }
-      },
-    ),
-  );
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-receive-quotes').on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'wallet',
+          table: 'cashu_receive_quotes',
+        },
+        (
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuReceiveQuote>,
+        ) => {
+          if (payload.eventType === 'INSERT') {
+            const addedQuote = CashuReceiveQuoteRepository.toQuote(payload.new);
+            onCreatedRef.current(addedQuote);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedQuote = CashuReceiveQuoteRepository.toQuote(
+              payload.new,
+            );
+            onUpdatedRef.current(updatedQuote);
+          }
+        },
+      ),
+    onReconnected: () => {
+      // Invalidate the pending cashu receive quotes query so that the quotes are re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [pendingCashuReceiveQuotesQueryKey],
+      });
+    },
+  });
 }
 
 const usePendingCashuReceiveQuotes = () => {

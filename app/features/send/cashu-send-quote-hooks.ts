@@ -243,34 +243,43 @@ function useOnCashuSendQuoteChange({
   const cashuCryptography = useCashuCryptography();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
+  const queryClient = useQueryClient();
 
-  return useSupabaseRealtimeSubscription(() =>
-    agicashDb.channel('cashu-send-quotes').on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'wallet',
-        table: 'cashu_send_quotes',
-      },
-      async (
-        payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
-      ) => {
-        if (payload.eventType === 'INSERT') {
-          const addedQuote = await CashuSendQuoteRepository.toSend(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
-          onCreatedRef.current(addedQuote);
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedQuote = await CashuSendQuoteRepository.toSend(
-            payload.new,
-            cashuCryptography.decrypt,
-          );
-          onUpdatedRef.current(updatedQuote);
-        }
-      },
-    ),
-  );
+  return useSupabaseRealtimeSubscription({
+    channelFactory: () =>
+      agicashDb.channel('cashu-send-quotes').on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'wallet',
+          table: 'cashu_send_quotes',
+        },
+        async (
+          payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
+        ) => {
+          if (payload.eventType === 'INSERT') {
+            const addedQuote = await CashuSendQuoteRepository.toSend(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
+            onCreatedRef.current(addedQuote);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedQuote = await CashuSendQuoteRepository.toSend(
+              payload.new,
+              cashuCryptography.decrypt,
+            );
+            onUpdatedRef.current(updatedQuote);
+          }
+        },
+      ),
+    onReconnected: () => {
+      // Invalidate the unresolved cashu send quote query so that the quote is re-fetched and the cache is updated.
+      // This is needed to get any data that might have been updated while the re-connection was in progress.
+      queryClient.invalidateQueries({
+        queryKey: [unresolvedCashuSendQuotesQueryKey],
+      });
+    },
+  });
 }
 
 function useUnresolvedCashuSendQuotes() {
