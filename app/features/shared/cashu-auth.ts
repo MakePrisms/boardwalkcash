@@ -18,6 +18,8 @@ import type { ClearAuthSession } from '~/lib/cashu/mint-authentication';
 
 export type MintAuthRequest = {
   mintUrl: string;
+  icon?: string;
+  message?: string;
 };
 
 type CashuAuthStore = {
@@ -42,7 +44,10 @@ type CashuAuthStore = {
   /** Set pending auth request */
   setPendingAuthRequest: (request: MintAuthRequest | null) => void;
   /** Get clear auth token with automatic refresh and user auth prompting */
-  getClearAuthTokenWithRefresh: (mintUrl: string) => Promise<string | null>;
+  getClearAuthTokenWithRefresh: (
+    mintUrl: string,
+    skipPendingAuthRequest?: boolean,
+  ) => Promise<string | null>;
   /** Initialize the store (for startup) */
   initialize: () => void;
 };
@@ -113,11 +118,26 @@ export const useCashuAuthStore = create<CashuAuthStore>()(
       },
 
       setPendingAuthRequest: (request: MintAuthRequest | null) => {
-        set({ pendingAuthRequest: request });
+        if (request === null) {
+          set({ pendingAuthRequest: null });
+          return;
+        }
+
+        getCashuWallet(request.mintUrl)
+          .mint.getInfo()
+          .then((info) => {
+            const icon = info.icon_url;
+            set({ pendingAuthRequest: { ...request, icon } });
+          })
+          .catch((error) => {
+            console.error('Failed to get mint info', error);
+            set({ pendingAuthRequest: request });
+          });
       },
 
       getClearAuthTokenWithRefresh: async (
         mintUrl: string,
+        skipPendingAuthRequest = false,
       ): Promise<string | null> => {
         const {
           getAuthSession,
@@ -156,23 +176,27 @@ export const useCashuAuthStore = create<CashuAuthStore>()(
         }
 
         // No valid session or refresh failed - check if mint requires auth and prompt user
-        try {
-          const wallet = getCashuWallet(mintUrl);
-          const mintInfo = await wallet.getMintInfo();
-          const clearAuth = mintInfo.isSupported(21);
+        if (!skipPendingAuthRequest) {
+          try {
+            const wallet = getCashuWallet(mintUrl);
+            const mintInfo = await wallet.getMintInfo();
+            const clearAuth = mintInfo.isSupported(21);
 
-          if (clearAuth.supported) {
-            // Set pending auth request to trigger user authentication dialog
-            setPendingAuthRequest({
-              mintUrl,
-            });
-            return null;
+            if (clearAuth.supported) {
+              // Set pending auth request to trigger user authentication dialog
+              setPendingAuthRequest({
+                mintUrl,
+                message:
+                  'This was set when calling getClearAuthTokenWithRefresh. Can we hide it?',
+              });
+              return null;
+            }
+          } catch (error) {
+            console.warn(
+              `Failed to check mint authentication requirements for ${mintUrl}:`,
+              error,
+            );
           }
-        } catch (error) {
-          console.warn(
-            `Failed to check mint authentication requirements for ${mintUrl}:`,
-            error,
-          );
         }
 
         return null;
@@ -244,7 +268,8 @@ export class CashuAuthService {
     const clearAuth = mintInfo.isSupported(21);
 
     if (clearAuth.supported) {
-      const token = await this.getClearAuthToken(mintUrl);
+      const store = useCashuAuthStore.getState();
+      const token = await store.getClearAuthTokenWithRefresh(mintUrl, true);
       const hasValidToken = token !== null;
 
       if (!hasValidToken) {
@@ -319,11 +344,18 @@ export class CashuAuthService {
     store.setPendingAuthRequest(null);
     await this.topUpBlindAuthTokens(authSession.mintUrl);
   }
-
   async getAndConsumeBlindAuthToken(mintUrl: string): Promise<string> {
     const store = useCashuAuthStore.getState();
-    const token = store.popBlindAuthToken(mintUrl);
-    if (!token) throw new Error('Need to mint more blind auth tokens');
+    let token = store.popBlindAuthToken(mintUrl);
+
+    if (!token) {
+      await this.topUpBlindAuthTokens(mintUrl);
+      token = store.popBlindAuthToken(mintUrl);
+
+      if (!token) {
+        throw new Error('Failed to mint blind auth tokens');
+      }
+    }
 
     if (store.blindAuthTokens[mintUrl].length < 10) {
       this.topUpBlindAuthTokens(mintUrl).catch((error) => {
@@ -335,9 +367,12 @@ export class CashuAuthService {
   }
 
   async topUpBlindAuthTokens(mintUrl: string): Promise<void> {
-    const clearAuthSession = useCashuAuthStore
-      .getState()
-      .getAuthSession(mintUrl);
+    const store = useCashuAuthStore.getState();
+    // refresh the auth session
+    await store.getClearAuthTokenWithRefresh(mintUrl, true);
+
+    const clearAuthSession = store.getAuthSession(mintUrl);
+
     if (!clearAuthSession)
       throw new Error('No auth session found, need to start clear auth flow');
 
@@ -349,7 +384,6 @@ export class CashuAuthService {
       clearAuthSession.accessToken,
     );
     console.debug('minted tokens', tokens);
-    const store = useCashuAuthStore.getState();
     store.addBlindAuthTokens(mintUrl, tokens);
   }
 }

@@ -193,7 +193,6 @@ const Wallet = ({ children }: PropsWithChildren) => {
   ) {
     return <LoadingScreen />;
   }
-
   return (
     <>
       {isLead && <TaskProcessor />}
@@ -203,20 +202,48 @@ const Wallet = ({ children }: PropsWithChildren) => {
         open={!!pendingAuthRequest}
         onOpenChange={(open) => !open && handleCancelAuth()}
       >
-        <DialogContent showCloseButton={false}>
+        <DialogContent className="px-4 sm:max-w-md" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Mint Authentication Required</DialogTitle>
-            <DialogDescription>
-              The mint {pendingAuthRequest?.mintUrl} requires authentication to
-              be used. Would you like to authenticate now? If you skip this, you
-              won't be able to use this mint until you authenticate.
-            </DialogDescription>
+            <div className="flex items-start gap-4">
+              {pendingAuthRequest?.icon && (
+                <img
+                  src={pendingAuthRequest.icon}
+                  alt="Mint icon"
+                  className="h-16 w-16 rounded-lg"
+                />
+              )}
+              <div className="flex h-full flex-col items-start justify-between">
+                <DialogTitle className="text-left">
+                  Mint Authentication Required
+                </DialogTitle>
+                <DialogDescription className="text-left">
+                  {pendingAuthRequest?.message ||
+                    `Authentication is required to continue using ${pendingAuthRequest?.mintUrl}.`}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <DialogFooter className="flex flex-col gap-2">
-            <Button variant="outline" onClick={handleCancelAuth}>
+
+          <div className="my-6 flex w-full flex-col gap-3">
+            <div className="text-muted-foreground text-sm">
+              • You'll be redirected to the mint's authentication page
+            </div>
+            <div className="text-muted-foreground text-sm">
+              • You can skip for now, but you'll be prompted whenever you try to
+              perform this action again
+            </div>
+          </div>
+
+          <DialogFooter className="flex w-full flex-row items-center justify-center gap-2">
+            <Button
+              className="w-32"
+              variant="outline"
+              onClick={handleCancelAuth}
+            >
               Skip for now
             </Button>
             <Button
+              className="w-32"
               onClick={() =>
                 pendingAuthRequest &&
                 handleConfirmAuth(pendingAuthRequest.mintUrl)
