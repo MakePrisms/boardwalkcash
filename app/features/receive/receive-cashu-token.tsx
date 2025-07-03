@@ -2,7 +2,7 @@ import { type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -13,12 +13,22 @@ import {
   PageHeaderTitle,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
+import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
+import { cashuAuthService } from '../shared/cashu-auth';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useAuthActions } from '../user/auth';
@@ -27,16 +37,76 @@ import {
   useSetDefaultCurrency,
 } from '../user/user-hooks';
 import {
-  useCashuTokenSourceAccountQuery,
-  useCashuTokenWithClaimableProofs,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
+  useTokenSourceAccountQuery,
+  useTokenWithClaimableProofs,
 } from './receive-cashu-token-hooks';
 import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
   autoClaimToken: boolean;
+  claimToAccountId?: string;
+};
+
+type AuthRequest = {
+  mintUrl: string;
+  authType: 'swap' | 'melt';
+  accountId: string;
+};
+
+/**
+ * Hook to manage authentication requirements during token claiming
+ */
+// TODO: this is repeated somewhat in wallet.tsx
+const useReceiveTokenAuth = (token: Token) => {
+  const [pendingAuthRequest, setPendingAuthRequest] =
+    useState<AuthRequest | null>(null);
+  const { origin } = useLocationData();
+  const [searchParams] = useSearchParams();
+
+  const handleConfirmAuth = async (authRequest: AuthRequest) => {
+    try {
+      const encodedToken = getEncodedToken(token);
+      const currentSearchParams = searchParams.toString();
+
+      // Store the current state for after authentication
+      sessionStorage.setItem(
+        'oidc_return_to',
+        `/receive/cashu/token?autoClaim=true&accountId=${authRequest.accountId}#${encodedToken}${currentSearchParams ? `?${currentSearchParams}` : ''}`,
+      );
+
+      const redirectUri = `${origin}/oidc-callback`;
+      await cashuAuthService.startAuth(authRequest.mintUrl, redirectUri);
+    } catch (error) {
+      console.warn(
+        `Failed to start authentication for mint ${authRequest.mintUrl}:`,
+        error,
+      );
+    } finally {
+      setPendingAuthRequest(null);
+    }
+  };
+
+  const handleCancelAuth = () => {
+    setPendingAuthRequest(null);
+  };
+
+  const requireAuth = (
+    mintUrl: string,
+    authType: 'swap' | 'melt',
+    accountId: string,
+  ) => {
+    setPendingAuthRequest({ mintUrl, authType, accountId });
+  };
+
+  return {
+    pendingAuthRequest,
+    handleConfirmAuth,
+    handleCancelAuth,
+    requireAuth,
+  };
 };
 
 /**
@@ -82,13 +152,17 @@ function TokenErrorDisplay({
   );
 }
 
-export default function ReceiveToken({ token, autoClaimToken }: Props) {
+export default function ReceiveToken({
+  token,
+  autoClaimToken,
+  claimToAccountId,
+}: Props) {
   const { toast } = useToast();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
-  const { claimableToken, cannotClaimReason } =
-    useCashuTokenWithClaimableProofs({
+  const { claimableToken, cannotClaimReason, canSwap, canMelt } =
+    useTokenWithClaimableProofs({
       token,
     });
   const {
@@ -99,6 +173,13 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     setReceiveAccount,
     addAndSetReceiveAccount,
   } = useReceiveCashuTokenAccounts(token);
+
+  const {
+    pendingAuthRequest,
+    handleConfirmAuth,
+    handleCancelAuth,
+    requireAuth,
+  } = useReceiveTokenAuth(token);
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
@@ -121,10 +202,25 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
         token: Token;
         isAutoClaim: boolean;
       }) => {
-        const preferredAccount =
-          isAutoClaim && sourceAccount?.selectable
-            ? sourceAccount
-            : receiveAccount;
+        let preferredAccount = receiveAccount;
+        if (claimToAccountId) {
+          preferredAccount =
+            selectableAccounts.find(
+              (account) => account.id === claimToAccountId,
+            ) ?? preferredAccount;
+        } else if (isAutoClaim && sourceAccount?.selectable) {
+          preferredAccount = sourceAccount;
+        }
+
+        if (!canSwap && preferredAccount.id === sourceAccount?.id) {
+          requireAuth(token.mint, 'swap', preferredAccount.id);
+          return;
+        }
+
+        if (!canMelt && preferredAccount.id !== sourceAccount?.id) {
+          requireAuth(token.mint, 'melt', preferredAccount.id);
+          return;
+        }
 
         // Use the preferred account if it exists, otherwise create it
         let account = preferredAccount;
@@ -136,7 +232,10 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
 
         return { account, isAutoClaim };
       },
-      onSuccess: async ({ account, isAutoClaim }) => {
+      onSuccess: async (result) => {
+        if (!result) return; // Auth was required, no claiming happened
+
+        const { account, isAutoClaim } = result;
         // Only set defaults for auto claim and if the account is different from current default
         if (isAutoClaim && account.id !== defaultAccount.id) {
           try {
@@ -167,6 +266,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     claimTokenMutation({ token: claimableToken, isAutoClaim: false });
   };
 
+  // Handle auto-claim on initial load
   useEffectNoStrictMode(() => {
     if (!claimableToken || !autoClaimToken) return;
 
@@ -181,6 +281,12 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
       />
     );
   }
+
+  const getAuthTypeDescription = (authType: 'swap' | 'melt') => {
+    return authType === 'swap'
+      ? 'claim to this same mint'
+      : 'claim to a different mint';
+  };
 
   return (
     <>
@@ -223,6 +329,36 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
           </Button>
         </PageFooter>
       )}
+
+      {/* TODO: this is repeated somewhat in wallet.tsx */}
+      <Dialog
+        open={!!pendingAuthRequest}
+        onOpenChange={(open) => !open && handleCancelAuth()}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Mint Authentication Required</DialogTitle>
+            <DialogDescription>
+              The mint {pendingAuthRequest?.mintUrl} requires authentication to{' '}
+              {pendingAuthRequest &&
+                getAuthTypeDescription(pendingAuthRequest.authType)}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2">
+            <Button variant="outline" onClick={handleCancelAuth}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                pendingAuthRequest && handleConfirmAuth(pendingAuthRequest)
+              }
+            >
+              Authenticate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -234,11 +370,10 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
   const { toast } = useToast();
   const {
     data: { sourceAccount },
-  } = useCashuTokenSourceAccountQuery(token);
-  const { claimableToken, cannotClaimReason } =
-    useCashuTokenWithClaimableProofs({
-      token,
-    });
+  } = useTokenSourceAccountQuery(token);
+  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
+    token,
+  });
 
   const encodedToken = getEncodedToken(claimableToken ?? token);
 

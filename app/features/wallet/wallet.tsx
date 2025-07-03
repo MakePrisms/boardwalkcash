@@ -1,5 +1,22 @@
 import { useOpenSecret } from '@opensecret/react';
-import { type PropsWithChildren, Suspense, useEffect, useState } from 'react';
+import {
+  type PropsWithChildren,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+import { useLocation } from 'react-router';
+import { Button } from '~/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog';
+import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
 import { agicashDb } from '../agicash-db/database';
@@ -9,6 +26,7 @@ import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quot
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
 import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
+import { cashuAuthService, useCashuAuthStore } from '../shared/cashu-auth';
 import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
@@ -73,6 +91,50 @@ const useSyncThemeWithDefaultCurrency = () => {
   }, [defaultCurrency, setTheme]);
 };
 
+const useRefreshMintAuthentication = () => {
+  const { origin } = useLocationData();
+  const location = useLocation();
+  const pendingAuthRequest = useCashuAuthStore(
+    (state) => state.pendingAuthRequest,
+  );
+  const setPendingAuthRequest = useCashuAuthStore(
+    (state) => state.setPendingAuthRequest,
+  );
+
+  // this gets called when the user clicks the authenticate button in the dialog
+  const handleConfirmAuth = useCallback(
+    async (mintUrl: string) => {
+      try {
+        const redirectUri = `${origin}/oidc-callback`;
+        sessionStorage.setItem(
+          'oidc_return_to',
+          location.pathname + location.search + location.hash,
+        );
+
+        await cashuAuthService.startAuth(mintUrl, redirectUri);
+      } catch (error) {
+        console.warn(
+          `Failed to start authentication for mint ${mintUrl}:`,
+          error,
+        );
+      } finally {
+        setPendingAuthRequest(null);
+      }
+    },
+    [origin, setPendingAuthRequest, location],
+  );
+
+  const handleCancelAuth = useCallback(() => {
+    setPendingAuthRequest(null);
+  }, [setPendingAuthRequest]);
+
+  return {
+    pendingAuthRequest,
+    handleConfirmAuth,
+    handleCancelAuth,
+  };
+};
+
 /**
  * Makes sure that the user is created in the Agicash DB for every new Open Secret user.
  * If the user already exists, it will be updated to sync the shared data.
@@ -110,6 +172,9 @@ const Wallet = ({ children }: PropsWithChildren) => {
 
   const isLead = useTakeTaskProcessingLead();
 
+  const { pendingAuthRequest, handleConfirmAuth, handleCancelAuth } =
+    useRefreshMintAuthentication();
+
   const accountsSubscription = useTrackAccounts();
   const pendingCashuReceiveQuotesSubscription =
     useTrackPendingCashuReceiveQuotes();
@@ -133,6 +198,35 @@ const Wallet = ({ children }: PropsWithChildren) => {
     <>
       {isLead && <TaskProcessor />}
       {children}
+
+      <Dialog
+        open={!!pendingAuthRequest}
+        onOpenChange={(open) => !open && handleCancelAuth()}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Mint Authentication Required</DialogTitle>
+            <DialogDescription>
+              The mint {pendingAuthRequest?.mintUrl} requires authentication to
+              be used. Would you like to authenticate now? If you skip this, you
+              won't be able to use this mint until you authenticate.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2">
+            <Button variant="outline" onClick={handleCancelAuth}>
+              Skip for now
+            </Button>
+            <Button
+              onClick={() =>
+                pendingAuthRequest &&
+                handleConfirmAuth(pendingAuthRequest.mintUrl)
+              }
+            >
+              Authenticate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
