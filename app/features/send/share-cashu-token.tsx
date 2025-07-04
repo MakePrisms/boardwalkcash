@@ -1,5 +1,5 @@
 import { type Token, getEncodedToken } from '@cashu/cashu-ts';
-import { Banknote, Link } from 'lucide-react';
+import { Banknote, Link, Share } from 'lucide-react';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -17,6 +17,7 @@ import {
 } from '~/components/ui/carousel';
 import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
+import { canShare, shareContent } from '~/lib/share';
 import { tokenToMoney } from '../shared/cashu';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 
@@ -35,11 +36,23 @@ export function ShareCashuToken({ token }: Props) {
   const shortToken = `${encodedToken.slice(0, 6)}...${encodedToken.slice(-5)}`;
   const shortShareableLink = `${origin}/receive-cashu-token#${shortToken}`;
 
+  const handleShare = async () => {
+    const data = {
+      url: shareableLink,
+    };
+    await shareContent(data);
+  };
+
   return (
     <Page>
       <PageHeader>
         <ClosePageButton to="/" transition="slideDown" applyTo="oldView" />
         <PageHeaderTitle>Send</PageHeaderTitle>
+        {canShare() && (
+          <button type="button" onClick={handleShare} className="">
+            <Share />
+          </button>
+        )}
       </PageHeader>
       <PageContent className="animate-in items-center gap-0 overflow-x-hidden overflow-y-hidden duration-300">
         <MoneyWithConvertedAmount money={amount} />

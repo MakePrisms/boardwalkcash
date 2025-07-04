@@ -2,7 +2,7 @@ import { type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -19,6 +19,7 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
+import { useCashuAuthStore } from '../shared/cashu-auth';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useAuthActions } from '../user/auth';
@@ -27,16 +28,17 @@ import {
   useSetDefaultCurrency,
 } from '../user/user-hooks';
 import {
-  useCashuTokenSourceAccountQuery,
-  useCashuTokenWithClaimableProofs,
   useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
+  useTokenSourceAccountQuery,
+  useTokenWithClaimableProofs,
 } from './receive-cashu-token-hooks';
 import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
   autoClaimToken: boolean;
+  claimToAccountId?: string;
 };
 
 /**
@@ -82,13 +84,20 @@ function TokenErrorDisplay({
   );
 }
 
-export default function ReceiveToken({ token, autoClaimToken }: Props) {
+export default function ReceiveToken({
+  token,
+  autoClaimToken,
+  claimToAccountId,
+}: Props) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
-  const { claimableToken, cannotClaimReason } =
-    useCashuTokenWithClaimableProofs({
+  const { setPendingAuthRequest } = useCashuAuthStore();
+  const { claimableToken, cannotClaimReason, canSwap, canMelt } =
+    useTokenWithClaimableProofs({
       token,
     });
   const {
@@ -121,10 +130,45 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
         token: Token;
         isAutoClaim: boolean;
       }) => {
-        const preferredAccount =
-          isAutoClaim && sourceAccount?.selectable
-            ? sourceAccount
-            : receiveAccount;
+        let preferredAccount = receiveAccount;
+        if (claimToAccountId) {
+          preferredAccount =
+            selectableAccounts.find(
+              (account) => account.id === claimToAccountId,
+            ) ?? preferredAccount;
+        } else if (isAutoClaim && sourceAccount?.selectable) {
+          preferredAccount = sourceAccount;
+        }
+
+        if (!canSwap && preferredAccount.id === sourceAccount?.id) {
+          navigate(
+            {
+              ...location,
+              search: `autoClaim=true&claimToAccountId=${claimToAccountId}`,
+            },
+            { replace: true },
+          );
+          setPendingAuthRequest({
+            mintUrl: token.mint,
+            message: 'Authentication is required to claim to this same mint.',
+          });
+          return;
+        }
+
+        if (!canMelt && preferredAccount.id !== sourceAccount?.id) {
+          navigate(
+            {
+              ...location,
+              search: `autoClaim=true&claimToAccountId=${claimToAccountId}`,
+            },
+            { replace: true },
+          );
+          setPendingAuthRequest({
+            mintUrl: token.mint,
+            message: 'Authentication is required to claim to a different mint.',
+          });
+          return;
+        }
 
         // Use the preferred account if it exists, otherwise create it
         let account = preferredAccount;
@@ -136,9 +180,16 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
 
         return { account, isAutoClaim };
       },
-      onSuccess: async ({ account, isAutoClaim }) => {
+      onSuccess: async (result) => {
+        if (!result) return; // Auth was required, no claiming happened
+
+        const { account, isAutoClaim } = result;
         // Only set defaults for auto claim and if the account is different from current default
-        if (isAutoClaim && account.id !== defaultAccount.id) {
+        if (
+          isAutoClaim &&
+          account.id !== defaultAccount.id &&
+          claimToAccountId === undefined
+        ) {
           try {
             await setDefaultAccount(account);
             await setDefaultCurrency(account.currency);
@@ -167,6 +218,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     claimTokenMutation({ token: claimableToken, isAutoClaim: false });
   };
 
+  // Handle auto-claim on initial load
   useEffectNoStrictMode(() => {
     if (!claimableToken || !autoClaimToken) return;
 
@@ -234,11 +286,10 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
   const { toast } = useToast();
   const {
     data: { sourceAccount },
-  } = useCashuTokenSourceAccountQuery(token);
-  const { claimableToken, cannotClaimReason } =
-    useCashuTokenWithClaimableProofs({
-      token,
-    });
+  } = useTokenSourceAccountQuery(token);
+  const { claimableToken, cannotClaimReason } = useTokenWithClaimableProofs({
+    token,
+  });
 
   const encodedToken = getEncodedToken(claimableToken ?? token);
 

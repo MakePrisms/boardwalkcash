@@ -39,6 +39,7 @@ import {
   type AgicashDbCashuReceiveQuote,
   agicashDb,
 } from '../agicash-db/database';
+import { getCashuWalletWithAuth } from '../shared/cashu';
 import { useUserRef } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -335,7 +336,7 @@ const checkMintQuote = async (
   quote: CashuReceiveQuote,
 ): Promise<MintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = getCashuWalletWithAuth(account.mintUrl, { unit: cashuUnit });
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
@@ -642,6 +643,14 @@ const useOnMintQuoteStateChange = ({
         mintQuote.state === 'PAID' &&
         relatedReceiveQuote.state !== 'PAID'
       ) {
+        onPaidRef.current(account, relatedReceiveQuote);
+      } else if (
+        mintQuote.state === 'PAID' &&
+        relatedReceiveQuote.state === 'PAID'
+      ) {
+        console.warn(
+          'Mint quote and related receive quote are both paid. Is this bad?',
+        );
         onPaidRef.current(account, relatedReceiveQuote);
       } else if (
         mintQuote.state === 'ISSUED' &&
