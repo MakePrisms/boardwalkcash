@@ -645,6 +645,14 @@ const useOnMintQuoteStateChange = ({
       ) {
         onPaidRef.current(account, relatedReceiveQuote);
       } else if (
+        mintQuote.state === 'PAID' &&
+        relatedReceiveQuote.state === 'PAID'
+      ) {
+        console.warn(
+          'Mint quote and related receive quote are both paid. Is this bad?',
+        );
+        onPaidRef.current(account, relatedReceiveQuote);
+      } else if (
         mintQuote.state === 'ISSUED' &&
         relatedReceiveQuote.state !== 'COMPLETED'
       ) {

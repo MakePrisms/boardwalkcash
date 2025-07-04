@@ -358,11 +358,11 @@ export class CashuSendQuoteService {
     sendQuote: CashuSendQuote,
     meltQuote: MeltQuoteResponse,
   ) {
-    if (sendQuote.state !== 'PENDING') {
-      throw new Error(
-        `Cannot complete send quote that is not pending. Current state: ${sendQuote.state}`,
-      );
-    }
+    // if (sendQuote.state !== 'PENDING') {
+    //   throw new Error(
+    //     `Cannot complete send quote that is not pending. Current state: ${sendQuote.state}`,
+    //   );
+    // }
 
     if (account.id !== sendQuote.accountId) {
       throw new Error('Account does not match the quote account');
