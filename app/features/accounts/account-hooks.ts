@@ -80,10 +80,7 @@ class AccountVersionsCache {
 export class AccountsCache {
   private readonly accountVersionsCache;
 
-  constructor(
-    private readonly queryClient: QueryClient,
-    private readonly userId: string,
-  ) {
+  constructor(private readonly queryClient: QueryClient) {
     this.accountVersionsCache = new AccountVersionsCache(queryClient, this);
   }
 
@@ -93,16 +90,13 @@ export class AccountsCache {
       account.version,
     );
 
-    this.queryClient.setQueryData(
-      [accountsQueryKey, this.userId],
-      (curr: Account[]) => {
-        const existingAccountIndex = curr.findIndex((x) => x.id === account.id);
-        if (existingAccountIndex !== -1) {
-          return curr.map((x) => (x.id === account.id ? account : x));
-        }
-        return [...curr, account];
-      },
-    );
+    this.queryClient.setQueryData([accountsQueryKey], (curr: Account[]) => {
+      const existingAccountIndex = curr.findIndex((x) => x.id === account.id);
+      if (existingAccountIndex !== -1) {
+        return curr.map((x) => (x.id === account.id ? account : x));
+      }
+      return [...curr, account];
+    });
   }
 
   update(account: Account) {
@@ -111,9 +105,8 @@ export class AccountsCache {
       account.version,
     );
 
-    this.queryClient.setQueryData(
-      [accountsQueryKey, this.userId],
-      (curr: Account[]) => curr.map((x) => (x.id === account.id ? account : x)),
+    this.queryClient.setQueryData([accountsQueryKey], (curr: Account[]) =>
+      curr.map((x) => (x.id === account.id ? account : x)),
     );
   }
 
@@ -123,10 +116,7 @@ export class AccountsCache {
    * @returns The list of accounts.
    */
   getAll() {
-    return this.queryClient.getQueryData<Account[]>([
-      accountsQueryKey,
-      this.userId,
-    ]);
+    return this.queryClient.getQueryData<Account[]>([accountsQueryKey]);
   }
 
   /**
@@ -194,9 +184,8 @@ export class AccountsCache {
     const cache = this.queryClient.getQueryCache();
     return cache.subscribe((event) => {
       if (
-        event.query.queryKey.length === 2 &&
-        event.query.queryKey[0] === accountsQueryKey &&
-        event.query.queryKey[1] === this.userId
+        event.query.queryKey.length === 1 &&
+        event.query.queryKey[0] === accountsQueryKey
       ) {
         callback(event.query.state.data);
       }
@@ -211,12 +200,8 @@ export class AccountsCache {
  */
 export function useAccountsCache() {
   const queryClient = useQueryClient();
-  const userId = useUser((x) => x.id);
   // The query client is a singleton created in the root of the app (see App component in root.tsx).
-  return useMemo(
-    () => new AccountsCache(queryClient, userId),
-    [queryClient, userId],
-  );
+  return useMemo(() => new AccountsCache(queryClient), [queryClient]);
 }
 
 function isDefaultAccount(user: User, account: Account) {
@@ -300,7 +285,7 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
   const accountRepository = useAccountRepository();
 
   return useSuspenseQuery({
-    queryKey: [accountsQueryKey, user.id],
+    queryKey: [accountsQueryKey],
     queryFn: () => accountRepository.getAll(user.id),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',

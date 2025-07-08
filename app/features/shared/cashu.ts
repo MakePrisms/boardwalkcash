@@ -60,12 +60,13 @@ type CashuSeedStore = {
   setSeedPromise: (
     promise: ReturnType<ReturnType<typeof useCashuCryptography>['getSeed']>,
   ) => void;
+  clear: () => void;
 };
 
-// TODO: needs to be cleared when the user logs out
-const cashuSeedStore = create<CashuSeedStore>((set) => ({
+export const cashuSeedStore = create<CashuSeedStore>((set) => ({
   seedPromise: null,
   setSeedPromise: (promise) => set({ seedPromise: promise }),
+  clear: () => set({ seedPromise: null }),
 }));
 
 /**

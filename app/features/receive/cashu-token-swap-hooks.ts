@@ -16,7 +16,7 @@ import {
   agicashDb,
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { CashuTokenSwap } from './cashu-token-swap';
 import {
   CashuTokenSwapRepository,
@@ -64,14 +64,14 @@ class PendingCashuTokenSwapsCache {
 
   add(tokenSwap: CashuTokenSwap) {
     this.queryClient.setQueryData<CashuTokenSwap[]>(
-      [pendingCashuTokenSwapsQueryKey, tokenSwap.userId],
+      [pendingCashuTokenSwapsQueryKey],
       (curr) => [...(curr ?? []), tokenSwap],
     );
   }
 
   update(tokenSwap: CashuTokenSwap) {
     this.queryClient.setQueryData<CashuTokenSwap[]>(
-      [pendingCashuTokenSwapsQueryKey, tokenSwap.userId],
+      [pendingCashuTokenSwapsQueryKey],
       (curr) =>
         curr?.map((d) => (d.tokenHash === tokenSwap.tokenHash ? tokenSwap : d)),
     );
@@ -79,7 +79,7 @@ class PendingCashuTokenSwapsCache {
 
   remove(tokenSwap: CashuTokenSwap) {
     this.queryClient.setQueryData<CashuTokenSwap[]>(
-      [pendingCashuTokenSwapsQueryKey, tokenSwap.userId],
+      [pendingCashuTokenSwapsQueryKey],
       (curr) => curr?.filter((d) => d.tokenHash !== tokenSwap.tokenHash),
     );
   }
@@ -91,7 +91,7 @@ export function useCashuTokenSwapCache() {
 }
 
 export function useCreateCashuTokenSwap() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const tokenSwapService = useCashuTokenSwapService();
   const tokenSwapCache = useCashuTokenSwapCache();
   const getLatestAccount = useGetLatestCashuAccount();
@@ -104,7 +104,7 @@ export function useCreateCashuTokenSwap() {
     mutationFn: async ({ token, accountId }: CreateProps) => {
       const account = await getLatestAccount(accountId);
       return tokenSwapService.create({
-        userId: userRef.current.id,
+        userId,
         token,
         account,
       });
@@ -240,12 +240,12 @@ function useOnCashuTokenSwapChange({
 }
 
 function usePendingCashuTokenSwaps() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const tokenSwapRepository = useCashuTokenSwapRepository();
 
   const { data } = useQuery({
-    queryKey: [pendingCashuTokenSwapsQueryKey, userRef.current.id],
-    queryFn: () => tokenSwapRepository.getPending(userRef.current.id),
+    queryKey: [pendingCashuTokenSwapsQueryKey],
+    queryFn: () => tokenSwapRepository.getPending(userId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',

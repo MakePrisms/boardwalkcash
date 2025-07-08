@@ -11,27 +11,24 @@ import useLocationData from '~/hooks/use-location';
 import { useLatest } from '~/lib/use-latest';
 import type { AgicashDbContact } from '../agicash-db/database';
 import { agicashDb } from '../agicash-db/database';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { Contact } from './contact';
 import { ContactRepository, useContactRepository } from './contact-repository';
 
 const contactsQueryKey = 'contacts';
 
 export class ContactsCache {
-  constructor(
-    private readonly queryClient: QueryClient,
-    private readonly userId: string,
-  ) {}
+  constructor(private readonly queryClient: QueryClient) {}
 
   /**
    * Adds a contact to the cache.
    * @param contact - The contact to add.
    */
   add(contact: Contact) {
-    this.queryClient.setQueryData<Contact[]>(
-      [contactsQueryKey, this.userId],
-      (curr) => [...(curr ?? []), contact],
-    );
+    this.queryClient.setQueryData<Contact[]>([contactsQueryKey], (curr) => [
+      ...(curr ?? []),
+      contact,
+    ]);
   }
 
   /**
@@ -39,10 +36,7 @@ export class ContactsCache {
    * @returns The list of contacts.
    */
   getAll() {
-    return this.queryClient.getQueryData<Contact[]>([
-      contactsQueryKey,
-      this.userId,
-    ]);
+    return this.queryClient.getQueryData<Contact[]>([contactsQueryKey]);
   }
 
   /**
@@ -61,7 +55,7 @@ export class ContactsCache {
    */
   remove(contactId: string) {
     this.queryClient.setQueryData<Contact[]>(
-      [contactsQueryKey, this.userId],
+      [contactsQueryKey],
       (curr) => curr?.filter((x) => x.id !== contactId) ?? [],
     );
   }
@@ -69,24 +63,20 @@ export class ContactsCache {
 
 export function useContactsCache() {
   const queryClient = useQueryClient();
-  const userRef = useUserRef();
-  return useMemo(
-    () => new ContactsCache(queryClient, userRef.current.id),
-    [queryClient],
-  );
+  return useMemo(() => new ContactsCache(queryClient), [queryClient]);
 }
 
 /**
  * Hook for listing contacts for the current user with optional filtering
  */
 export function useContacts(select?: (contacts: Contact[]) => Contact[]) {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const contactRepository = useContactRepository();
   const contactsCache = useContactsCache();
 
   const { data: contacts } = useSuspenseQuery({
-    queryKey: [contactsQueryKey, userRef.current.id],
-    queryFn: async () => contactRepository.getAll(userRef.current.id),
+    queryKey: [contactsQueryKey],
+    queryFn: async () => contactRepository.getAll(userId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
@@ -111,14 +101,14 @@ export function useContact(contactId: string) {
 }
 
 export function useCreateContact() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const contactRepository = useContactRepository();
 
   const { mutateAsync: createContact } = useMutation({
-    mutationKey: ['create-contact', userRef.current.id],
+    mutationKey: ['create-contact'],
     mutationFn: ({ username }: { username: string }) =>
       contactRepository.create({
-        ownerId: userRef.current.id,
+        ownerId: userId,
         username,
       }),
   });
@@ -127,11 +117,10 @@ export function useCreateContact() {
 }
 
 export function useDeleteContact() {
-  const userRef = useUserRef();
   const contactRepository = useContactRepository();
 
   const { mutateAsync: deleteContact } = useMutation({
-    mutationKey: ['delete-contact', userRef.current.id],
+    mutationKey: ['delete-contact'],
     mutationFn: (contactId: string) => contactRepository.delete(contactId),
   });
 
@@ -144,12 +133,11 @@ export function useDeleteContact() {
  */
 export function useFindContactCandidates(query: string) {
   const contactRepository = useContactRepository();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
 
   return useQuery({
     queryKey: ['search-user-profiles', query],
-    queryFn: async () =>
-      contactRepository.findContactCandidates(query, userRef.current.id),
+    queryFn: async () => contactRepository.findContactCandidates(query, userId),
     initialData: [],
     initialDataUpdatedAt: () => Date.now() - 1000 * 6,
     staleTime: 1000 * 5,

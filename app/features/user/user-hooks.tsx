@@ -14,7 +14,7 @@ import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, useUserRepository } from './user-repository';
 
-const usersQueryKey = 'users';
+const userQueryKey = 'user';
 
 /**
  * This hook returns the logged in user data.
@@ -33,7 +33,7 @@ export const useUser = <TData = User>(
   const userRepository = useUserRepository();
 
   const response = useSuspenseQuery({
-    queryKey: [usersQueryKey, authUser.id],
+    queryKey: [userQueryKey],
     queryFn: () => userRepository.get(authUser.id),
     select,
   });
@@ -116,7 +116,7 @@ export const useUpsertUser = () => {
       id: 'user-upsert',
     },
     onSuccess: (user) => {
-      queryClient.setQueryData<User>([usersQueryKey, user.id], user);
+      queryClient.setQueryData<User>([userQueryKey], user);
     },
     throwOnError: true,
   });
@@ -209,15 +209,14 @@ export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
 
 const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const userRepository = useUserRepository();
 
   return useMutation({
-    mutationFn: (updates: UpdateUser) =>
-      userRepository.update(userRef.current.id, updates),
+    mutationFn: (updates: UpdateUser) => userRepository.update(userId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [usersQueryKey, userRef.current.id],
+        queryKey: [userQueryKey],
       });
     },
   });
