@@ -15,7 +15,7 @@ import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import { useCashuSendSwapRepository } from '../send/cashu-send-swap-repository';
 import { useCashuSendSwapService } from '../send/cashu-send-swap-service';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { Transaction } from './transaction';
 import {
   type Cursor,
@@ -63,15 +63,15 @@ export function useSuspenseTransaction(id: string) {
 const PAGE_SIZE = 25;
 
 export function useTransactions() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const transactionRepository = useTransactionRepository();
 
   const result = useInfiniteQuery({
-    queryKey: [allTransactionsQueryKey, userRef.current.id],
+    queryKey: [allTransactionsQueryKey],
     initialPageParam: null,
     queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
       const result = await transactionRepository.list({
-        userId: userRef.current.id,
+        userId,
         cursor: pageParam,
         pageSize: PAGE_SIZE,
       });

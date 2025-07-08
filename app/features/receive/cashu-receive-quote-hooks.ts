@@ -39,7 +39,7 @@ import {
   type AgicashDbCashuReceiveQuote,
   agicashDb,
 } from '../agicash-db/database';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   CashuReceiveQuoteRepository,
@@ -92,29 +92,28 @@ class PendingCashuReceiveQuotesCache {
 
   add(quote: CashuReceiveQuote) {
     this.queryClient.setQueryData<CashuReceiveQuote[]>(
-      [pendingCashuReceiveQuotesQueryKey, quote.userId],
+      [pendingCashuReceiveQuotesQueryKey],
       (curr) => [...(curr ?? []), quote],
     );
   }
 
   update(quote: CashuReceiveQuote) {
     this.queryClient.setQueryData<CashuReceiveQuote[]>(
-      [pendingCashuReceiveQuotesQueryKey, quote.userId],
+      [pendingCashuReceiveQuotesQueryKey],
       (curr) => curr?.map((q) => (q.id === quote.id ? quote : q)),
     );
   }
 
   remove(quote: CashuReceiveQuote) {
     this.queryClient.setQueryData<CashuReceiveQuote[]>(
-      [pendingCashuReceiveQuotesQueryKey, quote.userId],
+      [pendingCashuReceiveQuotesQueryKey],
       (curr) => curr?.filter((q) => q.id !== quote.id),
     );
   }
 
-  getByMintQuoteId(userId: string, mintQuoteId: string) {
+  getByMintQuoteId(mintQuoteId: string) {
     const quotes = this.queryClient.getQueryData<CashuReceiveQuote[]>([
       pendingCashuReceiveQuotesQueryKey,
-      userId,
     ]);
     return quotes?.find((q) => q.quoteId === mintQuoteId);
   }
@@ -129,7 +128,7 @@ function usePendingCashuReceiveQuotesCache() {
 }
 
 export function useCreateCashuReceiveQuote() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const cashuReceiveQuoteService = useCashuReceiveQuoteService();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
@@ -140,7 +139,7 @@ export function useCreateCashuReceiveQuote() {
     },
     mutationFn: ({ account, amount, description }: CreateProps) =>
       cashuReceiveQuoteService.createLightningQuote({
-        userId: userRef.current.id,
+        userId,
         account,
         amount,
         description,
@@ -153,7 +152,7 @@ export function useCreateCashuReceiveQuote() {
 }
 
 export function useMeltTokenToCashuAccount() {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const cashuReceiveQuoteService = useCashuReceiveQuoteService();
   const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
 
@@ -164,7 +163,7 @@ export function useMeltTokenToCashuAccount() {
     },
     mutationFn: ({ token, account }: { token: Token; account: CashuAccount }) =>
       cashuReceiveQuoteService.meltTokenToCashuAccount({
-        userId: userRef.current.id,
+        userId,
         token,
         account,
       }),
@@ -280,11 +279,11 @@ function useOnCashuReceiveQuoteChange({
 
 const usePendingCashuReceiveQuotes = () => {
   const cashuReceiveQuoteRepository = useCashuReceiveQuoteRepository();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
 
   const { data } = useQuery({
-    queryKey: [pendingCashuReceiveQuotesQueryKey, userRef.current.id],
-    queryFn: () => cashuReceiveQuoteRepository.getPending(userRef.current.id),
+    queryKey: [pendingCashuReceiveQuotesQueryKey],
+    queryFn: () => cashuReceiveQuoteRepository.getPending(userId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
@@ -610,7 +609,6 @@ const useOnMintQuoteStateChange = ({
   const onExpiredRef = useLatest(onExpired);
   const accountsCache = useAccountsCache();
   const pendingQuotesCache = usePendingCashuReceiveQuotesCache();
-  const userRef = useUserRef();
   const getCashuAccount = useGetLatestCashuAccount();
 
   const processMintQuote = useCallback(
@@ -618,7 +616,6 @@ const useOnMintQuoteStateChange = ({
       console.debug('Processing mint quote', mintQuote);
 
       const relatedReceiveQuote = pendingQuotesCache.getByMintQuoteId(
-        userRef.current.id,
         mintQuote.quote,
       );
 

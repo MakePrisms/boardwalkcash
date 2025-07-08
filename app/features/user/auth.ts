@@ -1,10 +1,12 @@
 import { type UserResponse, useOpenSecret } from '@opensecret/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { jwtDecode } from 'jwt-decode';
 import { useCallback, useRef } from 'react';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
 import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
+import { cashuSeedStore } from '../shared/cashu';
 import { guestAccountStorage } from './guest-account-storage';
 
 export type AuthUser = UserResponse['user'];
@@ -119,6 +121,7 @@ type AuthActions = {
  */
 export const useAuthActions = (): AuthActions => {
   const openSecret = useOpenSecret();
+  const queryClient = useQueryClient();
 
   // We are doing this to keep references for these actions constant. Open secret implementation currently creates a new
   // reference for each render. See https://github.com/OpenSecretCloud/OpenSecret-SDK/blob/master/src/lib/main.tsx#L350
@@ -175,7 +178,9 @@ export const useAuthActions = (): AuthActions => {
   const signOut = useCallback(async () => {
     await signOutRef.current();
     supabaseSessionStore.getState().clear();
-  }, []);
+    cashuSeedStore.getState().clear();
+    queryClient.clear();
+  }, [queryClient]);
 
   return {
     signUp: signUpRef.current,

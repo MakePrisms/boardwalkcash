@@ -28,7 +28,7 @@ import {
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { DomainError } from '../shared/error';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
   CashuSendQuoteRepository,
@@ -78,21 +78,21 @@ class UnresolvedCashuSendQuotesCache {
 
   add(quote: CashuSendQuote) {
     this.queryClient.setQueryData<CashuSendQuote[]>(
-      [unresolvedCashuSendQuotesQueryKey, quote.userId],
+      [unresolvedCashuSendQuotesQueryKey],
       (curr) => [...(curr ?? []), quote],
     );
   }
 
   update(quote: CashuSendQuote) {
     this.queryClient.setQueryData<CashuSendQuote[]>(
-      [unresolvedCashuSendQuotesQueryKey, quote.userId],
+      [unresolvedCashuSendQuotesQueryKey],
       (curr) => curr?.map((q) => (q.id === quote.id ? quote : q)),
     );
   }
 
   remove(quote: CashuSendQuote) {
     this.queryClient.setQueryData<CashuSendQuote[]>(
-      [unresolvedCashuSendQuotesQueryKey, quote.userId],
+      [unresolvedCashuSendQuotesQueryKey],
       (curr) => curr?.filter((q) => q.id !== quote.id),
     );
   }
@@ -135,7 +135,7 @@ export function useCreateCashuSendQuote() {
 export function useInitiateCashuSendQuote({
   onError,
 }: { onError: (error: Error) => void }) {
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const cashuSendQuoteService = useCashuSendQuoteService();
   const cashuSendQuoteCache = useCashuSendQuoteCache();
   const getCashuAccount = useGetLatestCashuAccount();
@@ -151,7 +151,7 @@ export function useInitiateCashuSendQuote({
     }: { accountId: string; sendQuote: SendQuoteRequest }) => {
       const account = await getCashuAccount(accountId);
       return cashuSendQuoteService.createSendQuote({
-        userId: userRef.current.id,
+        userId,
         account,
         sendQuote,
       });
@@ -284,11 +284,11 @@ function useOnCashuSendQuoteChange({
 
 function useUnresolvedCashuSendQuotes() {
   const cashuSendQuoteRepository = useCashuSendQuoteRepository();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
 
   const { data } = useQuery({
-    queryKey: [unresolvedCashuSendQuotesQueryKey, userRef.current.id],
-    queryFn: () => cashuSendQuoteRepository.getUnresolved(userRef.current.id),
+    queryKey: [unresolvedCashuSendQuotesQueryKey],
+    queryFn: () => cashuSendQuoteRepository.getUnresolved(userId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',

@@ -30,7 +30,7 @@ export const useTakeTaskProcessingLead = () => {
 
   const { data: takeLeadResult, error } = useQuery({
     enabled: !!clientId,
-    queryKey: ['take-lead', userId, clientId],
+    queryKey: ['take-lead', clientId],
     queryFn: () => {
       return taskProcessingLockRepository.takeLead(userId, clientId);
     },

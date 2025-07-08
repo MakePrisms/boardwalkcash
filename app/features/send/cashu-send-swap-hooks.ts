@@ -20,7 +20,7 @@ import {
 import { type AgicashDbCashuSendSwap, agicashDb } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { NotFoundError } from '../shared/error';
-import { useUserRef } from '../user/user-hooks';
+import { useUser } from '../user/user-hooks';
 import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
 import {
   CashuSendSwapRepository,
@@ -67,21 +67,21 @@ class UnresolvedCashuSendSwapsCache {
 
   add(swap: CashuSendSwap) {
     this.queryClient.setQueryData<CashuSendSwap[]>(
-      [unresolvedCashuSendSwapsQueryKey, swap.userId],
+      [unresolvedCashuSendSwapsQueryKey],
       (curr) => [...(curr ?? []), swap],
     );
   }
 
   update(swap: CashuSendSwap) {
     this.queryClient.setQueryData<CashuSendSwap[]>(
-      [unresolvedCashuSendSwapsQueryKey, swap.userId],
+      [unresolvedCashuSendSwapsQueryKey],
       (curr) => curr?.map((d) => (d.id === swap.id ? swap : d)),
     );
   }
 
   remove(swap: CashuSendSwap) {
     this.queryClient.setQueryData<CashuSendSwap[]>(
-      [unresolvedCashuSendSwapsQueryKey, swap.userId],
+      [unresolvedCashuSendSwapsQueryKey],
       (curr) => curr?.filter((d) => d.id !== swap.id),
     );
   }
@@ -120,7 +120,7 @@ export function useCreateCashuSendSwap({
   onError,
 }: { onError: (error: Error) => void }) {
   const cashuSendSwapService = useCashuSendSwapService();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
   const getLatestCashuAccount = useGetLatestCashuAccount();
   const cashuSendSwapCache = useCashuSendSwapCache();
 
@@ -136,7 +136,7 @@ export function useCreateCashuSendSwap({
     }) => {
       const account = await getLatestCashuAccount(accountId);
       return cashuSendSwapService.create({
-        userId: userRef.current.id,
+        userId,
         amount,
         account,
         senderPaysFee,
@@ -222,11 +222,11 @@ function useOnCashuSendSwapChange({
 
 export function useUnresolvedCashuSendSwaps() {
   const cashuSendSwapRepository = useCashuSendSwapRepository();
-  const userRef = useUserRef();
+  const userId = useUser((user) => user.id);
 
   const { data = [] } = useQuery({
-    queryKey: [unresolvedCashuSendSwapsQueryKey, userRef.current.id],
-    queryFn: () => cashuSendSwapRepository.getUnresolved(userRef.current.id),
+    queryKey: [unresolvedCashuSendSwapsQueryKey],
+    queryFn: () => cashuSendSwapRepository.getUnresolved(userId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
