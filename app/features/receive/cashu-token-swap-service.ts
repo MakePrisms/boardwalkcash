@@ -47,6 +47,11 @@ export class CashuTokenSwapService {
     }
 
     const amount = tokenToMoney(token);
+
+    if (amount.currency !== account.currency) {
+      throw new Error('Cannot swap a token to a different currency.');
+    }
+
     const cashuUnit = getCashuUnit(amount.currency);
     const seed = await this.cryptography.getSeed();
 

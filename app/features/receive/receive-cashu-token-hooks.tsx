@@ -346,9 +346,11 @@ export function useReceiveCashuToken({
     account: CashuAccount;
   }) => {
     try {
-      const isSourceMint = areMintUrlsEqual(account.mintUrl, token.mint);
+      const isSameMintAndCurrency =
+        account.currency === tokenToMoney(token).currency &&
+        areMintUrlsEqual(account.mintUrl, token.mint);
 
-      if (isSourceMint) {
+      if (isSameMintAndCurrency) {
         await createCashuTokenSwap({ token, accountId: account.id });
       } else {
         await meltTokenToCashuAccount({ token, account });
