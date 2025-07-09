@@ -55,7 +55,12 @@ export function useCashuTokenSourceAccountQuery(
   const tokenCurrency = tokenToMoney(token).currency;
 
   return useSuspenseQuery({
-    queryKey: ['token-source-account', token.mint, tokenCurrency],
+    queryKey: [
+      'token-source-account',
+      token.mint,
+      tokenCurrency,
+      existingAccount?.id,
+    ],
     queryFn: async (): Promise<{
       isValid: boolean;
       sourceAccount: ExtendedCashuAccount;
