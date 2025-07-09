@@ -331,7 +331,7 @@ function SelectContactOrLud16Drawer({
           <DrawerTitle>Send to User</DrawerTitle>
           <AddContactDrawer />
         </DrawerHeader>
-        <div className="mx-auto flex w-full max-w-sm flex-col gap-3 px-4 sm:px-0">
+        <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3 px-4 sm:px-0">
           <SearchBar
             placeholder="Username or Lightning Address"
             onSearch={setInput}
