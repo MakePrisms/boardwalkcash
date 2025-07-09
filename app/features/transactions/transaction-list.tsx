@@ -190,6 +190,16 @@ export function TransactionList() {
     status,
   } = useTransactions();
 
+  const allTransactions =
+    data?.pages.flatMap((page) => page.transactions) ?? [];
+
+  const {
+    pendingTransactions,
+    todayTransactions,
+    thisWeekTransactions,
+    olderTransactions,
+  } = usePartitionTransactions(allTransactions);
+
   if (status === 'error') {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
@@ -211,8 +221,6 @@ export function TransactionList() {
     );
   }
 
-  const allTransactions = data.pages.flatMap((page) => page.transactions);
-
   if (!allTransactions.length) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
@@ -220,13 +228,6 @@ export function TransactionList() {
       </div>
     );
   }
-
-  const {
-    pendingTransactions,
-    todayTransactions,
-    thisWeekTransactions,
-    olderTransactions,
-  } = usePartitionTransactions(allTransactions);
 
   return (
     <ScrollArea className="h-full min-h-0 " hideScrollbar>
