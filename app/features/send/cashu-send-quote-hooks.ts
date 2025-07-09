@@ -397,6 +397,17 @@ function useOnMeltQuoteStateChange({
         meltQuote.state === 'UNPAID' &&
         relatedSendQuote.state === 'UNPAID'
       ) {
+        console.debug(
+          'onUnpaidRef.current(account, relatedSendQuote, meltQuote)',
+        );
+        onUnpaidRef.current(account, relatedSendQuote, meltQuote);
+      } else if (
+        meltQuote.state === 'UNPAID' &&
+        relatedSendQuote.state === 'PENDING'
+      ) {
+        console.warn(
+          'Mint flipped melt quote back to UNPAID and related send quote is PENDING',
+        );
         onUnpaidRef.current(account, relatedSendQuote, meltQuote);
       }
     },
@@ -526,6 +537,12 @@ export function useProcessCashuSendQuoteTasks() {
               );
             }
           });
+      } else if (send.state === 'PENDING') {
+        cashuSendService.failSendQuote(
+          account,
+          send,
+          'Send quote is pending, but mint flipped melt quote back to UNPAID',
+        );
       }
     },
     onPending: (_, send) => {
