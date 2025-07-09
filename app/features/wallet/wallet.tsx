@@ -1,8 +1,7 @@
 import { useOpenSecret } from '@opensecret/react';
-import { type PropsWithChildren, Suspense, useEffect, useState } from 'react';
+import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
-import { agicashDb } from '../agicash-db/database';
 import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
@@ -15,50 +14,14 @@ import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
 import { TaskProcessor, useTakeTaskProcessingLead } from './task-processing';
 
-type SupabaseInitializationState =
-  | {
-      status: 'initializing' | 'initialized';
-    }
-  | {
-      status: 'error';
-      error: Error;
-    };
-
 const useInitializeSupabaseSessionStore = () => {
   const { generateThirdPartyToken } = useOpenSecret();
-  const [state, setState] = useState<SupabaseInitializationState>({
-    status: 'initialized',
-  });
 
   useEffect(() => {
     supabaseSessionStore
       .getState()
       .setJwtGetter(() => generateThirdPartyToken().then((res) => res.token));
-
-    // Needed for this workaround https://github.com/supabase/realtime/issues/282#issuecomment-2630983759
-    agicashDb.realtime
-      .setAuth()
-      .then(() => {
-        setState({
-          status: 'initialized',
-        });
-      })
-      .catch((error) => {
-        setState({
-          status: 'error',
-          error: new Error('Failed to initialize Supabase session store', {
-            cause: error,
-          }),
-        });
-      });
   }, [generateThirdPartyToken]);
-
-  if (state.status === 'error') {
-    throw state.error;
-  }
-
-  const isInitialized = state.status === 'initialized';
-  return isInitialized;
 };
 
 /**
@@ -144,10 +107,10 @@ const Wallet = ({ children }: PropsWithChildren) => {
  * @returns True if the setup is done, false otherwise.
  */
 const useSetupWallet = (authUser: AuthUser) => {
-  const isInitialized = useInitializeSupabaseSessionStore();
+  useInitializeSupabaseSessionStore();
 
   const user = useUpsertAgicashUser(authUser);
-  const setupCompleted = isInitialized && user !== null;
+  const setupCompleted = user !== null;
 
   // Makes sure that the encryption key is pulled from the server
   useEncryptionKey();
