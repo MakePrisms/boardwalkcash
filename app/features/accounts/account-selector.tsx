@@ -8,6 +8,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '~/components/ui/drawer';
+import { ScrollArea } from '~/components/ui/scroll-area';
 import { cn } from '~/lib/utils';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { type Account, getAccountBalance } from './account';
@@ -84,32 +85,34 @@ export function AccountSelector<T extends Account>({
             ))}
         </button>
       </DrawerTrigger>
-      <DrawerContent className="font-primary">
-        <div className="mx-auto w-full max-w-sm">
+      <DrawerContent className="h-[90dvh] font-primary">
+        <div className="mx-auto flex h-full w-full max-w-sm flex-col overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Select account</DrawerTitle>
           </DrawerHeader>
-          <div className="flex flex-col gap-2 p-2">
-            {[
-              selectedAccount,
-              ...accounts.filter((a) => a.id !== selectedAccount.id),
-            ].map((account) => (
-              <button
-                disabled={account.selectable === false}
-                type="button"
-                key={account.id}
-                onClick={() => handleAccountSelect(account)}
-                className={cn(
-                  'rounded-lg hover:bg-muted',
-                  selectedAccount.id === account.id && 'bg-muted',
-                  account.selectable === false &&
-                    'pointer-events-none cursor-not-allowed opacity-50',
-                )}
-              >
-                <AccountItem account={account} />
-              </button>
-            ))}
-          </div>
+          <ScrollArea hideScrollbar>
+            <div className="flex flex-col gap-2 p-2">
+              {[
+                selectedAccount,
+                ...accounts.filter((a) => a.id !== selectedAccount.id),
+              ].map((account) => (
+                <button
+                  disabled={account.selectable === false}
+                  type="button"
+                  key={account.id}
+                  onClick={() => handleAccountSelect(account)}
+                  className={cn(
+                    'rounded-lg hover:bg-muted',
+                    selectedAccount.id === account.id && 'bg-muted',
+                    account.selectable === false &&
+                      'pointer-events-none cursor-not-allowed opacity-50',
+                  )}
+                >
+                  <AccountItem account={account} />
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </DrawerContent>
     </Drawer>

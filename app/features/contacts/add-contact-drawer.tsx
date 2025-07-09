@@ -8,6 +8,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '~/components/ui/drawer';
+import { ScrollArea } from '~/components/ui/scroll-area';
 import { useToast } from '~/hooks/use-toast';
 import { SearchBar } from '../../components/search-bar';
 import { getErrorMessage } from '../shared/error';
@@ -83,29 +84,34 @@ function SearchResults({
   }
 
   return (
-    <div className="relative h-full py-6">
-      <div className="flex flex-col gap-6 pb-16">
-        {results.map((searchResult) => (
-          <button
-            key={searchResult.username}
-            className="flex w-full items-center gap-3 rounded-lg"
-            onClick={() =>
-              setSelectedContact(
-                selectedContact?.username === searchResult.username
-                  ? null
-                  : searchResult,
-              )
-            }
-            type="button"
-          >
-            <ContactAvatar username={searchResult.username} size="sm" />
-            <span className="font-medium">{searchResult.username}</span>
-            {selectedContact?.username === searchResult.username && (
-              <Check className="ml-auto h-4 w-4 text-foreground" />
-            )}
-          </button>
-        ))}
-      </div>
+    <>
+      <ScrollArea
+        className="relative flex h-full flex-1 flex-col py-6"
+        hideScrollbar
+      >
+        <div className="flex flex-col gap-6 pb-16">
+          {results.map((searchResult) => (
+            <button
+              key={searchResult.username}
+              className="flex w-full items-center gap-3 rounded-lg"
+              onClick={() =>
+                setSelectedContact(
+                  selectedContact?.username === searchResult.username
+                    ? null
+                    : searchResult,
+                )
+              }
+              type="button"
+            >
+              <ContactAvatar username={searchResult.username} size="sm" />
+              <span className="font-medium">{searchResult.username}</span>
+              {selectedContact?.username === searchResult.username && (
+                <Check className="ml-auto h-4 w-4 text-foreground" />
+              )}
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
       {selectedContact && (
         <Button
           onClick={() => onAddContact(selectedContact.username)}
@@ -114,6 +120,6 @@ function SearchResults({
           Add
         </Button>
       )}
-    </div>
+    </>
   );
 }

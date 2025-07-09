@@ -26,7 +26,7 @@ export default function Contacts() {
       >
         <AddContactDrawer />
       </SettingsViewHeader>
-      <PageContent>
+      <PageContent className="overflow-hidden">
         <SearchBar onSearch={setSearchQuery} placeholder="Search contacts..." />
 
         <ContactsList contacts={contacts} />
