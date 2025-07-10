@@ -11,7 +11,6 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   getCashuUnit,
-  getCashuWallet,
   getCrossMintQuotesWithinTargetAmount,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
@@ -19,6 +18,7 @@ import type { CashuAccount } from '../accounts/account';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
   type CashuCryptography,
+  getCashuWalletWithAuth,
   tokenToMoney,
   useCashuCryptography,
 } from '../shared/cashu';
@@ -64,7 +64,7 @@ export class CashuReceiveQuoteService {
   }): Promise<CashuReceiveQuote> {
     const cashuUnit = getCashuUnit(amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
     });
 
@@ -126,10 +126,10 @@ export class CashuReceiveQuoteService {
       );
     }
 
-    const sourceWallet = getCashuWallet(token.mint, {
+    const sourceWallet = getCashuWalletWithAuth(token.mint, {
       unit: fromCashuUnit,
     });
-    const destinationWallet = getCashuWallet(account.mintUrl, {
+    const destinationWallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: toCashuUnit,
     });
 
@@ -224,7 +224,7 @@ export class CashuReceiveQuoteService {
     const seed = await this.cryptography.getSeed();
     const cashuUnit = getCashuUnit(quote.amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
       bip39seed: seed,
     });
