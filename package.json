@@ -28,7 +28,7 @@
     "start": "We are running the build in node because atm we are using node as the build target."
   },
   "dependencies": {
-    "@cashu/cashu-ts": "jbojcic1/cashu-ts#socket-onclose-callback-with-build-artifacts",
+    "@cashu/cashu-ts": "github:gudnuf/cashu-ts#improve-auth-support-with-build-artifacts-1",
     "@cashu/crypto": "0.3.4",
     "@jbojcic/bc-ur": "https://github.com/jbojcic1/bc-ur",
     "@opensecret/react": "1.1.0",
@@ -64,6 +64,7 @@
     "ky": "1.7.4",
     "light-bolt11-decoder": "3.2.0",
     "lucide-react": "0.468.0",
+    "oidc-client-ts": "3.3.0",
     "qr-scanner": "1.4.2",
     "qrcode.react": "4.2.0",
     "react": "19.1.0",

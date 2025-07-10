@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
+import { getCashuUnit } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -26,7 +26,7 @@ import {
   type AgicashDbCashuSendQuote,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { getCashuWalletWithAuth, useCashuCryptography } from '../shared/cashu';
 import { DomainError } from '../shared/error';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
@@ -327,7 +327,7 @@ const checkMeltQuote = async (
   quote: CashuSendQuote,
 ): Promise<MeltQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amountToReceive.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = getCashuWalletWithAuth(account.mintUrl, { unit: cashuUnit });
 
   const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);
 
@@ -397,6 +397,17 @@ function useOnMeltQuoteStateChange({
         meltQuote.state === 'UNPAID' &&
         relatedSendQuote.state === 'UNPAID'
       ) {
+        console.debug(
+          'onUnpaidRef.current(account, relatedSendQuote, meltQuote)',
+        );
+        onUnpaidRef.current(account, relatedSendQuote, meltQuote);
+      } else if (
+        meltQuote.state === 'UNPAID' &&
+        relatedSendQuote.state === 'PENDING'
+      ) {
+        console.warn(
+          'Mint flipped melt quote back to UNPAID and related send quote is PENDING',
+        );
         onUnpaidRef.current(account, relatedSendQuote, meltQuote);
       }
     },
@@ -526,6 +537,12 @@ export function useProcessCashuSendQuoteTasks() {
               );
             }
           });
+      } else if (send.state === 'PENDING') {
+        cashuSendService.failSendQuote(
+          account,
+          send,
+          'Send quote is pending, but mint flipped melt quote back to UNPAID',
+        );
       }
     },
     onPending: (_, send) => {

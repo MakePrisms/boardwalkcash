@@ -11,6 +11,7 @@ import {
   Links,
   type LinksFunction,
   Meta,
+  type MetaFunction,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -73,13 +74,42 @@ export async function loader({ request }: Route.LoaderArgs) {
   const userAgentString = request.headers.get('user-agent');
   const url = new URL(request.url);
 
+  // Default values for meta tags
+  const title = 'Agicash';
+  const description = 'The easiest way to send and receive cash.';
+
   return {
     cookieSettings: cookieSettings || null,
     userAgentString: userAgentString || '',
     origin: url.origin,
     domain: url.origin.replace('https://', '').replace('http://', ''),
+    title,
+    description,
   };
 }
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  const title = data?.title || 'Boardwalk Cash';
+  const description =
+    data?.description || 'The easiest way to send and receive cash.';
+  const image = '/icon-192x192.png';
+  return [
+    { title },
+    { name: 'description', content: description },
+    { property: 'og:title', content: title },
+    { property: 'og:description', content: description },
+    { property: 'og:image', content: image },
+    { property: 'og:image:alt', content: 'Boardwalk Cash logo' },
+    { property: 'og:image:width', content: '192' },
+    { property: 'og:image:height', content: '192' },
+    { property: 'og:image:type', content: 'image/png' },
+    { name: 'twitter:card', content: 'summary' },
+    { name: 'twitter:title', content: title },
+    { name: 'twitter:description', content: description },
+    { name: 'twitter:image', content: image },
+    { name: 'twitter:image:alt', content: 'Boardwalk Cash logo' },
+  ];
+};
 
 // prevent loader from being revalidated
 export function shouldRevalidate() {
@@ -110,6 +140,29 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           name="theme-color"
           content={getBgColorForTheme(theme, effectiveColorMode)}
         />
+        <title>Agicash</title>
+        <meta
+          name="description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta property="og:title" content="Agicash" />
+        <meta
+          property="og:description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta property="og:image" content="/icon-192x192.png" />
+        <meta property="og:image:alt" content="Agicash logo" />
+        <meta property="og:image:width" content="192" />
+        <meta property="og:image:height" content="192" />
+        <meta property="og:image:type" content="image/png" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Agicash" />
+        <meta
+          name="twitter:description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta name="twitter:image" content="/icon-192x192.png" />
+        <meta name="twitter:image:alt" content="Agicash logo" />
         <Meta />
         <Links />
       </head>

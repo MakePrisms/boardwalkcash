@@ -71,11 +71,11 @@ if (setupHttps) {
 
   const httpsApp = https.createServer(httpsOptions, app);
 
-  httpsApp.listen(3000, () => {
-    console.log('App listening on https://localhost:3000');
-    console.log(`Also available at https://${hostname}:3000`);
+  httpsApp.listen(3007, () => {
+    console.log('App listening on https://localhost:3007');
+    console.log(`Also available at https://${hostname}:3007`);
     if (localIP) {
-      console.log(`Also available at https://${localIP}:3000`);
+      console.log(`Also available at https://${localIP}:3007`);
     }
   });
 
@@ -84,7 +84,7 @@ if (setupHttps) {
   if (useHttps && !certificateExists) {
     console.warn('HTTPS certificates not found. Falling back to HTTP.');
   }
-  app.listen(3000, () => {
-    console.log('App listening on http://localhost:3000');
+  app.listen(3007, () => {
+    console.log('App listening on http://localhost:3007');
   });
 }

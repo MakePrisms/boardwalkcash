@@ -39,6 +39,7 @@ import {
   type AgicashDbCashuReceiveQuote,
   agicashDb,
 } from '../agicash-db/database';
+import { getCashuWalletWithAuth } from '../shared/cashu';
 import { useUser } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -297,6 +298,7 @@ const mintsToExcludeFromWebSockets = [
   // The reason that we need to exlude cubabitcoin is that there was a bug which would not update the invoice state unless a GET request
   // is made to check the quote status. We can remove this when cubabitcoin is updated to nutshell > 0.17.1 - https://github.com/cashubtc/nutshell/releases/tag/0.17.1
   'https://mint.cubabitcoin.org',
+  'https://mint.lnvoltz.com', // for some reason we can't open a socket to lnvoltz
 ];
 
 const checkIfMintSupportsWebSocketsForMintQuotes = (
@@ -334,7 +336,7 @@ const checkMintQuote = async (
   quote: CashuReceiveQuote,
 ): Promise<MintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = getCashuWalletWithAuth(account.mintUrl, { unit: cashuUnit });
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
@@ -639,6 +641,14 @@ const useOnMintQuoteStateChange = ({
         mintQuote.state === 'PAID' &&
         relatedReceiveQuote.state !== 'PAID'
       ) {
+        onPaidRef.current(account, relatedReceiveQuote);
+      } else if (
+        mintQuote.state === 'PAID' &&
+        relatedReceiveQuote.state === 'PAID'
+      ) {
+        console.warn(
+          'Mint quote and related receive quote are both paid. Is this bad?',
+        );
         onPaidRef.current(account, relatedReceiveQuote);
       } else if (
         mintQuote.state === 'ISSUED' &&

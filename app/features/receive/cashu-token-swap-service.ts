@@ -16,6 +16,7 @@ import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import {
   type CashuCryptography,
+  getCashuWalletWithAuth,
   tokenToMoney,
   useCashuCryptography,
 } from '../shared/cashu';
@@ -101,7 +102,7 @@ export class CashuTokenSwapService {
     const cashuUnit = getCashuUnit(tokenSwap.amount.currency);
     const seed = await this.cryptography.getSeed();
 
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
       bip39seed: seed,
     });
