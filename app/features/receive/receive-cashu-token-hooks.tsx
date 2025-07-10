@@ -250,8 +250,15 @@ const getSelectableAccounts = (
 /**
  * Lets the user select an account to receive the token and returns data about the
  * selectable accounts based on the source account and the user's accounts in the database.
+ * @param token - The being received
+ * @param preferredReceiveAccountId - The account to initially select. If not provided
+ * or the account is not selectable in this context, the default account will be selected.
+ * @returns The selectable accounts, the receive account, the source account, and a function to set the receive account.
  */
-export function useReceiveCashuTokenAccounts(token: Token) {
+export function useReceiveCashuTokenAccounts(
+  token: Token,
+  preferredReceiveAccountId?: string,
+) {
   const { sourceAccount, isValid: isSourceAccountValid } =
     useCashuTokenSourceAccount(token);
   const { data: accounts } = useAccounts({ type: 'cashu' });
@@ -266,11 +273,16 @@ export function useReceiveCashuTokenAccounts(token: Token) {
     accounts,
     defaultAccount,
   );
+  const preferredReceiveAccount = selectableAccounts.find(
+    (account) => account.id === preferredReceiveAccountId,
+  );
   const defaultReceiveAccount = getDefaultReceiveAccount(
     selectableAccounts,
     sourceAccount,
     isCrossMintSwapDisabled,
-    defaultAccount,
+    preferredReceiveAccount?.selectable
+      ? preferredReceiveAccount
+      : defaultAccount,
   );
 
   const [receiveAccountId, setReceiveAccountId] = useState<string>(
