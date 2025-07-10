@@ -140,6 +140,29 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           name="theme-color"
           content={getBgColorForTheme(theme, effectiveColorMode)}
         />
+        <title>Agicash</title>
+        <meta
+          name="description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta property="og:title" content="Agicash" />
+        <meta
+          property="og:description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta property="og:image" content="/icon-192x192.png" />
+        <meta property="og:image:alt" content="Agicash logo" />
+        <meta property="og:image:width" content="192" />
+        <meta property="og:image:height" content="192" />
+        <meta property="og:image:type" content="image/png" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Agicash" />
+        <meta
+          name="twitter:description"
+          content="The easiest way to send and receive cash."
+        />
+        <meta name="twitter:image" content="/icon-192x192.png" />
+        <meta name="twitter:image:alt" content="Agicash logo" />
         <Meta />
         <Links />
       </head>
