@@ -76,7 +76,7 @@ export function useSupabaseRealtimeSubscription({
 
     const channel = channelFactoryRef.current().subscribe((status, error) => {
       console.debug(
-        `Supabase realtime subscription for "${channel.topic}"`,
+        `${new Date().toISOString()}: Supabase realtime subscription for "${channel.topic}"`,
         status,
         error,
       );
@@ -108,7 +108,7 @@ export function useSupabaseRealtimeSubscription({
         const isPageVisible = document.visibilityState === 'visible';
         if (!isPageVisible) {
           console.debug(
-            `Setting pending error for "${channel.topic}" because page is not visible`,
+            `${new Date().toISOString()}: Setting pending error for "${channel.topic}" because page is not visible`,
             status,
             error,
           );
@@ -122,10 +122,16 @@ export function useSupabaseRealtimeSubscription({
         }
       }
     });
-    console.debug('Subscribed to supabase realtime', channel.topic);
+    console.debug(
+      `${new Date().toISOString()}: Subscribed to supabase realtime`,
+      channel.topic,
+    );
 
     return () => {
-      console.debug('Unsubscribing from supabase realtime', channel.topic);
+      console.debug(
+        `${new Date().toISOString()}: Unsubscribing from supabase realtime`,
+        channel.topic,
+      );
 
       if (errorTimeoutRef.current) {
         clearTimeout(errorTimeoutRef.current);

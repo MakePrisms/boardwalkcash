@@ -219,6 +219,12 @@ export const agicashDb = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: 'wallet',
   },
+  realtime: {
+    logger: (kind: unknown, msg: unknown, data: unknown) => {
+      console.log(`${kind}: ${msg}`, data);
+    },
+    worker: true,
+  },
 });
 
 export type AgicashDb = typeof agicashDb;
