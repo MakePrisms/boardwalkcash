@@ -47,15 +47,15 @@ const defaultAccounts = [
   {
     type: 'cashu',
     currency: 'BTC',
-    name: 'Default BTC Account',
-    mintUrl: 'https://mint.lnvoltz.com',
+    name: '₿ Agicash',
+    mintUrl: 'https://mint25.agi.cash',
     isTestMint: false,
   },
   {
     type: 'cashu',
     currency: 'USD',
-    name: 'Default USD Account',
-    mintUrl: 'https://mint.lnvoltz.com',
+    name: '$ Agicash',
+    mintUrl: 'https://mint25.agi.cash',
     isTestMint: false,
   },
   ...(isDevelopmentMode
