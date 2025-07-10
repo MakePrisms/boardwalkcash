@@ -123,10 +123,13 @@ export default function ReceiveInput() {
       return;
     }
 
-    navigate(`/receive/cashu/token#${getEncodedToken(token)}`, {
-      transition: 'slideLeft',
-      applyTo: 'newView',
-    });
+    navigate(
+      `/receive/cashu/token?selectedAccountId=${receiveAccountId}#${getEncodedToken(token)}`,
+      {
+        transition: 'slideLeft',
+        applyTo: 'newView',
+      },
+    );
   };
 
   return (
