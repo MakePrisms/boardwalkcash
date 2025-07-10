@@ -170,7 +170,7 @@ export class CashuSendQuoteService {
     const sumOfSendProofs = sumProofs(proofs.send);
     if (sumOfSendProofs < amountWithLightningFee) {
       throw new DomainError(
-        `Insufficient balance. Estimated fee to send ${amountToReceive.toLocaleString({ unit })} is ${lightningFeeReserve.toLocaleString({ unit })}.`,
+        `Insufficient balance. Estimated total including fee is ${amountToReceive.add(lightningFeeReserve).toLocaleString({ unit })}.`,
       );
     }
 
@@ -264,7 +264,7 @@ export class CashuSendQuoteService {
 
     if (proofsToSendSum < totalAmountToSend) {
       throw new DomainError(
-        `Insufficient balance. Estimated fee to send ${amountToReceive.toLocaleString({ unit })} is ${estimatedTotalFee.toLocaleString({ unit })}.`,
+        `Insufficient balance. Estimated total including fee is ${amountToReceive.add(estimatedTotalFee).toLocaleString({ unit })}.`,
       );
     }
 
