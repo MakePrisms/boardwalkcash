@@ -88,10 +88,8 @@ export function useSupabaseRealtimeSubscription({
   const setupSystemMessageListener = useCallback((channel: RealtimeChannel) => {
     channel.on(REALTIME_LISTEN_TYPES.SYSTEM, {}, (payload) => {
       if (payload.extension === 'postgres_changes' && payload.status === 'ok') {
-        const time = new Date();
         console.debug('System postgres_changes ok message received', {
-          timestamp: time.getTime(),
-          time: time.toISOString(),
+          time: new Date().toISOString(),
           topic: channel.topic,
         });
         setState((curr) => {
