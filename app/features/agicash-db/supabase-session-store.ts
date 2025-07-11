@@ -1,6 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
 import { create } from 'zustand';
-import { agicashDb } from './database';
 
 type SupabaseSession = {
   jwt: string | null;
@@ -39,9 +38,6 @@ export const supabaseSessionStore = create<SupabaseSession>((set, get) => ({
     const jwt = await getJwt();
 
     set({ jwt });
-    // We need to set this manually on refresh becuuse otherwise the realtime connection will use the old jwt and connection will be closed
-    // I don't know why Supabase donesn't do that internally when accessToken method passed to the client returns a new jwt
-    agicashDb.realtime.setAuth(jwt);
 
     return jwt;
   },

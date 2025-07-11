@@ -2,7 +2,7 @@ import { useOpenSecret } from '@opensecret/react';
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
-import { supabaseSessionStore } from '../agicash-db/supabse-session-store';
+import { supabaseSessionStore } from '../agicash-db/supabase-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
