@@ -5,7 +5,7 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
 import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { Transaction } from '../transactions/transaction';
-import { supabaseSessionStore } from './supabse-session-store';
+import { supabaseSessionStore } from './supabase-session-store';
 
 const isLocalServer = (hostname: string) => {
   return (
@@ -218,12 +218,6 @@ export const agicashDb = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   accessToken: () => supabaseSessionStore.getState().getJwtWithRefresh(),
   db: {
     schema: 'wallet',
-  },
-  realtime: {
-    logger: (kind: unknown, msg: unknown, data: unknown) => {
-      console.log(`${kind}: ${msg}`, data);
-    },
-    worker: true,
   },
 });
 
