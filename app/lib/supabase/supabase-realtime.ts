@@ -44,6 +44,12 @@ const refreshSessionIfNeeded = async () => {
   await agicashDb.realtime.setAuth();
 };
 
+const isOnline = (): boolean =>
+  typeof navigator !== 'undefined' && navigator.onLine !== false;
+
+const isTabActive = (): boolean =>
+  typeof document !== 'undefined' && !document.hidden;
+
 const maxRetries = 3;
 
 /**
@@ -59,15 +65,19 @@ const maxRetries = 3;
  * - If the status is 'CHANNEL_ERROR' or 'TIMED_OUT':
  *   - If the tab is visible, the hook retries the subscription (up to {@link maxRetries} times). During the retries the hook status is set to 'reconnecting'. If all the
  *     retries fail, the hook status is set to 'error' and the hook throws the error which is then caught by the error boundary.
- *   - If the tab is not visible (in the background), the hook unsubscribes from the channel, which results in channel being closed and hook status being set to 'closed'.
+ *   - If the tab is not visible (in the background) or the app is offline, the hook unsubscribes from the channel, which results in channel being closed and hook status being
+ *     set to 'closed'.
  * - If the status is 'SUBSCRIBED', the hook does nothing and waits for the system postgres_changes ok message to be received (see https://github.com/supabase/realtime/issues/282
  *   for explanation and {@link setupSystemMessageListener} for implementation). Only when this message is received, the postgres_changes subscription is fully established, so
  *   the hook state is set to 'subscribed'. If the system postgres_changes ok message is received after the initial subscription, the hook calls the {@link onReconnected}
  *   callback.
  *
- * 2. The hook listens for the visibility change of the tab and resubscribes to the channel if the tab is visible and the channel is not already in 'joined' or 'joining' state.
- *    This makes sure that if the channel was closed while in background (either by our error/timeout handling or by the browser/machine), it will be reconnected when the tab
- *    is visible again.
+ * 2. The hook listens for the visibility change of the tab and resubscribes to the channel if the tab is visible, the app is online and the channel is not already in 'joined'
+ *    or 'joining' state. This makes sure that if the channel was closed while in background (either by our error/timeout handling or by the browser/machine), it will be
+ *    reconnected when the tab is visible again.
+ *
+ * 3. The hook listens for the online status of the browser and resubscribes to the channel if the app comes back online, the tab is visible and the channel is not already
+ *    in 'joined' or 'joining' state. This makes sure that if the channel was closed due to the lost network connection, it will be reconnected when the app comes back online.
  *
  * @param options - Subscription configuration.
  * @returns The status of the subscription.
@@ -174,14 +184,21 @@ export function useSupabaseRealtimeSubscription({
           status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR
             ? 'error'
             : 'timeout';
+        const tabActive = isTabActive();
+        const online = isOnline();
 
-        if (document.hidden) {
-          console.debug(`Channel ${event}, but tab is hidden. Unsubscribing.`, {
-            time: new Date().toISOString(),
-            topic,
-            status,
-            error: supabaseError,
-          });
+        if (!online || !tabActive) {
+          console.debug(
+            `Channel ${event}, but tab is not active or app is offline. Unsubscribing.`,
+            {
+              time: new Date().toISOString(),
+              topic,
+              status,
+              error: supabaseError,
+              isTabActive: tabActive,
+              isOnline: online,
+            },
+          );
           unsubscribe();
           return;
         }
@@ -220,14 +237,38 @@ export function useSupabaseRealtimeSubscription({
   );
 
   const handleVisibilityChangeRef = useLatest(() => {
-    if (!document.hidden) {
-      console.debug('Tab is visible again', {
+    if (isTabActive()) {
+      const online = isOnline();
+
+      console.debug('Tab is active again', {
         time: new Date().toISOString(),
         status: state.status,
         topic: channelRef.current?.topic,
         channelState: channelRef.current?.state,
+        isOnline: online,
       });
 
+      const isJoinedOrJoining =
+        channelRef.current?.state === 'joined' ||
+        channelRef.current?.state === 'joining';
+
+      if (online && !isJoinedOrJoining) {
+        resubscribe();
+      }
+    }
+  });
+
+  const handleOnlineRef = useLatest(() => {
+    const tabActive = isTabActive();
+    console.debug('App is online again', {
+      time: new Date().toISOString(),
+      status: state.status,
+      topic: channelRef.current?.topic,
+      channelState: channelRef.current?.state,
+      isTabActive: tabActive,
+    });
+
+    if (tabActive) {
       const isJoinedOrJoining =
         channelRef.current?.state === 'joined' ||
         channelRef.current?.state === 'joining';
@@ -239,15 +280,16 @@ export function useSupabaseRealtimeSubscription({
   });
 
   useEffect(() => {
-    document.addEventListener('visibilitychange', () =>
-      handleVisibilityChangeRef.current(),
-    );
+    const handleVisibility = () => handleVisibilityChangeRef.current();
+    const handleOnline = () => handleOnlineRef.current();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', handleOnline);
     subscribe();
 
     return () => {
-      document.removeEventListener('visibilitychange', () =>
-        handleVisibilityChangeRef.current(),
-      );
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', handleOnline);
       unsubscribe();
     };
   }, [subscribe, unsubscribe]);
