@@ -7,15 +7,6 @@ import { agicashDb } from 'app/features/agicash-db/database';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLatest } from '../use-latest';
 
-/**
- * Subscribes to a Supabase Realtime channel when the component mounts and unsubscribes when the component unmounts.
- * Manages channel reconnection in case of errors and timeouts.
- * @param channelFactory - A function that returns the Supabase Realtime channel to subscribe to.
- * Note that the factory is called only when the component mounts so any changes to the function after the component mounts will not be reflected in the subscription.
- * If you have a callback for the channel that needs to be updated, you can use the `useLatest` hook to create a stable reference to the callback.
- * @returns The status of the subscription.
- */
-
 interface Options {
   /**
    *  A function that returns the Supabase Realtime channel to subscribe to.
@@ -25,10 +16,6 @@ interface Options {
    * A callback that is called when the channel is reconnected. Use if you need to refresh the data to catch up with the latest changes.
    */
   onReconnected?: () => void;
-  /**
-   * The timeout in seconds after which the channel is unsubscribed if the browser tab is inactive (in background).
-   */
-  inactiveTabTimeoutSeconds?: number;
 }
 
 /**
@@ -48,7 +35,12 @@ type SubscriptionState =
       error: Error;
     };
 
+/**
+ * Refreshes the realtime client access token if it has expired.
+ */
 const refreshSessionIfNeeded = async () => {
+  // setAuth calls accessToken method on the Supabase client which fetches the existing token if still valid or fetches a new one if expired.
+  // It then sees if the token returned from accessToken method has changed if yes, it updates the realtime access token.
   await agicashDb.realtime.setAuth();
 };
 
@@ -56,29 +48,42 @@ const maxRetries = 3;
 
 /**
  * Subscribes to a Supabase Realtime channel when the component mounts and unsubscribes when the component unmounts.
- * Manages channel reconnection in case of errors and timeouts. The error is thrown if the subscription reconnection fails after the maximum number of retries.
- * @param options - Subcription configuration.
+ * Manages channel reconnection in case of errors and timeouts which can be caused by the tab going to the background, network connection issues, phone pausing the
+ * execution of the app when in background, etc.
+ *
+ * @description
+ * Hook's lifecycle starts in the 'subscribing' status and subscription is triggered on mount. When the hook is unmounted, the subscription is unsubscribed.
+ *
+ * 1. The hook listens to the changes of the channel status and acts accordingly:
+ * - If the status is 'CLOSED', the hook unsubscribes from the channel.
+ * - If the status is 'CHANNEL_ERROR' or 'TIMED_OUT':
+ *   - If the tab is visible, the hook retries the subscription (up to {@link maxRetries} times). During the retries the hook status is set to 'reconnecting'. If all the
+ *     retries fail, the hook status is set to 'error' and the hook throws the error which is then caught by the error boundary.
+ *   - If the tab is not visible (in the background), the hook unsubscribes from the channel, which results in channel being closed and hook status being set to 'closed'.
+ * - If the status is 'SUBSCRIBED', the hook does nothing and waits for the system postgres_changes ok message to be received (see https://github.com/supabase/realtime/issues/282
+ *   for explanation and {@link setupSystemMessageListener} for implementation). Only when this message is received, the postgres_changes subscription is fully established, so
+ *   the hook state is set to 'subscribed'. If the system postgres_changes ok message is received after the initial subscription, the hook calls the {@link onReconnected}
+ *   callback.
+ *
+ * 2. The hook listens for the visibility change of the tab and resubscribes to the channel if the tab is visible and the channel is not already in 'joined' or 'joining' state.
+ *    This makes sure that if the channel was closed while in background (either by our error/timeout handling or by the browser/machine), it will be reconnected when the tab
+ *    is visible again.
+ *
+ * @param options - Subscription configuration.
  * @returns The status of the subscription.
+ * @throws {Error} If the subscription errors while the app is in the foreground and all the retries fail.
  */
 export function useSupabaseRealtimeSubscription({
   channelFactory,
   onReconnected,
-  inactiveTabTimeoutSeconds = 60 * 10,
 }: Options) {
   const [state, setState] = useState<SubscriptionState>({
     status: 'subscribing',
   });
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const inactiveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const onReconnectedRef = useLatest(onReconnected);
   const channelFactoryRef = useLatest(channelFactory);
   const retryCountRef = useRef(0);
-
-  const createChannel = useCallback(() => {
-    const channel = channelFactoryRef.current();
-    channelRef.current = channel;
-    return channel;
-  }, []);
 
   /**
    * Listens for the system postgres_changes ok message and sets the subscription state to 'subscribed' when it is received.
@@ -95,6 +100,10 @@ export function useSupabaseRealtimeSubscription({
         setState((curr) => {
           if (curr.status !== 'subscribing') {
             onReconnectedRef.current?.();
+            console.debug('Channel reconnected', {
+              time: new Date().toISOString(),
+              topic: channel.topic,
+            });
           }
           return { status: 'subscribed' };
         });
@@ -105,7 +114,9 @@ export function useSupabaseRealtimeSubscription({
 
   const subscribe = useCallback(async () => {
     await refreshSessionIfNeeded();
-    const channel = createChannel();
+
+    const channel = channelFactoryRef.current();
+    channelRef.current = channel;
 
     console.debug('Realtime channel subscribe called', {
       time: new Date().toISOString(),
@@ -117,7 +128,7 @@ export function useSupabaseRealtimeSubscription({
     channel.subscribe((status, err) =>
       handleSubscriptionState(channel, status, err),
     );
-  }, [createChannel, setupSystemMessageListener]);
+  }, [setupSystemMessageListener]);
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {
@@ -209,40 +220,19 @@ export function useSupabaseRealtimeSubscription({
   );
 
   const handleVisibilityChangeRef = useLatest(() => {
-    if (document.hidden) {
-      if (!inactiveTimerRef.current) {
-        console.debug('Tab went to background. Starting inactivity timer', {
-          time: new Date().toISOString(),
-          topic: channelRef.current?.topic,
-          inactiveTabTimeoutSeconds,
-          status: state.status,
-        });
-
-        inactiveTimerRef.current = setTimeout(() => {
-          console.debug(
-            `Tab inactive for ${inactiveTabTimeoutSeconds} seconds. Unsubscribing.`,
-            {
-              time: new Date().toISOString(),
-              topic: channelRef.current?.topic,
-              status: state.status,
-            },
-          );
-          unsubscribe();
-        }, inactiveTabTimeoutSeconds * 1000);
-      }
-    } else {
+    if (!document.hidden) {
       console.debug('Tab is visible again', {
         time: new Date().toISOString(),
-        topic: channelRef.current?.topic,
         status: state.status,
+        topic: channelRef.current?.topic,
+        channelState: channelRef.current?.state,
       });
 
-      if (inactiveTimerRef.current) {
-        clearTimeout(inactiveTimerRef.current);
-        inactiveTimerRef.current = null;
-      }
+      const isJoinedOrJoining =
+        channelRef.current?.state === 'joined' ||
+        channelRef.current?.state === 'joining';
 
-      if (state.status !== 'subscribed') {
+      if (!isJoinedOrJoining) {
         resubscribe();
       }
     }
@@ -258,9 +248,6 @@ export function useSupabaseRealtimeSubscription({
       document.removeEventListener('visibilitychange', () =>
         handleVisibilityChangeRef.current(),
       );
-      if (inactiveTimerRef.current) {
-        clearTimeout(inactiveTimerRef.current);
-      }
       unsubscribe();
     };
   }, [subscribe, unsubscribe]);
