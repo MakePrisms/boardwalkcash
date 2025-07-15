@@ -83,6 +83,9 @@ const Wallet = ({ children }: PropsWithChildren) => {
   const unresolvedCashuSendSwapsSubscription =
     useTrackUnresolvedCashuSendSwaps();
 
+  // Makes sure that the encryption key is pulled from the server
+  useEncryptionKey();
+
   if (
     accountsSubscription === 'subscribing' ||
     pendingCashuReceiveQuotesSubscription === 'subscribing' ||
@@ -111,9 +114,6 @@ const useSetupWallet = (authUser: AuthUser) => {
 
   const user = useUpsertAgicashUser(authUser);
   const setupCompleted = user !== null;
-
-  // Makes sure that the encryption key is pulled from the server
-  useEncryptionKey();
 
   return setupCompleted;
 };
