@@ -297,6 +297,7 @@ const mintsToExcludeFromWebSockets = [
   // The reason that we need to exlude cubabitcoin is that there was a bug which would not update the invoice state unless a GET request
   // is made to check the quote status. We can remove this when cubabitcoin is updated to nutshell > 0.17.1 - https://github.com/cashubtc/nutshell/releases/tag/0.17.1
   'https://mint.cubabitcoin.org',
+  'https://mint.lnvoltz.com', // for some reason we can't open a socket to lnvoltz
 ];
 
 const checkIfMintSupportsWebSocketsForMintQuotes = (
