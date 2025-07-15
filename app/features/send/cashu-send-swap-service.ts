@@ -378,15 +378,15 @@ export class CashuSendSwapService {
       wallet.getFeesEstimateToReceiveAtLeast(amountToSend);
 
     if (proofAmountSelected < amountToSend) {
-      const estimatedFee = new Money({
-        amount: estimatedFeeToReceive,
+      const totalAmount = new Money({
+        amount: requestedAmountNumber + estimatedFeeToReceive,
         currency: currency,
         unit: cashuUnit,
       });
       const unit = getDefaultUnit(currency);
 
       throw new DomainError(
-        `Insufficient balance. Estimated fee to send ${requestedAmount.toLocaleString({ unit })} is ${estimatedFee.toLocaleString({ unit })}.`,
+        `Insufficient balance. Total amount including fees is ${totalAmount.toLocaleString({ unit })}.`,
       );
     }
 
@@ -404,15 +404,15 @@ export class CashuSendSwapService {
       proofAmountSelected <
       requestedAmountNumber + sendSwapFee + receiveSwapFee
     ) {
-      const estimatedFee = new Money({
-        amount: sendSwapFee + receiveSwapFee,
+      const totalAmount = new Money({
+        amount: requestedAmountNumber + sendSwapFee + receiveSwapFee,
         currency: currency,
         unit: cashuUnit,
       });
       const unit = getDefaultUnit(currency);
 
       throw new DomainError(
-        `Insufficient balance. Estimated fee to send ${requestedAmount.toLocaleString({ unit })} is ${estimatedFee.toLocaleString({ unit })}.`,
+        `Insufficient balance. Total amount including fees is ${totalAmount.toLocaleString({ unit })}.`,
       );
     }
 

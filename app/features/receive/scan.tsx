@@ -9,10 +9,12 @@ import { QRScanner } from '~/components/qr-scanner';
 import { useToast } from '~/hooks/use-toast';
 import { extractCashuToken } from '~/lib/cashu';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
+import { useReceiveStore } from './receive-provider';
 
 export default function Scan() {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
+  const receiveAccountId = useReceiveStore((s) => s.accountId);
 
   return (
     <>
@@ -37,10 +39,13 @@ export default function Scan() {
               return;
             }
 
-            navigate(`/receive/cashu/token#${getEncodedToken(token)}`, {
-              transition: 'slideLeft',
-              applyTo: 'newView',
-            });
+            navigate(
+              `/receive/cashu/token?selectedAccountId=${receiveAccountId}#${getEncodedToken(token)}`,
+              {
+                transition: 'slideLeft',
+                applyTo: 'newView',
+              },
+            );
           }}
         />
       </PageContent>
