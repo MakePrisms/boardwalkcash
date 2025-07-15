@@ -37,6 +37,8 @@ import { SuccessfulReceivePage } from './successful-receive-page';
 type Props = {
   token: Token;
   autoClaimToken: boolean;
+  /** The initially selected receive account will be set to this account if it exists.*/
+  preferredReceiveAccountId?: string;
 };
 
 /**
@@ -82,7 +84,11 @@ function TokenErrorDisplay({
   );
 }
 
-export default function ReceiveToken({ token, autoClaimToken }: Props) {
+export default function ReceiveToken({
+  token,
+  autoClaimToken,
+  preferredReceiveAccountId,
+}: Props) {
   const { toast } = useToast();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
@@ -98,7 +104,7 @@ export default function ReceiveToken({ token, autoClaimToken }: Props) {
     sourceAccount,
     setReceiveAccount,
     addAndSetReceiveAccount,
-  } = useReceiveCashuTokenAccounts(token);
+  } = useReceiveCashuTokenAccounts(token, preferredReceiveAccountId);
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
