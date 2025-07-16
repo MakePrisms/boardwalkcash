@@ -2,7 +2,7 @@ import { type Token, getEncodedToken } from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -19,6 +19,7 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
+import { useCashuAuthStore } from '../shared/cashu-auth';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useAuthActions } from '../user/auth';
@@ -39,6 +40,12 @@ type Props = {
   autoClaimToken: boolean;
   /** The initially selected receive account will be set to this account if it exists.*/
   preferredReceiveAccountId?: string;
+  /**
+   * Id of the account to claim the token to. If not provided and
+   * autoClaimToken is true, the source account will be used to claim the token.
+   * Otherwise the user's default account will be used.
+   */
+  selectedAccountId?: string;
 };
 
 /**
@@ -88,12 +95,16 @@ export default function ReceiveToken({
   token,
   autoClaimToken,
   preferredReceiveAccountId,
+  selectedAccountId,
 }: Props) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
-  const { claimableToken, cannotClaimReason } =
+  const { setPendingAuthRequest } = useCashuAuthStore();
+  const { claimableToken, cannotClaimReason, canSwap, canMelt } =
     useCashuTokenWithClaimableProofs({
       token,
     });
@@ -127,10 +138,57 @@ export default function ReceiveToken({
         token: Token;
         isAutoClaim: boolean;
       }) => {
-        const preferredAccount =
-          isAutoClaim && sourceAccount?.selectable
-            ? sourceAccount
-            : receiveAccount;
+        // Determine which account to use for claiming the token
+        let preferredAccount = receiveAccount;
+
+        if (selectedAccountId) {
+          // Use the specified account ID if provided
+          const specifiedAccount = selectableAccounts.find(
+            (account) => account.id === selectedAccountId,
+          );
+          preferredAccount = specifiedAccount ?? preferredAccount;
+        } else if (isAutoClaim && sourceAccount?.selectable) {
+          // For auto-claim, prefer the source account if it's selectable
+          preferredAccount = sourceAccount;
+        }
+
+        // User is trying to swap this token and auth is required to do so
+        if (!canSwap && preferredAccount.id === sourceAccount?.id) {
+          // Set query params for when we get redirected after authentication
+          navigate(
+            {
+              ...location,
+              search: `autoClaim=true&selectedAccountId=${selectedAccountId}`,
+            },
+            { replace: true }, // but don't reload the page
+          );
+
+          // then prompt the user to authenticate
+          setPendingAuthRequest({
+            mintUrl: token.mint,
+            message: 'Authentication is required to claim to this same mint.',
+          });
+          return;
+        }
+
+        // User is trying to melt this token and auth is required to do so
+        if (!canMelt && preferredAccount.id !== sourceAccount?.id) {
+          // Set query params for when we get redirected after authentication
+          navigate(
+            {
+              ...location,
+              search: `autoClaim=true&selectedAccountId=${selectedAccountId}`,
+            },
+            { replace: true }, // but don't reload the page
+          );
+
+          // then prompt the user to authenticate
+          setPendingAuthRequest({
+            mintUrl: token.mint,
+            message: 'Authentication is required to claim to a different mint.',
+          });
+          return;
+        }
 
         // Use the preferred account if it exists, otherwise create it
         let account = preferredAccount;
@@ -142,9 +200,17 @@ export default function ReceiveToken({
 
         return { account, isAutoClaim };
       },
-      onSuccess: async ({ account, isAutoClaim }) => {
+      onSuccess: async (result) => {
+        if (!result) return; // Auth was required, no claiming happened
+
+        const { account, isAutoClaim } = result;
         // Only set defaults for auto claim and if the account is different from current default
-        if (isAutoClaim && account.id !== defaultAccount.id) {
+        if (
+          // TODO: double check this logic, will it add account even if it already exists?
+          isAutoClaim &&
+          account.id !== defaultAccount.id &&
+          selectedAccountId === undefined
+        ) {
           try {
             await setDefaultAccount(account);
             await setDefaultCurrency(account.currency);
