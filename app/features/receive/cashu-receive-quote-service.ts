@@ -211,10 +211,14 @@ export class CashuReceiveQuoteService {
       throw new Error('Quote does not belong to account');
     }
 
-    if (quote.state === 'EXPIRED' || quote.state === 'COMPLETED') {
+    if (quote.state === 'EXPIRED' || quote.state === 'FAILED') {
       throw new Error(
-        'Cannot complete quote that is expired or already completed',
+        `Cannot complete quote that is expired or failed. State: ${quote.state}`,
       );
+    }
+
+    if (quote.state === 'COMPLETED') {
+      return;
     }
 
     const seed = await this.cryptography.getSeed();
@@ -239,8 +243,11 @@ export class CashuReceiveQuoteService {
       keys,
     );
 
-    const { updatedQuote, updatedAccount } =
-      await this.cashuReceiveQuoteRepository.processPayment({
+    let currentAccount: CashuAccount = account;
+    let currentQuote: CashuReceiveQuote = quote;
+
+    if (quote.state === 'UNPAID') {
+      const result = await this.cashuReceiveQuoteRepository.processPayment({
         quoteId: quote.id,
         quoteVersion: quote.version,
         keysetId: wallet.keysetId,
@@ -249,18 +256,23 @@ export class CashuReceiveQuoteService {
         accountVersion: account.version,
       });
 
+      currentAccount = result.updatedAccount;
+      currentQuote = result.updatedQuote;
+    }
+
     const mintedProofs = await this.mintProofs(
       wallet,
-      updatedQuote,
+      currentQuote,
       outputData,
     );
-    const allProofs = [...updatedAccount.proofs, ...mintedProofs];
+
+    const allProofs = [...currentAccount.proofs, ...mintedProofs];
 
     await this.cashuReceiveQuoteRepository.completeReceive({
-      quoteId: quote.id,
-      quoteVersion: updatedQuote.version,
+      quoteId: currentQuote.id,
+      quoteVersion: currentQuote.version,
       proofs: allProofs,
-      accountVersion: updatedAccount.version,
+      accountVersion: currentAccount.version,
     });
   }
 

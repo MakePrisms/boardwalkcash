@@ -149,30 +149,6 @@ export function useCreateCashuSendSwap({
   });
 }
 
-function useSwapForProofsToSend() {
-  const cashuSendSwapService = useCashuSendSwapService();
-  const getLatestCashuAccount = useGetLatestCashuAccount();
-
-  return useMutation({
-    mutationKey: ['send-swap-for-proofs-to-send'],
-    scope: {
-      id: 'send-swap-for-proofs-to-send',
-    },
-    mutationFn: async ({
-      swap,
-    }: {
-      swap: CashuSendSwap;
-    }) => {
-      const account = await getLatestCashuAccount(swap.accountId);
-      await cashuSendSwapService.swapForProofsToSend({
-        swap,
-        account,
-      });
-    },
-    retry: 1,
-  });
-}
-
 function useOnCashuSendSwapChange({
   onCreated,
   onUpdated,
@@ -416,22 +392,69 @@ export function useTrackUnresolvedCashuSendSwaps() {
 
 export function useProcessCashuSendSwapTasks() {
   const { draft, pending } = useUnresolvedCashuSendSwaps();
-  const { mutate: swapForProofsToSend } = useSwapForProofsToSend();
   const cashuSendSwapService = useCashuSendSwapService();
+  const getLatestCashuAccount = useGetLatestCashuAccount();
+
+  const { mutate: swapForProofsToSend } = useMutation({
+    mutationFn: async (swapId: string) => {
+      const swap = draft.find((s) => s.id === swapId);
+      if (!swap) {
+        // This means that the swap is not in draft anymore so it was removed from the draft cache.
+        // This can happen if the swap is now pending or it was completed, reversed or failed in the meantime.
+        return;
+      }
+
+      const account = await getLatestCashuAccount(swap.accountId);
+      await cashuSendSwapService.swapForProofsToSend({
+        swap,
+        account,
+      });
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, swapId) => {
+      console.error('Error swapping for proofs to send', {
+        cause: error,
+        swapId,
+      });
+    },
+  });
+
+  const { mutate: completeSwap } = useMutation({
+    mutationFn: async (swapId: string) => {
+      const swap = pending.find((s) => s.id === swapId);
+      if (!swap) {
+        // This means that the swap is not pending anymore so it was removed from the pending cache.
+        // This can happen if the swap was completed, reversed or failed in the meantime.
+        return;
+      }
+
+      await cashuSendSwapService.complete(swap);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, swapId) => {
+      console.error('Error completing send swap', {
+        cause: error,
+        swapId,
+      });
+    },
+  });
 
   useOnProofStateChange({
     swaps: pending,
-    onSpent: (swap) => cashuSendSwapService.complete(swap),
+    onSpent: (swap) => completeSwap(swap.id),
   });
 
   useQueries({
     queries: draft.map((swap) => ({
-      // TODO: do this better so that the mutations handles the retries
-      queryKey: ['send-swap-for-proofs-to-send-query', swap.id],
+      queryKey: ['trigger-send-swap', swap.id],
       queryFn: async () => {
-        swapForProofsToSend({ swap });
+        swapForProofsToSend(swap.id);
         return true;
       },
+      gcTime: 0,
+      staleTime: Number.POSITIVE_INFINITY,
       retry: 0,
     })),
   });
