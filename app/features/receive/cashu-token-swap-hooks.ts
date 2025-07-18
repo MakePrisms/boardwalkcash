@@ -169,27 +169,6 @@ export function useTokenSwap({
   };
 }
 
-function useCompleteCashuTokenSwap() {
-  const tokenSwapService = useCashuTokenSwapService();
-  const getLatestAccount = useGetLatestCashuAccount();
-
-  return useMutation({
-    mutationKey: ['complete-cashu-token-swap'],
-    scope: {
-      id: 'complete-cashu-token-swap',
-    },
-    mutationFn: async (swap: CashuTokenSwap) => {
-      try {
-        const account = await getLatestAccount(swap.accountId);
-        await tokenSwapService.completeSwap(account, swap);
-      } catch (error) {
-        console.error('Error finalizing token swap', error);
-        throw error;
-      }
-    },
-  });
-}
-
 function useOnCashuTokenSwapChange({
   onCreated,
   onUpdated,
@@ -282,19 +261,40 @@ export function useTrackPendingCashuTokenSwaps() {
 
 export function useProcessCashuTokenSwapTasks() {
   const pendingSwaps = usePendingCashuTokenSwaps();
-  const { mutateAsync: completeSwap } = useCompleteCashuTokenSwap();
+  const tokenSwapService = useCashuTokenSwapService();
+  const getLatestAccount = useGetLatestCashuAccount();
+
+  const { mutate: completeSwap } = useMutation({
+    mutationFn: async (tokenHash: string) => {
+      const swap = pendingSwaps.find((s) => s.tokenHash === tokenHash);
+      if (!swap) {
+        // This means that the swap is not pending anymore so it was removed from the cache.
+        // This can happen if the swap was completed or failed in the meantime.
+        return;
+      }
+
+      const account = await getLatestAccount(swap.accountId);
+      await tokenSwapService.completeSwap(account, swap);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, swap) => {
+      console.error('Error finalizing token swap', {
+        cause: error,
+        swap,
+      });
+    },
+  });
 
   useQueries({
     queries: pendingSwaps.map((swap) => ({
       queryKey: ['complete-cashu-token-swap', swap.tokenHash],
-      queryFn: async () => {
-        await completeSwap(swap);
+      queryFn: () => {
+        completeSwap(swap.tokenHash);
         return true;
       },
-      refetchInterval: 10_000,
-      refetchIntervalInBackground: true,
       gcTime: 0,
-      staleTime: 0,
+      staleTime: Number.POSITIVE_INFINITY,
       retry: 0,
     })),
   });
