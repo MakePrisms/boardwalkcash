@@ -94,6 +94,10 @@ export class CashuTokenSwapService {
   }
 
   async completeSwap(account: CashuAccount, tokenSwap: CashuTokenSwap) {
+    if (tokenSwap.state === 'COMPLETED') {
+      return;
+    }
+
     if (tokenSwap.state !== 'PENDING') {
       throw new Error('Token swap is not pending');
     }
