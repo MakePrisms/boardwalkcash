@@ -3,18 +3,27 @@
  * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx react-router reveal` ✨
  * For more information, see https://reactrouter.com/explanation/special-files#entryservertsx
  */
-
+import './instrument.server.mjs';
 import { PassThrough } from 'node:stream';
-
 import { createReadableStreamFromReadable } from '@react-router/node';
+import { vercelWaitUntil } from '@sentry/core';
+import * as Sentry from '@sentry/react-router';
+import {
+  getMetaTagTransformer,
+  wrapSentryHandleRequest,
+} from '@sentry/react-router';
 import { isbot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import { ServerRouter } from 'react-router';
-import type { AppLoadContext, EntryContext } from 'react-router';
+import type {
+  AppLoadContext,
+  EntryContext,
+  HandleErrorFunction,
+} from 'react-router';
 
 export const streamTimeout = 5_000;
 
-export default function handleRequest(
+function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
@@ -38,6 +47,8 @@ export default function handleRequest(
         reactRouterContext,
       );
 }
+
+export default wrapSentryHandleRequest(handleRequest);
 
 function handleBotRequest(
   request: Request,
@@ -64,7 +75,7 @@ function handleBotRequest(
             }),
           );
 
-          pipe(body);
+          pipe(getMetaTagTransformer(body));
         },
         onShellError(error: unknown) {
           reject(error);
@@ -136,3 +147,27 @@ function handleBrowserRequest(
     setTimeout(abort, streamTimeout + 1000);
   });
 }
+
+/**
+ * Flushes pending Sentry events with a 2 second timeout and in a way that cannot create unhandled promise rejections.
+ */
+async function flushSafelyWithTimeout(): Promise<void> {
+  try {
+    await Sentry.flush(2000);
+  } catch (error) {
+    console.error('Error while flushing events to Sentry', {
+      cause: error,
+    });
+  }
+}
+
+export const handleError: HandleErrorFunction = async (error, { request }) => {
+  // React Router may abort some interrupted requests, don't log those
+  if (!request.signal.aborted) {
+    Sentry.captureException(error);
+
+    console.error(error);
+
+    vercelWaitUntil(flushSafelyWithTimeout());
+  }
+};

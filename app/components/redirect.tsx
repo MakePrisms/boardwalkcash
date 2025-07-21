@@ -21,6 +21,7 @@ export const Redirect = ({
 }: Props) => {
   const navigate = useNavigate();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we only want to run this once no matter if props change
   useEffectNoStrictMode(() => {
     logMessage && console.debug(logMessage);
     navigate(to, options);

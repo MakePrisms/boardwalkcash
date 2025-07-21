@@ -1,4 +1,5 @@
 import { useOpenSecret } from '@opensecret/react';
+import * as Sentry from '@sentry/react-router';
 import { type PropsWithChildren, Suspense, useEffect } from 'react';
 import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
@@ -57,10 +58,23 @@ const useUpsertAgicashUser = (authUser: AuthUser) => {
 
 const Wallet = ({ children }: PropsWithChildren) => {
   const { toast } = useToast();
-  const isGuestAccount = useUser((user) => user.isGuest);
+  const user = useUser();
+
+  useEffect(() => {
+    Sentry.setUser({
+      id: user.id,
+      username: user.username,
+      isGuest: user.isGuest,
+      defaultCurrency: user.defaultCurrency,
+    });
+
+    return () => {
+      Sentry.setUser(null);
+    };
+  }, [user]);
 
   useHandleSessionExpiry({
-    isGuestAccount,
+    isGuestAccount: user.isGuest,
     onLogout: () => {
       toast({
         title: 'Session expired',
