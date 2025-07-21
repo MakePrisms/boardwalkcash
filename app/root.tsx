@@ -1,4 +1,5 @@
 import { OpenSecretProvider } from '@opensecret/react';
+import * as Sentry from '@sentry/react-router';
 import {
   HydrationBoundary,
   QueryClient,
@@ -205,6 +206,7 @@ const useErrorDetails = (error: unknown) => {
           Reload Page
         </Button>
       ),
+      shouldReport: true,
     };
   }
 
@@ -215,6 +217,7 @@ const useErrorDetails = (error: unknown) => {
         Reload Page
       </Button>
     ),
+    shouldReport: true,
   };
 };
 
@@ -222,6 +225,14 @@ export function ErrorBoundary() {
   const error = useRouteError();
 
   const errorDetails = useErrorDetails(error);
+
+  if (errorDetails.shouldReport) {
+    console.log('is on browser: ', typeof window !== 'undefined');
+    console.log('is sentry enabled: ', Sentry.isEnabled());
+    debugger;
+    // TODO: will this report same error multiple times if render is called multiple times?
+    Sentry.captureException(error);
+  }
 
   return (
     <Card className="m-4">

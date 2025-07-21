@@ -1,3 +1,4 @@
+import './instrument.server';
 import * as fs from 'node:fs';
 import * as https from 'node:https';
 import * as os from 'node:os';
