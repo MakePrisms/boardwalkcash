@@ -1,0 +1,471 @@
+[32mBundled 1250 modules in 193ms[0m
+
+  [34mserver.js[33m               1.48 MB    [2m(entry point)[0m
+  [35mfsevents-hj42pnne.node[0m  163.63 KB  [2m(asset)[0m
+
+!!!SENTRY_AUTH_TOKEN:  undefined
+!!!SENTRY_AUTH_TOKEN:  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
+[sentry-vite-plugin] Info: Sending telemetry data on issues and performance to Sentry. To disable telemetry, set `options.telemetry` to `false`.
+!!!SENTRY_AUTH_TOKEN:  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
+!!!SENTRY_AUTH_TOKEN:  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
+[sentry-vite-plugin] Info: Sending telemetry data on issues and performance to Sentry. To disable telemetry, set `options.telemetry` to `false`.
+vite v6.3.5 building for production...
+[sentry-vite-plugin] Info: Sending telemetry data on issues and performance to Sentry. To disable telemetry, set `options.telemetry` to `false`.
+transforming...
+✓ 2497 modules transformed.
+rendering chunks...
+computing gzip size...
+build/client/assets/icon-192x192-iGXEzLn0.png                                 7.70 kB
+build/client/.vite/manifest.json                                             73.22 kB │ gzip:   6.25 kB
+build/client/assets/full_logo-ytZBt-D0.png                                  145.71 kB
+build/client/assets/qr-scanner-BjED_KN6.css                                   0.37 kB │ gzip:   0.22 kB
+build/client/assets/transitions-BBe9_4si.css                                  0.94 kB │ gzip:   0.23 kB
+build/client/assets/tailwind-VfP7cHbJ.css                                    35.11 kB │ gzip:   7.22 kB
+build/client/assets/full_logo-D5rjIGCS.js                                     0.10 kB │ gzip:   0.12 kB │ map:     0.20 kB
+build/client/assets/api.example-BZsODlau.js                                   0.11 kB │ gzip:   0.13 kB │ map:     0.10 kB
+build/client/assets/manifest_._webmanifest-BZsODlau.js                        0.12 kB │ gzip:   0.14 kB │ map:     0.12 kB
+build/client/assets/api.lnurlp.callback._userId-BZsODlau.js                   0.13 kB │ gzip:   0.14 kB │ map:     0.12 kB
+build/client/assets/_._well-known.lnurlp._username-BZsODlau.js                0.13 kB │ gzip:   0.14 kB │ map:     0.12 kB
+build/client/assets/useQuery-CmSEOfdV.js                                      0.14 kB │ gzip:   0.15 kB │ map:     0.65 kB
+build/client/assets/currencies-CCy7nZoP.js                                    0.17 kB │ gzip:   0.17 kB │ map:     0.55 kB
+build/client/assets/index-C7DNGat3.js                                         0.20 kB │ gzip:   0.19 kB │ map:     1.03 kB
+build/client/assets/_public-S-hNdZce.js                                       0.23 kB │ gzip:   0.22 kB │ map:     0.35 kB
+build/client/assets/use-effect-no-strict-mode-C_c2yNy_.js                     0.24 kB │ gzip:   0.23 kB │ map:     1.55 kB
+build/client/assets/validation-CFIMzHvN.js                                    0.25 kB │ gzip:   0.23 kB │ map:     0.76 kB
+build/client/assets/api.lnurlp.verify._cashuReceiveQuoteId-DNckSE6H.js        0.26 kB │ gzip:   0.22 kB │ map:     0.13 kB
+build/client/assets/example-B6Y2fDB5.js                                       0.28 kB │ gzip:   0.25 kB │ map:     0.46 kB
+build/client/assets/share-BvJfjMAH.js                                         0.30 kB │ gzip:   0.25 kB │ map:     0.88 kB
+build/client/assets/index-D8UCEVFt.js                                         0.31 kB │ gzip:   0.28 kB │ map:     1.58 kB
+build/client/assets/index-BBpj79Vz.js                                         0.33 kB │ gzip:   0.27 kB │ map:     1.37 kB
+build/client/assets/check-BWqsn8gC.js                                         0.34 kB │ gzip:   0.28 kB │ map:     0.74 kB
+build/client/assets/settings-view-header-BUf8TNhK.js                          0.35 kB │ gzip:   0.28 kB │ map:     0.94 kB
+build/client/assets/circle-CEiPWMvs.js                                        0.35 kB │ gzip:   0.28 kB │ map:     0.78 kB
+build/client/assets/use-location-g4O8eYU7.js                                  0.35 kB │ gzip:   0.28 kB │ map:     0.81 kB
+build/client/assets/redirect-DXntvtb5.js                                      0.35 kB │ gzip:   0.29 kB │ map:     1.21 kB
+build/client/assets/chevron-up-Bh3FlnNJ.js                                    0.36 kB │ gzip:   0.29 kB │ map:     0.77 kB
+build/client/assets/chevron-down-DsaiABVx.js                                  0.36 kB │ gzip:   0.29 kB │ map:     0.79 kB
+build/client/assets/plus-CW6s8mTD.js                                          0.38 kB │ gzip:   0.29 kB │ map:     0.83 kB
+build/client/assets/use-animation-SehpgKKK.js                                 0.38 kB │ gzip:   0.31 kB │ map:     1.42 kB
+build/client/assets/LoadingScreen-A78jk0QO.js                                 0.40 kB │ gzip:   0.32 kB │ map:     0.69 kB
+build/client/assets/clock-w5sR0qoP.js                                         0.40 kB │ gzip:   0.31 kB │ map:     0.89 kB
+build/client/assets/circle-check-big-BTjgTw2x.js                              0.42 kB │ gzip:   0.33 kB │ map:     0.94 kB
+build/client/assets/error-DKJBj872.js                                         0.43 kB │ gzip:   0.29 kB │ map:     1.16 kB
+build/client/assets/copy-Cau9vRLW.js                                          0.45 kB │ gzip:   0.35 kB │ map:     0.98 kB
+build/client/assets/banknote-df8aEuKe.js                                      0.47 kB │ gzip:   0.35 kB │ map:     1.09 kB
+build/client/assets/share-mloqg_lL.js                                         0.48 kB │ gzip:   0.35 kB │ map:     1.04 kB
+build/client/assets/circle-alert-DhsgFIj4.js                                  0.48 kB │ gzip:   0.33 kB │ map:     1.14 kB
+build/client/assets/zap-DO2348e3.js                                           0.48 kB │ gzip:   0.35 kB │ map:     0.90 kB
+build/client/assets/use-exchange-rate-BeDPZp9Y.js                             0.50 kB │ gzip:   0.31 kB │ map:     1.40 kB
+build/client/assets/square-pen-oWB-7CFM.js                                    0.55 kB │ gzip:   0.39 kB │ map:     1.06 kB
+build/client/assets/token-BT2KK4Z6.js                                         0.64 kB │ gzip:   0.46 kB │ map:     3.41 kB
+build/client/assets/index-BQcRAxqd.js                                         0.65 kB │ gzip:   0.41 kB │ map:     3.01 kB
+build/client/assets/receive-provider-RAq8T942.js                              0.67 kB │ gzip:   0.43 kB │ map:     3.12 kB
+build/client/assets/input-BkcANSQk.js                                         0.73 kB │ gzip:   0.46 kB │ map:     1.22 kB
+build/client/assets/_protected.receive-Bm9yGKgx.js                            0.74 kB │ gzip:   0.46 kB │ map:     0.82 kB
+build/client/assets/_auth-BmUAKPzf.js                                         0.87 kB │ gzip:   0.54 kB │ map:     1.77 kB
+build/client/assets/badge-DVWsYZuk.js                                         0.89 kB │ gzip:   0.49 kB │ map:     1.68 kB
+build/client/assets/account-icons-D4GoXdZQ.js                                 0.93 kB │ gzip:   0.55 kB │ map:     2.44 kB
+build/client/assets/_protected.settings.appearance-Dc2xv2IJ.js                1.04 kB │ gzip:   0.61 kB │ map:     1.79 kB
+build/client/assets/_protected.send-DlZpxrlm.js                               1.06 kB │ gzip:   0.58 kB │ map:     0.79 kB
+build/client/assets/card-DhaBy1kD.js                                          1.14 kB │ gzip:   0.48 kB │ map:     3.26 kB
+build/client/assets/preload-helper-CxKUxwBa.js                                1.26 kB │ gzip:   0.76 kB │ map:     0.11 kB
+build/client/assets/_protected.receive.scan-CK5rYqnK.js                       1.28 kB │ gzip:   0.75 kB │ map:     3.15 kB
+build/client/assets/_auth.oauth._provider-cZUKj6ha.js                         1.29 kB │ gzip:   0.75 kB │ map:     3.50 kB
+build/client/assets/use-toast-DU5EhhKx.js                                     1.34 kB │ gzip:   0.74 kB │ map:     6.66 kB
+build/client/assets/markdown-Dee_nIRY.js                                      1.47 kB │ gzip:   0.63 kB │ map:     4.60 kB
+build/client/assets/error-codes-BiQxDC7q.js                                   1.55 kB │ gzip:   0.63 kB │ map:     7.08 kB
+build/client/assets/successful-receive-page-HMMD6bxA.js                       1.59 kB │ gzip:   0.77 kB │ map:     3.85 kB
+build/client/assets/createLucideIcon-CQq9Z6bn.js                              1.64 kB │ gzip:   0.71 kB │ map:     4.87 kB
+build/client/assets/_protected.settings.contacts._index-7HPHc1kx.js           1.72 kB │ gzip:   0.91 kB │ map:     2.43 kB
+build/client/assets/succesful-send-page-Ca8Ku4j9.js                           1.72 kB │ gzip:   0.82 kB │ map:     4.43 kB
+build/client/assets/infiniteQueryBehavior-BAUnSRqx.js                         1.77 kB │ gzip:   0.87 kB │ map:     7.25 kB
+build/client/assets/_protected.settings.qr-BeEpBSM3.js                        1.98 kB │ gzip:   1.01 kB │ map:     4.32 kB
+build/client/assets/use-theme-22oO3v7O.js                                     2.00 kB │ gzip:   1.02 kB │ map:     9.20 kB
+build/client/assets/index-D2uc9cqw.js                                         2.04 kB │ gzip:   0.93 kB │ map:     9.69 kB
+build/client/assets/page-BTZ-QzGF.js                                          2.16 kB │ gzip:   0.91 kB │ map:     6.78 kB
+build/client/assets/index-J8ZHaqKY.js                                         2.24 kB │ gzip:   1.03 kB │ map:     9.02 kB
+build/client/assets/account-selector-5AE_xwiZ.js                              2.26 kB │ gzip:   1.06 kB │ map:     6.26 kB
+build/client/assets/_protected.send.scan-F_0rsZZV.js                          2.27 kB │ gzip:   1.16 kB │ map:     5.20 kB
+build/client/assets/_protected.receive.cashu_.token-CPWsz0pG.js               2.36 kB │ gzip:   1.15 kB │ map:     1.81 kB
+build/client/assets/_public.receive-cashu-token-CJUF8hno.js                   2.44 kB │ gzip:   1.19 kB │ map:     2.00 kB
+build/client/assets/separator-BWqAxWZc.js                                     2.54 kB │ gzip:   1.23 kB │ map:    11.72 kB
+build/client/assets/money-with-converted-amount-DqN6rqdZ.js                   2.59 kB │ gzip:   1.15 kB │ map:     9.02 kB
+build/client/assets/_protected.settings.accounts._accountId-B4n6qhud.js       2.64 kB │ gzip:   1.26 kB │ map:     5.86 kB
+build/client/assets/_protected.receive.cashu-BKZkEIF-.js                      2.80 kB │ gzip:   1.41 kB │ map:     6.52 kB
+build/client/assets/qr-code-bhqy-f8v.js                                       2.81 kB │ gzip:   1.25 kB │ map:    10.89 kB
+build/client/assets/cashu-token-swap-hooks-CFc_JJ1-.js                        2.82 kB │ gzip:   1.27 kB │ map:    13.09 kB
+build/client/assets/_protected.settings.contacts._contactId-DrT2QiCv.js       3.07 kB │ gzip:   1.53 kB │ map:     7.49 kB
+build/client/assets/index-hndJ2KNv.js                                         3.27 kB │ gzip:   1.48 kB │ map:    14.81 kB
+build/client/assets/view-transition-nCP_0R0K.js                               3.40 kB │ gzip:   1.14 kB │ map:    11.29 kB
+build/client/assets/_protected.verify-email.(_code)-Bn6h-6zJ.js               3.69 kB │ gzip:   1.68 kB │ map:    11.53 kB
+build/client/assets/_protected.send.share._swapId-KV2MNXXE.js                 3.76 kB │ gzip:   1.83 kB │ map:     8.70 kB
+build/client/assets/exchange-rate-service-Bj8c2Wtt.js                         3.77 kB │ gzip:   1.28 kB │ map:    13.16 kB
+build/client/assets/contact-avatar-B9bKYVNQ.js                                3.89 kB │ gzip:   1.69 kB │ map:    15.72 kB
+build/client/assets/_protected-iZJYxhca.js                                    3.91 kB │ gzip:   1.92 kB │ map:    15.51 kB
+build/client/assets/index-ChFp_MjE.js                                         4.05 kB │ gzip:   1.63 kB │ map:    12.93 kB
+build/client/assets/useQueries-CzAPlfte.js                                    4.07 kB │ gzip:   1.77 kB │ map:    16.43 kB
+build/client/assets/add-contact-drawer-quF4yZwc.js                            4.12 kB │ gzip:   1.66 kB │ map:    12.10 kB
+build/client/assets/_auth.login-BOOlV75L.js                                   4.14 kB │ gzip:   1.67 kB │ map:    11.87 kB
+build/client/assets/mutation-DcezxiIg.js                                      4.19 kB │ gzip:   1.53 kB │ map:    11.15 kB
+build/client/assets/_protected.receive._index-Cx4aABqU.js                     4.30 kB │ gzip:   1.92 kB │ map:    10.66 kB
+build/client/assets/button-BakazIa7.js                                        4.34 kB │ gzip:   1.99 kB │ map:    16.56 kB
+build/client/assets/_auth.forgot-password-23cfieKG.js                         4.74 kB │ gzip:   1.65 kB │ map:    13.68 kB
+build/client/assets/transaction-hooks-_OUDVEAA.js                             4.79 kB │ gzip:   2.03 kB │ map:    17.92 kB
+build/client/assets/_protected.transactions._index-a6Ta65Ve.js                4.94 kB │ gzip:   2.04 kB │ map:    12.96 kB
+build/client/assets/_auth.signup-CU8tZ94n.js                                  5.09 kB │ gzip:   1.89 kB │ map:    14.52 kB
+build/client/assets/_protected.settings.profile.edit-BoQoT8IU.js              5.46 kB │ gzip:   2.24 kB │ map:    15.13 kB
+build/client/assets/_protected.transactions._transactionId-CgMIKJ4A.js        5.47 kB │ gzip:   2.09 kB │ map:    13.89 kB
+build/client/assets/read-clipboard-irCDInME.js                                5.64 kB │ gzip:   2.31 kB │ map:    21.10 kB
+build/client/assets/send-provider-BPtZLPXu.js                                 5.74 kB │ gzip:   2.45 kB │ map:    26.90 kB
+build/client/assets/_protected.send.confirm-CCH1TPMp.js                       5.76 kB │ gzip:   2.35 kB │ map:    16.96 kB
+build/client/assets/cashu-send-swap-hooks-BYidlk1O.js                         6.50 kB │ gzip:   2.64 kB │ map:    26.83 kB
+build/client/assets/_protected.send._index-4fA2XAmL.js                        7.27 kB │ gzip:   3.13 kB │ map:    19.12 kB
+build/client/assets/account-hooks-Auut-b_U.js                                 7.58 kB │ gzip:   2.87 kB │ map:    39.37 kB
+build/client/assets/receive-cashu-token-BJTtJQgg.js                           7.95 kB │ gzip:   3.21 kB │ map:    33.85 kB
+build/client/assets/index-DdjTiHfw.js                                         9.72 kB │ gzip:   3.68 kB │ map:    36.26 kB
+build/client/assets/index-DP7RM7zy.js                                         9.75 kB │ gzip:   3.62 kB │ map:    42.13 kB
+build/client/assets/_public.privacy-Cy0q84Qq.js                              11.71 kB │ gzip:   4.45 kB │ map:    13.21 kB
+build/client/assets/_protected.settings._index-Bs4n5-wr.js                   12.13 kB │ gzip:   5.08 kB │ map:    20.57 kB
+build/client/assets/Combination-B9mWKXzd.js                                  12.76 kB │ gzip:   4.90 kB │ map:    78.86 kB
+build/client/assets/cashu-send-swap-service-C0zyoS9p.js                      14.42 kB │ gzip:   4.26 kB │ map:    56.95 kB
+build/client/assets/index-CAf-pDfe.js                                        16.73 kB │ gzip:   6.32 kB │ map:    72.73 kB
+build/client/assets/cashu-receive-quote-hooks-B6fGNRUU.js                    16.88 kB │ gzip:   5.98 kB │ map:    75.03 kB
+build/client/assets/_protected.settings.accounts._index-Db23uby6.js          17.00 kB │ gzip:   5.98 kB │ map:    72.08 kB
+build/client/assets/cashu-send-quote-hooks-CowTfG1Q.js                       17.81 kB │ gzip:   5.64 kB │ map:    75.93 kB
+build/client/assets/qr-scanner-CjNRZ6eg.js                                   18.06 kB │ gzip:   6.63 kB │ map:    38.29 kB
+build/client/assets/scroll-area-DNSRdylw.js                                  18.18 kB │ gzip:   5.98 kB │ map:    79.66 kB
+build/client/assets/utils-DicraoTD.js                                        20.83 kB │ gzip:   7.14 kB │ map:   108.68 kB
+build/client/assets/_protected._index-Bt9ZxcmB.js                            21.27 kB │ gzip:   7.39 kB │ map:    77.33 kB
+build/client/assets/floating-ui.react-dom-TJfb_BMz.js                        22.39 kB │ gzip:   8.65 kB │ map:   129.86 kB
+build/client/assets/carousel-DYaV5plR.js                                     24.26 kB │ gzip:   9.74 kB │ map:   109.91 kB
+build/client/assets/label-CyPbOnFd.js                                        25.58 kB │ gzip:   9.84 kB │ map:   153.69 kB
+build/client/assets/_public.terms-DjOj_TFT.js                                27.57 kB │ gzip:  10.39 kB │ map:    29.49 kB
+build/client/assets/debug-build-DZF3UeUh.js                                  30.38 kB │ gzip:  10.60 kB │ map:   213.62 kB
+build/client/assets/_protected.settings.accounts.create_.cashu-kOVj7Gyj.js   31.43 kB │ gzip:  11.16 kB │ map:   129.21 kB
+build/client/assets/root-CIsxv4Df.js                                         36.47 kB │ gzip:  12.49 kB │ map:   144.27 kB
+build/client/assets/drawer-kFpav-Zj.js                                       37.33 kB │ gzip:  11.69 kB │ map:   148.86 kB
+build/client/assets/qr-scanner-worker.min-D85Z9gVD.js                        44.01 kB │ gzip:  10.50 kB │ map:    45.01 kB
+build/client/assets/auth-CKVymgzu.js                                         49.02 kB │ gzip:  17.08 kB │ map:   215.59 kB
+build/client/assets/color-mode-toggle-DMpIIeY_.js                            51.25 kB │ gzip:  15.10 kB │ map:   241.92 kB
+build/client/assets/index-T9VKAeFV.js                                        64.96 kB │ gzip:  20.15 kB │ map:   244.94 kB
+build/client/assets/chunk-EF7DTUVF-3xG3n85h.js                              117.26 kB │ gzip:  39.67 kB │ map:   535.88 kB
+build/client/assets/user-hooks-BN24FDSI.js                                  124.10 kB │ gzip:  34.32 kB │ map:   526.18 kB
+build/client/assets/entry.client-CMJqpQSH.js                                228.47 kB │ gzip:  74.78 kB │ map: 1,244.03 kB
+build/client/assets/big-Dy7UT27b.js                                         253.79 kB │ gzip:  82.59 kB │ map: 1,140.06 kB
+build/client/assets/QueryClientProvider-qfXGlPd-.js                         384.28 kB │ gzip: 105.86 kB │ map: 1,062.05 kB
+✓ built in 5.02s
+!!!SENTRY_AUTH_TOKEN:  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
+!!!SENTRY_AUTH_TOKEN:  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
+[sentry-vite-plugin] Info: Sending telemetry data on issues and performance to Sentry. To disable telemetry, set `options.telemetry` to `false`.
+vite v6.3.5 building SSR bundle for production...
+[sentry-vite-plugin] Info: Sending telemetry data on issues and performance to Sentry. To disable telemetry, set `options.telemetry` to `false`.
+transforming...
+✓ 238 modules transformed.
+rendering chunks...
+build/server/.vite/manifest.json                 1.08 kB
+build/server/assets/icon-192x192-iGXEzLn0.png    7.70 kB
+build/server/assets/full_logo-ytZBt-D0.png     145.71 kB
+build/server/assets/server-build-BjED_KN6.css    0.37 kB
+build/server/assets/transitions-BBe9_4si.css     0.94 kB
+build/server/assets/tailwind-VfP7cHbJ.css       35.11 kB
+build/server/index.js                          618.75 kB │ map: 1,082.73 kB
+
+✓ 5 assets cleaned from React Router server build.
+build/client/assets/transitions-BBe9_4si.css
+build/client/assets/tailwind-VfP7cHbJ.css
+build/client/assets/full_logo-ytZBt-D0.png
+build/client/assets/icon-192x192-iGXEzLn0.png
+build/server/assets/server-build-BjED_KN6.css
+
+Prerender (data): /terms -> build/client/terms.data
+Prerender (html): /terms -> build/client/terms/index.html
+Prerender (data): /privacy -> build/client/privacy.data
+Prerender (html): /privacy -> build/client/privacy/index.html
+✓ built in 1.09s
+> Found 268 files
+> Analyzing 268 sources
+> Rewriting sources
+> Adding source map references
+> Bundled 268 files for upload
+> Bundle ID: f333160e-4538-53f5-a075-2ec8108cae12
+> Uploaded files to Sentry
+> File upload complete (processing pending on server)
+> Organization: make-prisms
+> Projects: agicash
+> Release: undefined
+> Dist: None
+> Upload type: artifact bundle
+
+Source Map Upload Report
+  Scripts
+    ~/client/assets/Combination-B9mWKXzd.js (sourcemap at Combination-B9mWKXzd.js.map, debug id a3c6c4da-06cc-5d3b-bcb6-855652b13989)
+    ~/client/assets/LoadingScreen-A78jk0QO.js (sourcemap at LoadingScreen-A78jk0QO.js.map, debug id 9d333895-20b4-57b9-b81b-58524eb722db)
+    ~/client/assets/QueryClientProvider-qfXGlPd-.js (sourcemap at QueryClientProvider-qfXGlPd-.js.map, debug id a97528a9-f612-5e3d-9eda-69591f1afad3)
+    ~/client/assets/_._well-known.lnurlp._username-BZsODlau.js (sourcemap at _._well-known.lnurlp._username-BZsODlau.js.map, debug id ea6be172-9fce-5d31-b9ff-7f56076a8048)
+    ~/client/assets/_auth-BmUAKPzf.js (sourcemap at _auth-BmUAKPzf.js.map, debug id 80e67b2f-a9d1-5e05-8cd3-b80e2556957d)
+    ~/client/assets/_auth.forgot-password-23cfieKG.js (sourcemap at _auth.forgot-password-23cfieKG.js.map, debug id 851e9b7f-d209-567e-ac8e-e38bea50ec70)
+    ~/client/assets/_auth.login-BOOlV75L.js (sourcemap at _auth.login-BOOlV75L.js.map, debug id 4294f3c4-b513-5d1e-85d7-376a873798c0)
+    ~/client/assets/_auth.oauth._provider-cZUKj6ha.js (sourcemap at _auth.oauth._provider-cZUKj6ha.js.map, debug id 8a802927-8c9c-5251-8e39-90778d382531)
+    ~/client/assets/_auth.signup-CU8tZ94n.js (sourcemap at _auth.signup-CU8tZ94n.js.map, debug id 725661e7-420f-546f-8cbf-1398fab040fe)
+    ~/client/assets/_protected-iZJYxhca.js (sourcemap at _protected-iZJYxhca.js.map, debug id 6e90dc31-9fa3-5950-a0c2-b8c8fb9e91b0)
+    ~/client/assets/_protected._index-Bt9ZxcmB.js (sourcemap at _protected._index-Bt9ZxcmB.js.map, debug id 557052fc-a1e6-5efc-9bfb-4c986a9e73f2)
+    ~/client/assets/_protected.receive-Bm9yGKgx.js (sourcemap at _protected.receive-Bm9yGKgx.js.map, debug id 18a6a087-1107-5c7f-8c1d-47fb4a7428ce)
+    ~/client/assets/_protected.receive._index-Cx4aABqU.js (sourcemap at _protected.receive._index-Cx4aABqU.js.map, debug id c0009f7c-9048-5882-8af0-f13082ce5154)
+    ~/client/assets/_protected.receive.cashu-BKZkEIF-.js (sourcemap at _protected.receive.cashu-BKZkEIF-.js.map, debug id d7f205d2-fa13-557a-be24-7a1e82358544)
+    ~/client/assets/_protected.receive.cashu_.token-CPWsz0pG.js (sourcemap at _protected.receive.cashu_.token-CPWsz0pG.js.map, debug id bfd8ce38-a2e5-5e6d-9eb7-10315aad8ca2)
+    ~/client/assets/_protected.receive.scan-CK5rYqnK.js (sourcemap at _protected.receive.scan-CK5rYqnK.js.map, debug id b5a4c063-f964-5b9e-92e8-7077e0166600)
+    ~/client/assets/_protected.send-DlZpxrlm.js (sourcemap at _protected.send-DlZpxrlm.js.map, debug id 1af35e52-a738-5868-81d8-0eefa7132c83)
+    ~/client/assets/_protected.send._index-4fA2XAmL.js (sourcemap at _protected.send._index-4fA2XAmL.js.map, debug id 3921ee94-51a7-5ca0-9be9-e8c4dcbd1dee)
+    ~/client/assets/_protected.send.confirm-CCH1TPMp.js (sourcemap at _protected.send.confirm-CCH1TPMp.js.map, debug id fa836e38-fd2b-5f19-a733-b447a406b244)
+    ~/client/assets/_protected.send.scan-F_0rsZZV.js (sourcemap at _protected.send.scan-F_0rsZZV.js.map, debug id 691079bb-2653-5c82-97f4-90169915f0a8)
+    ~/client/assets/_protected.send.share._swapId-KV2MNXXE.js (sourcemap at _protected.send.share._swapId-KV2MNXXE.js.map, debug id 1cce441d-3727-561b-9adf-28ec466c6d87)
+    ~/client/assets/_protected.settings._index-Bs4n5-wr.js (sourcemap at _protected.settings._index-Bs4n5-wr.js.map, debug id b3e5a782-defe-50a5-a4e9-dd3e7ceea460)
+    ~/client/assets/_protected.settings.accounts._accountId-B4n6qhud.js (sourcemap at _protected.settings.accounts._accountId-B4n6qhud.js.map, debug id 46db10ca-e0ee-5351-b7c1-688b02470cbf)
+    ~/client/assets/_protected.settings.accounts._index-Db23uby6.js (sourcemap at _protected.settings.accounts._index-Db23uby6.js.map, debug id 2022a555-78f3-507e-a5cb-0cc68d2caac9)
+    ~/client/assets/_protected.settings.accounts.create_.cashu-kOVj7Gyj.js (sourcemap at _protected.settings.accounts.create_.cashu-kOVj7Gyj.js.map, debug id f23f08f9-5d4e-5d47-b63e-bf71ade60f25)
+    ~/client/assets/_protected.settings.appearance-Dc2xv2IJ.js (sourcemap at _protected.settings.appearance-Dc2xv2IJ.js.map, debug id aae92cdc-ba92-5f6f-81d5-3da867c9fc67)
+    ~/client/assets/_protected.settings.contacts._contactId-DrT2QiCv.js (sourcemap at _protected.settings.contacts._contactId-DrT2QiCv.js.map, debug id b983d7e4-8471-5d46-886c-c93d176cdf8e)
+    ~/client/assets/_protected.settings.contacts._index-7HPHc1kx.js (sourcemap at _protected.settings.contacts._index-7HPHc1kx.js.map, debug id 2ed29786-453c-5719-b187-62d23da5a850)
+    ~/client/assets/_protected.settings.profile.edit-BoQoT8IU.js (sourcemap at _protected.settings.profile.edit-BoQoT8IU.js.map, debug id 24c62a44-845d-5dc2-972e-e86f1a2a0cfe)
+    ~/client/assets/_protected.settings.qr-BeEpBSM3.js (sourcemap at _protected.settings.qr-BeEpBSM3.js.map, debug id 9a71eb4b-4557-589a-b009-14f983c350b5)
+    ~/client/assets/_protected.transactions._index-a6Ta65Ve.js (sourcemap at _protected.transactions._index-a6Ta65Ve.js.map, debug id 95507954-a562-5a74-a16d-5820abc4d7a8)
+    ~/client/assets/_protected.transactions._transactionId-CgMIKJ4A.js (sourcemap at _protected.transactions._transactionId-CgMIKJ4A.js.map, debug id 928dda17-c1e3-5b05-a3cb-ce5ffd487122)
+    ~/client/assets/_protected.verify-email.(_code)-Bn6h-6zJ.js (sourcemap at _protected.verify-email.(_code)-Bn6h-6zJ.js.map, debug id 275814da-cc6c-5512-ac5a-b72c6fc38dbd)
+    ~/client/assets/_public-S-hNdZce.js (sourcemap at _public-S-hNdZce.js.map, debug id f3900fa6-b9f2-5aa7-afd1-06900ed74d58)
+    ~/client/assets/_public.privacy-Cy0q84Qq.js (sourcemap at _public.privacy-Cy0q84Qq.js.map, debug id 26bb0927-12a6-5eb9-b548-9578af5153c2)
+    ~/client/assets/_public.receive-cashu-token-CJUF8hno.js (sourcemap at _public.receive-cashu-token-CJUF8hno.js.map, debug id de6c4400-2d43-56d9-a92e-caba19422fbc)
+    ~/client/assets/_public.terms-DjOj_TFT.js (sourcemap at _public.terms-DjOj_TFT.js.map, debug id ee760592-2067-5c3d-9f31-01d402505bce)
+    ~/client/assets/account-hooks-Auut-b_U.js (sourcemap at account-hooks-Auut-b_U.js.map, debug id 3af74648-ea6a-5c7d-b9c0-4d503c489583)
+    ~/client/assets/account-icons-D4GoXdZQ.js (sourcemap at account-icons-D4GoXdZQ.js.map, debug id 91e8eb08-466d-5e75-80b2-3ba4562d14b0)
+    ~/client/assets/account-selector-5AE_xwiZ.js (sourcemap at account-selector-5AE_xwiZ.js.map, debug id b430f496-feae-5739-b5b5-3de7a8ec2ac4)
+    ~/client/assets/add-contact-drawer-quF4yZwc.js (sourcemap at add-contact-drawer-quF4yZwc.js.map, debug id 78ade992-b46c-5b3d-a585-791a449e5f1f)
+    ~/client/assets/api.example-BZsODlau.js (sourcemap at api.example-BZsODlau.js.map, debug id 4ce266e0-79f9-550b-b333-886ffd2728e0)
+    ~/client/assets/api.lnurlp.callback._userId-BZsODlau.js (sourcemap at api.lnurlp.callback._userId-BZsODlau.js.map, debug id d7ad747a-d2d7-5339-80c1-988bc153dfc9)
+    ~/client/assets/api.lnurlp.verify._cashuReceiveQuoteId-DNckSE6H.js (sourcemap at api.lnurlp.verify._cashuReceiveQuoteId-DNckSE6H.js.map, debug id 5d06f631-9731-5f8c-aea3-37e9d9df952e)
+    ~/client/assets/auth-CKVymgzu.js (sourcemap at auth-CKVymgzu.js.map, debug id 8a3446e9-8b27-5821-bbe2-9d41355758b5)
+    ~/client/assets/badge-DVWsYZuk.js (sourcemap at badge-DVWsYZuk.js.map, debug id 57b0ff44-122b-5a17-a563-b79c7b7bb152)
+    ~/client/assets/banknote-df8aEuKe.js (sourcemap at banknote-df8aEuKe.js.map, debug id ce80e520-3a16-56e8-b870-08043382b0a7)
+    ~/client/assets/big-Dy7UT27b.js (sourcemap at big-Dy7UT27b.js.map, debug id 49f627ca-a134-5b86-a50f-d4d38643bffd)
+    ~/client/assets/button-BakazIa7.js (sourcemap at button-BakazIa7.js.map, debug id dbb3d134-5d34-56c8-b88f-5f508bee93a1)
+    ~/client/assets/card-DhaBy1kD.js (sourcemap at card-DhaBy1kD.js.map, debug id 969ae4fb-e039-5938-b4b9-bd7522957826)
+    ~/client/assets/carousel-DYaV5plR.js (sourcemap at carousel-DYaV5plR.js.map, debug id acf8ce18-fe23-5427-87e0-8d8d9a8344a4)
+    ~/client/assets/cashu-receive-quote-hooks-B6fGNRUU.js (sourcemap at cashu-receive-quote-hooks-B6fGNRUU.js.map, debug id e4bf9339-c924-5173-936c-b16021cd70ad)
+    ~/client/assets/cashu-send-quote-hooks-CowTfG1Q.js (sourcemap at cashu-send-quote-hooks-CowTfG1Q.js.map, debug id e4554d3c-191c-5f18-ba8e-a39566388cf3)
+    ~/client/assets/cashu-send-swap-hooks-BYidlk1O.js (sourcemap at cashu-send-swap-hooks-BYidlk1O.js.map, debug id 12e7a966-8fe5-590a-a5e3-408000b14be9)
+    ~/client/assets/cashu-send-swap-service-C0zyoS9p.js (sourcemap at cashu-send-swap-service-C0zyoS9p.js.map, debug id 91d84968-7d07-5211-874f-1216c76e5acf)
+    ~/client/assets/cashu-token-swap-hooks-CFc_JJ1-.js (sourcemap at cashu-token-swap-hooks-CFc_JJ1-.js.map, debug id e93d4a64-3e9f-5b5d-8e43-96d5dae3e1a9)
+    ~/client/assets/check-BWqsn8gC.js (sourcemap at check-BWqsn8gC.js.map, debug id 1d0c218e-f6ba-5d86-aa5d-addaa01af9de)
+    ~/client/assets/chevron-down-DsaiABVx.js (sourcemap at chevron-down-DsaiABVx.js.map, debug id ff9a4c4a-26a9-5553-928f-33e4bc011664)
+    ~/client/assets/chevron-up-Bh3FlnNJ.js (sourcemap at chevron-up-Bh3FlnNJ.js.map, debug id 17ab19d4-11f0-5f07-adac-f3187b9d78f7)
+    ~/client/assets/chunk-EF7DTUVF-3xG3n85h.js (sourcemap at chunk-EF7DTUVF-3xG3n85h.js.map, debug id 18a9bc9c-48f2-5643-b59f-b2c6ed7f271b)
+    ~/client/assets/circle-CEiPWMvs.js (sourcemap at circle-CEiPWMvs.js.map, debug id 15591eb2-3bcb-5777-ade6-90ed59048673)
+    ~/client/assets/circle-alert-DhsgFIj4.js (sourcemap at circle-alert-DhsgFIj4.js.map, debug id f29141eb-6e14-5db8-a69f-52c690fb4eaf)
+    ~/client/assets/circle-check-big-BTjgTw2x.js (sourcemap at circle-check-big-BTjgTw2x.js.map, debug id 4e527c60-50a6-5b77-b284-e9672ba7c5ec)
+    ~/client/assets/clock-w5sR0qoP.js (sourcemap at clock-w5sR0qoP.js.map, debug id 79b3f26c-c437-5b26-9579-d033d03e6e24)
+    ~/client/assets/color-mode-toggle-DMpIIeY_.js (sourcemap at color-mode-toggle-DMpIIeY_.js.map, debug id d68acb90-692a-5daf-b73e-f3759d8c09dc)
+    ~/client/assets/contact-avatar-B9bKYVNQ.js (sourcemap at contact-avatar-B9bKYVNQ.js.map, debug id 999f8141-e194-5f5e-885e-e4274d4cdddf)
+    ~/client/assets/copy-Cau9vRLW.js (sourcemap at copy-Cau9vRLW.js.map, debug id 2898c3e6-6c54-5d3d-8ec8-add3f00ea395)
+    ~/client/assets/createLucideIcon-CQq9Z6bn.js (sourcemap at createLucideIcon-CQq9Z6bn.js.map, debug id 94cec7f3-29eb-5284-be32-97b5a53fec41)
+    ~/client/assets/currencies-CCy7nZoP.js (sourcemap at currencies-CCy7nZoP.js.map, debug id 8712f173-b09c-573c-a6f8-51950cf38f2f)
+    ~/client/assets/debug-build-DZF3UeUh.js (sourcemap at debug-build-DZF3UeUh.js.map, debug id 34f86980-3388-56b9-b8c2-0299adb63041)
+    ~/client/assets/drawer-kFpav-Zj.js (sourcemap at drawer-kFpav-Zj.js.map, debug id 2b7d9eed-f80f-5223-81b6-a428051de579)
+    ~/client/assets/entry.client-CMJqpQSH.js (sourcemap at entry.client-CMJqpQSH.js.map, debug id 0ab1c959-69b2-5c35-b438-6454ae16c08b)
+    ~/client/assets/error-DKJBj872.js (sourcemap at error-DKJBj872.js.map, debug id 84065860-4092-583d-b776-1d81f3876218)
+    ~/client/assets/error-codes-BiQxDC7q.js (sourcemap at error-codes-BiQxDC7q.js.map, debug id 5664aa2a-717f-5f02-a7c6-371046e10756)
+    ~/client/assets/example-B6Y2fDB5.js (sourcemap at example-B6Y2fDB5.js.map, debug id a5e6fc32-638c-5536-9166-fd8734d3e756)
+    ~/client/assets/exchange-rate-service-Bj8c2Wtt.js (sourcemap at exchange-rate-service-Bj8c2Wtt.js.map, debug id 727e72ec-75ae-5b5a-8cc4-ca8156363b63)
+    ~/client/assets/floating-ui.react-dom-TJfb_BMz.js (sourcemap at floating-ui.react-dom-TJfb_BMz.js.map, debug id 6b7eff73-64e6-55e7-96d6-1bc6c8f5b4dd)
+    ~/client/assets/full_logo-D5rjIGCS.js (sourcemap at full_logo-D5rjIGCS.js.map, debug id 833cbf2b-b790-51bb-9faf-a6691f6153f2)
+    ~/client/assets/index-BBpj79Vz.js (sourcemap at index-BBpj79Vz.js.map, debug id 388f35cb-4453-56be-a567-6a9c37309f82)
+    ~/client/assets/index-BQcRAxqd.js (sourcemap at index-BQcRAxqd.js.map, debug id 55d231f9-d18e-5d8c-ae8a-ecc16c3eeecf)
+    ~/client/assets/index-C7DNGat3.js (sourcemap at index-C7DNGat3.js.map, debug id 2dfad43a-50f1-5a2b-807f-8ef2e4a663cc)
+    ~/client/assets/index-CAf-pDfe.js (sourcemap at index-CAf-pDfe.js.map, debug id cea40b75-d1ac-5d9a-9668-a2e1698fe276)
+    ~/client/assets/index-ChFp_MjE.js (sourcemap at index-ChFp_MjE.js.map, debug id 92de90e6-9093-56eb-8328-e3bf06878742)
+    ~/client/assets/index-D2uc9cqw.js (sourcemap at index-D2uc9cqw.js.map, debug id f8f23d94-b32c-58a9-aa3b-e3c5ebc7d7bb)
+    ~/client/assets/index-D8UCEVFt.js (sourcemap at index-D8UCEVFt.js.map, debug id bb2ecf79-0b43-5792-a7e5-0473bda4cac6)
+    ~/client/assets/index-DP7RM7zy.js (sourcemap at index-DP7RM7zy.js.map, debug id 4252b94e-944a-5c54-b382-cea3c2efdb64)
+    ~/client/assets/index-DdjTiHfw.js (sourcemap at index-DdjTiHfw.js.map, debug id 467e668e-cef5-5e59-90cf-af4e20ea5727)
+    ~/client/assets/index-J8ZHaqKY.js (sourcemap at index-J8ZHaqKY.js.map, debug id a1b31c7b-a317-5112-b26d-4a776054ee76)
+    ~/client/assets/index-T9VKAeFV.js (sourcemap at index-T9VKAeFV.js.map, debug id b5560716-1e5d-58a4-a5e7-68b38136ecb0)
+    ~/client/assets/index-hndJ2KNv.js (sourcemap at index-hndJ2KNv.js.map, debug id 8f8606a9-7280-5187-a973-135b0e8706ca)
+    ~/client/assets/infiniteQueryBehavior-BAUnSRqx.js (sourcemap at infiniteQueryBehavior-BAUnSRqx.js.map, debug id b8d9230f-eb48-5eab-b7b0-80e1b6b48d24)
+    ~/client/assets/input-BkcANSQk.js (sourcemap at input-BkcANSQk.js.map, debug id 65e4ebae-410e-5ce1-b6a6-3836057a54f6)
+    ~/client/assets/label-CyPbOnFd.js (sourcemap at label-CyPbOnFd.js.map, debug id b20f7b5c-5b03-5c63-b9c2-335151601711)
+    ~/client/assets/manifest-d7025e35.js (no sourcemap found, debug id fccd070b-d9f4-5fc6-8a2e-12cd01b0942e)
+      - warning: could not determine a source map reference (Could not auto-detect referenced sourcemap for ~/client/assets/manifest-d7025e35.js)
+    ~/client/assets/manifest_._webmanifest-BZsODlau.js (sourcemap at manifest_._webmanifest-BZsODlau.js.map, debug id 06c2c38c-ef26-5f31-ac16-d6bf0ac751ff)
+    ~/client/assets/markdown-Dee_nIRY.js (sourcemap at markdown-Dee_nIRY.js.map, debug id 7a29e3c7-c0af-540f-9d93-990640500c07)
+    ~/client/assets/money-with-converted-amount-DqN6rqdZ.js (sourcemap at money-with-converted-amount-DqN6rqdZ.js.map, debug id ae672ddf-5c96-53b5-a5fb-bbcc960a52b1)
+    ~/client/assets/mutation-DcezxiIg.js (sourcemap at mutation-DcezxiIg.js.map, debug id b6e67c99-da2f-5c00-9213-fec58a2735ff)
+    ~/client/assets/page-BTZ-QzGF.js (sourcemap at page-BTZ-QzGF.js.map, debug id 55b32d66-6781-5c30-823b-83d9ee31c38a)
+    ~/client/assets/plus-CW6s8mTD.js (sourcemap at plus-CW6s8mTD.js.map, debug id d82a5ddc-d3cb-5463-9e10-4ac3494dd3a3)
+    ~/client/assets/preload-helper-CxKUxwBa.js (sourcemap at preload-helper-CxKUxwBa.js.map, debug id 829b196d-a325-5189-aca1-e943e478f2a1)
+    ~/client/assets/qr-code-bhqy-f8v.js (sourcemap at qr-code-bhqy-f8v.js.map, debug id cfe12cd7-76e7-501b-a130-22532b4b6c7d)
+    ~/client/assets/qr-scanner-CjNRZ6eg.js (sourcemap at qr-scanner-CjNRZ6eg.js.map, debug id 5a5786be-c45b-5d2a-a3c7-ded6d113ba7b)
+    ~/client/assets/qr-scanner-worker.min-D85Z9gVD.js (sourcemap at qr-scanner-worker.min-D85Z9gVD.js.map, debug id 3ad161ef-fa77-5105-afbe-02335389a23f)
+    ~/client/assets/read-clipboard-irCDInME.js (sourcemap at read-clipboard-irCDInME.js.map, debug id 6f50d4f0-605a-5ef3-a09c-19271e2adebe)
+    ~/client/assets/receive-cashu-token-BJTtJQgg.js (sourcemap at receive-cashu-token-BJTtJQgg.js.map, debug id 7f5d48f4-75b8-5c1f-8175-fb2bb1798df2)
+    ~/client/assets/receive-provider-RAq8T942.js (sourcemap at receive-provider-RAq8T942.js.map, debug id ee3da6af-b2c8-509c-9338-950fbbf2e2d2)
+    ~/client/assets/redirect-DXntvtb5.js (sourcemap at redirect-DXntvtb5.js.map, debug id 7ba82511-7c38-5018-89b8-9ee5823d2498)
+    ~/client/assets/root-CIsxv4Df.js (sourcemap at root-CIsxv4Df.js.map, debug id f3533e2c-fb2e-5754-9cc4-6f415dc34b40)
+    ~/client/assets/scroll-area-DNSRdylw.js (sourcemap at scroll-area-DNSRdylw.js.map, debug id d64eeb59-87ec-5472-866b-02395acf73be)
+    ~/client/assets/send-provider-BPtZLPXu.js (sourcemap at send-provider-BPtZLPXu.js.map, debug id 350e3851-903a-5e05-ad4b-f9ed0aa6f132)
+    ~/client/assets/separator-BWqAxWZc.js (sourcemap at separator-BWqAxWZc.js.map, debug id 0eed2c60-e6ac-5947-a62a-666089082200)
+    ~/client/assets/settings-view-header-BUf8TNhK.js (sourcemap at settings-view-header-BUf8TNhK.js.map, debug id 83c3402b-683a-55ad-93f3-04f7bff9c23a)
+    ~/client/assets/share-BvJfjMAH.js (sourcemap at share-BvJfjMAH.js.map, debug id b95ef992-4131-51e2-a237-ad0515101fcb)
+    ~/client/assets/share-mloqg_lL.js (sourcemap at share-mloqg_lL.js.map, debug id 6cd09583-7bfb-5a9a-9d91-d71b68148e17)
+    ~/client/assets/square-pen-oWB-7CFM.js (sourcemap at square-pen-oWB-7CFM.js.map, debug id 82e16a34-da74-55ee-a5d1-1bc29d0c58e2)
+    ~/client/assets/succesful-send-page-Ca8Ku4j9.js (sourcemap at succesful-send-page-Ca8Ku4j9.js.map, debug id fdc707a1-e278-5685-8377-a39831f9812e)
+    ~/client/assets/successful-receive-page-HMMD6bxA.js (sourcemap at successful-receive-page-HMMD6bxA.js.map, debug id fc17bde2-dde6-5cfc-ad86-5f2f515add3c)
+    ~/client/assets/token-BT2KK4Z6.js (sourcemap at token-BT2KK4Z6.js.map, debug id 49382daf-44dd-5e24-b9fa-53ee8c123c99)
+    ~/client/assets/transaction-hooks-_OUDVEAA.js (sourcemap at transaction-hooks-_OUDVEAA.js.map, debug id 58e36f9a-39fe-502e-bc7c-1c09636aa2c8)
+    ~/client/assets/use-animation-SehpgKKK.js (sourcemap at use-animation-SehpgKKK.js.map, debug id 29b74751-6393-529e-995f-07060071c33b)
+    ~/client/assets/use-effect-no-strict-mode-C_c2yNy_.js (sourcemap at use-effect-no-strict-mode-C_c2yNy_.js.map, debug id 29863a2a-fac9-5f15-a123-549ec223e9d0)
+    ~/client/assets/use-exchange-rate-BeDPZp9Y.js (sourcemap at use-exchange-rate-BeDPZp9Y.js.map, debug id 1b8190eb-6f0f-5798-bc04-4f54b4cecc43)
+    ~/client/assets/use-location-g4O8eYU7.js (sourcemap at use-location-g4O8eYU7.js.map, debug id 6cd6e3f1-c490-557f-96e2-6c16f2191886)
+    ~/client/assets/use-theme-22oO3v7O.js (sourcemap at use-theme-22oO3v7O.js.map, debug id 7d955a7e-73d1-5402-aedf-3b65a6c5bb87)
+    ~/client/assets/use-toast-DU5EhhKx.js (sourcemap at use-toast-DU5EhhKx.js.map, debug id 5100f7a1-a1fb-5981-84bb-1bce7ad3ddc6)
+    ~/client/assets/useQueries-CzAPlfte.js (sourcemap at useQueries-CzAPlfte.js.map, debug id e7eac38c-d7e2-542a-9819-bd78f7e82ba8)
+    ~/client/assets/useQuery-CmSEOfdV.js (sourcemap at useQuery-CmSEOfdV.js.map, debug id b61031ec-22a7-5c2f-a3a7-192e80f23855)
+    ~/client/assets/user-hooks-BN24FDSI.js (sourcemap at user-hooks-BN24FDSI.js.map, debug id 3af60cfb-2860-584f-a8c1-5f314a1b9100)
+    ~/client/assets/utils-DicraoTD.js (sourcemap at utils-DicraoTD.js.map, debug id 986d4616-3d5e-5aee-b2ca-e4cd0d0b7467)
+    ~/client/assets/validation-CFIMzHvN.js (sourcemap at validation-CFIMzHvN.js.map, debug id b4c0ec96-a686-586c-9f0a-cea59f94a216)
+    ~/client/assets/view-transition-nCP_0R0K.js (sourcemap at view-transition-nCP_0R0K.js.map, debug id be416ec1-567e-57b0-8bd9-e20559870786)
+    ~/client/assets/zap-DO2348e3.js (sourcemap at zap-DO2348e3.js.map, debug id 12525bae-7c13-5429-b72f-26373708410f)
+    ~/server.js (no sourcemap found, debug id 13d6518e-7e2f-516e-8074-e26efd3439f0)
+      - warning: could not determine a source map reference (Could not auto-detect referenced sourcemap for ~/server.js)
+    ~/server/index.js (sourcemap at index.js.map, debug id 7ceba7ac-782e-5b2f-98c3-2c8f7e2f92bc)
+  Source Maps
+    ~/client/assets/Combination-B9mWKXzd.js.map (debug id a3c6c4da-06cc-5d3b-bcb6-855652b13989)
+    ~/client/assets/LoadingScreen-A78jk0QO.js.map (debug id 9d333895-20b4-57b9-b81b-58524eb722db)
+    ~/client/assets/QueryClientProvider-qfXGlPd-.js.map (debug id a97528a9-f612-5e3d-9eda-69591f1afad3)
+    ~/client/assets/_._well-known.lnurlp._username-BZsODlau.js.map (debug id ea6be172-9fce-5d31-b9ff-7f56076a8048)
+    ~/client/assets/_auth-BmUAKPzf.js.map (debug id 80e67b2f-a9d1-5e05-8cd3-b80e2556957d)
+    ~/client/assets/_auth.forgot-password-23cfieKG.js.map (debug id 851e9b7f-d209-567e-ac8e-e38bea50ec70)
+    ~/client/assets/_auth.login-BOOlV75L.js.map (debug id 4294f3c4-b513-5d1e-85d7-376a873798c0)
+    ~/client/assets/_auth.oauth._provider-cZUKj6ha.js.map (debug id 8a802927-8c9c-5251-8e39-90778d382531)
+    ~/client/assets/_auth.signup-CU8tZ94n.js.map (debug id 725661e7-420f-546f-8cbf-1398fab040fe)
+    ~/client/assets/_protected-iZJYxhca.js.map (debug id 6e90dc31-9fa3-5950-a0c2-b8c8fb9e91b0)
+    ~/client/assets/_protected._index-Bt9ZxcmB.js.map (debug id 557052fc-a1e6-5efc-9bfb-4c986a9e73f2)
+    ~/client/assets/_protected.receive-Bm9yGKgx.js.map (debug id 18a6a087-1107-5c7f-8c1d-47fb4a7428ce)
+    ~/client/assets/_protected.receive._index-Cx4aABqU.js.map (debug id c0009f7c-9048-5882-8af0-f13082ce5154)
+    ~/client/assets/_protected.receive.cashu-BKZkEIF-.js.map (debug id d7f205d2-fa13-557a-be24-7a1e82358544)
+    ~/client/assets/_protected.receive.cashu_.token-CPWsz0pG.js.map (debug id bfd8ce38-a2e5-5e6d-9eb7-10315aad8ca2)
+    ~/client/assets/_protected.receive.scan-CK5rYqnK.js.map (debug id b5a4c063-f964-5b9e-92e8-7077e0166600)
+    ~/client/assets/_protected.send-DlZpxrlm.js.map (debug id 1af35e52-a738-5868-81d8-0eefa7132c83)
+    ~/client/assets/_protected.send._index-4fA2XAmL.js.map (debug id 3921ee94-51a7-5ca0-9be9-e8c4dcbd1dee)
+    ~/client/assets/_protected.send.confirm-CCH1TPMp.js.map (debug id fa836e38-fd2b-5f19-a733-b447a406b244)
+    ~/client/assets/_protected.send.scan-F_0rsZZV.js.map (debug id 691079bb-2653-5c82-97f4-90169915f0a8)
+    ~/client/assets/_protected.send.share._swapId-KV2MNXXE.js.map (debug id 1cce441d-3727-561b-9adf-28ec466c6d87)
+    ~/client/assets/_protected.settings._index-Bs4n5-wr.js.map (debug id b3e5a782-defe-50a5-a4e9-dd3e7ceea460)
+    ~/client/assets/_protected.settings.accounts._accountId-B4n6qhud.js.map (debug id 46db10ca-e0ee-5351-b7c1-688b02470cbf)
+    ~/client/assets/_protected.settings.accounts._index-Db23uby6.js.map (debug id 2022a555-78f3-507e-a5cb-0cc68d2caac9)
+    ~/client/assets/_protected.settings.accounts.create_.cashu-kOVj7Gyj.js.map (debug id f23f08f9-5d4e-5d47-b63e-bf71ade60f25)
+    ~/client/assets/_protected.settings.appearance-Dc2xv2IJ.js.map (debug id aae92cdc-ba92-5f6f-81d5-3da867c9fc67)
+    ~/client/assets/_protected.settings.contacts._contactId-DrT2QiCv.js.map (debug id b983d7e4-8471-5d46-886c-c93d176cdf8e)
+    ~/client/assets/_protected.settings.contacts._index-7HPHc1kx.js.map (debug id 2ed29786-453c-5719-b187-62d23da5a850)
+    ~/client/assets/_protected.settings.profile.edit-BoQoT8IU.js.map (debug id 24c62a44-845d-5dc2-972e-e86f1a2a0cfe)
+    ~/client/assets/_protected.settings.qr-BeEpBSM3.js.map (debug id 9a71eb4b-4557-589a-b009-14f983c350b5)
+    ~/client/assets/_protected.transactions._index-a6Ta65Ve.js.map (debug id 95507954-a562-5a74-a16d-5820abc4d7a8)
+    ~/client/assets/_protected.transactions._transactionId-CgMIKJ4A.js.map (debug id 928dda17-c1e3-5b05-a3cb-ce5ffd487122)
+    ~/client/assets/_protected.verify-email.(_code)-Bn6h-6zJ.js.map (debug id 275814da-cc6c-5512-ac5a-b72c6fc38dbd)
+    ~/client/assets/_public-S-hNdZce.js.map (debug id f3900fa6-b9f2-5aa7-afd1-06900ed74d58)
+    ~/client/assets/_public.privacy-Cy0q84Qq.js.map (debug id 26bb0927-12a6-5eb9-b548-9578af5153c2)
+    ~/client/assets/_public.receive-cashu-token-CJUF8hno.js.map (debug id de6c4400-2d43-56d9-a92e-caba19422fbc)
+    ~/client/assets/_public.terms-DjOj_TFT.js.map (debug id ee760592-2067-5c3d-9f31-01d402505bce)
+    ~/client/assets/account-hooks-Auut-b_U.js.map (debug id 3af74648-ea6a-5c7d-b9c0-4d503c489583)
+    ~/client/assets/account-icons-D4GoXdZQ.js.map (debug id 91e8eb08-466d-5e75-80b2-3ba4562d14b0)
+    ~/client/assets/account-selector-5AE_xwiZ.js.map (debug id b430f496-feae-5739-b5b5-3de7a8ec2ac4)
+    ~/client/assets/add-contact-drawer-quF4yZwc.js.map (debug id 78ade992-b46c-5b3d-a585-791a449e5f1f)
+    ~/client/assets/api.example-BZsODlau.js.map (debug id 4ce266e0-79f9-550b-b333-886ffd2728e0)
+    ~/client/assets/api.lnurlp.callback._userId-BZsODlau.js.map (debug id d7ad747a-d2d7-5339-80c1-988bc153dfc9)
+    ~/client/assets/api.lnurlp.verify._cashuReceiveQuoteId-DNckSE6H.js.map (debug id 5d06f631-9731-5f8c-aea3-37e9d9df952e)
+    ~/client/assets/auth-CKVymgzu.js.map (debug id 8a3446e9-8b27-5821-bbe2-9d41355758b5)
+    ~/client/assets/badge-DVWsYZuk.js.map (debug id 57b0ff44-122b-5a17-a563-b79c7b7bb152)
+    ~/client/assets/banknote-df8aEuKe.js.map (debug id ce80e520-3a16-56e8-b870-08043382b0a7)
+    ~/client/assets/big-Dy7UT27b.js.map (debug id 49f627ca-a134-5b86-a50f-d4d38643bffd)
+    ~/client/assets/button-BakazIa7.js.map (debug id dbb3d134-5d34-56c8-b88f-5f508bee93a1)
+    ~/client/assets/card-DhaBy1kD.js.map (debug id 969ae4fb-e039-5938-b4b9-bd7522957826)
+    ~/client/assets/carousel-DYaV5plR.js.map (debug id acf8ce18-fe23-5427-87e0-8d8d9a8344a4)
+    ~/client/assets/cashu-receive-quote-hooks-B6fGNRUU.js.map (debug id e4bf9339-c924-5173-936c-b16021cd70ad)
+    ~/client/assets/cashu-send-quote-hooks-CowTfG1Q.js.map (debug id e4554d3c-191c-5f18-ba8e-a39566388cf3)
+    ~/client/assets/cashu-send-swap-hooks-BYidlk1O.js.map (debug id 12e7a966-8fe5-590a-a5e3-408000b14be9)
+    ~/client/assets/cashu-send-swap-service-C0zyoS9p.js.map (debug id 91d84968-7d07-5211-874f-1216c76e5acf)
+    ~/client/assets/cashu-token-swap-hooks-CFc_JJ1-.js.map (debug id e93d4a64-3e9f-5b5d-8e43-96d5dae3e1a9)
+    ~/client/assets/check-BWqsn8gC.js.map (debug id 1d0c218e-f6ba-5d86-aa5d-addaa01af9de)
+    ~/client/assets/chevron-down-DsaiABVx.js.map (debug id ff9a4c4a-26a9-5553-928f-33e4bc011664)
+    ~/client/assets/chevron-up-Bh3FlnNJ.js.map (debug id 17ab19d4-11f0-5f07-adac-f3187b9d78f7)
+    ~/client/assets/chunk-EF7DTUVF-3xG3n85h.js.map (debug id 18a9bc9c-48f2-5643-b59f-b2c6ed7f271b)
+    ~/client/assets/circle-CEiPWMvs.js.map (debug id 15591eb2-3bcb-5777-ade6-90ed59048673)
+    ~/client/assets/circle-alert-DhsgFIj4.js.map (debug id f29141eb-6e14-5db8-a69f-52c690fb4eaf)
+    ~/client/assets/circle-check-big-BTjgTw2x.js.map (debug id 4e527c60-50a6-5b77-b284-e9672ba7c5ec)
+    ~/client/assets/clock-w5sR0qoP.js.map (debug id 79b3f26c-c437-5b26-9579-d033d03e6e24)
+    ~/client/assets/color-mode-toggle-DMpIIeY_.js.map (debug id d68acb90-692a-5daf-b73e-f3759d8c09dc)
+    ~/client/assets/contact-avatar-B9bKYVNQ.js.map (debug id 999f8141-e194-5f5e-885e-e4274d4cdddf)
+    ~/client/assets/copy-Cau9vRLW.js.map (debug id 2898c3e6-6c54-5d3d-8ec8-add3f00ea395)
+    ~/client/assets/createLucideIcon-CQq9Z6bn.js.map (debug id 94cec7f3-29eb-5284-be32-97b5a53fec41)
+    ~/client/assets/currencies-CCy7nZoP.js.map (debug id 8712f173-b09c-573c-a6f8-51950cf38f2f)
+    ~/client/assets/debug-build-DZF3UeUh.js.map (debug id 34f86980-3388-56b9-b8c2-0299adb63041)
+    ~/client/assets/drawer-kFpav-Zj.js.map (debug id 2b7d9eed-f80f-5223-81b6-a428051de579)
+    ~/client/assets/entry.client-CMJqpQSH.js.map (debug id 0ab1c959-69b2-5c35-b438-6454ae16c08b)
+    ~/client/assets/error-DKJBj872.js.map (debug id 84065860-4092-583d-b776-1d81f3876218)
+    ~/client/assets/error-codes-BiQxDC7q.js.map (debug id 5664aa2a-717f-5f02-a7c6-371046e10756)
+    ~/client/assets/example-B6Y2fDB5.js.map (debug id a5e6fc32-638c-5536-9166-fd8734d3e756)
+    ~/client/assets/exchange-rate-service-Bj8c2Wtt.js.map (debug id 727e72ec-75ae-5b5a-8cc4-ca8156363b63)
+    ~/client/assets/floating-ui.react-dom-TJfb_BMz.js.map (debug id 6b7eff73-64e6-55e7-96d6-1bc6c8f5b4dd)
+    ~/client/assets/full_logo-D5rjIGCS.js.map (debug id 833cbf2b-b790-51bb-9faf-a6691f6153f2)
+    ~/client/assets/index-BBpj79Vz.js.map (debug id 388f35cb-4453-56be-a567-6a9c37309f82)
+    ~/client/assets/index-BQcRAxqd.js.map (debug id 55d231f9-d18e-5d8c-ae8a-ecc16c3eeecf)
+    ~/client/assets/index-C7DNGat3.js.map (debug id 2dfad43a-50f1-5a2b-807f-8ef2e4a663cc)
+    ~/client/assets/index-CAf-pDfe.js.map (debug id cea40b75-d1ac-5d9a-9668-a2e1698fe276)
+    ~/client/assets/index-ChFp_MjE.js.map (debug id 92de90e6-9093-56eb-8328-e3bf06878742)
+    ~/client/assets/index-D2uc9cqw.js.map (debug id f8f23d94-b32c-58a9-aa3b-e3c5ebc7d7bb)
+    ~/client/assets/index-D8UCEVFt.js.map (debug id bb2ecf79-0b43-5792-a7e5-0473bda4cac6)
+    ~/client/assets/index-DP7RM7zy.js.map (debug id 4252b94e-944a-5c54-b382-cea3c2efdb64)
+    ~/client/assets/index-DdjTiHfw.js.map (debug id 467e668e-cef5-5e59-90cf-af4e20ea5727)
+    ~/client/assets/index-J8ZHaqKY.js.map (debug id a1b31c7b-a317-5112-b26d-4a776054ee76)
+    ~/client/assets/index-T9VKAeFV.js.map (debug id b5560716-1e5d-58a4-a5e7-68b38136ecb0)
+    ~/client/assets/index-hndJ2KNv.js.map (debug id 8f8606a9-7280-5187-a973-135b0e8706ca)
+    ~/client/assets/infiniteQueryBehavior-BAUnSRqx.js.map (debug id b8d9230f-eb48-5eab-b7b0-80e1b6b48d24)
+    ~/client/assets/input-BkcANSQk.js.map (debug id 65e4ebae-410e-5ce1-b6a6-3836057a54f6)
+    ~/client/assets/label-CyPbOnFd.js.map (debug id b20f7b5c-5b03-5c63-b9c2-335151601711)
+    ~/client/assets/manifest_._webmanifest-BZsODlau.js.map (debug id 06c2c38c-ef26-5f31-ac16-d6bf0ac751ff)
+    ~/client/assets/markdown-Dee_nIRY.js.map (debug id 7a29e3c7-c0af-540f-9d93-990640500c07)
+    ~/client/assets/money-with-converted-amount-DqN6rqdZ.js.map (debug id ae672ddf-5c96-53b5-a5fb-bbcc960a52b1)
+    ~/client/assets/mutation-DcezxiIg.js.map (debug id b6e67c99-da2f-5c00-9213-fec58a2735ff)
+    ~/client/assets/page-BTZ-QzGF.js.map (debug id 55b32d66-6781-5c30-823b-83d9ee31c38a)
+    ~/client/assets/plus-CW6s8mTD.js.map (debug id d82a5ddc-d3cb-5463-9e10-4ac3494dd3a3)
+    ~/client/assets/preload-helper-CxKUxwBa.js.map (debug id 829b196d-a325-5189-aca1-e943e478f2a1)
+    ~/client/assets/qr-code-bhqy-f8v.js.map (debug id cfe12cd7-76e7-501b-a130-22532b4b6c7d)
+    ~/client/assets/qr-scanner-CjNRZ6eg.js.map (debug id 5a5786be-c45b-5d2a-a3c7-ded6d113ba7b)
+    ~/client/assets/qr-scanner-worker.min-D85Z9gVD.js.map (debug id 3ad161ef-fa77-5105-afbe-02335389a23f)
+    ~/client/assets/read-clipboard-irCDInME.js.map (debug id 6f50d4f0-605a-5ef3-a09c-19271e2adebe)
+    ~/client/assets/receive-cashu-token-BJTtJQgg.js.map (debug id 7f5d48f4-75b8-5c1f-8175-fb2bb1798df2)
+    ~/client/assets/receive-provider-RAq8T942.js.map (debug id ee3da6af-b2c8-509c-9338-950fbbf2e2d2)
+    ~/client/assets/redirect-DXntvtb5.js.map (debug id 7ba82511-7c38-5018-89b8-9ee5823d2498)
+    ~/client/assets/root-CIsxv4Df.js.map (debug id f3533e2c-fb2e-5754-9cc4-6f415dc34b40)
+    ~/client/assets/scroll-area-DNSRdylw.js.map (debug id d64eeb59-87ec-5472-866b-02395acf73be)
+    ~/client/assets/send-provider-BPtZLPXu.js.map (debug id 350e3851-903a-5e05-ad4b-f9ed0aa6f132)
+    ~/client/assets/separator-BWqAxWZc.js.map (debug id 0eed2c60-e6ac-5947-a62a-666089082200)
+    ~/client/assets/settings-view-header-BUf8TNhK.js.map (debug id 83c3402b-683a-55ad-93f3-04f7bff9c23a)
+    ~/client/assets/share-BvJfjMAH.js.map (debug id b95ef992-4131-51e2-a237-ad0515101fcb)
+    ~/client/assets/share-mloqg_lL.js.map (debug id 6cd09583-7bfb-5a9a-9d91-d71b68148e17)
+    ~/client/assets/square-pen-oWB-7CFM.js.map (debug id 82e16a34-da74-55ee-a5d1-1bc29d0c58e2)
+    ~/client/assets/succesful-send-page-Ca8Ku4j9.js.map (debug id fdc707a1-e278-5685-8377-a39831f9812e)
+    ~/client/assets/successful-receive-page-HMMD6bxA.js.map (debug id fc17bde2-dde6-5cfc-ad86-5f2f515add3c)
+    ~/client/assets/token-BT2KK4Z6.js.map (debug id 49382daf-44dd-5e24-b9fa-53ee8c123c99)
+    ~/client/assets/transaction-hooks-_OUDVEAA.js.map (debug id 58e36f9a-39fe-502e-bc7c-1c09636aa2c8)
+    ~/client/assets/use-animation-SehpgKKK.js.map (debug id 29b74751-6393-529e-995f-07060071c33b)
+    ~/client/assets/use-effect-no-strict-mode-C_c2yNy_.js.map (debug id 29863a2a-fac9-5f15-a123-549ec223e9d0)
+    ~/client/assets/use-exchange-rate-BeDPZp9Y.js.map (debug id 1b8190eb-6f0f-5798-bc04-4f54b4cecc43)
+    ~/client/assets/use-location-g4O8eYU7.js.map (debug id 6cd6e3f1-c490-557f-96e2-6c16f2191886)
+    ~/client/assets/use-theme-22oO3v7O.js.map (debug id 7d955a7e-73d1-5402-aedf-3b65a6c5bb87)
+    ~/client/assets/use-toast-DU5EhhKx.js.map (debug id 5100f7a1-a1fb-5981-84bb-1bce7ad3ddc6)
+    ~/client/assets/useQueries-CzAPlfte.js.map (debug id e7eac38c-d7e2-542a-9819-bd78f7e82ba8)
+    ~/client/assets/useQuery-CmSEOfdV.js.map (debug id b61031ec-22a7-5c2f-a3a7-192e80f23855)
+    ~/client/assets/user-hooks-BN24FDSI.js.map (debug id 3af60cfb-2860-584f-a8c1-5f314a1b9100)
+    ~/client/assets/utils-DicraoTD.js.map (debug id 986d4616-3d5e-5aee-b2ca-e4cd0d0b7467)
+    ~/client/assets/validation-CFIMzHvN.js.map (debug id b4c0ec96-a686-586c-9f0a-cea59f94a216)
+    ~/client/assets/view-transition-nCP_0R0K.js.map (debug id be416ec1-567e-57b0-8bd9-e20559870786)
+    ~/client/assets/zap-DO2348e3.js.map (debug id 12525bae-7c13-5429-b72f-26373708410f)
+    ~/server/index.js.map (debug id 7ceba7ac-782e-5b2f-98c3-2c8f7e2f92bc)
