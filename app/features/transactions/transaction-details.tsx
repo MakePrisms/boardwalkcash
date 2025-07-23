@@ -71,22 +71,26 @@ export function TransactionDetails({
   const account = useAccount(transaction.accountId);
   const { toast } = useToast();
 
-  const { mutate: reverseTransaction, isPending: isReversing } =
-    useReverseTransaction({
-      onSuccess: () => {
-        toast({
-          title: 'Reclaimed!',
-          description:
-            'The ecash you sent is no longer spendable by the recipient',
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: 'Error reclaiming',
-          description: getErrorMessage(error),
-        });
-      },
-    });
+  const {
+    mutate: reverseTransaction,
+    isPending: isReversing,
+    isSuccess: didReclaimMutationSucceed,
+  } = useReverseTransaction({
+    onError: (error) => {
+      toast({
+        title: 'Error reclaiming',
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const isWaitingForStateUpdate =
+    didReclaimMutationSucceed &&
+    !['REVERSED', 'COMPLETED'].includes(transaction.state);
+
+  const isReclaimInProgress = isReversing || isWaitingForStateUpdate;
+  const shouldShowReclaimButton =
+    isTransactionReversable(transaction) || isReclaimInProgress;
 
   return (
     <PageContent className="mb-8 flex w-full max-w-md flex-col items-center justify-between gap-6">
@@ -157,11 +161,11 @@ export function TransactionDetails({
       </Card>
 
       <div className="h-[40px]">
-        {isTransactionReversable(transaction) && (
+        {shouldShowReclaimButton && (
           <Button
             className="w-[100px]"
             onClick={() => reverseTransaction({ transaction })}
-            loading={isReversing}
+            loading={isReclaimInProgress}
           >
             Reclaim
           </Button>
