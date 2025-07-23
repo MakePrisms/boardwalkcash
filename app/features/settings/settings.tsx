@@ -37,11 +37,13 @@ function LnAddressDisplay({
       await copyToClipboard(lightningAddress);
       toast({
         title: 'Lightning address copied to clipboard',
+        duration: 1000,
       });
     } catch {
       toast({
         title: 'Unable to copy to clipboard',
         variant: 'destructive',
+        duration: 1000,
       });
     }
   };

@@ -63,6 +63,7 @@ export default {
       animation: {
         shake: 'shake 0.2s ease-in-out',
         slam: 'slam 0.4s ease-out both',
+        'slide-out-up': 'slide-out-up 300ms ease-out forwards',
       },
       keyframes: {
         shake: {
@@ -97,6 +98,10 @@ export default {
             letterSpacing: 'normal',
             opacity: '1',
           },
+        },
+        'slide-out-up': {
+          '0%': { transform: 'translateY(0%)', opacity: '1' },
+          '100%': { transform: 'translateY(-150%)', opacity: '0' },
         },
       },
     },

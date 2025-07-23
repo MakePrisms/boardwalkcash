@@ -86,7 +86,7 @@ export function DefaultCurrencySwitcher() {
           <ChevronDown className="h-4 w-4" />
         </button>
       </DrawerTrigger>
-      <DrawerContent className="font-primary">
+      <DrawerContent className="pb-14 font-primary">
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
             <DrawerTitle>Select Currency</DrawerTitle>
