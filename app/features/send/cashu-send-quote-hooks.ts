@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  useSuspenseQuery,
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -19,6 +20,7 @@ import {
 import { useLatest } from '~/lib/use-latest';
 import type { CashuAccount } from '../accounts/account';
 import {
+  useAccount,
   useAccountsCache,
   useGetLatestCashuAccount,
 } from '../accounts/account-hooks';
@@ -27,7 +29,7 @@ import {
   agicashDb,
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
-import { DomainError } from '../shared/error';
+import { DomainError, NotFoundError } from '../shared/error';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
@@ -169,14 +171,14 @@ export function useInitiateCashuSendQuote({
   });
 }
 
-type UseCashuSendQuoteProps = {
+type UseTrackCashuSendQuoteProps = {
   sendQuoteId?: string;
   onPending?: (send: CashuSendQuote) => void;
   onPaid?: (send: CashuSendQuote) => void;
   onExpired?: (send: CashuSendQuote) => void;
 };
 
-type UseCashuSendQuoteResponse =
+type UseTrackCashuSendQuoteResponse =
   | {
       status: 'DISABLED' | 'LOADING';
       quote?: undefined;
@@ -186,12 +188,12 @@ type UseCashuSendQuoteResponse =
       quote: CashuSendQuote;
     };
 
-export function useCashuSendQuote({
-  sendQuoteId,
+export function useTrackCashuSendQuote({
+  sendQuoteId = '',
   onPending,
   onPaid,
   onExpired,
-}: UseCashuSendQuoteProps): UseCashuSendQuoteResponse {
+}: UseTrackCashuSendQuoteProps): UseTrackCashuSendQuoteResponse {
   const enabled = !!sendQuoteId;
   const onPendingRef = useLatest(onPending);
   const onPaidRef = useLatest(onPaid);
@@ -200,7 +202,7 @@ export function useCashuSendQuote({
 
   const { data } = useQuery({
     queryKey: [cashuSendQuoteQueryKey, sendQuoteId],
-    queryFn: () => cache.get(sendQuoteId ?? ''),
+    queryFn: () => cache.get(sendQuoteId),
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
@@ -230,6 +232,42 @@ export function useCashuSendQuote({
   return {
     status: data.state,
     quote: data,
+  };
+}
+
+export function useCashuSendQuote(sendQuoteId: string) {
+  const cashuSendQuoteRepository = useCashuSendQuoteRepository();
+
+  const result = useSuspenseQuery({
+    queryKey: [cashuSendQuoteQueryKey, sendQuoteId],
+    queryFn: async () => {
+      const quote = await cashuSendQuoteRepository.get(sendQuoteId);
+      if (!quote) {
+        throw new NotFoundError(
+          `Cashu send quote not found for id: ${sendQuoteId}`,
+        );
+      }
+      return quote;
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof NotFoundError) {
+        return false;
+      }
+      return failureCount <= 3;
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
+  });
+
+  const account = useAccount(result.data.accountId) as CashuAccount;
+
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      account,
+    },
   };
 }
 

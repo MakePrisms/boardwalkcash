@@ -382,20 +382,22 @@ export class CashuSendQuoteRepository {
    * @param id - The id of the cashu send quote to get.
    * @returns The cashu send quote.
    */
-  async get(id: string, options?: Options): Promise<CashuSendQuote> {
+  async get(id: string, options?: Options): Promise<CashuSendQuote | null> {
     const query = this.db.from('cashu_send_quotes').select().eq('id', id);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       throw new Error('Failed to get cashu send', { cause: error });
     }
 
-    return CashuSendQuoteRepository.toSend(data, this.encryption.decrypt);
+    return data
+      ? CashuSendQuoteRepository.toSend(data, this.encryption.decrypt)
+      : null;
   }
 
   /**
