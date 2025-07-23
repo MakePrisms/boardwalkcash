@@ -325,12 +325,15 @@ type ClaimStatus = 'IDLE' | 'CLAIMING' | 'SUCCESS' | 'ERROR';
 
 type UseReceiveCashuTokenProps = {
   onError?: (error: Error) => void;
+  onLightningPaymentInitiated?: (transactionId: string) => void;
 };
 
 export function useReceiveCashuToken({
   onError,
+  onLightningPaymentInitiated,
 }: UseReceiveCashuTokenProps = {}) {
   const onErrorRef = useLatest(onError);
+  const onLightningPaymentInitiatedRef = useLatest(onLightningPaymentInitiated);
 
   // For receiving tokens to the source account
   const {
@@ -365,7 +368,14 @@ export function useReceiveCashuToken({
       if (isSameMintAndCurrency) {
         await createCashuTokenSwap({ token, accountId: account.id });
       } else {
-        await meltTokenToCashuAccount({ token, account });
+        const { transactionId: cashuReceiveQuoteTransactionId } =
+          await meltTokenToCashuAccount({
+            token,
+            account,
+          });
+        onLightningPaymentInitiatedRef.current?.(
+          cashuReceiveQuoteTransactionId,
+        );
       }
     } catch (error) {
       console.error('Failed to claim token', error);

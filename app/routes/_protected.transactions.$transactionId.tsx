@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router';
 import {
   ClosePageButton,
   Page,
@@ -12,12 +13,14 @@ export default function TransactionDetailsPage({
   params: { transactionId },
 }: Route.ComponentProps) {
   const { data: transaction } = useSuspenseTransaction(transactionId);
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo');
 
   return (
     <Page>
       <PageHeader>
         <ClosePageButton
-          to="/transactions"
+          to={redirectTo ?? '/transactions'}
           transition="slideDown"
           applyTo="oldView"
         />

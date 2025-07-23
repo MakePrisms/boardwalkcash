@@ -157,21 +157,21 @@ export class CashuReceiveQuoteService {
       receiveType: 'TOKEN',
     });
 
-    try {
-      await sourceWallet.meltProofs(quotes.meltQuote, token.proofs);
-    } catch (error) {
-      if (
-        error instanceof MintOperationError &&
-        error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED
-      ) {
-        await this.cashuReceiveQuoteRepository.fail({
-          id: cashuReceiveQuote.id,
-          version: cashuReceiveQuote.version,
-          reason: error.message,
-        });
-      }
-      throw error;
-    }
+    sourceWallet
+      .meltProofs(quotes.meltQuote, token.proofs)
+      .catch(async (error) => {
+        if (
+          error instanceof MintOperationError &&
+          error.code === CashuErrorCodes.LIGHTNING_PAYMENT_FAILED
+        ) {
+          await this.cashuReceiveQuoteRepository.fail({
+            id: cashuReceiveQuote.id,
+            version: cashuReceiveQuote.version,
+            reason: error.message,
+          });
+        }
+        throw error;
+      });
 
     return cashuReceiveQuote;
   }
