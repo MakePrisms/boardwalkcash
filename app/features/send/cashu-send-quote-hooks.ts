@@ -507,38 +507,182 @@ export function useTrackUnresolvedCashuSendQuotes() {
 export function useProcessCashuSendQuoteTasks() {
   const cashuSendService = useCashuSendQuoteService();
   const unresolvedSendQuotes = useUnresolvedCashuSendQuotes();
+  const getCashuAccount = useGetLatestCashuAccount();
+
+  const { mutate: failSendQuote } = useMutation({
+    mutationFn: async ({
+      sendQuoteId,
+      reason,
+    }: {
+      sendQuoteId: string;
+      reason: string;
+    }) => {
+      const sendQuote = unresolvedSendQuotes.find(
+        (quote) => quote.id === sendQuoteId,
+      );
+      if (!sendQuote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed, failed or expired in the meantime.
+        return;
+      }
+
+      const account = await getCashuAccount(sendQuote.accountId);
+      await cashuSendService.failSendQuote(account, sendQuote, reason);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, variables) => {
+      console.error('Failed to mark payment as failed', {
+        cause: error,
+        sendQuoteId: variables.sendQuoteId,
+      });
+    },
+  });
+
+  const { mutate: initiateSend } = useMutation({
+    mutationFn: async ({
+      sendQuoteId,
+      meltQuote,
+    }: {
+      sendQuoteId: string;
+      meltQuote: MeltQuoteResponse;
+    }) => {
+      const sendQuote = unresolvedSendQuotes.find(
+        (quote) => quote.id === sendQuoteId,
+      );
+      if (!sendQuote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed, failed or expired in the meantime.
+        return;
+      }
+
+      const account = await getCashuAccount(sendQuote.accountId);
+
+      await cashuSendService
+        .initiateSend(account, sendQuote, meltQuote)
+        .catch((error) => {
+          if (error instanceof MintOperationError) {
+            failSendQuote({
+              sendQuoteId: sendQuoteId,
+              reason: error.message,
+            });
+          }
+        });
+
+      await cashuSendService.markSendQuoteAsPending(sendQuote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, variables) => {
+      console.error('Error while initiating send', {
+        cause: error,
+        sendQuoteId: variables.sendQuoteId,
+      });
+    },
+  });
+
+  const { mutate: markSendQuoteAsPending } = useMutation({
+    mutationFn: async (sendQuoteId: string) => {
+      const sendQuote = unresolvedSendQuotes.find(
+        (quote) => quote.id === sendQuoteId,
+      );
+      if (!sendQuote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed, failed or expired in the meantime.
+        return;
+      }
+
+      await cashuSendService.markSendQuoteAsPending(sendQuote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, sendQuoteId) => {
+      console.error('Mark send quote as pending error', {
+        cause: error,
+        sendQuoteId,
+      });
+    },
+  });
+
+  const { mutate: expireSendQuote } = useMutation({
+    mutationFn: async (sendQuoteId: string) => {
+      const sendQuote = unresolvedSendQuotes.find(
+        (quote) => quote.id === sendQuoteId,
+      );
+      if (!sendQuote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed, failed or expired in the meantime.
+        return;
+      }
+
+      const account = await getCashuAccount(sendQuote.accountId);
+
+      return cashuSendService.expireSendQuote(account, sendQuote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, sendQuoteId) => {
+      console.error('Expire send quote error', {
+        cause: error,
+        sendQuoteId,
+      });
+    },
+  });
+
+  const { mutate: completeSendQuote } = useMutation({
+    mutationFn: async ({
+      sendQuoteId,
+      meltQuote,
+    }: {
+      sendQuoteId: string;
+      meltQuote: MeltQuoteResponse;
+    }) => {
+      const sendQuote = unresolvedSendQuotes.find(
+        (quote) => quote.id === sendQuoteId,
+      );
+      if (!sendQuote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed, failed or expired in the meantime.
+        return;
+      }
+
+      const account = await getCashuAccount(sendQuote.accountId);
+
+      return cashuSendService.completeSendQuote(account, sendQuote, meltQuote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, sendQuoteId) => {
+      console.error('Complete send quote error', {
+        cause: error,
+        sendQuoteId,
+      });
+    },
+  });
 
   useOnMeltQuoteStateChange({
     sendQuotes: unresolvedSendQuotes,
-    onUnpaid: (account, send, meltQuote) => {
+    onUnpaid: (_, send, meltQuote) => {
       // In case of failed payment the mint will flip the state of the melt quote back to UNPAID.
       // In that case we don't want to initiate the send again so we are only initiating the send if our quote state is also UNPAID which won't be the case if the send was already initiated.
       if (send.state === 'UNPAID') {
-        // TODO: this should probaby trigger mutation that will then call triggerSend. That way mutation will be responsible for errors and retries.
-        cashuSendService
-          .initiateSend(account, send, meltQuote)
-          .catch((error) => {
-            if (error instanceof MintOperationError) {
-              return cashuSendService.failSendQuote(
-                account,
-                send,
-                error.message,
-              );
-            }
-          });
+        initiateSend({
+          sendQuoteId: send.id,
+          meltQuote,
+        });
       }
     },
     onPending: (_, send) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuSendService.markSendQuoteAsPending(send);
+      markSendQuoteAsPending(send.id);
     },
-    onExpired: (account, send) => {
-      // TODO: this should probaby trigger mutation that will then call expire. That way mutation will be responsible for errors and retries.
-      cashuSendService.expireSendQuote(account, send);
+    onExpired: (_, send) => {
+      expireSendQuote(send.id);
     },
-    onPaid: (account, send, meltQuote) => {
-      // TODO: this should probaby trigger mutation that will then call expire. That way mutation will be responsible for errors and retries.
-      cashuSendService.completeSendQuote(account, send, meltQuote);
+    onPaid: (_, send, meltQuote) => {
+      completeSendQuote({
+        sendQuoteId: send.id,
+        meltQuote,
+      });
     },
   });
 }

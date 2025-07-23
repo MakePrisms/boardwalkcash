@@ -614,7 +614,7 @@ const useOnMintQuoteStateChange = ({
 
   const processMintQuote = useCallback(
     async (mintQuote: MintQuoteResponse) => {
-      console.debug('Processing mint quote', mintQuote);
+      console.debug('Mint quote updated', mintQuote);
 
       const relatedReceiveQuote = pendingQuotesCache.getByMintQuoteId(
         mintQuote.quote,
@@ -694,20 +694,61 @@ export function useTrackPendingCashuReceiveQuotes() {
 export function useProcessCashuReceiveQuoteTasks() {
   const cashuReceiveQuoteService = useCashuReceiveQuoteService();
   const pendingQuotes = usePendingCashuReceiveQuotes();
+  const getCashuAccount = useGetLatestCashuAccount();
+
+  const { mutate: completeReceiveQuote } = useMutation({
+    mutationFn: async (receiveQuoteId: string) => {
+      const quote = pendingQuotes.find((q) => q.id === receiveQuoteId);
+      if (!quote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed or failed in the meantime.
+        return;
+      }
+      const account = await getCashuAccount(quote.accountId);
+
+      return cashuReceiveQuoteService.completeReceive(account, quote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, receiveQuoteId) => {
+      console.error('Complete receive quote error', {
+        cause: error,
+        receiveQuoteId,
+      });
+    },
+  });
+
+  const { mutate: expireReceiveQuote } = useMutation({
+    mutationFn: async (receiveQuoteId: string) => {
+      const quote = pendingQuotes.find((q) => q.id === receiveQuoteId);
+      if (!quote) {
+        // This means that the quote is not pending anymore so it was removed from the cache.
+        // This can happen if the quote was completed or failed in the meantime.
+        return;
+      }
+
+      await cashuReceiveQuoteService.expire(quote);
+    },
+    retry: 3,
+    throwOnError: true,
+    onError: (error, receiveQuoteId) => {
+      console.error('Expire receive quote error', {
+        cause: error,
+        receiveQuoteId,
+      });
+    },
+  });
 
   useOnMintQuoteStateChange({
     quotes: pendingQuotes,
-    onPaid: (account, quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.completeReceive(account, quote);
+    onPaid: (_, quote) => {
+      completeReceiveQuote(quote.id);
     },
-    onIssued: (account, quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.completeReceive(account, quote);
+    onIssued: (_, quote) => {
+      completeReceiveQuote(quote.id);
     },
     onExpired: (quote) => {
-      // TODO: this should probaby trigger mutation that will then call related service method. That way mutation will be responsible for errors and retries.
-      cashuReceiveQuoteService.expire(quote);
+      expireReceiveQuote(quote.id);
     },
   });
 }

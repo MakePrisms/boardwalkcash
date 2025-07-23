@@ -106,7 +106,7 @@
     "ws": "8.18.2"
   },
   "engines": {
-    "bun": "1.2.13",
+    "bun": "1.2.18",
     "node": "22.x"
   },
   "engines:comments": {

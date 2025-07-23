@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { Page } from '~/components/page';
 import { Redirect } from '~/components/redirect';
 import { ReceiveCashuToken } from '~/features/receive';
 import { extractCashuToken } from '~/lib/cashu';
+import { ReceiveCashuTokenSkeleton } from './receive-cashu-token-skeleton';
 
 export default function ProtectedReceiveCashuToken() {
   const location = useLocation();
@@ -22,11 +24,13 @@ export default function ProtectedReceiveCashuToken() {
 
   return (
     <Page>
-      <ReceiveCashuToken
-        token={token}
-        autoClaimToken={autoClaim}
-        preferredReceiveAccountId={selectedAccountId}
-      />
+      <Suspense fallback={<ReceiveCashuTokenSkeleton />}>
+        <ReceiveCashuToken
+          token={token}
+          autoClaimToken={autoClaim}
+          preferredReceiveAccountId={selectedAccountId}
+        />
+      </Suspense>
     </Page>
   );
 }
