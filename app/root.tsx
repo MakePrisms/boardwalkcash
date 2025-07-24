@@ -109,12 +109,29 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
+        {/* Theme color for different display modes */}
         <meta
           name="theme-color"
           content={getBgColorForTheme(theme, effectiveColorMode)}
         />
-        {/* Android Chrome specific meta tags for navigation bar */}
+        <meta
+          name="theme-color"
+          media="(display-mode: standalone)"
+          content={getBgColorForTheme(theme, effectiveColorMode)}
+        />
+        <meta
+          name="theme-color"
+          media="(display-mode: browser)"
+          content={getBgColorForTheme(theme, effectiveColorMode)}
+        />
+        {/* Android Chrome specific meta tags */}
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="Agicash" />
+        {/* Additional Android theming */}
+        <meta
+          name="msapplication-TileColor"
+          content={getBgColorForTheme(theme, effectiveColorMode)}
+        />
         <meta
           name="msapplication-navbutton-color"
           content={getBgColorForTheme(theme, effectiveColorMode)}

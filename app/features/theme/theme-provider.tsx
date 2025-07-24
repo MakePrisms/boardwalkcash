@@ -36,6 +36,8 @@ function saveCookies(
 }
 
 const changeStatusBarColor = (color: string) => {
+  console.log('Setting theme color to:', color); // Debug log
+
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) {
     metaThemeColor.setAttribute('content', color);
@@ -47,6 +49,14 @@ const changeStatusBarColor = (color: string) => {
   );
   if (metaNavButtonColor) {
     metaNavButtonColor.setAttribute('content', color);
+  }
+
+  // Update tile color for Windows/Android
+  const metaTileColor = document.querySelector(
+    'meta[name="msapplication-TileColor"]',
+  );
+  if (metaTileColor) {
+    metaTileColor.setAttribute('content', color);
   }
 };
 
