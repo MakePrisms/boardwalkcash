@@ -40,6 +40,14 @@ const changeStatusBarColor = (color: string) => {
   if (metaThemeColor) {
     metaThemeColor.setAttribute('content', color);
   }
+
+  // Also update navigation bar color for Android
+  const metaNavButtonColor = document.querySelector(
+    'meta[name="msapplication-navbutton-color"]',
+  );
+  if (metaNavButtonColor) {
+    metaNavButtonColor.setAttribute('content', color);
+  }
 };
 
 function updateDocumentClasses(

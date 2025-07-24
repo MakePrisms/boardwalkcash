@@ -105,9 +105,18 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <html lang="en" className={themeClassName}>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <meta
           name="theme-color"
+          content={getBgColorForTheme(theme, effectiveColorMode)}
+        />
+        {/* Android Chrome specific meta tags for navigation bar */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta
+          name="msapplication-navbutton-color"
           content={getBgColorForTheme(theme, effectiveColorMode)}
         />
         <Meta />

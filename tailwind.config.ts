@@ -60,6 +60,12 @@ export default {
       fontSize: {
         '2xs': '0.625rem',
       },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
       animation: {
         shake: 'shake 0.2s ease-in-out',
         slam: 'slam 0.4s ease-out both',

@@ -175,6 +175,7 @@ export const loader = ({ request }: Route.LoaderArgs) => {
     scope: '/',
     orientation: 'portrait',
     display: 'standalone',
+    display_override: ['window-controls-overlay'],
     theme_color: background,
     background_color: background,
     icons: [

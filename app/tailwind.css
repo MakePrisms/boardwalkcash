@@ -97,4 +97,20 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* PWA safe area support for edge-to-edge display */
+  @supports (padding: max(0px)) {
+    .safe-area-inset-top {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    .safe-area-inset-bottom {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+    .safe-area-inset-left {
+      padding-left: max(1rem, env(safe-area-inset-left));
+    }
+    .safe-area-inset-right {
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+  }
 }
