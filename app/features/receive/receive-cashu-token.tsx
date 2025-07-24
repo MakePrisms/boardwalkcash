@@ -15,6 +15,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
+import { areMintUrlsEqual } from '~/lib/cashu';
 import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
@@ -30,12 +31,12 @@ import {
   useSetDefaultCurrency,
 } from '../user/user-hooks';
 import {
+  useCashuTokenCrossAccountClaim,
+  useCashuTokenSameAccountClaim,
   useCashuTokenSourceAccountQuery,
   useCashuTokenWithClaimableProofs,
-  useReceiveCashuToken,
   useReceiveCashuTokenAccounts,
 } from './receive-cashu-token-hooks';
-import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
@@ -112,20 +113,30 @@ export default function ReceiveToken({
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
-  const { status, claimToken } = useReceiveCashuToken({
-    onError: (error) => {
-      toast({
-        title: 'Failed to claim token',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-    onLightningPaymentInitiated: (transactionId) => {
-      navigate(`/transactions/${transactionId}?redirectTo=/`, {
-        transition: 'slideLeft',
-        applyTo: 'newView',
-      });
-    },
+  const onError = (error: Error) => {
+    toast({
+      title: 'Failed to claim token',
+      description: error.message,
+      variant: 'destructive',
+    });
+  };
+  const onTransactionCreated = (transactionId: string) => {
+    navigate(`/transactions/${transactionId}?redirectTo=/`, {
+      transition: 'slideLeft',
+      applyTo: 'newView',
+    });
+  };
+
+  // Hook for same mint/currency claims
+  const sameAccountClaim = useCashuTokenSameAccountClaim({
+    onTransactionCreated,
+    onError,
+  });
+
+  // Hook for cross mint/currency claims
+  const crossAccountClaim = useCashuTokenCrossAccountClaim({
+    onTransactionCreated,
+    onError,
   });
 
   const { mutate: claimTokenMutation, isPending: isClaimingToken } =
@@ -148,7 +159,15 @@ export default function ReceiveToken({
           account = await addAndSetReceiveAccount(preferredAccount);
         }
 
-        await claimToken({ token, account });
+        const isSameAccountClaim =
+          account.currency === tokenToMoney(token).currency &&
+          areMintUrlsEqual(account.mintUrl, token.mint);
+
+        if (isSameAccountClaim) {
+          await sameAccountClaim.mutateAsync({ token, account });
+        } else {
+          await crossAccountClaim.mutateAsync({ token, account });
+        }
 
         return { account, isAutoClaim };
       },
@@ -189,15 +208,6 @@ export default function ReceiveToken({
     claimTokenMutation({ token: claimableToken, isAutoClaim: true });
   }, [autoClaimToken, claimableToken, claimTokenMutation]);
 
-  if (status === 'SUCCESS') {
-    return (
-      <SuccessfulReceivePage
-        amount={tokenToMoney(claimableToken ?? token)}
-        account={receiveAccount}
-      />
-    );
-  }
-
   return (
     <>
       <PageHeader className="z-10">
@@ -233,7 +243,7 @@ export default function ReceiveToken({
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={status === 'CLAIMING' || isClaimingToken}
+            loading={isClaimingToken}
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>

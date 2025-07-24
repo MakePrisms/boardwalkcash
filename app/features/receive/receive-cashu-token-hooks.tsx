@@ -1,5 +1,5 @@
-import type { Token } from '@cashu/cashu-ts';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { MintOperationError, type Token } from '@cashu/cashu-ts';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
   Account,
@@ -12,18 +12,22 @@ import {
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
+import { useGetExchangeRate } from '~/hooks/use-exchange-rate';
 import {
   areMintUrlsEqual,
   getCashuProtocolUnit,
+  getCashuUnit,
+  getCashuWallet,
   getClaimableProofs,
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import { useTransaction } from '../transactions/transaction-hooks';
-import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
+import { useUser } from '../user/user-hooks';
+import { useFailCashuReceiveQuote } from './cashu-receive-quote-hooks';
 import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
+import { useReceiveCashuTokenService } from './receive-cashu-token-service';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -321,121 +325,120 @@ export function useReceiveCashuTokenAccounts(
   };
 }
 
-type ClaimStatus = 'IDLE' | 'CLAIMING' | 'SUCCESS' | 'ERROR';
-
-type UseReceiveCashuTokenProps = {
-  onError?: (error: Error) => void;
-  onLightningPaymentInitiated?: (transactionId: string) => void;
-};
-
-export function useReceiveCashuToken({
+/**
+ * Hook for claiming cashu tokens to the same mint and currency account.
+ * This performs a swap operation to claim the token to the same account.
+ */
+export function useCashuTokenSameAccountClaim({
+  onTransactionCreated,
   onError,
-  onLightningPaymentInitiated,
-}: UseReceiveCashuTokenProps = {}) {
+}: {
+  onTransactionCreated?: (transactionId: string) => void;
+  onError?: (error: Error) => void;
+} = {}) {
+  const onTransactionCreatedRef = useLatest(onTransactionCreated);
   const onErrorRef = useLatest(onError);
-  const onLightningPaymentInitiatedRef = useLatest(onLightningPaymentInitiated);
+  const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
 
-  // For receiving tokens to the source account
-  const {
-    mutateAsync: createCashuTokenSwap,
-    data: swapData,
-    status: createCashuTokenSwapStatus,
-  } = useCreateCashuTokenSwap();
-
-  // For receiving tokens to a different mint by making a lightning payment
-  const {
-    mutateAsync: meltTokenToCashuAccount,
-    status: meltTokenToCashuAccountStatus,
-    data: cashuReceiveQuote,
-  } = useMeltTokenToCashuAccount();
-
-  const { data: transaction } = useTransaction({
-    transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
-  });
-
-  const claimToken = async ({
-    token,
-    account,
-  }: {
-    token: Token;
-    account: CashuAccount;
-  }) => {
-    try {
-      const isSameMintAndCurrency =
-        account.currency === tokenToMoney(token).currency &&
-        areMintUrlsEqual(account.mintUrl, token.mint);
-
-      if (isSameMintAndCurrency) {
-        await createCashuTokenSwap({ token, accountId: account.id });
-      } else {
-        const { transactionId: cashuReceiveQuoteTransactionId } =
-          await meltTokenToCashuAccount({
-            token,
-            account,
-          });
-        onLightningPaymentInitiatedRef.current?.(
-          cashuReceiveQuoteTransactionId,
+  return useMutation({
+    mutationFn: async ({
+      token,
+      account,
+    }: {
+      token: Token;
+      account: CashuAccount;
+    }) => {
+      try {
+        const swapData = await createCashuTokenSwap({
+          token,
+          accountId: account.id,
+        });
+        onTransactionCreatedRef.current?.(swapData.transactionId);
+        return swapData;
+      } catch (error) {
+        console.error('Failed to claim token to same account', error);
+        onErrorRef.current?.(
+          error instanceof Error
+            ? error
+            : new Error('An unknown error occurred'),
         );
       }
-    } catch (error) {
-      console.error('Failed to claim token', error);
+    },
+  });
+}
 
-      onErrorRef.current?.(
-        error instanceof Error ? error : new Error('An unknown error occurred'),
-      );
-    }
-  };
+type ClaimTokenProps = {
+  /** The token to claim */
+  token: Token;
+  /** The account to claim the token to */
+  account: CashuAccount;
+};
 
-  const status: ClaimStatus = (() => {
-    // Check if either mutation is currently running
-    const isMutationPending =
-      createCashuTokenSwapStatus === 'pending' ||
-      meltTokenToCashuAccountStatus === 'pending';
+/**
+ * Hook for claiming cashu tokens to a different mint or currency account.
+ */
+export function useCashuTokenCrossAccountClaim({
+  onTransactionCreated,
+  onError,
+}: {
+  onTransactionCreated?: (transactionId: string) => void;
+  onError?: (error: Error) => void;
+} = {}) {
+  const onTransactionCreatedRef = useLatest(onTransactionCreated);
+  const onErrorRef = useLatest(onError);
+  const userId = useUser((user) => user.id);
+  const getExchangeRate = useGetExchangeRate();
+  const receiveCashuTokenService = useReceiveCashuTokenService();
+  const { mutateAsync: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
-    if (isMutationPending) {
-      return 'CLAIMING';
-    }
+  return useMutation({
+    mutationFn: async ({ token, account }: ClaimTokenProps) => {
+      try {
+        const tokenCurrency = tokenToMoney(token).currency;
+        const accountCurrency = account.currency;
+        const exchangeRate = await getExchangeRate(
+          `${tokenCurrency}-${accountCurrency}`,
+        );
 
-    // Check if either mutation failed
-    const hasMutationFailed =
-      createCashuTokenSwapStatus === 'error' ||
-      meltTokenToCashuAccountStatus === 'error';
+        const {
+          cashuReceiveQuote,
+          cashuMeltQuote,
+          token: originalToken,
+        } = await receiveCashuTokenService.setupCrossAccountClaim({
+          userId,
+          token,
+          account,
+          exchangeRate,
+        });
 
-    if (hasMutationFailed) {
-      return 'ERROR';
-    }
+        const sourceWallet = getCashuWallet(originalToken.mint, {
+          unit: getCashuUnit(tokenToMoney(originalToken).currency),
+        });
 
-    // Check if mutation succeeded but we don't have transaction data yet
-    // This handles the gap between mutation completion and transaction loading
-    const hasMutationSucceeded =
-      createCashuTokenSwapStatus === 'success' ||
-      meltTokenToCashuAccountStatus === 'success';
+        onTransactionCreatedRef.current?.(cashuReceiveQuote.transactionId);
 
-    if (hasMutationSucceeded && !transaction) {
-      return 'CLAIMING';
-    }
+        try {
+          await sourceWallet.meltProofs(cashuMeltQuote, originalToken.proofs);
+        } catch (error) {
+          if (error instanceof MintOperationError) {
+            await failCashuReceiveQuote({
+              quoteId: cashuReceiveQuote.id,
+              version: cashuReceiveQuote.version,
+              reason: error.message,
+            });
+          }
+          throw error;
+        }
 
-    // Handle transaction states
-    if (transaction) {
-      switch (transaction.state) {
-        case 'DRAFT':
-        case 'PENDING':
-          return 'CLAIMING';
-        case 'COMPLETED':
-          return 'SUCCESS';
-        case 'FAILED':
-        case 'REVERSED':
-          return 'ERROR';
-        default:
-          return 'IDLE';
+        return { cashuReceiveQuote, cashuMeltQuote, token: originalToken };
+      } catch (error) {
+        console.error('Failed to claim token to cross account', error);
+        onErrorRef.current?.(
+          error instanceof Error
+            ? error
+            : new Error('An unknown error occurred'),
+        );
       }
-    }
-
-    return 'IDLE';
-  })();
-
-  return {
-    status,
-    claimToken,
-  };
+    },
+  });
 }

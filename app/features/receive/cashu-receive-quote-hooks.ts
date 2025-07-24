@@ -1,7 +1,6 @@
 import {
   HttpResponseError,
   type MintQuoteResponse,
-  type Token,
   type WebSocketSupport,
 } from '@cashu/cashu-ts';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -137,13 +136,20 @@ export function useCreateCashuReceiveQuote() {
     scope: {
       id: 'create-cashu-receive-quote',
     },
-    mutationFn: ({ account, amount, description }: CreateProps) =>
-      cashuReceiveQuoteService.createLightningQuote({
-        userId,
+    mutationFn: async ({ account, amount, description }: CreateProps) => {
+      const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
         account,
         amount,
         description,
-      }),
+        receiveType: 'LIGHTNING',
+      });
+
+      return cashuReceiveQuoteService.createReceiveQuote({
+        userId,
+        account,
+        receiveQuote: lightningQuote,
+      });
+    },
     onSuccess: (data) => {
       cashuReceiveQuoteCache.add(data);
     },
@@ -151,25 +157,16 @@ export function useCreateCashuReceiveQuote() {
   });
 }
 
-export function useMeltTokenToCashuAccount() {
-  const userId = useUser((user) => user.id);
-  const cashuReceiveQuoteService = useCashuReceiveQuoteService();
-  const cashuReceiveQuoteCache = useCashuReceiveQuoteCache();
-
+export function useFailCashuReceiveQuote() {
+  const cashuReceiveQuoteRepository = useCashuReceiveQuoteRepository();
   return useMutation({
-    mutationKey: ['melt-token-to-cashu-account'],
-    scope: {
-      id: 'melt-token-to-cashu-account',
-    },
-    mutationFn: ({ token, account }: { token: Token; account: CashuAccount }) =>
-      cashuReceiveQuoteService.meltTokenToCashuAccount({
-        userId,
-        token,
-        account,
-      }),
-    onSuccess: (data) => {
-      cashuReceiveQuoteCache.add(data);
-    },
+    mutationKey: ['fail-cashu-receive-quote'],
+    mutationFn: ({
+      quoteId,
+      version,
+      reason,
+    }: { quoteId: string; version: number; reason: string }) =>
+      cashuReceiveQuoteRepository.fail({ id: quoteId, version, reason }),
   });
 }
 
