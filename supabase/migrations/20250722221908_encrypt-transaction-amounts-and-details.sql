@@ -1,6 +1,9 @@
 -- Add encrypted transaction details column to transactions table
 ALTER TABLE "wallet"."transactions" ADD COLUMN "encrypted_transaction_details" TEXT NOT NULL;
 
+-- Drop the amount column since amounts are now stored encrypted in transaction details
+ALTER TABLE "wallet"."transactions" DROP COLUMN "amount";
+
 -- Drop the old create_cashu_receive_quote function
 DROP FUNCTION IF EXISTS wallet.create_cashu_receive_quote(uuid, uuid, numeric, text, text, text, text, timestamp with time zone, text, text, text, text);
 
@@ -15,7 +18,9 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_receive_quote(
     p_state text, 
     p_locking_derivation_path text, 
     p_receive_type text, 
-    p_description text DEFAULT NULL::text)
+    p_encrypted_transaction_details text,
+    p_description text DEFAULT NULL::text
+)
  RETURNS wallet.cashu_receive_quotes
  LANGUAGE plpgsql
 AS $function$
@@ -42,16 +47,16 @@ begin
         direction,
         type,
         state,
-        amount,
-        currency
+        currency,
+        encrypted_transaction_details
     ) values (
         p_user_id,
         p_account_id,
         'RECEIVE',
         v_transaction_type,
         'DRAFT',
-        p_amount,
-        p_currency
+        p_currency,
+        p_encrypted_transaction_details
     ) returning id into v_transaction_id;
 
     -- Create quote record
@@ -107,6 +112,7 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_token_swap(
     p_receive_amount numeric,
     p_fee_amount numeric,
     p_account_version integer,
+    p_encrypted_transaction_details text,
     p_reversed_transaction_id uuid DEFAULT NULL)
  RETURNS wallet.cashu_token_swaps
  LANGUAGE plpgsql
@@ -124,20 +130,20 @@ begin
         direction,
         type,
         state,
-        amount,
         currency,
         reversed_transaction_id,
-        pending_at
+        pending_at,
+        encrypted_transaction_details
     ) values (
         p_user_id,
         p_account_id,
         'RECEIVE',
         'CASHU_TOKEN',
         'PENDING',
-        p_receive_amount,
         p_currency,
         p_reversed_transaction_id,
-        now()
+        now(),
+        p_encrypted_transaction_details
     ) returning id into v_transaction_id;
 
   -- Calculate new counter
@@ -218,7 +224,8 @@ create or replace function wallet.create_cashu_send_quote(
     p_number_of_change_outputs integer,
     p_proofs_to_send text,
     p_account_version integer,
-    p_proofs_to_keep text
+    p_proofs_to_keep text,
+    p_encrypted_transaction_details text
 ) returns wallet.create_cashu_send_quote_result
 language plpgsql
 as $function$
@@ -238,16 +245,16 @@ begin
         direction,
         type,
         state,
-        amount,
-        currency
+        currency,
+        encrypted_transaction_details
     ) values (
         p_user_id,
         p_account_id,
         'SEND',
         'CASHU_LIGHTNING',
         'PENDING',
-        p_amount_to_receive + p_lightning_fee_reserve + p_cashu_fee,
-        p_currency
+        p_currency,
+        p_encrypted_transaction_details
     ) returning id into v_transaction_id;
 
     -- insert the new cashu send quote
@@ -331,6 +338,7 @@ CREATE OR REPLACE FUNCTION wallet.create_cashu_send_swap(
     p_send_swap_fee numeric,
     p_receive_swap_fee numeric,
     p_total_amount numeric,
+    p_encrypted_transaction_details text,
     p_keyset_id text DEFAULT NULL::text,
     p_keyset_counter integer DEFAULT NULL::integer,
     p_updated_keyset_counter integer DEFAULT NULL::integer,
@@ -378,18 +386,18 @@ begin
         direction,
         type,
         state,
-        amount,
         currency,
-        pending_at
+        pending_at,
+        encrypted_transaction_details
     ) values (
         p_user_id,
         p_account_id,
         'SEND',
         'CASHU_TOKEN',
         'PENDING',
-        p_amount_to_send,
         p_currency,
-        now()
+        now(),
+        p_encrypted_transaction_details
     ) returning id into v_transaction_id;
 
     -- Create send swap record
@@ -466,7 +474,8 @@ create or replace function wallet.complete_cashu_send_quote(
     p_payment_preimage text,
     p_amount_spent numeric,
     p_account_proofs text,
-    p_account_version integer
+    p_account_version integer,
+    p_encrypted_transaction_details text
 ) returns wallet.update_cashu_send_quote_result
 language plpgsql
 as $function$
@@ -517,11 +526,11 @@ begin
         raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one.', v_quote.account_id, p_account_version;
     end if;
 
-    -- Update the transaction state to COMPLETED and set amount to final amount spent
+    -- Update the transaction state to COMPLETED
     update wallet.transactions
     set state = 'COMPLETED',
         completed_at = now(),
-        amount = p_amount_spent
+        encrypted_transaction_details = p_encrypted_transaction_details
     where id = v_quote.transaction_id;
 
     return (v_updated_quote, v_updated_account);

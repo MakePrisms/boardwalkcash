@@ -494,11 +494,11 @@ export type Database = {
       transactions: {
         Row: {
           account_id: string
-          amount: number
           completed_at: string | null
           created_at: string
           currency: string
           direction: string
+          encrypted_transaction_details: string
           failed_at: string | null
           id: string
           pending_at: string | null
@@ -511,11 +511,11 @@ export type Database = {
         }
         Insert: {
           account_id: string
-          amount: number
           completed_at?: string | null
           created_at?: string
           currency: string
           direction: string
+          encrypted_transaction_details: string
           failed_at?: string | null
           id?: string
           pending_at?: string | null
@@ -528,11 +528,11 @@ export type Database = {
         }
         Update: {
           account_id?: string
-          amount?: number
           completed_at?: string | null
           created_at?: string
           currency?: string
           direction?: string
+          encrypted_transaction_details?: string
           failed_at?: string | null
           id?: string
           pending_at?: string | null
@@ -679,6 +679,7 @@ export type Database = {
           p_amount_spent: number
           p_account_proofs: string
           p_account_version: number
+          p_encrypted_transaction_details: string
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
@@ -709,6 +710,7 @@ export type Database = {
           p_state: string
           p_locking_derivation_path: string
           p_receive_type: string
+          p_encrypted_transaction_details: string
           p_description?: string
         }
         Returns: {
@@ -755,6 +757,7 @@ export type Database = {
           p_proofs_to_send: string
           p_account_version: number
           p_proofs_to_keep: string
+          p_encrypted_transaction_details: string
         }
         Returns: Database["wallet"]["CompositeTypes"]["create_cashu_send_quote_result"]
       }
@@ -774,6 +777,7 @@ export type Database = {
           p_send_swap_fee: number
           p_receive_swap_fee: number
           p_total_amount: number
+          p_encrypted_transaction_details: string
           p_keyset_id?: string
           p_keyset_counter?: number
           p_updated_keyset_counter?: number
@@ -823,6 +827,7 @@ export type Database = {
           p_receive_amount: number
           p_fee_amount: number
           p_account_version: number
+          p_encrypted_transaction_details: string
           p_reversed_transaction_id?: string
         }
         Returns: {
@@ -919,11 +924,11 @@ export type Database = {
         }
         Returns: {
           account_id: string
-          amount: number
           completed_at: string | null
           created_at: string
           currency: string
           direction: string
+          encrypted_transaction_details: string
           failed_at: string | null
           id: string
           pending_at: string | null

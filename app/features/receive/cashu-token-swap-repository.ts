@@ -9,6 +9,7 @@ import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import { UniqueConstraintError } from '../shared/error';
+import type { CashuReceiveSwapTransactionDetails } from '../transactions/transaction';
 import type { CashuTokenSwap } from './cashu-token-swap';
 
 type Options = {
@@ -46,9 +47,9 @@ type CreateTokenSwap = {
    */
   outputAmounts: number[];
   /**
-   * The amount of the fee in the unit of the token.
+   * The fee to swap the token.
    */
-  fee: number;
+  receiveSwapFee: Money;
   /**
    * Cashu token being claimed
    */
@@ -81,7 +82,7 @@ export class CashuTokenSwapRepository {
       accountId,
       keysetId,
       inputAmount,
-      fee,
+      receiveSwapFee,
       keysetCounter,
       outputAmounts,
       accountVersion,
@@ -92,7 +93,19 @@ export class CashuTokenSwapRepository {
     const amount = tokenToMoney(token);
     const unit = getDefaultUnit(amount.currency);
     const tokenHash = await getTokenHash(token);
-    const encryptedProofs = await this.encryption.encrypt(token.proofs);
+
+    const netAmountReceived = amount.subtract(receiveSwapFee);
+    const details: CashuReceiveSwapTransactionDetails = {
+      totalAmount: netAmountReceived,
+      cashuReceiveSwapFee: receiveSwapFee,
+      totalFees: receiveSwapFee,
+      tokenAmount: amount,
+    };
+
+    const [encryptedTransactionDetails, encryptedProofs] = await Promise.all([
+      this.encryption.encrypt(details),
+      this.encryption.encrypt(token.proofs),
+    ]);
 
     const query = this.db.rpc('create_cashu_token_swap', {
       p_token_hash: tokenHash,
@@ -106,9 +119,10 @@ export class CashuTokenSwapRepository {
       p_output_amounts: outputAmounts,
       p_input_amount: inputAmount,
       p_receive_amount: amount.toNumber(unit),
-      p_fee_amount: fee,
+      p_fee_amount: receiveSwapFee.toNumber(unit),
       p_account_version: accountVersion,
       p_reversed_transaction_id: reversedTransactionId,
+      p_encrypted_transaction_details: encryptedTransactionDetails,
     });
 
     if (options?.abortSignal) {
