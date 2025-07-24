@@ -1,11 +1,25 @@
-import { Money } from '~/lib/money';
 import {
   type AgicashDb,
   type AgicashDbTransaction,
   agicashDb,
 } from '../agicash-db/database';
-import { getDefaultUnit } from '../shared/currencies';
-import type { Transaction } from './transaction';
+import { useEncryption } from '../shared/encryption';
+import type {
+  CashuReceiveQuoteTransactionDetails,
+  CashuReceiveSwapTransactionDetails,
+  CashuSendSwapTransactionDetails,
+  CompletedCashuSendQuoteTransactionDetails,
+  IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
+} from './transaction';
+
+type Encryption = {
+  encrypt: <T = unknown>(data: T) => Promise<string>;
+  decrypt: <T = unknown>(
+    data: string,
+    customDeserializers?: Map<string, (value: unknown) => unknown>,
+  ) => Promise<T>;
+};
 
 type Options = {
   abortSignal?: AbortSignal;
@@ -23,8 +37,18 @@ type ListOptions = Options & {
   pageSize?: number;
 };
 
+type UnifiedTransactionDetails =
+  | CashuReceiveSwapTransactionDetails
+  | CashuSendSwapTransactionDetails
+  | CashuReceiveQuoteTransactionDetails
+  | IncompleteCashuSendQuoteTransactionDetails
+  | CompletedCashuSendQuoteTransactionDetails;
+
 export class TransactionRepository {
-  constructor(private db: AgicashDb) {}
+  constructor(
+    private db: AgicashDb,
+    private encryption: Encryption,
+  ) {}
 
   async get(transactionId: string, options?: Options) {
     const query = this.db.from('transactions').select().eq('id', transactionId);
@@ -39,7 +63,7 @@ export class TransactionRepository {
       throw new Error('Failed to get transaction', { cause: error });
     }
 
-    return TransactionRepository.toTransaction(data);
+    return this.toTransaction(data);
   }
 
   async list({
@@ -66,7 +90,9 @@ export class TransactionRepository {
       throw new Error('Failed to fetch transactions', { cause: error });
     }
 
-    const transactions = data.map(TransactionRepository.toTransaction);
+    const transactions = await Promise.all(
+      data.map((transaction) => this.toTransaction(transaction)),
+    );
     const lastTransaction = transactions[transactions.length - 1];
 
     return {
@@ -81,19 +107,16 @@ export class TransactionRepository {
     };
   }
 
-  static toTransaction(data: AgicashDbTransaction): Transaction {
-    return {
+  async toTransaction(data: AgicashDbTransaction): Promise<Transaction> {
+    const details = await this.encryption.decrypt<UnifiedTransactionDetails>(
+      data.encrypted_transaction_details,
+    );
+
+    const baseTx = {
       id: data.id,
       userId: data.user_id,
-      direction: data.direction,
-      type: data.type,
-      state: data.state,
       accountId: data.account_id,
-      amount: new Money({
-        amount: data.amount,
-        currency: data.currency,
-        unit: getDefaultUnit(data.currency),
-      }),
+      amount: details.totalAmount,
       createdAt: data.created_at,
       pendingAt: data.pending_at,
       completedAt: data.completed_at,
@@ -101,9 +124,63 @@ export class TransactionRepository {
       reversedTransactionId: data.reversed_transaction_id,
       reversedAt: data.reversed_at,
     };
+
+    const { state, direction, type } = data;
+
+    if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
+      if (state === 'COMPLETED')
+        return {
+          ...baseTx,
+          direction,
+          type,
+          state,
+          details: details as CompletedCashuSendQuoteTransactionDetails,
+        };
+      if (['DRAFT', 'PENDING', 'FAILED'].includes(state))
+        return {
+          ...baseTx,
+          direction,
+          type,
+          state: state as 'DRAFT' | 'PENDING' | 'FAILED', // will never be REVERSED
+          details: details as IncompleteCashuSendQuoteTransactionDetails,
+        };
+    }
+
+    if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
+      return {
+        ...baseTx,
+        direction,
+        type,
+        state,
+        details: details as CashuReceiveQuoteTransactionDetails,
+      };
+    }
+
+    if (type === 'CASHU_TOKEN') {
+      if (direction === 'RECEIVE') {
+        return {
+          ...baseTx,
+          direction,
+          type,
+          state,
+          details: details as CashuReceiveSwapTransactionDetails,
+        };
+      }
+
+      return {
+        ...baseTx,
+        direction,
+        type,
+        state,
+        details: details as CashuSendSwapTransactionDetails,
+      };
+    }
+
+    throw new Error('Invalid transaction data', { cause: data });
   }
 }
 
 export function useTransactionRepository() {
-  return new TransactionRepository(agicashDb);
+  const encryption = useEncryption();
+  return new TransactionRepository(agicashDb, encryption);
 }

@@ -7,6 +7,10 @@ import {
 } from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
+import type {
+  CompletedCashuSendQuoteTransactionDetails,
+  IncompleteCashuSendQuoteTransactionDetails,
+} from '../transactions/transaction';
 import type { CashuSendQuote } from './cashu-send-quote';
 
 type Options = {
@@ -116,11 +120,27 @@ export class CashuSendQuoteRepository {
     }: CreateSendQuote,
     options?: Options,
   ): Promise<CashuSendQuote> {
-    const [encryptedProofsToSend, encryptedProofsToKeep] = await Promise.all([
+    const unit = getDefaultUnit(amountToReceive.currency);
+    const totalFees = lightningFeeReserve.add(cashuFee);
+
+    const details: IncompleteCashuSendQuoteTransactionDetails = {
+      totalAmount: amountToReceive.add(totalFees),
+      cashuSendSwapFee: cashuFee,
+      lightningFeeReserve,
+      amountRequested,
+      totalFees,
+      paymentRequest,
+    };
+
+    const [
+      encryptedProofsToSend,
+      encryptedProofsToKeep,
+      encryptedTransactionDetails,
+    ] = await Promise.all([
       this.encryption.encrypt(proofsToSend),
       this.encryption.encrypt(proofsToKeep),
+      this.encryption.encrypt(details),
     ]);
-    const unit = getDefaultUnit(amountToReceive.currency);
 
     const query = this.db.rpc('create_cashu_send_quote', {
       p_user_id: userId,
@@ -142,6 +162,7 @@ export class CashuSendQuoteRepository {
       p_proofs_to_send: encryptedProofsToSend,
       p_account_version: accountVersion,
       p_proofs_to_keep: encryptedProofsToKeep,
+      p_encrypted_transaction_details: encryptedTransactionDetails,
     });
 
     if (options?.abortSignal) {
@@ -167,17 +188,16 @@ export class CashuSendQuoteRepository {
    */
   async complete(
     {
-      quoteId,
+      quote,
       paymentPreimage,
       amountSpent,
-      quoteVersion,
       accountProofs,
       accountVersion,
     }: {
       /**
-       * ID of the cashu send quote.
+       * The cashu send quote to complete.
        */
-      quoteId: string;
+      quote: CashuSendQuote;
       /**
        * Preimage of the lightning payment.
        */
@@ -186,10 +206,6 @@ export class CashuSendQuoteRepository {
        * Amount spent on the send.
        */
       amountSpent: Money;
-      /**
-       * Version of the cashu send quote as seen by the client. Used for optimistic concurrency control.
-       */
-      quoteVersion: number;
       /**
        * Account proofs after the send.
        */
@@ -201,17 +217,40 @@ export class CashuSendQuoteRepository {
     },
     options?: Options,
   ): Promise<CashuSendQuote> {
-    const encryptedAccountProofs = await this.encryption.encrypt(accountProofs);
+    const actualLightningFee = amountSpent
+      .subtract(quote.amountToReceive)
+      .subtract(quote.cashuFee);
+
+    const totalFees = actualLightningFee.add(quote.cashuFee);
+
+    const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
+      {
+        lightningFeeReserve: quote.lightningFeeReserve,
+        cashuSendSwapFee: quote.cashuFee,
+        amountRequested: quote.amountRequested,
+        paymentRequest: quote.paymentRequest,
+        preimage: paymentPreimage,
+        totalAmount: amountSpent,
+        actualLightningFee,
+        totalFees,
+      };
+
+    const [encryptedAccountProofs, encryptedUpdatedTransactionDetails] =
+      await Promise.all([
+        this.encryption.encrypt(accountProofs),
+        this.encryption.encrypt(updatedTransactionDetails),
+      ]);
 
     const query = this.db.rpc('complete_cashu_send_quote', {
-      p_quote_id: quoteId,
+      p_quote_id: quote.id,
       p_payment_preimage: paymentPreimage,
       p_amount_spent: amountSpent.toNumber(
         getDefaultUnit(amountSpent.currency),
       ),
-      p_quote_version: quoteVersion,
+      p_quote_version: quote.version,
       p_account_proofs: encryptedAccountProofs,
       p_account_version: accountVersion,
+      p_encrypted_transaction_details: encryptedUpdatedTransactionDetails,
     });
 
     if (options?.abortSignal) {
