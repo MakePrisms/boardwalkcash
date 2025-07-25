@@ -5,20 +5,19 @@ import type { Money } from '~/lib/money';
  */
 export type CashuSendSwapTransactionDetails = {
   /**
-   * The net balance change for the account after this transaction completes.
-   * This is the amount that will be deducted from the account.
+   * This is the sum of `amountToReceive` and `totalFees`, and is the amount deducted from the account.
    */
-  totalAmount: Money;
+  amountSpent: Money;
   /**
-   * The amount requested by the user.
+   * This is the amount the the recipeint will receive after fees have been paid.
    */
-  amountRequested: Money;
+  amountToReceive: Money;
   /**
    * The fee incurred when creating sendable proofs.
    */
   cashuSendSwapFee: Money;
   /**
-   * The fee that we include in the token for the receiver.
+   * The fee that we include in the token for the receiver to claim exactly `amountToReceive`.
    */
   cashuReceiveSwapFee: Money;
   /**
@@ -32,10 +31,9 @@ export type CashuSendSwapTransactionDetails = {
  */
 export type CashuReceiveSwapTransactionDetails = {
   /**
-   * The net balance change for the account after this transaction completes.
-   * This is the amount that will be added to the account.
+   * This is the token amount minus the cashuReceiveSwapFee, and is the amount added to the account.
    */
-  totalAmount: Money;
+  amountReceived: Money;
   /**
    * The amount of the token being claimed.
    */
@@ -45,24 +43,27 @@ export type CashuReceiveSwapTransactionDetails = {
    */
   cashuReceiveSwapFee: Money;
   /**
-   * The total fees for the transaction. Sum of cashuReceiveSwapFee and cashuSendSwapFee.
+   * The total fees for the transaction. This is the same as the `cashuReceiveSwapFee`.
    */
   totalFees: Money;
 };
 
 type BaseCashuSendQuoteTransactionDetails = {
   /**
-   * The net balance change for the account after this transaction completes.
-   * This is the amount that will be deducted from the account.
+   * The sum of all proofs used as inputs to the cashu melt operation in
+   * converted from a number to Money in the currency of the account.
+   * While the transaction is incomplete, this amount will be deducted from the account.
+   * When the transaction is completed, change will be returned to the account.
    */
-  totalAmount: Money;
+  sumOfInputProofs: Money;
   /**
-   * The amount of the bolt11 payment request.
+   * Amount that the receiver will receive.
    *
-   * TODO: Right now cashu only supports invoices with an amount.
-   * This will be the amount requested by the user when we have amountless invoices.
+   * This is the amount requested in the currency of the account we are sending from.
+   * If the currency of the account we are sending from is not BTC, the mint will do
+   * the conversion using their exchange rate at the time of quote creation.
    */
-  amountRequested: Money;
+  amountToReceive: Money;
   /**
    * The amount reserved upfront to cover the maximum potential Lightning Network fees.
    *
@@ -74,10 +75,6 @@ type BaseCashuSendQuoteTransactionDetails = {
    * The fee incurred to spend the proofs in the cashu melt operation
    */
   cashuSendSwapFee: Money;
-  /**
-   * The total fees for the transaction. Sum of lightningFeeReserve and cashuSendSwapFee.
-   */
-  totalFees: Money;
   /**
    * The bolt11 payment request.
    */
@@ -96,17 +93,25 @@ export type IncompleteCashuSendQuoteTransactionDetails =
 export type CompletedCashuSendQuoteTransactionDetails =
   BaseCashuSendQuoteTransactionDetails & {
     /**
+     * This is the sum of `amountToReceive` and `totalFees`. This is the amount deducted from the account.
+     */
+    amountSpent: Money;
+    /**
      * The preimage of the lightning payment.
-     * If the lightning payment is settled internally in the mint, this will be an empty string or 0
+     * If the lightning payment is settled internally in the mint, this will be an empty string or '0x0000000000000000000000000000000000000000000000000000000000000000'
      */
     preimage: string;
     /**
      * The actual Lightning Network fee that was charged after the transaction completed.
      * This may be less than the `lightningFeeReserve` if the payment was cheaper than expected.
      *
-     * The difference between the `lightningFeeReserve` and the `actualLightningFee` is returned as change to the user.
+     * The difference between the `lightningFeeReserve` and the `lightningFee` is returned as change to the user.
      */
-    actualLightningFee: Money;
+    lightningFee: Money;
+    /**
+     * The actual fees for the transaction. Sum of lightningFee and cashuSendSwapFee.
+     */
+    totalFees: Money;
   };
 
 /**
@@ -114,14 +119,10 @@ export type CompletedCashuSendQuoteTransactionDetails =
  */
 export type CashuReceiveQuoteTransactionDetails = {
   /**
-   * The net balance change for the account after this transaction completes.
-   * This is the amount that will be added to the account.
+   * The amount of the bolt11 payment request.
+   * This amount is added to the account.
    */
-  totalAmount: Money;
-  /**
-   * The amount requested by the user for the bolt11 payment request.
-   */
-  amountRequested: Money;
+  amountReceived: Money;
   /**
    * The bolt11 payment request.
    */

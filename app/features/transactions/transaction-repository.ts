@@ -1,3 +1,4 @@
+import type { Money } from '~/lib/money';
 import {
   type AgicashDb,
   type AgicashDbTransaction,
@@ -15,10 +16,7 @@ import type {
 
 type Encryption = {
   encrypt: <T = unknown>(data: T) => Promise<string>;
-  decrypt: <T = unknown>(
-    data: string,
-    customDeserializers?: Map<string, (value: unknown) => unknown>,
-  ) => Promise<T>;
+  decrypt: <T = unknown>(data: string) => Promise<T>;
 };
 
 type Options = {
@@ -116,7 +114,6 @@ export class TransactionRepository {
       id: data.id,
       userId: data.user_id,
       accountId: data.account_id,
-      amount: details.totalAmount,
       createdAt: data.created_at,
       pendingAt: data.pending_at,
       completedAt: data.completed_at,
@@ -127,53 +124,50 @@ export class TransactionRepository {
 
     const { state, direction, type } = data;
 
+    const createTransaction = <T extends Transaction>(
+      amount: Money,
+      transactionDetails: T['details'],
+    ): T =>
+      ({
+        ...baseTx,
+        direction,
+        type,
+        state,
+        amount,
+        details: transactionDetails,
+      }) as T;
+
+    // Lightning send transactions have different amounts based on completion state
     if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
-      if (state === 'COMPLETED')
-        return {
-          ...baseTx,
-          direction,
-          type,
-          state,
-          details: details as CompletedCashuSendQuoteTransactionDetails,
-        };
-      if (['DRAFT', 'PENDING', 'FAILED'].includes(state))
-        return {
-          ...baseTx,
-          direction,
-          type,
-          state: state as 'DRAFT' | 'PENDING' | 'FAILED', // will never be REVERSED
-          details: details as IncompleteCashuSendQuoteTransactionDetails,
-        };
+      if (state === 'COMPLETED') {
+        const completedDetails =
+          details as CompletedCashuSendQuoteTransactionDetails;
+        return createTransaction(
+          completedDetails.amountSpent,
+          completedDetails,
+        );
+      }
+      const incompleteDetails =
+        details as IncompleteCashuSendQuoteTransactionDetails;
+      return createTransaction(
+        incompleteDetails.sumOfInputProofs,
+        incompleteDetails,
+      );
     }
 
     if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
-      return {
-        ...baseTx,
-        direction,
-        type,
-        state,
-        details: details as CashuReceiveQuoteTransactionDetails,
-      };
+      const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
+      return createTransaction(receiveDetails.amountReceived, receiveDetails);
     }
 
-    if (type === 'CASHU_TOKEN') {
-      if (direction === 'RECEIVE') {
-        return {
-          ...baseTx,
-          direction,
-          type,
-          state,
-          details: details as CashuReceiveSwapTransactionDetails,
-        };
-      }
+    if (type === 'CASHU_TOKEN' && direction === 'SEND') {
+      const sendDetails = details as CashuSendSwapTransactionDetails;
+      return createTransaction(sendDetails.amountSpent, sendDetails);
+    }
 
-      return {
-        ...baseTx,
-        direction,
-        type,
-        state,
-        details: details as CashuSendSwapTransactionDetails,
-      };
+    if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
+      const receiveDetails = details as CashuReceiveSwapTransactionDetails;
+      return createTransaction(receiveDetails.amountReceived, receiveDetails);
     }
 
     throw new Error('Invalid transaction data', { cause: data });

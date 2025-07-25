@@ -1,4 +1,5 @@
 import type { Proof } from '@cashu/cashu-ts';
+import { sumProofs } from '~/lib/cashu';
 import { Money } from '~/lib/money';
 import {
   type AgicashDb,
@@ -121,14 +122,16 @@ export class CashuSendQuoteRepository {
     options?: Options,
   ): Promise<CashuSendQuote> {
     const unit = getDefaultUnit(amountToReceive.currency);
-    const totalFees = lightningFeeReserve.add(cashuFee);
 
     const details: IncompleteCashuSendQuoteTransactionDetails = {
-      totalAmount: amountToReceive.add(totalFees),
+      amountToReceive,
       cashuSendSwapFee: cashuFee,
       lightningFeeReserve,
-      amountRequested,
-      totalFees,
+      sumOfInputProofs: new Money({
+        amount: sumProofs(proofsToSend),
+        currency: amountToReceive.currency,
+        unit,
+      }),
       paymentRequest,
     };
 
@@ -225,13 +228,18 @@ export class CashuSendQuoteRepository {
 
     const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
       {
+        sumOfInputProofs: new Money({
+          amount: sumProofs(quote.proofs),
+          currency: quote.amountToReceive.currency,
+          unit: getDefaultUnit(quote.amountToReceive.currency),
+        }),
         lightningFeeReserve: quote.lightningFeeReserve,
         cashuSendSwapFee: quote.cashuFee,
-        amountRequested: quote.amountRequested,
+        amountToReceive: quote.amountToReceive,
         paymentRequest: quote.paymentRequest,
         preimage: paymentPreimage,
-        totalAmount: amountSpent,
-        actualLightningFee,
+        amountSpent,
+        lightningFee: actualLightningFee,
         totalFees,
       };
 

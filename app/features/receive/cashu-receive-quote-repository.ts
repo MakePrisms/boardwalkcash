@@ -95,9 +95,8 @@ export class CashuReceiveQuoteRepository {
     const unit = getDefaultUnit(amount.currency);
 
     const details: CashuReceiveQuoteTransactionDetails = {
-      totalAmount: amount,
+      amountReceived: amount,
       paymentRequest,
-      amountRequested: amount,
       description,
     };
 
