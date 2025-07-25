@@ -144,10 +144,16 @@ export class LightningAddressService {
         throw new Error(`Account type not supported. Got ${account.type}`);
       }
 
-      const quote = await cashuReceiveQuoteService.createLightningQuote({
-        userId,
+      const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
         account,
         amount: amount as Money,
+      });
+
+      const quote = await cashuReceiveQuoteService.createReceiveQuote({
+        userId,
+        account,
+        receiveType: 'LIGHTNING',
+        receiveQuote: lightningQuote,
       });
 
       return {
