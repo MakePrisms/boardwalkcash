@@ -49,10 +49,6 @@ export type CashuReceiveLightningQuote = {
    */
   amount: Money;
   /**
-   * The type of receive operation.
-   */
-  receiveType: 'LIGHTNING' | 'TOKEN';
-  /**
    * The description of the receive request.
    */
   description?: string;
@@ -72,7 +68,6 @@ export class CashuReceiveQuoteService {
     account,
     amount,
     description,
-    receiveType,
   }: {
     /**
      * The cashu account to which the money will be received.
@@ -82,10 +77,6 @@ export class CashuReceiveQuoteService {
      * The amount to receive.
      */
     amount: Money;
-    /**
-     * The type of receive operation.
-     */
-    receiveType: 'LIGHTNING' | 'TOKEN';
     /**
      * The description of the receive request.
      */
@@ -115,7 +106,6 @@ export class CashuReceiveQuoteService {
       expiresAt,
       amount,
       description,
-      receiveType,
     };
   }
 
@@ -126,6 +116,7 @@ export class CashuReceiveQuoteService {
   async createReceiveQuote({
     userId,
     account,
+    receiveType,
     receiveQuote,
   }: {
     /**
@@ -136,6 +127,11 @@ export class CashuReceiveQuoteService {
      * The cashu account to which the money will be received.
      */
     account: CashuAccount;
+    /**
+     * Whether this is for a regular lighting invoice or
+     * melting a token to this account.
+     */
+    receiveType: 'LIGHTNING' | 'TOKEN';
     /**
      * The receive quote to create.
      */
@@ -151,7 +147,7 @@ export class CashuReceiveQuoteService {
       state: receiveQuote.mintQuote.state as CashuReceiveQuote['state'],
       paymentRequest: receiveQuote.mintQuote.request,
       lockingDerivationPath: receiveQuote.fullLockingDerivationPath,
-      receiveType: receiveQuote.receiveType,
+      receiveType,
     });
   }
 

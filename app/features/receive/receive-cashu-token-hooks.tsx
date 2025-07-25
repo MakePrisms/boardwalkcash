@@ -1,4 +1,4 @@
-import { MintOperationError, type Token } from '@cashu/cashu-ts';
+import type { Token } from '@cashu/cashu-ts';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
@@ -22,11 +22,8 @@ import {
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
-import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import { useUser } from '../user/user-hooks';
-import { useFailCashuReceiveQuote } from './cashu-receive-quote-hooks';
-import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
@@ -325,49 +322,7 @@ export function useReceiveCashuTokenAccounts(
   };
 }
 
-/**
- * Hook for claiming cashu tokens to the same mint and currency account.
- * This performs a swap operation to claim the token to the same account.
- */
-export function useCashuTokenSameAccountClaim({
-  onTransactionCreated,
-  onError,
-}: {
-  onTransactionCreated?: (transactionId: string) => void;
-  onError?: (error: Error) => void;
-} = {}) {
-  const onTransactionCreatedRef = useLatest(onTransactionCreated);
-  const onErrorRef = useLatest(onError);
-  const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
-
-  return useMutation({
-    mutationFn: async ({
-      token,
-      account,
-    }: {
-      token: Token;
-      account: CashuAccount;
-    }) => {
-      try {
-        const swapData = await createCashuTokenSwap({
-          token,
-          accountId: account.id,
-        });
-        onTransactionCreatedRef.current?.(swapData.transactionId);
-        return swapData;
-      } catch (error) {
-        console.error('Failed to claim token to same account', error);
-        onErrorRef.current?.(
-          error instanceof Error
-            ? error
-            : new Error('An unknown error occurred'),
-        );
-      }
-    },
-  });
-}
-
-type ClaimTokenProps = {
+type CreateCrossAccountReceiveQuotesProps = {
   /** The token to claim */
   token: Token;
   /** The account to claim the token to */
@@ -375,70 +330,39 @@ type ClaimTokenProps = {
 };
 
 /**
- * Hook for claiming cashu tokens to a different mint or currency account.
+ * Hook for creating cross-account receive quotes for cashu tokens.
+ * Creates the necessary quotes and wallet for claiming tokens to a different mint or currency account.
+ * The actual melting of proofs should be done by the caller.
  */
-export function useCashuTokenCrossAccountClaim({
-  onTransactionCreated,
-  onError,
-}: {
-  onTransactionCreated?: (transactionId: string) => void;
-  onError?: (error: Error) => void;
-} = {}) {
-  const onTransactionCreatedRef = useLatest(onTransactionCreated);
-  const onErrorRef = useLatest(onError);
+export function useCreateCrossAccountReceiveQuotes() {
   const userId = useUser((user) => user.id);
   const getExchangeRate = useGetExchangeRate();
   const receiveCashuTokenService = useReceiveCashuTokenService();
-  const { mutateAsync: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
   return useMutation({
-    mutationFn: async ({ token, account }: ClaimTokenProps) => {
-      try {
-        const tokenCurrency = tokenToMoney(token).currency;
-        const accountCurrency = account.currency;
-        const exchangeRate = await getExchangeRate(
-          `${tokenCurrency}-${accountCurrency}`,
-        );
+    mutationFn: async ({
+      token,
+      account,
+    }: CreateCrossAccountReceiveQuotesProps) => {
+      const tokenCurrency = tokenToMoney(token).currency;
+      const accountCurrency = account.currency;
+      const exchangeRate = await getExchangeRate(
+        `${tokenCurrency}-${accountCurrency}`,
+      );
 
-        const {
-          cashuReceiveQuote,
-          cashuMeltQuote,
-          token: originalToken,
-        } = await receiveCashuTokenService.setupCrossAccountClaim({
+      const { cashuReceiveQuote, cashuMeltQuote } =
+        await receiveCashuTokenService.createCrossAccountReceiveQuotes({
           userId,
           token,
           account,
           exchangeRate,
         });
 
-        const sourceWallet = getCashuWallet(originalToken.mint, {
-          unit: getCashuUnit(tokenToMoney(originalToken).currency),
-        });
+      const sourceWallet = getCashuWallet(token.mint, {
+        unit: getCashuUnit(tokenToMoney(token).currency),
+      });
 
-        onTransactionCreatedRef.current?.(cashuReceiveQuote.transactionId);
-
-        try {
-          await sourceWallet.meltProofs(cashuMeltQuote, originalToken.proofs);
-        } catch (error) {
-          if (error instanceof MintOperationError) {
-            await failCashuReceiveQuote({
-              quoteId: cashuReceiveQuote.id,
-              version: cashuReceiveQuote.version,
-              reason: error.message,
-            });
-          }
-          throw error;
-        }
-
-        return { cashuReceiveQuote, cashuMeltQuote, token: originalToken };
-      } catch (error) {
-        console.error('Failed to claim token to cross account', error);
-        onErrorRef.current?.(
-          error instanceof Error
-            ? error
-            : new Error('An unknown error occurred'),
-        );
-      }
+      return { cashuReceiveQuote, cashuMeltQuote, sourceWallet };
     },
   });
 }

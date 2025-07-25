@@ -141,12 +141,12 @@ export function useCreateCashuReceiveQuote() {
         account,
         amount,
         description,
-        receiveType: 'LIGHTNING',
       });
 
       return cashuReceiveQuoteService.createReceiveQuote({
         userId,
         account,
+        receiveType: 'LIGHTNING',
         receiveQuote: lightningQuote,
       });
     },
@@ -160,7 +160,6 @@ export function useCreateCashuReceiveQuote() {
 export function useFailCashuReceiveQuote() {
   const cashuReceiveQuoteRepository = useCashuReceiveQuoteRepository();
   return useMutation({
-    mutationKey: ['fail-cashu-receive-quote'],
     mutationFn: ({
       quoteId,
       version,

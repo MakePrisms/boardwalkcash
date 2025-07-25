@@ -147,12 +147,12 @@ export class LightningAddressService {
       const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
         account,
         amount: amount as Money,
-        receiveType: 'LIGHTNING',
       });
 
       const quote = await cashuReceiveQuoteService.createReceiveQuote({
         userId,
         account,
+        receiveType: 'LIGHTNING',
         receiveQuote: lightningQuote,
       });
 

@@ -32,7 +32,7 @@ export class ReceiveCashuTokenService {
    * Sets up quotes and prepares for cross mint/currency token claim.
    * This will create a cashu-receive-quote in the database.
    */
-  async setupCrossAccountClaim({
+  async createCrossAccountReceiveQuotes({
     userId,
     token,
     account,
@@ -45,7 +45,6 @@ export class ReceiveCashuTokenService {
   }): Promise<{
     cashuReceiveQuote: CashuReceiveQuote;
     cashuMeltQuote: MeltQuoteResponse;
-    token: Token;
   }> {
     const tokenAmount = tokenToMoney(token);
     const fromCashuUnit = getCashuUnit(tokenAmount.currency);
@@ -74,13 +73,13 @@ export class ReceiveCashuTokenService {
       await this.cashuReceiveQuoteService.createReceiveQuote({
         userId,
         account,
+        receiveType: 'TOKEN',
         receiveQuote: quotes.lightningQuote,
       });
 
     return {
       cashuReceiveQuote,
       cashuMeltQuote: quotes.meltQuote,
-      token,
     };
   }
 
@@ -139,7 +138,6 @@ export class ReceiveCashuTokenService {
         await this.cashuReceiveQuoteService.getLightningQuote({
           account,
           amount: amountToMint,
-          receiveType: 'TOKEN',
         });
 
       const meltQuote = await sourceWallet.createMeltQuote(

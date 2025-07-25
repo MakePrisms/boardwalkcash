@@ -1,4 +1,8 @@
-import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  MintOperationError,
+  type Token,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -30,11 +34,12 @@ import {
   useSetDefaultAccount,
   useSetDefaultCurrency,
 } from '../user/user-hooks';
+import { useFailCashuReceiveQuote } from './cashu-receive-quote-hooks';
+import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 import {
-  useCashuTokenCrossAccountClaim,
-  useCashuTokenSameAccountClaim,
   useCashuTokenSourceAccountQuery,
   useCashuTokenWithClaimableProofs,
+  useCreateCrossAccountReceiveQuotes,
   useReceiveCashuTokenAccounts,
 } from './receive-cashu-token-hooks';
 
@@ -113,13 +118,6 @@ export default function ReceiveToken({
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
-  const onError = (error: Error) => {
-    toast({
-      title: 'Failed to claim token',
-      description: error.message,
-      variant: 'destructive',
-    });
-  };
   const onTransactionCreated = (transactionId: string) => {
     navigate(`/transactions/${transactionId}?redirectTo=/`, {
       transition: 'slideLeft',
@@ -128,16 +126,13 @@ export default function ReceiveToken({
   };
 
   // Hook for same mint/currency claims
-  const sameAccountClaim = useCashuTokenSameAccountClaim({
-    onTransactionCreated,
-    onError,
-  });
-
+  const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
   // Hook for cross mint/currency claims
-  const crossAccountClaim = useCashuTokenCrossAccountClaim({
-    onTransactionCreated,
-    onError,
-  });
+  const {
+    mutateAsync: createCrossAccountReceiveQuotes,
+    data: crossAccountReceiveQuotes,
+  } = useCreateCrossAccountReceiveQuotes();
+  const { mutateAsync: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
   const { mutate: claimTokenMutation, isPending: isClaimingToken } =
     useMutation({
@@ -164,9 +159,16 @@ export default function ReceiveToken({
           areMintUrlsEqual(account.mintUrl, token.mint);
 
         if (isSameAccountClaim) {
-          await sameAccountClaim.mutateAsync({ token, account });
+          const { transactionId } = await createCashuTokenSwap({
+            token,
+            accountId: account.id,
+          });
+          onTransactionCreated(transactionId);
         } else {
-          await crossAccountClaim.mutateAsync({ token, account });
+          const { sourceWallet, cashuMeltQuote, cashuReceiveQuote } =
+            await createCrossAccountReceiveQuotes({ token, account });
+          onTransactionCreated(cashuReceiveQuote.transactionId);
+          await sourceWallet.meltProofs(cashuMeltQuote, token.proofs);
         }
 
         return { account, isAutoClaim };
@@ -185,6 +187,13 @@ export default function ReceiveToken({
         }
       },
       onError: (error) => {
+        if (error instanceof MintOperationError && crossAccountReceiveQuotes) {
+          failCashuReceiveQuote({
+            quoteId: crossAccountReceiveQuotes.cashuReceiveQuote.id,
+            version: crossAccountReceiveQuotes.cashuReceiveQuote.version,
+            reason: error.message,
+          });
+        }
         console.error('Error claiming token', { cause: error });
         toast({
           title: 'Failed to claim token',

@@ -31,22 +31,12 @@ export const useExchangeRates = (tickers: Ticker[]) => {
 
 /**
  * Returns a function that can be used to get the exchange rate for a given ticker.
- * The function will first check the cache and if not found, it will fetch the rate.
+ * The function will check the cache and if not found, it will fetch the rate.
  */
 export const useGetExchangeRate = () => {
   const queryClient = useQueryClient();
 
   return async (ticker: Ticker): Promise<string> => {
-    // Check if the rate is already in cache
-    const cachedRate = queryClient.getQueryData<string>([
-      'exchangeRate',
-      ticker,
-    ]);
-
-    if (cachedRate) {
-      return cachedRate;
-    }
-
     return queryClient.fetchQuery({
       queryKey: ['exchangeRate', ticker],
       queryFn: async ({ signal }) => {
