@@ -3,10 +3,13 @@
  * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx react-router reveal` ✨
  * For more information, see https://reactrouter.com/explanation/special-files#entryservertsx
  */
-
+import './instrument.server.mjs';
 import { PassThrough } from 'node:stream';
-
 import { createReadableStreamFromReadable } from '@react-router/node';
+import {
+  getMetaTagTransformer,
+  wrapSentryHandleRequest,
+} from '@sentry/react-router';
 import { isbot } from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import { ServerRouter } from 'react-router';
@@ -14,7 +17,7 @@ import type { AppLoadContext, EntryContext } from 'react-router';
 
 export const streamTimeout = 5_000;
 
-export default function handleRequest(
+function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
@@ -38,6 +41,8 @@ export default function handleRequest(
         reactRouterContext,
       );
 }
+
+export default wrapSentryHandleRequest(handleRequest);
 
 function handleBotRequest(
   request: Request,
@@ -64,7 +69,7 @@ function handleBotRequest(
             }),
           );
 
-          pipe(body);
+          pipe(getMetaTagTransformer(body));
         },
         onShellError(error: unknown) {
           reject(error);
