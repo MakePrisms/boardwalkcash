@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
+import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -387,7 +387,20 @@ function useOnMeltQuoteStateChange({
         meltQuote.state === 'PAID' &&
         relatedSendQuote.state !== 'PAID'
       ) {
-        onPaidRef.current(account, relatedSendQuote, meltQuote);
+        // There is a bug in nutshell where the change is not included in the melt quote state updates, so we need to refetch the quote to get the change proofs.
+        // see https://github.com/cashubtc/nutshell/pull/773
+        // The same bug in CDK too: https://github.com/cashubtc/cdk/pull/889
+        const inputAmount = sumProofs(relatedSendQuote.proofs);
+        const expectChange = inputAmount > meltQuote.amount;
+        if (
+          expectChange &&
+          !(meltQuote.change && meltQuote.change.length > 0)
+        ) {
+          const latestMeltQuote = await getMeltQuote(relatedSendQuote);
+          onPaidRef.current(account, relatedSendQuote, latestMeltQuote);
+        } else {
+          onPaidRef.current(account, relatedSendQuote, meltQuote);
+        }
       } else if (
         meltQuote.state === 'PENDING' &&
         relatedSendQuote.state !== 'PENDING'
