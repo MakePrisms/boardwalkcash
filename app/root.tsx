@@ -227,9 +227,9 @@ export function ErrorBoundary() {
   const errorDetails = useErrorDetails(error);
 
   if (errorDetails.shouldReport) {
+    console.log('ErrorBoundary shouldReport is true. Capturing error...');
     console.log('is on browser: ', typeof window !== 'undefined');
     console.log('is sentry enabled: ', Sentry.isEnabled());
-    debugger;
     // TODO: will this report same error multiple times if render is called multiple times?
     Sentry.captureException(error);
   }

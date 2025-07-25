@@ -15,17 +15,15 @@ const sentryConfig: SentryReactRouterBuildOptions = {
   authToken: process.env.SENTRY_AUTH_TOKEN,
 };
 
-console.log('!!!SENTRY_AUTH_TOKEN: ', process.env.SENTRY_AUTH_TOKEN);
-
 export default defineConfig((config) => ({
   plugins: [
     reactRouter(),
     tsconfigPaths(),
     devtoolsJson(),
-    sentryReactRouter(sentryConfig, config),
-  ],
+    // We don't want to upload source maps to Sentry when building locally.
+    process.env.VERCEL ? sentryReactRouter(sentryConfig, config) : null,
+  ].filter((plugin) => Boolean(plugin)),
   build: {
-    sourcemap: true,
     emptyOutDir: false,
     rollupOptions: {
       // See https://github.com/vitejs/vite/issues/15012#issuecomment-1948550039

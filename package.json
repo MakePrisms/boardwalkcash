@@ -1,7 +1,7 @@
 {
   "name": "agicash",
   "private": true,
-  "sideEffects": false,
+  "sideEffects": ["./app/instrument.server.mjs"],
   "type": "module",
   "scripts": {
     "build": "run-p build:client build:server",
