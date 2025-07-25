@@ -117,11 +117,11 @@ export class CashuSendSwapRepository {
     const unit = getDefaultUnit(amountToSend.currency);
 
     const details: CashuSendSwapTransactionDetails = {
-      totalAmount,
+      amountSpent: totalAmount,
       cashuSendSwapFee: sendSwapFee,
       cashuReceiveSwapFee: receiveSwapFee,
       totalFees: sendSwapFee.add(receiveSwapFee),
-      amountRequested,
+      amountToReceive: amountToSend.subtract(receiveSwapFee),
     };
 
     const [

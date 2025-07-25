@@ -94,9 +94,8 @@ export class CashuTokenSwapRepository {
     const unit = getDefaultUnit(amount.currency);
     const tokenHash = await getTokenHash(token);
 
-    const netAmountReceived = amount.subtract(receiveSwapFee);
     const details: CashuReceiveSwapTransactionDetails = {
-      totalAmount: netAmountReceived,
+      amountReceived: amount.subtract(receiveSwapFee),
       cashuReceiveSwapFee: receiveSwapFee,
       totalFees: receiveSwapFee,
       tokenAmount: amount,

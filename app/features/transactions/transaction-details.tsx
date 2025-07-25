@@ -111,8 +111,11 @@ export function TransactionDetails({
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
-          totalAmount: completedDetails.totalAmount.toLocaleString({ unit }),
-          amountRequested: completedDetails.amountRequested.toLocaleString({
+          sumOfInputProofs: completedDetails.sumOfInputProofs.toLocaleString({
+            unit,
+          }),
+          totalAmount: completedDetails.amountSpent.toLocaleString({ unit }),
+          amountToReceive: completedDetails.amountToReceive.toLocaleString({
             unit,
           }),
           lightningFeeReserve:
@@ -121,10 +124,9 @@ export function TransactionDetails({
             unit,
           }),
           totalFees: completedDetails.totalFees.toLocaleString({ unit }),
-          actualLightningFee:
-            completedDetails.actualLightningFee.toLocaleString({
-              unit,
-            }),
+          lightningFee: completedDetails.lightningFee.toLocaleString({
+            unit,
+          }),
           paymentRequest: completedDetails.paymentRequest,
           preimage: completedDetails.preimage,
         },
@@ -135,8 +137,10 @@ export function TransactionDetails({
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
-          totalAmount: incompleteDetails.totalAmount.toLocaleString({ unit }),
-          amountRequested: incompleteDetails.amountRequested.toLocaleString({
+          sumOfInputProofs: incompleteDetails.sumOfInputProofs.toLocaleString({
+            unit,
+          }),
+          amountToReceive: incompleteDetails.amountToReceive.toLocaleString({
             unit,
           }),
           lightningFeeReserve:
@@ -144,7 +148,6 @@ export function TransactionDetails({
           cashuSendSwapFee: incompleteDetails.cashuSendSwapFee.toLocaleString({
             unit,
           }),
-          totalFees: incompleteDetails.totalFees.toLocaleString({ unit }),
           paymentRequest: incompleteDetails.paymentRequest,
         },
       );
@@ -156,10 +159,7 @@ export function TransactionDetails({
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
-        totalAmount: receiveDetails.totalAmount.toLocaleString({ unit }),
-        amountRequested: receiveDetails.amountRequested.toLocaleString({
-          unit,
-        }),
+        amountReceived: receiveDetails.amountReceived.toLocaleString({ unit }),
         paymentRequest: receiveDetails.paymentRequest,
         description: receiveDetails.description,
       },
@@ -171,8 +171,8 @@ export function TransactionDetails({
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
-        totalAmount: sendSwapDetails.totalAmount.toLocaleString({ unit }),
-        amountRequested: sendSwapDetails.amountRequested.toLocaleString({
+        amountSpent: sendSwapDetails.amountSpent.toLocaleString({ unit }),
+        amountToReceive: sendSwapDetails.amountToReceive.toLocaleString({
           unit,
         }),
         cashuSendSwapFee: sendSwapDetails.cashuSendSwapFee.toLocaleString({
@@ -193,7 +193,9 @@ export function TransactionDetails({
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
-        totalAmount: receiveSwapDetails.totalAmount.toLocaleString({ unit }),
+        amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
+          unit,
+        }),
         tokenAmount: receiveSwapDetails.tokenAmount.toLocaleString({ unit }),
         cashuReceiveSwapFee:
           receiveSwapDetails.cashuReceiveSwapFee.toLocaleString({ unit }),
