@@ -1,14 +1,17 @@
 import { getCashuWallet } from '~/lib/cashu';
+import { ExchangeRateService } from '~/lib/exchange-rate';
 import type {
   LNURLError,
   LNURLPayParams,
   LNURLPayResult,
   LNURLVerifyResult,
+  LUD21Currency,
 } from '~/lib/lnurl/types';
-import { Money } from '~/lib/money';
+import { type Currency, Money } from '~/lib/money';
 import { AccountRepository } from '../accounts/account-repository';
 import type { AgicashDb } from '../agicash-db/database';
 import type { CashuCryptography } from '../shared/cashu';
+import { getDefaultUnit } from '../shared/currencies';
 import { UserRepository } from '../user/user-repository';
 import { CashuReceiveQuoteRepository } from './cashu-receive-quote-repository';
 import { CashuReceiveQuoteService } from './cashu-receive-quote-service';
@@ -37,7 +40,10 @@ export class LightningAddressService {
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
 
+  private exchangeRateService: ExchangeRateService;
+
   constructor(request: Request, db: AgicashDb) {
+    this.exchangeRateService = new ExchangeRateService();
     this.userRepository = new UserRepository(db, this.cryptography);
     this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
       db,
@@ -74,6 +80,11 @@ export class LightningAddressService {
         };
       }
 
+      const defaultAccount = await this.userRepository.getDefaultAccount(
+        user.id,
+      );
+      const defaultAccountCurrency = defaultAccount.currency;
+
       const callback = `${this.baseUrl}/api/lnurlp/callback/${user.id}`;
       const address = `${user.username}@${new URL(this.baseUrl).host}`;
       const metadata = JSON.stringify([
@@ -81,12 +92,17 @@ export class LightningAddressService {
         ['text/identifier', address],
       ]);
 
+      // LUD-21: Include currency object for local unit of account
+      // We ask for this spcific currency, but we are okay with falling back to BTC.
+      const lud21Currency = await this.getLUD21Currency(defaultAccountCurrency);
+
       return {
         callback,
         maxSendable: this.maxSendable.toNumber('msat'),
         minSendable: this.minSendable.toNumber('msat'),
         metadata,
         tag: 'payRequest',
+        currency: lud21Currency,
       };
     } catch (error) {
       console.error('Error processing LNURL-pay request', { cause: error });
@@ -101,20 +117,24 @@ export class LightningAddressService {
    * Creates a new cashu receive quote for the given user and amount.
    * @returns the bolt11 invoice from the receive quote and the verify callback url.
    */
-  async handleLnurlpCallback(
-    userId: string,
-    amount: Money<'BTC'>,
-  ): Promise<LNURLPayResult | LNURLError> {
-    if (
-      amount.lessThan(this.minSendable) ||
-      amount.greaterThan(this.maxSendable)
-    ) {
-      return {
-        status: 'ERROR',
-        reason: `Amount out of range. Min: ${this.minSendable.toNumber('sat')} sats, Max: ${this.maxSendable.toNumber('sat').toLocaleString()} sats.`,
-      };
-    }
-
+  async handleLnurlpCallback({
+    userId,
+    amount,
+    requestSupportsLUD21,
+  }: {
+    /**
+     * The user id of the user to create a receive quote for.
+     */
+    userId: string;
+    /**
+     * The amount to receive. This amount can be in any supported currency.
+     */
+    amount: Money<Currency>;
+    /**
+     * Whether the request supports LUD-21. If the currency search parameter is present, this is true.
+     */
+    requestSupportsLUD21: boolean;
+  }): Promise<LNURLPayResult | LNURLError> {
     try {
       const user = await this.userRepository.get(userId);
 
@@ -125,6 +145,69 @@ export class LightningAddressService {
         };
       }
 
+      const defaultAccount =
+        await this.userRepository.getDefaultAccount(userId);
+
+      let targetCurrency: Currency;
+      let amountToReceive: Money<Currency>;
+
+      if (requestSupportsLUD21) {
+        targetCurrency = defaultAccount.currency;
+
+        // Validate the request currency
+        if (!this.isSupportedCurrency(amount.currency)) {
+          return {
+            status: 'ERROR',
+            reason: 'Unsupported currency',
+          };
+        }
+
+        // Convert amount from request currency to target currency
+        if (amount.currency === targetCurrency) {
+          amountToReceive = amount;
+        } else {
+          const rate = await this.exchangeRateService.getRate(
+            `${amount.currency}-${targetCurrency}`,
+          );
+          amountToReceive = amount.convert(targetCurrency, rate);
+        }
+      } else {
+        // Legacy flow: fallback to BTC because requesting client might validate invoice amounts
+        targetCurrency = 'BTC';
+        amountToReceive = amount;
+      }
+
+      let amountInBtc: Money<'BTC'>;
+      if (amountToReceive.currency === 'BTC') {
+        amountInBtc = amountToReceive as Money<'BTC'>;
+      } else {
+        const btcRate = await this.exchangeRateService.getRate(
+          `${amountToReceive.currency}-BTC`,
+        );
+        amountInBtc = amountToReceive.convert('BTC', btcRate);
+      }
+
+      if (
+        amountInBtc.lessThan(this.minSendable) ||
+        amountInBtc.greaterThan(this.maxSendable)
+      ) {
+        const unit = getDefaultUnit(amountInBtc.currency);
+        return {
+          status: 'ERROR',
+          reason: `Amount out of range. Min: ${this.minSendable.toLocaleString({ unit })}, Max: ${this.maxSendable.toLocaleString({ unit })}.`,
+        };
+      }
+
+      // Get account for target currency
+      const account =
+        defaultAccount.currency === targetCurrency
+          ? defaultAccount
+          : await this.userRepository.getDefaultAccount(userId, targetCurrency);
+
+      if (account.type !== 'cashu') {
+        throw new Error(`Account type not supported. Got ${account.type}`);
+      }
+
       const cashuReceiveQuoteService = new CashuReceiveQuoteService(
         {
           ...this.cryptography,
@@ -133,21 +216,10 @@ export class LightningAddressService {
         this.cashuReceiveQuoteRepository,
       );
 
-      // We only support BTC for lightning address because we need to get invoices for the exact satoshi amount.
-      // Other currency accounts would require an exchange rate which will create a mismatch in amounts.
-      const account = await this.userRepository.getDefaultAccount(
-        userId,
-        'BTC',
-      );
-
-      if (account.type !== 'cashu') {
-        throw new Error(`Account type not supported. Got ${account.type}`);
-      }
-
       const quote = await cashuReceiveQuoteService.createLightningQuote({
         userId,
         account,
-        amount: amount as Money,
+        amount: amountToReceive,
       });
 
       return {
@@ -212,5 +284,52 @@ export class LightningAddressService {
         reason: 'Internal server error',
       };
     }
+  }
+
+  isSupportedCurrency(currency: string): currency is Currency {
+    return ['BTC', 'USD'].includes(currency);
+  }
+
+  /**
+   * Get LUD-21 currency object for the user's default account currency
+   */
+  private async getLUD21Currency(
+    defaultAccountCurrency: Currency,
+  ): Promise<LUD21Currency> {
+    const currencyNames = {
+      BTC: 'Bitcoin',
+      USD: 'US Dollar',
+    };
+
+    const currencySymbols = {
+      BTC: '₿',
+      USD: '$',
+    };
+
+    if (defaultAccountCurrency === 'BTC') {
+      return {
+        code: 'BTC',
+        name: currencyNames.BTC,
+        symbol: currencySymbols.BTC,
+        minSendable: this.minSendable.toNumber('msat'),
+        maxSendable: this.maxSendable.toNumber('msat'),
+        multiplier: 1, // 1 msat per msat
+      };
+    }
+    // For USD, calculate multiplier based on BTC-USD rate
+    const btcUsdRate = await this.exchangeRateService.getRate('BTC-USD');
+    const multiplier = Math.round(10 ** 11 / Number(btcUsdRate)); // millisats per USD cent
+
+    const minSendableUsd = this.minSendable.convert('USD', btcUsdRate);
+    const maxSendableUsd = this.maxSendable.convert('USD', btcUsdRate);
+
+    return {
+      code: 'USD',
+      name: currencyNames.USD,
+      symbol: currencySymbols.USD,
+      minSendable: minSendableUsd.toNumber('cent'),
+      maxSendable: maxSendableUsd.toNumber('cent'),
+      multiplier,
+    };
   }
 }

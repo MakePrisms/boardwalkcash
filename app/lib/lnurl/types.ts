@@ -1,11 +1,26 @@
+import type { Currency } from '../money';
+
 export type LNURLError = {
   status: 'ERROR';
   reason: string;
 };
 
 /**
+ * LUD-21 currency object for specifying payment currency
+ */
+export type LUD21Currency = {
+  code: Currency;
+  name: string;
+  symbol: string;
+  minSendable: number;
+  maxSendable: number;
+  multiplier: number; // estimated millisats per unit
+};
+
+/**
  * Response from the lnurlp endpoint
  * @see https://github.com/lnurl/luds/blob/luds/06.md
+ * @see https://github.com/lnurl/luds/blob/8d5af2e71e421141ec418d54c8975905a991eaa6/21.md
  */
 export type LNURLPayParams = {
   /**
@@ -31,6 +46,11 @@ export type LNURLPayParams = {
    * @example `[['text/plain', 'Pay to ${address}']]`
    */
   metadata: string;
+  commentAllowed?: number;
+  /**
+   * LUD-21: Currency object for specifying payment currency
+   */
+  currency?: LUD21Currency;
 };
 
 /** Response from the lnurlp callback */
