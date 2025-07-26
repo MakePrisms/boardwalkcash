@@ -37,11 +37,13 @@ function LnAddressDisplay({
       await copyToClipboard(lightningAddress);
       toast({
         title: 'Lightning address copied to clipboard',
+        duration: 1000,
       });
     } catch {
       toast({
         title: 'Unable to copy to clipboard',
         variant: 'destructive',
+        duration: 1000,
       });
     }
   };
@@ -118,16 +120,13 @@ export default function Settings() {
           Contacts
         </SettingsNavButton>
 
-        <button
-          type="button"
-          className="flex w-full items-center justify-between pl-4"
-        >
+        <div className="flex w-full items-center justify-between pl-4">
           <div className="flex items-center gap-2">
             <SunMoon className="h-4 w-4" />
             <span>Theme</span>
           </div>
           <ColorModeToggle className="mr-1" />
-        </button>
+        </div>
       </PageContent>
 
       <PageFooter className="mx-auto flex w-36 flex-col gap-6 pb-10">
