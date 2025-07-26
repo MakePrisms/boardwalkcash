@@ -19,6 +19,7 @@ export class ExchangeRateService {
       new Coinbase(),
     ];
   }
+
   async getRates({ tickers, signal }: GetRatesParams): Promise<Rates> {
     const rates: Rates = { timestamp: Date.now() };
     const remainingTickers: Ticker[] = [];
@@ -70,6 +71,15 @@ export class ExchangeRateService {
       ? 'Fetch rates aborted'
       : 'Failed to fetch rates';
     throw new Error(errorMessage);
+  }
+
+  /**
+   * Gets a single rate for a specific ticker.
+   * This is a convenience method for getting individual rates.
+   */
+  async getRate(ticker: Ticker, signal?: AbortSignal): Promise<string> {
+    const rates = await this.getRates({ tickers: [ticker], signal });
+    return rates[ticker];
   }
 
   private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {

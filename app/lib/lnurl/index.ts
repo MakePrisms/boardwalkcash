@@ -57,9 +57,13 @@ export const getInvoiceFromLud16 = async (
         reason: `Amount must be between ${minSendable} and ${maxSendable} msat`,
       };
     }
+    const searchParams = new URLSearchParams({
+      amount: amountMsat.toString(),
+      currency: amount.currency,
+    });
 
     const callbackRes = await ky
-      .get(`${callback}?amount=${amountMsat}`)
+      .get(`${callback}?${searchParams}`)
       .json<LNURLPayResult | LNURLError>();
 
     if (isLNURLError(callbackRes)) return callbackRes;
