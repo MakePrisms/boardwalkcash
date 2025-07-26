@@ -1,4 +1,5 @@
 import { getCashuWallet } from '~/lib/cashu';
+import { ExchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 import type {
   LNURLError,
   LNURLPayParams,
@@ -36,14 +37,18 @@ export class LightningAddressService {
   private minSendable: Money<'BTC'>;
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
+  private request: Request;
+  private exchangeRateService: ExchangeRateService;
 
   constructor(request: Request, db: AgicashDb) {
+    this.exchangeRateService = new ExchangeRateService();
     this.userRepository = new UserRepository(db, this.cryptography);
     this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
       db,
       this.cryptography,
     );
     this.accountRepository = new AccountRepository(db, this.cryptography);
+    this.request = request;
     this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
       amount: 1,
@@ -133,21 +138,32 @@ export class LightningAddressService {
         this.cashuReceiveQuoteRepository,
       );
 
-      // We only support BTC for lightning address because we need to get invoices for the exact satoshi amount.
-      // Other currency accounts would require an exchange rate which will create a mismatch in amounts.
+      // For external lightning address requests, we only support BTC to avoid exchange rate mismatches.
+      // However, if the request specifies we can bypass amount validation, we can use the user's default currency
+      // and perform exchange rate conversion to create an invoice in their preferred currency.
       const account = await this.userRepository.getDefaultAccount(
         userId,
-        'BTC',
+        this.request.headers.get('X-Bypass-Amount-Validation') === 'true'
+          ? undefined
+          : 'BTC',
       );
 
       if (account.type !== 'cashu') {
         throw new Error(`Account type not supported. Got ${account.type}`);
       }
 
+      let amountToReceive: Money = amount as Money;
+      if (amount.currency !== account.currency) {
+        const rate = await this.exchangeRateService.getRate(
+          `${amount.currency}-${account.currency}`,
+        );
+        amountToReceive = amount.convert(account.currency, rate) as Money;
+      }
+
       const quote = await cashuReceiveQuoteService.createLightningQuote({
         userId,
         account,
-        amount: amount as Money,
+        amount: amountToReceive,
       });
 
       return {

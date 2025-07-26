@@ -72,6 +72,15 @@ export class ExchangeRateService {
     throw new Error(errorMessage);
   }
 
+  /**
+   * Gets a single rate for a specific ticker.
+   * This is a convenience method for getting individual rates.
+   */
+  async getRate(ticker: Ticker, signal?: AbortSignal): Promise<string> {
+    const rates = await this.getRates({ tickers: [ticker], signal });
+    return rates[ticker];
+  }
+
   private getProvidersForTickers(tickers: Ticker[]): ExchangeRateProvider[] {
     const matchingProviders: ExchangeRateProvider[] = [];
     for (const provider of this.providers) {
