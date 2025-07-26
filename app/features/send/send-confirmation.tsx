@@ -16,14 +16,13 @@ import { useNavigateWithViewTransition } from '~/lib/transitions';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import {
-  useCashuSendQuote,
   useInitiateCashuSendQuote,
+  useTrackCashuSendQuote,
 } from './cashu-send-quote-hooks';
 import type { CashuLightningQuote } from './cashu-send-quote-service';
 import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
 import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
-import { SuccessfulSendPage } from './succesful-send-page';
 
 const formatDestination = (destination: string) => {
   if (destination && destination.length > 20) {
@@ -119,6 +118,7 @@ export const PayBolt11Confirmation = ({
   destinationDisplay,
 }: PayBolt11ConfirmationProps) => {
   const { toast } = useToast();
+  const navigate = useNavigateWithViewTransition();
 
   const {
     mutate: initiateSend,
@@ -139,7 +139,7 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  const { quote, status: quoteStatus } = useCashuSendQuote({
+  const { status: quoteStatus } = useTrackCashuSendQuote({
     sendQuoteId,
     onExpired: () => {
       toast({
@@ -147,24 +147,13 @@ export const PayBolt11Confirmation = ({
         description: 'Please try again',
       });
     },
+    onPending: () => {
+      navigate(`/send/cashu/bolt11/${sendQuoteId}`, {
+        transition: 'slideLeft',
+        applyTo: 'newView',
+      });
+    },
   });
-
-  if (quote?.state === 'PAID') {
-    return (
-      <SuccessfulSendPage
-        amountSpent={quote.amountSpent}
-        account={account}
-        destination={formatDestination(destination)}
-        amountReceived={quote.amountToReceive}
-        feesPaid={quote.amountSpent.subtract(quote.amountToReceive)}
-      />
-    );
-  }
-
-  if (quote?.state === 'FAILED') {
-    // TODO: implement proper ui
-    return <div>Send Failed: {quote.failureReason}</div>;
-  }
 
   const handleConfirm = () =>
     initiateSend({ accountId: account.id, sendQuote: bolt11Quote });
@@ -172,6 +161,7 @@ export const PayBolt11Confirmation = ({
   const paymentInProgress =
     ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
     isCreatingSendQuote;
+
   const { description } = decodeBolt11(destination);
 
   return (

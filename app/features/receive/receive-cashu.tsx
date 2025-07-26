@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
-  PageBackButton,
+  ClosePageButton,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
 import { QRCode } from '~/components/qr-code';
+import { Button } from '~/components/ui/button';
 import type { CashuAccount } from '~/features/accounts/account';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
   useCashuReceiveQuote,
@@ -22,12 +25,15 @@ type MintQuoteProps = {
   account: CashuAccount;
   amount: Money;
   onPaid: () => void;
+  onCopy?: (paymentRequest: string) => void;
 };
 
-function MintQuoteCarouselItem({ account, amount, onPaid }: MintQuoteProps) {
-  const [, copyToClipboard] = useCopyToClipboard();
-  const { toast } = useToast();
-
+function MintQuoteCarouselItem({
+  account,
+  amount,
+  onPaid,
+  onCopy,
+}: MintQuoteProps) {
   const {
     mutate: createQuote,
     data: createdQuote,
@@ -59,15 +65,8 @@ function MintQuoteCarouselItem({ account, amount, onPaid }: MintQuoteProps) {
       }
       isLoading={['pending', 'idle'].includes(createQuoteStatus)}
       onClick={
-        quote?.paymentRequest
-          ? () => {
-              copyToClipboard(quote.paymentRequest);
-              toast({
-                title: 'Copied Lightning invoice',
-                description: `${quote.paymentRequest.slice(0, 5)}...${quote.paymentRequest.slice(-5)}`,
-                duration: 1000,
-              });
-            }
+        quote?.paymentRequest && onCopy
+          ? () => onCopy(quote.paymentRequest)
           : undefined
       }
     />
@@ -83,6 +82,19 @@ type Status = 'received' | 'pending';
 
 export default function ReceiveCashu({ amount, account }: Props) {
   const [status, setStatus] = useState<Status>('pending');
+  const [showOk, setShowOk] = useState(false);
+  const [, copyToClipboard] = useCopyToClipboard();
+  const { toast } = useToast();
+
+  const handleCopy = (paymentRequest: string) => {
+    copyToClipboard(paymentRequest);
+    toast({
+      title: 'Copied Lightning invoice',
+      description: `${paymentRequest.slice(0, 5)}...${paymentRequest.slice(-5)}`,
+      duration: 1000,
+    });
+    setShowOk(true);
+  };
 
   if (status === 'received') {
     return <SuccessfulReceivePage amount={amount} account={account} />;
@@ -91,7 +103,7 @@ export default function ReceiveCashu({ amount, account }: Props) {
   return (
     <>
       <PageHeader>
-        <PageBackButton
+        <ClosePageButton
           to="/receive"
           transition="slideDown"
           applyTo="oldView"
@@ -104,8 +116,22 @@ export default function ReceiveCashu({ amount, account }: Props) {
           account={account}
           amount={amount}
           onPaid={() => setStatus('received')}
+          onCopy={handleCopy}
         />
       </PageContent>
+      {showOk && (
+        <PageFooter className="pb-14">
+          <Button asChild className="w-[80px]">
+            <LinkWithViewTransition
+              to="/"
+              transition="slideDown"
+              applyTo="oldView"
+            >
+              OK
+            </LinkWithViewTransition>
+          </Button>
+        </PageFooter>
+      )}
     </>
   );
 }

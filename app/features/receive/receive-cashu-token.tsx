@@ -15,7 +15,10 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
-import { LinkWithViewTransition } from '~/lib/transitions';
+import {
+  LinkWithViewTransition,
+  useNavigateWithViewTransition,
+} from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
@@ -90,6 +93,7 @@ export default function ReceiveToken({
   preferredReceiveAccountId,
 }: Props) {
   const { toast } = useToast();
+  const navigate = useNavigateWithViewTransition();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
@@ -114,6 +118,12 @@ export default function ReceiveToken({
         title: 'Failed to claim token',
         description: error.message,
         variant: 'destructive',
+      });
+    },
+    onLightningPaymentInitiated: (transactionId) => {
+      navigate(`/transactions/${transactionId}?redirectTo=/`, {
+        transition: 'slideLeft',
+        applyTo: 'newView',
       });
     },
   });
