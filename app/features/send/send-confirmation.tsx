@@ -122,7 +122,7 @@ export const PayBolt11Confirmation = ({
 
   const {
     mutate: initiateSend,
-    data: { id: sendQuoteId } = {},
+    data: { id: sendQuoteId, transactionId } = {},
     isPending: isCreatingSendQuote,
   } = useInitiateCashuSendQuote({
     onError: (error) => {
@@ -148,7 +148,7 @@ export const PayBolt11Confirmation = ({
       });
     },
     onPending: () => {
-      navigate(`/send/cashu/bolt11/${sendQuoteId}`, {
+      navigate(`/transactions/${transactionId}?redirectTo=/`, {
         transition: 'slideLeft',
         applyTo: 'newView',
       });
@@ -159,8 +159,7 @@ export const PayBolt11Confirmation = ({
     initiateSend({ accountId: account.id, sendQuote: bolt11Quote });
 
   const paymentInProgress =
-    ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
-    isCreatingSendQuote;
+    ['LOADING', 'UNPAID'].includes(quoteStatus) || isCreatingSendQuote;
 
   const { description } = decodeBolt11(destination);
 
