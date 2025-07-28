@@ -1,4 +1,8 @@
-import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  MintOperationError,
+  type Token,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -15,6 +19,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
+import { areMintUrlsEqual } from '~/lib/cashu';
 import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
@@ -29,13 +34,14 @@ import {
   useSetDefaultAccount,
   useSetDefaultCurrency,
 } from '../user/user-hooks';
+import { useFailCashuReceiveQuote } from './cashu-receive-quote-hooks';
+import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 import {
   useCashuTokenSourceAccountQuery,
   useCashuTokenWithClaimableProofs,
-  useReceiveCashuToken,
+  useCreateCrossAccountReceiveQuotes,
   useReceiveCashuTokenAccounts,
 } from './receive-cashu-token-hooks';
-import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
@@ -112,21 +118,19 @@ export default function ReceiveToken({
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
-  const { status, claimToken } = useReceiveCashuToken({
-    onError: (error) => {
-      toast({
-        title: 'Failed to claim token',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-    onLightningPaymentInitiated: (transactionId) => {
-      navigate(`/transactions/${transactionId}?redirectTo=/`, {
-        transition: 'slideLeft',
-        applyTo: 'newView',
-      });
-    },
-  });
+  const onTransactionCreated = (transactionId: string) => {
+    navigate(`/transactions/${transactionId}?redirectTo=/`, {
+      transition: 'slideLeft',
+      applyTo: 'newView',
+    });
+  };
+
+  const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
+  const {
+    mutateAsync: createCrossAccountReceiveQuotes,
+    data: crossAccountReceiveQuotes,
+  } = useCreateCrossAccountReceiveQuotes();
+  const { mutate: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
   const { mutate: claimTokenMutation, isPending: isClaimingToken } =
     useMutation({
@@ -148,7 +152,22 @@ export default function ReceiveToken({
           account = await addAndSetReceiveAccount(preferredAccount);
         }
 
-        await claimToken({ token, account });
+        const isSameAccountClaim =
+          account.currency === tokenToMoney(token).currency &&
+          areMintUrlsEqual(account.mintUrl, token.mint);
+
+        if (isSameAccountClaim) {
+          const { transactionId } = await createCashuTokenSwap({
+            token,
+            accountId: account.id,
+          });
+          onTransactionCreated(transactionId);
+        } else {
+          const { sourceWallet, cashuMeltQuote, cashuReceiveQuote } =
+            await createCrossAccountReceiveQuotes({ token, account });
+          onTransactionCreated(cashuReceiveQuote.transactionId);
+          await sourceWallet.meltProofs(cashuMeltQuote, token.proofs);
+        }
 
         return { account, isAutoClaim };
       },
@@ -166,6 +185,13 @@ export default function ReceiveToken({
         }
       },
       onError: (error) => {
+        if (error instanceof MintOperationError && crossAccountReceiveQuotes) {
+          failCashuReceiveQuote({
+            quoteId: crossAccountReceiveQuotes.cashuReceiveQuote.id,
+            version: crossAccountReceiveQuotes.cashuReceiveQuote.version,
+            reason: error.message,
+          });
+        }
         console.error('Error claiming token', { cause: error });
         toast({
           title: 'Failed to claim token',
@@ -188,15 +214,6 @@ export default function ReceiveToken({
 
     claimTokenMutation({ token: claimableToken, isAutoClaim: true });
   }, [autoClaimToken, claimableToken, claimTokenMutation]);
-
-  if (status === 'SUCCESS') {
-    return (
-      <SuccessfulReceivePage
-        amount={tokenToMoney(claimableToken ?? token)}
-        account={receiveAccount}
-      />
-    );
-  }
 
   return (
     <>
@@ -233,7 +250,7 @@ export default function ReceiveToken({
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={status === 'CLAIMING' || isClaimingToken}
+            loading={isClaimingToken}
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>
