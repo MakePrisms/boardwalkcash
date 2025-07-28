@@ -82,10 +82,14 @@ const getTransactionDescription = (transaction: Transaction) => {
     return 'Received from Reclaim';
   }
   if (transaction.state === 'REVERSED') {
-    return `Reclaimed ${transaction.direction.toLowerCase()}`;
+    return transaction.direction === 'RECEIVE'
+      ? 'Reclaimed received'
+      : 'Reclaimed send';
   }
   if (transaction.state === 'PENDING') {
-    return `Pending ${transaction.direction.toLowerCase()}`;
+    return transaction.direction === 'RECEIVE'
+      ? 'Pending receive'
+      : 'Pending send';
   }
   return transaction.direction === 'RECEIVE' ? 'Received' : 'Sent';
 };
