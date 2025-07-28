@@ -50,7 +50,6 @@ export class ReceiveCashuTokenService {
     const fromCashuUnit = getCashuUnit(tokenAmount.currency);
     const toCashuUnit = getCashuUnit(account.currency);
 
-    // Validate this is indeed a cross account claim
     if (
       this.areMintUrlsEqual(account.mintUrl, token.mint) &&
       fromCashuUnit === toCashuUnit
@@ -60,7 +59,6 @@ export class ReceiveCashuTokenService {
       );
     }
 
-    // Get cross-mint quotes
     const quotes = await this.getCrossMintQuotesWithinTargetAmount({
       token,
       account,
@@ -68,7 +66,6 @@ export class ReceiveCashuTokenService {
       exchangeRate,
     });
 
-    // Use the CashuReceiveQuoteService to create the receive quote
     const cashuReceiveQuote =
       await this.cashuReceiveQuoteService.createReceiveQuote({
         userId,
@@ -133,7 +130,6 @@ export class ReceiveCashuTokenService {
         throw new Error('Amount is too small to get cross mint quotes');
       }
 
-      // Use the CashuReceiveQuoteService to get the lightning quote
       const lightningQuote =
         await this.cashuReceiveQuoteService.getLightningQuote({
           account,
