@@ -59,7 +59,11 @@ export const getInvoiceFromLud16 = async (
     }
 
     const callbackRes = await ky
-      .get(`${callback}?amount=${amountMsat}`)
+      .get(`${callback}?amount=${amountMsat}`, {
+        headers: {
+          'X-Bypass-Amount-Validation': 'true',
+        },
+      })
       .json<LNURLPayResult | LNURLError>();
 
     if (isLNURLError(callbackRes)) return callbackRes;
