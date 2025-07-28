@@ -169,10 +169,16 @@ export class LightningAddressService {
         amountToReceive = amount.convert(account.currency, rate) as Money;
       }
 
-      const quote = await cashuReceiveQuoteService.createLightningQuote({
-        userId,
+      const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
         account,
         amount: amountToReceive,
+      });
+
+      const quote = await cashuReceiveQuoteService.createReceiveQuote({
+        userId,
+        account,
+        receiveType: 'LIGHTNING',
+        receiveQuote: lightningQuote,
       });
 
       return {

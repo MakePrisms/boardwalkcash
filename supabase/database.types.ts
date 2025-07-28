@@ -884,6 +884,14 @@ export type Database = {
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
+      fail_cashu_receive_quote: {
+        Args: {
+          p_quote_id: string
+          p_quote_version: number
+          p_failure_reason: string
+        }
+        Returns: undefined
+      }
       fail_cashu_send_quote: {
         Args: {
           p_quote_id: string
