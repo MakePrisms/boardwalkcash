@@ -37,10 +37,21 @@ export class LightningAddressService {
   private minSendable: Money<'BTC'>;
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
-  private request: Request;
   private exchangeRateService: ExchangeRateService;
+  /**
+   * A client can flag that they will not validate the invoice amount.
+   * This is useful for agicash <-> agicash payments so that the receiver can receive into their default currency
+   * and we do not have to worry about exchange rate mismatches.
+   */
+  private bypassAmountValidation: boolean;
 
-  constructor(request: Request, db: AgicashDb) {
+  constructor(
+    request: Request,
+    db: AgicashDb,
+    options: {
+      bypassAmountValidation?: boolean;
+    } = {},
+  ) {
     this.exchangeRateService = new ExchangeRateService();
     this.userRepository = new UserRepository(db, this.cryptography);
     this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
@@ -48,7 +59,7 @@ export class LightningAddressService {
       this.cryptography,
     );
     this.accountRepository = new AccountRepository(db, this.cryptography);
-    this.request = request;
+    this.bypassAmountValidation = options.bypassAmountValidation ?? false;
     this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
       amount: 1,
@@ -139,13 +150,11 @@ export class LightningAddressService {
       );
 
       // For external lightning address requests, we only support BTC to avoid exchange rate mismatches.
-      // However, if the request specifies we can bypass amount validation, we can use the user's default currency
+      // However, if bypassAmountValidation is enabled, we can use the user's default currency
       // and perform exchange rate conversion to create an invoice in their preferred currency.
       const account = await this.userRepository.getDefaultAccount(
         userId,
-        this.request.headers.get('X-Bypass-Amount-Validation') === 'true'
-          ? undefined
-          : 'BTC',
+        this.bypassAmountValidation ? undefined : 'BTC',
       );
 
       if (account.type !== 'cashu') {
