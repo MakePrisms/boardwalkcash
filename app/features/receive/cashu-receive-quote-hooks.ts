@@ -166,6 +166,7 @@ export function useFailCashuReceiveQuote() {
       reason,
     }: { quoteId: string; version: number; reason: string }) =>
       cashuReceiveQuoteRepository.fail({ id: quoteId, version, reason }),
+    retry: 3,
   });
 }
 

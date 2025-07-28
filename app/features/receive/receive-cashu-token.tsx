@@ -125,14 +125,12 @@ export default function ReceiveToken({
     });
   };
 
-  // Hook for same mint/currency claims
   const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
-  // Hook for cross mint/currency claims
   const {
     mutateAsync: createCrossAccountReceiveQuotes,
     data: crossAccountReceiveQuotes,
   } = useCreateCrossAccountReceiveQuotes();
-  const { mutateAsync: failCashuReceiveQuote } = useFailCashuReceiveQuote();
+  const { mutate: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
   const { mutate: claimTokenMutation, isPending: isClaimingToken } =
     useMutation({

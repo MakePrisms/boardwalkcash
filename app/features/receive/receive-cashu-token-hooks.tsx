@@ -359,7 +359,7 @@ export function useCreateCrossAccountReceiveQuotes() {
         });
 
       const sourceWallet = getCashuWallet(token.mint, {
-        unit: getCashuUnit(tokenToMoney(token).currency),
+        unit: getCashuUnit(tokenCurrency),
       });
 
       return { cashuReceiveQuote, cashuMeltQuote, sourceWallet };
