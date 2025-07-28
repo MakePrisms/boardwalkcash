@@ -25,9 +25,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     unit: 'msat',
   });
 
+  const bypassAmountValidation =
+    request.headers.get('X-Bypass-Amount-Validation') === 'true';
+
   const lightningAddressService = new LightningAddressService(
     request,
     agicashDbServiceRole,
+    { bypassAmountValidation },
   );
 
   const response = await lightningAddressService.handleLnurlpCallback(

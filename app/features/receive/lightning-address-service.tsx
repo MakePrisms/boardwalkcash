@@ -1,4 +1,5 @@
 import { getCashuWallet } from '~/lib/cashu';
+import { ExchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 import type {
   LNURLError,
   LNURLPayParams,
@@ -36,14 +37,29 @@ export class LightningAddressService {
   private minSendable: Money<'BTC'>;
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
+  private exchangeRateService: ExchangeRateService;
+  /**
+   * A client can flag that they will not validate the invoice amount.
+   * This is useful for agicash <-> agicash payments so that the receiver can receive into their default currency
+   * and we do not have to worry about exchange rate mismatches.
+   */
+  private bypassAmountValidation: boolean;
 
-  constructor(request: Request, db: AgicashDb) {
+  constructor(
+    request: Request,
+    db: AgicashDb,
+    options: {
+      bypassAmountValidation?: boolean;
+    } = {},
+  ) {
+    this.exchangeRateService = new ExchangeRateService();
     this.userRepository = new UserRepository(db, this.cryptography);
     this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
       db,
       this.cryptography,
     );
     this.accountRepository = new AccountRepository(db, this.cryptography);
+    this.bypassAmountValidation = options.bypassAmountValidation ?? false;
     this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
       amount: 1,
@@ -133,21 +149,30 @@ export class LightningAddressService {
         this.cashuReceiveQuoteRepository,
       );
 
-      // We only support BTC for lightning address because we need to get invoices for the exact satoshi amount.
-      // Other currency accounts would require an exchange rate which will create a mismatch in amounts.
+      // For external lightning address requests, we only support BTC to avoid exchange rate mismatches.
+      // However, if bypassAmountValidation is enabled, we can use the user's default currency
+      // and perform exchange rate conversion to create an invoice in their preferred currency.
       const account = await this.userRepository.getDefaultAccount(
         userId,
-        'BTC',
+        this.bypassAmountValidation ? undefined : 'BTC',
       );
 
       if (account.type !== 'cashu') {
         throw new Error(`Account type not supported. Got ${account.type}`);
       }
 
+      let amountToReceive: Money = amount as Money;
+      if (amount.currency !== account.currency) {
+        const rate = await this.exchangeRateService.getRate(
+          `${amount.currency}-${account.currency}`,
+        );
+        amountToReceive = amount.convert(account.currency, rate) as Money;
+      }
+
       const quote = await cashuReceiveQuoteService.createLightningQuote({
         userId,
         account,
-        amount: amount as Money,
+        amount: amountToReceive,
       });
 
       return {
