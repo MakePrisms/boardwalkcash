@@ -2,8 +2,8 @@ import { useSearchParams } from 'react-router';
 import {
   ClosePageButton,
   Page,
-  PageContent,
   PageHeader,
+  PageHeaderTitle,
 } from '~/components/page';
 import { TransactionDetails } from '~/features/transactions/transaction-details';
 import { useSuspenseTransaction } from '~/features/transactions/transaction-hooks';
@@ -18,16 +18,24 @@ export default function TransactionDetailsPage({
 
   return (
     <Page>
-      <PageHeader>
+      <PageHeader className="z-10">
         <ClosePageButton
           to={redirectTo ?? '/transactions'}
           transition="slideDown"
           applyTo="oldView"
         />
+        <PageHeaderTitle>
+          {transaction.state === 'REVERSED'
+            ? 'Reclaimed'
+            : transaction.direction === 'RECEIVE'
+              ? 'Received'
+              : 'Sent'}
+        </PageHeaderTitle>
       </PageHeader>
-      <PageContent>
-        <TransactionDetails transaction={transaction} />
-      </PageContent>
+      <TransactionDetails
+        transaction={transaction}
+        defaultShowOkayButton={!!redirectTo}
+      />
     </Page>
   );
 }
