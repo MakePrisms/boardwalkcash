@@ -13,18 +13,21 @@ import type { CashuAccount } from '~/features/accounts/account';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
-import { LinkWithViewTransition } from '~/lib/transitions';
+import {
+  LinkWithViewTransition,
+  useNavigateWithViewTransition,
+} from '~/lib/transitions';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   useCashuReceiveQuote,
   useCreateCashuReceiveQuote,
 } from './cashu-receive-quote-hooks';
-import { SuccessfulReceivePage } from './successful-receive-page';
 
 type MintQuoteProps = {
   account: CashuAccount;
   amount: Money;
-  onPaid: () => void;
+  onPaid: (quote: CashuReceiveQuote) => void;
   onCopy?: (paymentRequest: string) => void;
 };
 
@@ -78,13 +81,11 @@ type Props = {
   account: CashuAccount;
 };
 
-type Status = 'received' | 'pending';
-
 export default function ReceiveCashu({ amount, account }: Props) {
-  const [status, setStatus] = useState<Status>('pending');
   const [showOk, setShowOk] = useState(false);
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
+  const navigate = useNavigateWithViewTransition();
 
   const handleCopy = (paymentRequest: string) => {
     copyToClipboard(paymentRequest);
@@ -95,10 +96,6 @@ export default function ReceiveCashu({ amount, account }: Props) {
     });
     setShowOk(true);
   };
-
-  if (status === 'received') {
-    return <SuccessfulReceivePage amount={amount} account={account} />;
-  }
 
   return (
     <>
@@ -115,7 +112,12 @@ export default function ReceiveCashu({ amount, account }: Props) {
         <MintQuoteCarouselItem
           account={account}
           amount={amount}
-          onPaid={() => setStatus('received')}
+          onPaid={(quote) => {
+            navigate(`/transactions/${quote.transactionId}?redirectTo=/`, {
+              transition: 'fade',
+              applyTo: 'newView',
+            });
+          }}
           onCopy={handleCopy}
         />
       </PageContent>
