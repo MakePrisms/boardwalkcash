@@ -11,7 +11,7 @@ export default function SendShare({ params }: Route.ComponentProps) {
   if (swap.state === 'COMPLETED') {
     return (
       <RedirectWithViewTransition
-        to={`/transactions/${swap.transactionId}`}
+        to={`/transactions/${swap.transactionId}?redirectTo=/`}
         options={{
           transition: 'fade',
           applyTo: 'newView',
