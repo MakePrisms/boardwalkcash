@@ -1,6 +1,4 @@
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   BanIcon,
   CheckIcon,
   ClockIcon,
@@ -73,21 +71,8 @@ const transactionIconMap = {
   PENDING: <ClockIcon size={18} className="text-yellow-500" />,
 };
 
-const directionIconMap = {
-  SEND: <ArrowUpIcon size={32} />,
-  RECEIVE: <ArrowDownIcon size={32} />,
-  UNDO: <UndoIcon size={32} />,
-};
-
 function getTransactionIcon(transaction: Transaction) {
   return transactionIconMap[transaction.state];
-}
-
-function getDirectionIcon(transaction: Transaction) {
-  if (transaction.reversedTransactionId) {
-    return directionIconMap.UNDO;
-  }
-  return directionIconMap[transaction.direction];
 }
 
 function getTransactionLabel(transaction: Transaction) {
@@ -102,8 +87,10 @@ function getTransactionLabel(transaction: Transaction) {
 
 export function TransactionDetails({
   transaction,
+  defaultShowOkayButton = false,
 }: {
   transaction: Transaction;
+  defaultShowOkayButton?: boolean;
 }) {
   const account = useAccount(transaction.accountId);
   const { toast } = useToast();
@@ -130,64 +117,59 @@ export function TransactionDetails({
   const shouldShowReclaimButton =
     isTransactionReversable(transaction) || isReclaimInProgress;
   const shouldShowOkButton =
-    didReclaimMutationSucceed && !isWaitingForStateUpdate;
+    (didReclaimMutationSucceed && !isWaitingForStateUpdate) ||
+    (!shouldShowReclaimButton && defaultShowOkayButton);
 
   return (
     <>
-      <PageContent className="mb-8 flex w-full max-w-md flex-col items-center justify-start gap-6">
-        {/* Amount Section */}
-        <div className="flex flex-col items-center gap-2">
-          <div className="mb-2 rounded-full bg-card p-4">
-            {getDirectionIcon(transaction)}
-          </div>
-          <MoneyWithConvertedAmount money={transaction.amount} />
-        </div>
+      <PageContent className="flex w-full max-w-md flex-1 flex-col items-center justify-between gap-8">
+        <MoneyWithConvertedAmount money={transaction.amount} />
 
-        {/* Details Card */}
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              <span>
+        {/* Details Section */}
+        <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
+          <Card className="m-4 w-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Details</CardTitle>
+              <CardDescription className="flex items-center gap-2 text-muted-foreground text-sm">
                 {formatRelativeTimestampWithTime(transaction.createdAt)}
-              </span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              {getTransactionIcon(transaction)}
-              <span className="capitalize">
-                {getTransactionLabel(transaction)}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <WalletIcon size={18} className="text-muted-foreground" />
-              <span>{account?.name}</span>
-            </div>
-
-            {transaction.reversedTransactionId && (
-              <div className="flex flex-col gap-2 border-t pt-2">
-                <div className="flex items-center gap-3">
-                  <UndoIcon size={16} />
-                  <span>Received from Reclaim</span>
-                </div>
-                <div className="flex items-center gap-3 pl-7">
-                  <LinkWithViewTransition
-                    to={{
-                      pathname: `/transactions/${transaction.reversedTransactionId}`,
-                      search: `redirectTo=/transactions/${transaction.id}`,
-                    }}
-                    transition="slideUp"
-                    applyTo="newView"
-                    className="text-muted-foreground text-sm underline"
-                  >
-                    View original
-                  </LinkWithViewTransition>
-                </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                {getTransactionIcon(transaction)}
+                <span className="capitalize">
+                  {getTransactionLabel(transaction)}
+                </span>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex items-center gap-3">
+                <WalletIcon size={18} className="text-muted-foreground" />
+                <span>{account?.name}</span>
+              </div>
+
+              {transaction.reversedTransactionId && (
+                <div className="flex flex-col gap-2 border-t pt-2">
+                  <div className="flex items-center gap-3">
+                    <UndoIcon size={16} />
+                    <span>Received from Reclaim</span>
+                  </div>
+                  <div className="flex items-center gap-3 pl-7">
+                    <LinkWithViewTransition
+                      to={{
+                        pathname: `/transactions/${transaction.reversedTransactionId}`,
+                        search: `redirectTo=/transactions/${transaction.id}`,
+                      }}
+                      transition="slideUp"
+                      applyTo="newView"
+                      className="text-muted-foreground text-sm underline"
+                    >
+                      View original
+                    </LinkWithViewTransition>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </PageContent>
       {shouldShowReclaimButton && (
         <PageFooter className="pb-14">
