@@ -132,74 +132,73 @@ export default function ReceiveToken({
   } = useCreateCrossAccountReceiveQuotes();
   const { mutate: failCashuReceiveQuote } = useFailCashuReceiveQuote();
 
-  const { mutate: claimTokenMutation, isPending: isClaimingToken } =
-    useMutation({
-      mutationFn: async ({
-        token,
-        isAutoClaim,
-      }: {
-        token: Token;
-        isAutoClaim: boolean;
-      }) => {
-        const preferredAccount =
-          isAutoClaim && sourceAccount?.selectable
-            ? sourceAccount
-            : receiveAccount;
+  const { mutate: claimTokenMutation, status: claimTokenStatus } = useMutation({
+    mutationFn: async ({
+      token,
+      isAutoClaim,
+    }: {
+      token: Token;
+      isAutoClaim: boolean;
+    }) => {
+      const preferredAccount =
+        isAutoClaim && sourceAccount?.selectable
+          ? sourceAccount
+          : receiveAccount;
 
-        // Use the preferred account if it exists, otherwise create it
-        let account = preferredAccount;
-        if (account.id === '') {
-          account = await addAndSetReceiveAccount(preferredAccount);
-        }
+      // Use the preferred account if it exists, otherwise create it
+      let account = preferredAccount;
+      if (account.id === '') {
+        account = await addAndSetReceiveAccount(preferredAccount);
+      }
 
-        const isSameAccountClaim =
-          account.currency === tokenToMoney(token).currency &&
-          areMintUrlsEqual(account.mintUrl, token.mint);
+      const isSameAccountClaim =
+        account.currency === tokenToMoney(token).currency &&
+        areMintUrlsEqual(account.mintUrl, token.mint);
 
-        if (isSameAccountClaim) {
-          const { transactionId } = await createCashuTokenSwap({
-            token,
-            accountId: account.id,
-          });
-          onTransactionCreated(transactionId);
-        } else {
-          const { sourceWallet, cashuMeltQuote, cashuReceiveQuote } =
-            await createCrossAccountReceiveQuotes({ token, account });
-          onTransactionCreated(cashuReceiveQuote.transactionId);
-          await sourceWallet.meltProofs(cashuMeltQuote, token.proofs);
-        }
-
-        return { account, isAutoClaim };
-      },
-      onSuccess: async ({ account, isAutoClaim }) => {
-        // Only set defaults for auto claim and if the account is different from current default
-        if (isAutoClaim && account.id !== defaultAccount.id) {
-          try {
-            await setDefaultAccount(account);
-            await setDefaultCurrency(account.currency);
-          } catch (error) {
-            console.error('Error setting defaults after auto claim', {
-              cause: error,
-            });
-          }
-        }
-      },
-      onError: (error) => {
-        if (error instanceof MintOperationError && crossAccountReceiveQuotes) {
-          failCashuReceiveQuote({
-            quoteId: crossAccountReceiveQuotes.cashuReceiveQuote.id,
-            version: crossAccountReceiveQuotes.cashuReceiveQuote.version,
-            reason: error.message,
-          });
-        }
-        console.error('Error claiming token', { cause: error });
-        toast({
-          title: 'Failed to claim token',
-          description: getErrorMessage(error),
-          variant: 'destructive',
+      if (isSameAccountClaim) {
+        const { transactionId } = await createCashuTokenSwap({
+          token,
+          accountId: account.id,
         });
-      },
-    });
+        onTransactionCreated(transactionId);
+      } else {
+        const { sourceWallet, cashuMeltQuote, cashuReceiveQuote } =
+          await createCrossAccountReceiveQuotes({ token, account });
+        onTransactionCreated(cashuReceiveQuote.transactionId);
+        await sourceWallet.meltProofs(cashuMeltQuote, token.proofs);
+      }
+
+      return { account, isAutoClaim };
+    },
+    onSuccess: async ({ account, isAutoClaim }) => {
+      // Only set defaults for auto claim and if the account is different from current default
+      if (isAutoClaim && account.id !== defaultAccount.id) {
+        try {
+          await setDefaultAccount(account);
+          await setDefaultCurrency(account.currency);
+        } catch (error) {
+          console.error('Error setting defaults after auto claim', {
+            cause: error,
+          });
+        }
+      }
+    },
+    onError: (error) => {
+      if (error instanceof MintOperationError && crossAccountReceiveQuotes) {
+        failCashuReceiveQuote({
+          quoteId: crossAccountReceiveQuotes.cashuReceiveQuote.id,
+          version: crossAccountReceiveQuotes.cashuReceiveQuote.version,
+          reason: error.message,
+        });
+      }
+      console.error('Error claiming token', { cause: error });
+      toast({
+        title: 'Failed to claim token',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      });
+    },
+  });
 
   const handleClaim = async () => {
     if (!claimableToken) {
@@ -250,7 +249,10 @@ export default function ReceiveToken({
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={isClaimingToken}
+            // loading while the mutation is running or while waiting for navigation after mutation success
+            loading={
+              claimTokenStatus === 'pending' || claimTokenStatus === 'success'
+            }
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>

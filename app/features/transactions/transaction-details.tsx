@@ -2,8 +2,8 @@ import {
   BanIcon,
   CheckIcon,
   ClockIcon,
+  LandmarkIcon,
   UndoIcon,
-  WalletIcon,
   XIcon,
 } from 'lucide-react';
 
@@ -254,7 +254,7 @@ export function TransactionDetails({
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <WalletIcon size={18} className="text-muted-foreground" />
+                <LandmarkIcon size={18} className="text-muted-foreground" />
                 <span>{account?.name}</span>
               </div>
 

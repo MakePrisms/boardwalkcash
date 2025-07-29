@@ -159,7 +159,8 @@ export const PayBolt11Confirmation = ({
     initiateSend({ accountId: account.id, sendQuote: bolt11Quote });
 
   const paymentInProgress =
-    ['LOADING', 'UNPAID'].includes(quoteStatus) || isCreatingSendQuote;
+    ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
+    isCreatingSendQuote;
 
   const { description } = decodeBolt11(destination);
 
