@@ -70,6 +70,24 @@
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 ::view-transition-old(root) {
   animation: var(--direction-out) 0.15s ease-in both; /* This duration value is repeated in view-transition.tsx. When changing make sure to keep them in sync! */
   z-index: var(--view-transition-out-z-index);

@@ -7,6 +7,7 @@ const transitions = [
   'slideRight',
   'slideUp',
   'slideDown',
+  'fade',
 ] as const;
 type Transition = (typeof transitions)[number];
 
@@ -79,6 +80,20 @@ const ANIMATIONS: Record<
     bothViews: {
       out: { animationName: 'slide-out-to-bottom' },
       in: { animationName: 'slide-in-from-top' },
+    },
+  },
+  fade: {
+    newView: {
+      out: { animationName: 'fade-out', zIndex: 0 },
+      in: { animationName: 'fade-in', zIndex: 1 },
+    },
+    oldView: {
+      out: { animationName: 'fade-out', zIndex: 0 },
+      in: { animationName: 'fade-in', zIndex: 1 },
+    },
+    bothViews: {
+      out: { animationName: 'fade-out' },
+      in: { animationName: 'fade-in' },
     },
   },
 };
@@ -211,7 +226,8 @@ export function LinkWithViewTransition<
   return <Link {...(commonProps as ComponentProps<typeof Link>)} />;
 }
 
-type NavigateWithViewTransitionOptions = NavigateOptions & ViewTransitionState;
+export type NavigateWithViewTransitionOptions = NavigateOptions &
+  ViewTransitionState;
 
 export function useNavigateWithViewTransition() {
   const navigate = useNavigate();

@@ -149,7 +149,7 @@ export function SendInput() {
 
     navigate('/send/confirm', {
       applyTo: 'newView',
-      transition: 'slideUp',
+      transition: 'slideLeft',
     });
   };
 
