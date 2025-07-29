@@ -127,7 +127,7 @@ export class CashuSendQuoteRepository {
       amountToReceive,
       cashuSendSwapFee: cashuFee,
       lightningFeeReserve,
-      sumOfInputProofs: new Money({
+      amountReserved: new Money({
         amount: sumProofs(proofsToSend),
         currency: amountToReceive.currency,
         unit,
@@ -228,7 +228,7 @@ export class CashuSendQuoteRepository {
 
     const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
       {
-        sumOfInputProofs: new Money({
+        amountReserved: new Money({
           amount: sumProofs(quote.proofs),
           currency: quote.amountToReceive.currency,
           unit: getDefaultUnit(quote.amountToReceive.currency),

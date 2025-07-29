@@ -50,12 +50,12 @@ export type CashuReceiveSwapTransactionDetails = {
 
 type BaseCashuSendQuoteTransactionDetails = {
   /**
-   * The sum of all proofs used as inputs to the cashu melt operation in
+   * The sum of all proofs used as inputs to the cashu melt operation
    * converted from a number to Money in the currency of the account.
-   * While the transaction is incomplete, this amount will be deducted from the account.
+   * These proofs are moved from the account to the pending send quote.
    * When the transaction is completed, change will be returned to the account.
    */
-  sumOfInputProofs: Money;
+  amountReserved: Money;
   /**
    * Amount that the receiver will receive.
    *

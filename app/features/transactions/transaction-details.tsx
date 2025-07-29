@@ -111,7 +111,7 @@ export function TransactionDetails({
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
-          sumOfInputProofs: completedDetails.sumOfInputProofs.toLocaleString({
+          amountReserved: completedDetails.amountReserved.toLocaleString({
             unit,
           }),
           totalAmount: completedDetails.amountSpent.toLocaleString({ unit }),
@@ -137,7 +137,7 @@ export function TransactionDetails({
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
-          sumOfInputProofs: incompleteDetails.sumOfInputProofs.toLocaleString({
+          amountReserved: incompleteDetails.amountReserved.toLocaleString({
             unit,
           }),
           amountToReceive: incompleteDetails.amountToReceive.toLocaleString({

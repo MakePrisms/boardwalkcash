@@ -150,7 +150,7 @@ export class TransactionRepository {
       const incompleteDetails =
         details as IncompleteCashuSendQuoteTransactionDetails;
       return createTransaction(
-        incompleteDetails.sumOfInputProofs,
+        incompleteDetails.amountReserved,
         incompleteDetails,
       );
     }
