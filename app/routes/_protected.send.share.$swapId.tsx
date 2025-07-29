@@ -1,4 +1,3 @@
-import { Page } from '~/components/page';
 import { Redirect, RedirectWithViewTransition } from '~/components/redirect';
 import { useCashuSendSwap } from '~/features/send/cashu-send-swap-hooks';
 import { ShareCashuToken } from '~/features/send/share-cashu-token';
@@ -30,9 +29,5 @@ export default function SendShare({ params }: Route.ComponentProps) {
     unit: getCashuProtocolUnit(swap.amountToSend.currency),
   };
 
-  return (
-    <Page>
-      <ShareCashuToken token={token} />
-    </Page>
-  );
+  return <ShareCashuToken token={token} />;
 }
