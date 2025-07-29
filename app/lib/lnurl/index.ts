@@ -31,6 +31,9 @@ export const getLNURLPayParams = async (
  * Fetch an invoice from a lightning address
  * @param lightningAddress - Lightning address to get the invoice from
  * @param amountMsat - Amount in msat to request
+ * @param requestDomain - Optional domain of the requester, used to decide if we should include `bypassAmountValidation=true` in the callback URL.
+ * This signals to the LNURL server that we will not validate that the invoice amount matches the requested amount.
+ * If requests are Agicash to Agicash, then the Agicash LNURL server will receive to the user's default currency which may result in exchange rate differences.
  * @see[LUD 16](https://github.com/lnurl/luds/blob/luds/16.md)
  * @example
  * ```ts
@@ -41,6 +44,7 @@ export const getLNURLPayParams = async (
 export const getInvoiceFromLud16 = async (
   lud16: string,
   amount: Money<'BTC'>,
+  requestDomain?: string,
 ): Promise<LNURLPayResult | LNURLError> => {
   const amountMsat = amount.toNumber('msat');
 
@@ -58,12 +62,17 @@ export const getInvoiceFromLud16 = async (
       };
     }
 
+    const [, lnurlDomain] = lud16.split('@');
+    const shouldBypassValidation = lnurlDomain === requestDomain;
+
+    const callbackUrl = new URL(callback);
+    callbackUrl.searchParams.set('amount', amountMsat.toString());
+    if (shouldBypassValidation) {
+      callbackUrl.searchParams.set('bypassAmountValidation', 'true');
+    }
+
     const callbackRes = await ky
-      .get(`${callback}?amount=${amountMsat}`, {
-        headers: {
-          'X-Bypass-Amount-Validation': 'true',
-        },
-      })
+      .get(callbackUrl)
       .json<LNURLPayResult | LNURLError>();
 
     if (isLNURLError(callbackRes)) return callbackRes;
