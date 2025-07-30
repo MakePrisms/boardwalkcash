@@ -12,7 +12,6 @@ import {
   getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
-import { Money } from '~/lib/money';
 import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
 import {
@@ -86,11 +85,7 @@ export class CashuTokenSwapService {
       keysetCounter: counter,
       inputAmount: sumProofs(token.proofs),
       outputAmounts,
-      receiveSwapFee: new Money({
-        amount: fee,
-        currency: amount.currency,
-        unit: cashuUnit,
-      }),
+      receiveSwapFee: fee,
       accountVersion: account.version,
       reversedTransactionId,
     });

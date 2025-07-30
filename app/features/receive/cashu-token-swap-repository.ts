@@ -1,4 +1,5 @@
 import type { Proof, Token } from '@cashu/cashu-ts';
+import { getCashuUnit } from '~/lib/cashu';
 import { Money } from '~/lib/money';
 import {
   type AgicashDb,
@@ -47,9 +48,9 @@ type CreateTokenSwap = {
    */
   outputAmounts: number[];
   /**
-   * The fee to swap the token.
+   * The amount of the fee in the unit of the token.
    */
-  receiveSwapFee: Money;
+  receiveSwapFee: number;
   /**
    * Cashu token being claimed
    */
@@ -94,10 +95,16 @@ export class CashuTokenSwapRepository {
     const unit = getDefaultUnit(amount.currency);
     const tokenHash = await getTokenHash(token);
 
+    const receiveSwapFeeMoney = new Money({
+      amount: receiveSwapFee,
+      currency: amount.currency,
+      unit: getCashuUnit(amount.currency),
+    });
+
     const details: CashuReceiveSwapTransactionDetails = {
-      amountReceived: amount.subtract(receiveSwapFee),
-      cashuReceiveSwapFee: receiveSwapFee,
-      totalFees: receiveSwapFee,
+      amountReceived: amount.subtract(receiveSwapFeeMoney),
+      cashuReceiveSwapFee: receiveSwapFeeMoney,
+      totalFees: receiveSwapFeeMoney,
       tokenAmount: amount,
     };
 
@@ -118,7 +125,7 @@ export class CashuTokenSwapRepository {
       p_output_amounts: outputAmounts,
       p_input_amount: inputAmount,
       p_receive_amount: amount.toNumber(unit),
-      p_fee_amount: receiveSwapFee.toNumber(unit),
+      p_fee_amount: receiveSwapFee,
       p_account_version: accountVersion,
       p_reversed_transaction_id: reversedTransactionId,
       p_encrypted_transaction_details: encryptedTransactionDetails,
