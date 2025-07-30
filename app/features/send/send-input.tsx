@@ -199,34 +199,36 @@ export function SendInput() {
         <PageHeaderTitle>Send</PageHeaderTitle>
       </PageHeader>
 
-      <PageContent className="mx-auto flex flex-col items-center justify-between sm:justify-around">
-        <div className="flex h-[124px] flex-col items-center gap-2">
-          <div className={shakeAnimationClass}>
-            <MoneyInputDisplay
-              inputValue={rawInputValue}
-              currency={inputValue.currency}
-              unit={getDefaultUnit(inputValue.currency)}
-            />
+      <PageContent className="mx-auto flex flex-col items-center justify-between">
+        <div className="flex flex-col items-center justify-between gap-4">
+          <div className="flex h-[124px] flex-col items-center gap-2">
+            <div className={shakeAnimationClass}>
+              <MoneyInputDisplay
+                inputValue={rawInputValue}
+                currency={inputValue.currency}
+                unit={getDefaultUnit(inputValue.currency)}
+              />
+            </div>
+
+            {!exchangeRateError && (
+              <ConvertedMoneySwitcher
+                onSwitchInputCurrency={switchInputCurrency}
+                money={convertedValue}
+              />
+            )}
           </div>
 
-          {!exchangeRateError && (
-            <ConvertedMoneySwitcher
-              onSwitchInputCurrency={switchInputCurrency}
-              money={convertedValue}
-            />
-          )}
-        </div>
-
-        <div className="flex h-[24px] items-center justify-center gap-4">
-          {destinationDisplay && (
-            <>
-              <p>{destinationDisplay}</p>
-              <X
-                onClick={clearDestination}
-                className="h-4 w-4 cursor-pointer"
-              />
-            </>
-          )}
+          <div className="flex h-[24px] items-center justify-center gap-4">
+            {destinationDisplay && (
+              <>
+                <p>{destinationDisplay}</p>
+                <X
+                  onClick={clearDestination}
+                  className="h-4 w-4 cursor-pointer"
+                />
+              </>
+            )}
+          </div>
         </div>
 
         <div className="w-full max-w-sm sm:max-w-none">
