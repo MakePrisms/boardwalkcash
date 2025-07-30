@@ -19,7 +19,6 @@ import { useUser } from '../user/user-hooks';
 import type { Transaction } from './transaction';
 import {
   type Cursor,
-  TransactionRepository,
   useTransactionRepository,
 } from './transaction-repository';
 
@@ -151,6 +150,7 @@ function useOnTransactionChange({
   onUpdated: (transaction: Transaction) => void;
 }) {
   const onUpdatedRef = useLatest(onUpdated);
+  const transactionRepository = useTransactionRepository();
 
   useEffect(() => {
     if (!transactionId) return;
@@ -165,11 +165,12 @@ function useOnTransactionChange({
           table: 'transactions',
           filter: `id=eq.${transactionId}`,
         },
-        (payload: RealtimePostgresChangesPayload<AgicashDbTransaction>) => {
+        async (
+          payload: RealtimePostgresChangesPayload<AgicashDbTransaction>,
+        ) => {
           if (payload.eventType === 'UPDATE') {
-            const updatedTransaction = TransactionRepository.toTransaction(
-              payload.new,
-            );
+            const updatedTransaction =
+              await transactionRepository.toTransaction(payload.new);
             onUpdatedRef.current(updatedTransaction);
           }
         },
@@ -179,7 +180,7 @@ function useOnTransactionChange({
     return () => {
       channel.unsubscribe();
     };
-  }, [transactionId]);
+  }, [transactionId, transactionRepository]);
 }
 
 /** Listens for changes to a transaction in the Agicash DB and updates the query client with the latest transaction. */

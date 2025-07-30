@@ -9,6 +9,7 @@ import {
 } from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
+import type { CashuReceiveQuoteTransactionDetails } from '../transactions/transaction';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 
 type Options = {
@@ -93,6 +94,14 @@ export class CashuReceiveQuoteRepository {
   ): Promise<CashuReceiveQuote> {
     const unit = getDefaultUnit(amount.currency);
 
+    const details: CashuReceiveQuoteTransactionDetails = {
+      amountReceived: amount,
+      paymentRequest,
+      description,
+    };
+
+    const encryptedTransactionDetails = await this.encryption.encrypt(details);
+
     const query = this.db.rpc('create_cashu_receive_quote', {
       p_user_id: userId,
       p_account_id: accountId,
@@ -106,6 +115,7 @@ export class CashuReceiveQuoteRepository {
       p_state: state,
       p_locking_derivation_path: lockingDerivationPath,
       p_receive_type: receiveType,
+      p_encrypted_transaction_details: encryptedTransactionDetails,
     });
 
     if (options?.abortSignal) {

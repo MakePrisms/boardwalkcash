@@ -2,6 +2,7 @@ import { useOpenSecret } from '@opensecret/react';
 import { decode, encode } from '@stablelib/base64';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { Money } from '~/lib/money';
 import { hexToUint8Array } from '~/lib/utils';
 
 // 10111099 is 'enc' (for encryption) in ascii
@@ -47,6 +48,10 @@ function preprocessData(obj: unknown): unknown {
 
   if (Array.isArray(obj)) {
     return obj.map(preprocessData);
+  }
+
+  if (obj instanceof Money) {
+    return { __type: 'Money', amount: obj.amount(), currency: obj.currency };
   }
 
   const result: Record<string, unknown> = {};
@@ -152,6 +157,11 @@ export const useEncryption = (): Encryption => {
                 return undefined;
               case 'number':
                 return Number(value.value); // This handles Infinity, -Infinity, NaN
+              case 'Money':
+                return new Money({
+                  amount: value.amount,
+                  currency: value.currency,
+                });
             }
           }
           return value;

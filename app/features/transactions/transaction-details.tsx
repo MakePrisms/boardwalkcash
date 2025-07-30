@@ -16,10 +16,18 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
-import type { Transaction } from '~/features/transactions/transaction';
+import type {
+  CashuReceiveQuoteTransactionDetails,
+  CashuReceiveSwapTransactionDetails,
+  CashuSendSwapTransactionDetails,
+  CompletedCashuSendQuoteTransactionDetails,
+  IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
+} from '~/features/transactions/transaction';
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useAccount } from '../accounts/account-hooks';
+import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
@@ -91,6 +99,110 @@ export function TransactionDetails({
   const isReclaimInProgress = isReversing || isWaitingForStateUpdate;
   const shouldShowReclaimButton =
     isTransactionReversable(transaction) || isReclaimInProgress;
+
+  // Log transaction details with proper formatting for each type
+  const { type, direction, state, details } = transaction;
+  const unit = getDefaultUnit(transaction.amount.currency);
+
+  if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
+    if (state === 'COMPLETED') {
+      const completedDetails =
+        details as CompletedCashuSendQuoteTransactionDetails;
+      console.debug(
+        `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+        {
+          amountReserved: completedDetails.amountReserved.toLocaleString({
+            unit,
+          }),
+          totalAmount: completedDetails.amountSpent.toLocaleString({ unit }),
+          amountToReceive: completedDetails.amountToReceive.toLocaleString({
+            unit,
+          }),
+          lightningFeeReserve:
+            completedDetails.lightningFeeReserve.toLocaleString({ unit }),
+          cashuSendSwapFee: completedDetails.cashuSendSwapFee.toLocaleString({
+            unit,
+          }),
+          totalFees: completedDetails.totalFees.toLocaleString({ unit }),
+          lightningFee: completedDetails.lightningFee.toLocaleString({
+            unit,
+          }),
+          paymentRequest: completedDetails.paymentRequest,
+          preimage: completedDetails.preimage,
+        },
+      );
+    } else {
+      const incompleteDetails =
+        details as IncompleteCashuSendQuoteTransactionDetails;
+      console.debug(
+        `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+        {
+          amountReserved: incompleteDetails.amountReserved.toLocaleString({
+            unit,
+          }),
+          amountToReceive: incompleteDetails.amountToReceive.toLocaleString({
+            unit,
+          }),
+          lightningFeeReserve:
+            incompleteDetails.lightningFeeReserve.toLocaleString({ unit }),
+          cashuSendSwapFee: incompleteDetails.cashuSendSwapFee.toLocaleString({
+            unit,
+          }),
+          paymentRequest: incompleteDetails.paymentRequest,
+        },
+      );
+    }
+  }
+
+  if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
+    const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
+    console.debug(
+      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+      {
+        amountReceived: receiveDetails.amountReceived.toLocaleString({ unit }),
+        paymentRequest: receiveDetails.paymentRequest,
+        description: receiveDetails.description,
+      },
+    );
+  }
+
+  if (type === 'CASHU_TOKEN' && direction === 'SEND') {
+    const sendSwapDetails = details as CashuSendSwapTransactionDetails;
+    console.debug(
+      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+      {
+        amountSpent: sendSwapDetails.amountSpent.toLocaleString({ unit }),
+        amountToReceive: sendSwapDetails.amountToReceive.toLocaleString({
+          unit,
+        }),
+        cashuSendSwapFee: sendSwapDetails.cashuSendSwapFee.toLocaleString({
+          unit,
+        }),
+        cashuReceiveSwapFee: sendSwapDetails.cashuReceiveSwapFee.toLocaleString(
+          {
+            unit,
+          },
+        ),
+        totalFees: sendSwapDetails.totalFees.toLocaleString({ unit }),
+      },
+    );
+  }
+
+  if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
+    const receiveSwapDetails = details as CashuReceiveSwapTransactionDetails;
+    console.debug(
+      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+      {
+        amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
+          unit,
+        }),
+        tokenAmount: receiveSwapDetails.tokenAmount.toLocaleString({ unit }),
+        cashuReceiveSwapFee:
+          receiveSwapDetails.cashuReceiveSwapFee.toLocaleString({ unit }),
+        totalFees: receiveSwapDetails.totalFees.toLocaleString({ unit }),
+      },
+    );
+  }
 
   return (
     <PageContent className="mb-8 flex w-full max-w-md flex-col items-center justify-between gap-6">

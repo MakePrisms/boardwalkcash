@@ -85,7 +85,7 @@ export class CashuTokenSwapService {
       keysetCounter: counter,
       inputAmount: sumProofs(token.proofs),
       outputAmounts,
-      fee,
+      receiveSwapFee: fee,
       accountVersion: account.version,
       reversedTransactionId,
     });

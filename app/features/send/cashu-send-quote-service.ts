@@ -412,8 +412,7 @@ export class CashuSendQuoteService {
     });
 
     return this.cashuSendRepository.complete({
-      quoteId: sendQuote.id,
-      quoteVersion: sendQuote.version,
+      quote: sendQuote,
       paymentPreimage: meltQuote.payment_preimage ?? '',
       amountSpent,
       accountProofs: updatedAccountProofs,

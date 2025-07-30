@@ -8,6 +8,7 @@ import {
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
+import type { CashuSendSwapTransactionDetails } from '../transactions/transaction';
 import type { CashuSendSwap } from './cashu-send-swap';
 
 type Options = {
@@ -113,17 +114,27 @@ export class CashuSendSwapRepository {
     }: CreateSendSwap,
     options?: Options,
   ) {
+    const unit = getDefaultUnit(amountToSend.currency);
+
+    const details: CashuSendSwapTransactionDetails = {
+      amountSpent: totalAmount,
+      cashuSendSwapFee: sendSwapFee,
+      cashuReceiveSwapFee: receiveSwapFee,
+      totalFees: sendSwapFee.add(receiveSwapFee),
+      amountToReceive: amountToSend.subtract(receiveSwapFee),
+    };
+
     const [
       encryptedInputProofs,
       encryptedAccountProofs,
       encryptedProofsToSend,
+      encryptedTransactionDetails,
     ] = await Promise.all([
       this.encryption.encrypt(inputProofs),
       this.encryption.encrypt(accountProofs),
       proofsToSend ? this.encryption.encrypt(proofsToSend) : undefined,
+      this.encryption.encrypt(details),
     ]);
-
-    const unit = getDefaultUnit(amountToSend.currency);
 
     const updatedKeysetCounter =
       keysetCounter !== undefined
@@ -153,6 +164,7 @@ export class CashuSendSwapRepository {
       p_unit: unit,
       p_state: proofsToSend ? 'PENDING' : 'DRAFT',
       p_account_version: accountVersion,
+      p_encrypted_transaction_details: encryptedTransactionDetails,
       p_proofs_to_send: encryptedProofsToSend,
       p_token_hash: tokenHash,
     });

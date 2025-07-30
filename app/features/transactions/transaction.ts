@@ -1,5 +1,138 @@
 import type { Money } from '~/lib/money';
 
+/**
+ * Transacion details for sending cashu proofs from an account.
+ */
+export type CashuSendSwapTransactionDetails = {
+  /**
+   * This is the sum of `amountToReceive` and `totalFees`, and is the amount deducted from the account.
+   */
+  amountSpent: Money;
+  /**
+   * This is the amount the the recipeint will receive after fees have been paid.
+   */
+  amountToReceive: Money;
+  /**
+   * The fee incurred when creating sendable proofs.
+   */
+  cashuSendSwapFee: Money;
+  /**
+   * The fee that we include in the token for the receiver to claim exactly `amountToReceive`.
+   */
+  cashuReceiveSwapFee: Money;
+  /**
+   * The total fees for the transaction. Sum of cashuSendSwapFee and cashuReceiveSwapFee.
+   */
+  totalFees: Money;
+};
+
+/**
+ * Transacion details for receiving cashu proofs to an account.
+ */
+export type CashuReceiveSwapTransactionDetails = {
+  /**
+   * This is the token amount minus the cashuReceiveSwapFee, and is the amount added to the account.
+   */
+  amountReceived: Money;
+  /**
+   * The amount of the token being claimed.
+   */
+  tokenAmount: Money;
+  /**
+   * The fee that will be incurred when swapping proofs to the account.
+   */
+  cashuReceiveSwapFee: Money;
+  /**
+   * The total fees for the transaction. This is the same as the `cashuReceiveSwapFee`.
+   */
+  totalFees: Money;
+};
+
+type BaseCashuSendQuoteTransactionDetails = {
+  /**
+   * The sum of all proofs used as inputs to the cashu melt operation
+   * converted from a number to Money in the currency of the account.
+   * These proofs are moved from the account to the pending send quote.
+   * When the transaction is completed, change will be returned to the account.
+   */
+  amountReserved: Money;
+  /**
+   * Amount that the receiver will receive.
+   *
+   * This is the amount requested in the currency of the account we are sending from.
+   * If the currency of the account we are sending from is not BTC, the mint will do
+   * the conversion using their exchange rate at the time of quote creation.
+   */
+  amountToReceive: Money;
+  /**
+   * The amount reserved upfront to cover the maximum potential Lightning Network fees.
+   *
+   * If the actual Lightning fee ends up being lower than this reserve,
+   * the difference is returned as change to the user.
+   */
+  lightningFeeReserve: Money;
+  /**
+   * The fee incurred to spend the proofs in the cashu melt operation
+   */
+  cashuSendSwapFee: Money;
+  /**
+   * The bolt11 payment request.
+   */
+  paymentRequest: string;
+};
+
+/**
+ * Transacion details for a cashu lightning send transaction that is not yet completed.
+ */
+export type IncompleteCashuSendQuoteTransactionDetails =
+  BaseCashuSendQuoteTransactionDetails;
+
+/**
+ * Transacion details for a cashu lightning send transaction that is completed.
+ */
+export type CompletedCashuSendQuoteTransactionDetails =
+  BaseCashuSendQuoteTransactionDetails & {
+    /**
+     * This is the sum of `amountToReceive` and `totalFees`. This is the amount deducted from the account.
+     */
+    amountSpent: Money;
+    /**
+     * The preimage of the lightning payment.
+     * If the lightning payment is settled internally in the mint, this will be an empty string or '0x0000000000000000000000000000000000000000000000000000000000000000'
+     */
+    preimage: string;
+    /**
+     * The actual Lightning Network fee that was charged after the transaction completed.
+     * This may be less than the `lightningFeeReserve` if the payment was cheaper than expected.
+     *
+     * The difference between the `lightningFeeReserve` and the `lightningFee` is returned as change to the user.
+     */
+    lightningFee: Money;
+    /**
+     * The actual fees for the transaction. Sum of lightningFee and cashuSendSwapFee.
+     */
+    totalFees: Money;
+  };
+
+/**
+ * Transacion details for receiving cashu lightning payments to an account.
+ */
+export type CashuReceiveQuoteTransactionDetails = {
+  /**
+   * The amount of the bolt11 payment request.
+   * This amount is added to the account.
+   */
+  amountReceived: Money;
+  /**
+   * The bolt11 payment request.
+   */
+  paymentRequest: string;
+  /**
+   * The description of the transaction.
+   */
+  description?: string;
+};
+
 export type Transaction = {
   /**
    * ID of the transaction.
@@ -38,6 +171,10 @@ export type Transaction = {
    */
   amount: Money;
   /**
+   * Transaction details.
+   */
+  details: object;
+  /**
    * ID of the transaction that is reversed by this transaction.
    */
   reversedTransactionId?: string | null;
@@ -61,4 +198,32 @@ export type Transaction = {
    * Date and time the transaction was reversed in ISO 8601 format.
    */
   reversedAt?: string | null;
-};
+} & (
+  | {
+      type: 'CASHU_TOKEN';
+      direction: 'SEND';
+      details: CashuSendSwapTransactionDetails;
+    }
+  | {
+      type: 'CASHU_TOKEN';
+      direction: 'RECEIVE';
+      details: CashuReceiveSwapTransactionDetails;
+    }
+  | {
+      type: 'CASHU_LIGHTNING';
+      direction: 'SEND';
+      state: 'DRAFT' | 'PENDING' | 'FAILED';
+      details: IncompleteCashuSendQuoteTransactionDetails;
+    }
+  | {
+      type: 'CASHU_LIGHTNING';
+      direction: 'SEND';
+      state: 'COMPLETED';
+      details: CompletedCashuSendQuoteTransactionDetails;
+    }
+  | {
+      type: 'CASHU_LIGHTNING';
+      direction: 'RECEIVE';
+      details: CashuReceiveQuoteTransactionDetails;
+    }
+);
