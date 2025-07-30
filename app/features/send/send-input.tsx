@@ -13,6 +13,7 @@ import { Numpad } from '~/components/numpad';
 import {
   ClosePageButton,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
@@ -272,15 +273,16 @@ export function SendInput() {
               </Button>
             </div>
           </div>
-
-          <Numpad
-            showDecimal={maxInputDecimals > 0}
-            onButtonClick={(value) => {
-              handleNumberInput(value, startShakeAnimation);
-            }}
-          />
         </div>
       </PageContent>
+      <PageFooter className="sm:pb-14">
+        <Numpad
+          showDecimal={maxInputDecimals > 0}
+          onButtonClick={(value) => {
+            handleNumberInput(value, startShakeAnimation);
+          }}
+        />
+      </PageFooter>
     </>
   );
 }
