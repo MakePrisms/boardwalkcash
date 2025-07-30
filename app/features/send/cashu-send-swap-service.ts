@@ -22,6 +22,7 @@ import {
 } from '../receive/cashu-token-swap-service';
 import {
   type CashuCryptography,
+  getCashuWalletWithAuth,
   getTokenHash,
   useCashuCryptography,
 } from '../shared/cashu';
@@ -225,7 +226,7 @@ export class CashuSendSwapService {
     }
 
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: getCashuUnit(swap.amountToSend.currency),
       bip39seed: seed,
     });

@@ -13,7 +13,7 @@ import { type Currency, Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { getCashuWalletWithAuth, useCashuCryptography } from '../shared/cashu';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
 import {
@@ -423,7 +423,9 @@ export function useAddCashuAccount() {
         | 'version'
       >,
     ): Promise<CashuAccount> => {
-      const isTestMint = await checkIsTestMint(account.mintUrl);
+      const isTestMint = await checkIsTestMint(
+        getCashuWalletWithAuth(account.mintUrl),
+      );
 
       return accountRepository.create<CashuAccount>({
         ...account,

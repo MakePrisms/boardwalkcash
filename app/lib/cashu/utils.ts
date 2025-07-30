@@ -188,16 +188,28 @@ export const getCashuWallet = (
     'unit'
   > & {
     unit?: CurrencyUnit;
+    getClearAuthToken?: () => Promise<string>;
+    getAndConsumeBlindAuthToken?: () => Promise<string>;
   } = {},
 ) => {
-  const { unit, ...rest } = options;
+  const { unit, getClearAuthToken, getAndConsumeBlindAuthToken, ...rest } =
+    options;
+
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
   const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
-    ...rest,
-    unit: cashuUnit,
-  });
+  return new ExtendedCashuWallet(
+    new CashuMint(
+      mintUrl,
+      undefined,
+      getAndConsumeBlindAuthToken,
+      getClearAuthToken,
+    ),
+    {
+      ...rest,
+      unit: cashuUnit,
+    },
+  );
 };
 
 /**
@@ -208,19 +220,27 @@ export const getCashuWallet = (
  * - https://testnut.cashu.space
  * - https://nofees.testnut.cashu.space
  *
- * @param mintUrl - The URL of the mint
+ * @param wallet - The wallet to check. If the mint requires authentication to create a mint quote, the wallet must include the appropriate getters.
  * @returns True if the mint is not on mainnet
  */
-export const checkIsTestMint = async (mintUrl: string): Promise<boolean> => {
+export const checkIsTestMint = async (
+  wallet: CashuWallet,
+): Promise<boolean> => {
   // Normalize URL by removing trailing slash and converting to lowercase
-  const normalizedUrl = mintUrl.toLowerCase().replace(/\/+$/, '');
+  const normalizedUrl = wallet.mint.mintUrl.toLowerCase().replace(/\/+$/, '');
   if (knownTestMints.includes(normalizedUrl)) {
     return true;
   }
-  const wallet = getCashuWallet(mintUrl);
-  const { request: bolt11 } = await wallet.createMintQuote(1);
-  const { network } = decodeBolt11(bolt11);
-  return network !== 'bitcoin';
+  try {
+    const { request: bolt11 } = await wallet.createMintQuote(1);
+    const { network } = decodeBolt11(bolt11);
+    return network !== 'bitcoin';
+  } catch (error) {
+    // TODO: this can fail if mint requires auth and the user is not authenticated.
+    // For now we assume its not a test mint if it fails, but we should handle this better.
+    console.error('Error checking if mint is test mint', error);
+    return false;
+  }
 };
 
 export const getMintInfo = async (mintUrl: string): Promise<MintInfo> => {

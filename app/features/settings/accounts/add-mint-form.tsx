@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -12,7 +13,9 @@ import {
 } from '~/components/ui/select';
 import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { cashuMintValidator } from '~/features/shared/cashu';
+import { useCashuAuthStore } from '~/features/shared/cashu-auth';
 import { useUser } from '~/features/user/user-hooks';
+import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
@@ -37,16 +40,19 @@ const validateMint = async (
 };
 
 export function AddMintForm() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const addAccount = useAddCashuAccount();
   const { toast } = useToast();
   const navigate = useNavigate();
   const defaultCurrency = useUser((u) => u.defaultCurrency);
-
+  const { origin } = useLocationData();
+  const { checkAuthRequired, startAuth } = useCashuAuthStore();
   const {
     register,
     handleSubmit,
     control,
     getValues,
+    setValue,
     formState: { isSubmitting, errors },
   } = useForm<FormValues>({
     defaultValues: {
@@ -54,14 +60,86 @@ export function AddMintForm() {
     },
   });
 
+  // Auto-submit if URL parameters are present (after OIDC callback)
+  useEffect(() => {
+    const name = searchParams.get('name');
+    const currency = searchParams.get('currency') as Currency;
+    const mintUrl = searchParams.get('mintUrl');
+
+    if (name && currency && mintUrl) {
+      // Set form values from URL parameters
+      setValue('name', name);
+      setValue('currency', currency);
+      setValue('mintUrl', mintUrl);
+
+      // Clear URL parameters
+      setSearchParams({});
+
+      // Auto-submit the form
+      const submitForm = async () => {
+        try {
+          await addAccount({
+            name,
+            currency,
+            mintUrl,
+            type: 'cashu',
+          });
+
+          toast({
+            title: 'Success',
+            description: 'Account added successfully',
+          });
+          navigate('/settings/accounts');
+        } catch (e) {
+          const message =
+            e instanceof Error
+              ? e.message
+              : 'Unknown error. Failed to add account.';
+          toast({
+            title: 'Error',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+      };
+
+      submitForm();
+    }
+  }, [searchParams, setValue, setSearchParams, addAccount, toast, navigate]);
+
   const onSubmit = async (data: FormValues) => {
     try {
+      // Check if mint requires NUT-21 authentication
+      const authResult = await checkAuthRequired(data.mintUrl);
+      console.log('authResult', authResult);
+
+      if (authResult.requiresClearAuth) {
+        // Encode form data in the return URL
+        const params = new URLSearchParams({
+          name: data.name,
+          currency: data.currency,
+          mintUrl: data.mintUrl,
+        });
+        const returnToUrl = `/settings/accounts/create/cashu?${params.toString()}`;
+
+        // Store return URL temporarily in sessionStorage
+        sessionStorage.setItem('oidc_return_to', returnToUrl);
+
+        const redirectUri = `${origin}/oidc-callback`;
+
+        // This will redirect the user to login with the mint, then to /oidc-callback, and finally back here
+        await startAuth(data.mintUrl, redirectUri);
+        return;
+      }
+
+      // No authentication required or already authenticated
       await addAccount({
         name: data.name,
         currency: data.currency,
         mintUrl: data.mintUrl,
         type: 'cashu',
       });
+
       toast({
         title: 'Success',
         description: 'Account added successfully',

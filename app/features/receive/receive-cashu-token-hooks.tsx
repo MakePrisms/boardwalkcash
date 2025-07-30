@@ -1,4 +1,4 @@
-import type { Token } from '@cashu/cashu-ts';
+import type { Proof, Token } from '@cashu/cashu-ts';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
@@ -11,7 +11,11 @@ import {
   useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
-import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
+import {
+  cashuMintValidator,
+  getCashuWalletWithAuth,
+  tokenToMoney,
+} from '~/features/shared/cashu';
 import { useGetExchangeRate } from '~/hooks/use-exchange-rate';
 import {
   areMintUrlsEqual,
@@ -23,6 +27,7 @@ import {
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
+import { useCashuAuthStore } from '../shared/cashu-auth';
 import { useUser } from '../user/user-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
 
@@ -39,10 +44,16 @@ type TokenQueryResult =
       claimableToken: Token;
       /** The reason why the token cannot be claimed. Will be null when the token is claimable. */
       cannotClaimReason: null;
+      /* Whether the user can swap or needs to authenticate to do so */
+      requiresAuthToSwap: boolean;
+      /** Whether the user can melt or needs to authenticate to do so */
+      requiresAuthToMelt: boolean;
     }
   | {
       claimableToken: null;
       cannotClaimReason: string;
+      requiresAuthToSwap: false;
+      requiresAuthToMelt: false;
     };
 
 /**
@@ -75,7 +86,7 @@ export function useCashuTokenSourceAccountQuery(
 
       const [info, isTestMint] = await Promise.all([
         getMintInfo(token.mint),
-        checkIsTestMint(token.mint),
+        checkIsTestMint(getCashuWalletWithAuth(token.mint)),
       ]);
 
       const validationResult = await cashuMintValidator(
@@ -135,15 +146,62 @@ export function useCashuTokenWithClaimableProofs({
   token,
   cashuPubKey,
 }: UseGetClaimableTokenProps) {
+  const { checkAuthRequired, checkAuthRequiredForPaths } = useCashuAuthStore();
   const { data: tokenData } = useSuspenseQuery({
     queryKey: ['token-state', token],
     queryFn: async (): Promise<TokenQueryResult> => {
-      const unspentProofs = await getUnspentProofsFromToken(token);
-      if (unspentProofs.length === 0) {
-        return {
-          claimableToken: null,
-          cannotClaimReason: 'This ecash has already been spent',
-        };
+      // TODO: I don't like these auth check changes, but this works for now
+      const wallet = getCashuWalletWithAuth(token.mint);
+
+      const authCheck = await checkAuthRequired(token.mint);
+      const authRequired =
+        authCheck.requiresClearAuth || authCheck.requiresBlindAuth;
+
+      console.debug('authRequired', authRequired);
+
+      let requiresAuthToSwap = true;
+      let requiresAuthToMelt = true;
+      let requiresAuthToCheckState = true;
+
+      if (authRequired) {
+        const [swapAuthCheck, meltAuthCheck, checkStateAuthCheck] =
+          await Promise.all([
+            checkAuthRequiredForPaths(token.mint, ['/v1/swap']),
+            checkAuthRequiredForPaths(token.mint, [
+              '/v1/melt/quote/bolt11',
+              '/v1/melt/bolt11',
+            ]),
+            checkAuthRequiredForPaths(token.mint, ['/v1/checkstate']),
+          ]);
+
+        console.debug('swapAuthCheck', swapAuthCheck);
+        console.debug('meltAuthCheck', meltAuthCheck);
+        console.debug('checkStateAuthCheck', checkStateAuthCheck);
+
+        requiresAuthToSwap =
+          !swapAuthCheck.requiresClearAuth && !swapAuthCheck.requiresBlindAuth;
+        requiresAuthToMelt =
+          !meltAuthCheck.requiresClearAuth && !meltAuthCheck.requiresBlindAuth;
+        requiresAuthToCheckState =
+          !checkStateAuthCheck.requiresClearAuth &&
+          !checkStateAuthCheck.requiresBlindAuth;
+      }
+
+      console.debug('requiresAuthToSwap', requiresAuthToSwap);
+      console.debug('requiresAuthToMelt', requiresAuthToMelt);
+      console.debug('requiresAuthToCheckState', requiresAuthToCheckState);
+
+      let unspentProofs: Proof[] = token.proofs;
+      if (requiresAuthToCheckState) {
+        unspentProofs = await getUnspentProofsFromToken(wallet, token);
+        if (unspentProofs.length === 0) {
+          return {
+            claimableToken: null,
+            cannotClaimReason: 'This ecash has already been spent',
+            requiresAuthToSwap: false,
+            requiresAuthToMelt: false,
+          };
+        }
       }
 
       const { claimableProofs, cannotClaimReason } = getClaimableProofs(
@@ -155,8 +213,15 @@ export function useCashuTokenWithClaimableProofs({
         ? {
             claimableToken: { ...token, proofs: claimableProofs },
             cannotClaimReason: null,
+            requiresAuthToSwap,
+            requiresAuthToMelt,
           }
-        : { cannotClaimReason, claimableToken: null };
+        : {
+            cannotClaimReason,
+            claimableToken: null,
+            requiresAuthToSwap: false,
+            requiresAuthToMelt: false,
+          };
     },
     retry: 1,
   });

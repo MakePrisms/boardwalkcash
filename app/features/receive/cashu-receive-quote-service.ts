@@ -11,13 +11,13 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   getCashuUnit,
-  getCashuWallet,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
   type CashuCryptography,
+  getCashuWalletWithAuth,
   useCashuCryptography,
 } from '../shared/cashu';
 import { derivePublicKey } from '../shared/cryptography';
@@ -84,7 +84,7 @@ export class CashuReceiveQuoteService {
   }): Promise<CashuReceiveLightningQuote> {
     const cashuUnit = getCashuUnit(amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
     });
 
@@ -199,7 +199,7 @@ export class CashuReceiveQuoteService {
     const seed = await this.cryptography.getSeed();
     const cashuUnit = getCashuUnit(quote.amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
       bip39seed: seed,
     });
