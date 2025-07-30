@@ -11,7 +11,8 @@ import type { Route } from './+types/api.lnurlp.callback.$userId';
 export async function loader({ request, params }: Route.LoaderArgs) {
   const userId = params.userId;
 
-  const amountMsat = new URL(request.url).searchParams.get('amount');
+  const url = new URL(request.url);
+  const amountMsat = url.searchParams.get('amount');
 
   if (!amountMsat || Number.isNaN(Number(amountMsat))) {
     return new Response(
@@ -26,7 +27,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   });
 
   const bypassAmountValidation =
-    request.headers.get('X-Bypass-Amount-Validation') === 'true';
+    url.searchParams.get('bypassAmountValidation') === 'true';
 
   const lightningAddressService = new LightningAddressService(
     request,
