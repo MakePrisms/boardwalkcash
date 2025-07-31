@@ -75,20 +75,19 @@ const transactionIconMap = {
   COMPLETED: <CheckIcon size={18} className="text-green-500" />,
   REVERSED: <BanIcon size={18} className="text-red-500" />,
   FAILED: <XIcon size={18} className="text-red-500" />,
-  DRAFT: <ClockIcon size={18} className="text-yellow-500" />,
   PENDING: <ClockIcon size={18} className="text-yellow-500" />,
 };
 
 function getTransactionIcon(transaction: Transaction) {
+  if (transaction.state === 'DRAFT') {
+    throw new Error('Transaction is in draft state');
+  }
   return transactionIconMap[transaction.state];
 }
 
 function getTransactionLabel(transaction: Transaction) {
   if (transaction.state === 'REVERSED') {
     return 'Reclaimed';
-  }
-  if (transaction.state === 'DRAFT') {
-    return 'Pending';
   }
   return transaction.state.toLowerCase();
 }
