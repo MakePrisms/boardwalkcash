@@ -11,7 +11,6 @@ import {
   PageHeader,
 } from '~/components/page';
 import { Button } from '~/components/ui/button';
-import { Separator } from '~/components/ui/separator';
 import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
@@ -70,7 +69,7 @@ function LnAddressDisplay({
         <span>{username}</span>
         <span className="text-muted-foreground/50">@{domain}</span>
       </div>
-      <Copy className="mr-4 ml-2 h-4 w-4" />
+      <Copy className="mr-4 ml-2 h-4 w-4 shrink-0" />
     </button>
   );
 }
@@ -113,17 +112,15 @@ export default function Settings() {
           <span>{defaultAccount.name}</span>
         </SettingsNavButton>
 
-        <Separator />
-
         <SettingsNavButton to="/settings/contacts">
           <Users />
           Contacts
         </SettingsNavButton>
 
-        <div className="flex w-full items-center justify-between pl-4">
+        <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <SunMoon className="h-4 w-4" />
-            <span>Theme</span>
+            <span className="text-sm">Theme</span>
           </div>
           <ColorModeToggle className="mr-1" />
         </div>
