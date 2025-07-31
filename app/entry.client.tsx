@@ -39,14 +39,20 @@ const isLocalServer = (): boolean => {
   return false;
 };
 
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN ?? '';
+if (!sentryDsn) {
+  throw new Error('VITE_SENTRY_DSN is not set');
+}
+
 Sentry.init({
-  dsn: 'https://3e5837ba4db251e806915155170ef71b@o4509706567680000.ingest.us.sentry.io/4509707316690944',
+  dsn: sentryDsn,
   // Adds request headers and IP for users, for more info visit:
   // https://docs.sentry.io/platforms/javascript/guides/react-router/configuration/options/#sendDefaultPii
   sendDefaultPii: false,
   integrations: [],
   enabled: process.env.NODE_ENV === 'production' && !isLocalServer(),
   environment: 'preview', // TODO: set proper environment
+  tunnel: '/api/logs',
 });
 
 startTransition(() => {
