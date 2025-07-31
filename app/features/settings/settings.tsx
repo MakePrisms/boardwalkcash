@@ -153,7 +153,7 @@ export default function Settings() {
         </div>
         <div className="flex w-full justify-between">
           <a
-            href="https://x.com/boardwalkcash"
+            href="https://x.com/boardwalk_cash"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -167,14 +167,14 @@ export default function Settings() {
             <img src={NostrLogo} alt="Nostr" className="h-5 w-5" />
           </a>
           <a
-            href="https://github.com/MakePrisms/boardwalkcash"
+            href="https://github.com/MakePrisms/boardwalkcash/tree/master"
             target="_blank"
             rel="noopener noreferrer"
           >
             <img src={GithubLogo} alt="GitHub" className="h-5 w-5 invert" />
           </a>
           <a
-            href="https://discord.gg/boardwalkcash"
+            href="https://discord.gg/e2TSCfXxhd"
             target="_blank"
             rel="noopener noreferrer"
           >
