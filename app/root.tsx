@@ -1,4 +1,5 @@
 import { OpenSecretProvider } from '@opensecret/react';
+import * as Sentry from '@sentry/react-router';
 import {
   HydrationBoundary,
   QueryClient,
@@ -6,7 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Analytics } from '@vercel/analytics/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Links,
   type LinksFunction,
@@ -16,7 +17,6 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   useNavigate,
-  useRouteError,
 } from 'react-router';
 import agicashLoadingLogo from '~/assets/full_logo.png';
 import { Button } from '~/components/ui/button';
@@ -98,6 +98,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </ThemeProvider>
   );
 }
+
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { themeClassName, theme, effectiveColorMode } = useTheme();
 
@@ -205,6 +206,7 @@ const useErrorDetails = (error: unknown) => {
           Reload Page
         </Button>
       ),
+      shouldReport: true,
     };
   }
 
@@ -215,13 +217,18 @@ const useErrorDetails = (error: unknown) => {
         Reload Page
       </Button>
     ),
+    shouldReport: true,
   };
 };
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const errorDetails = useErrorDetails(error);
+
+  useEffect(() => {
+    if (errorDetails.shouldReport) {
+      Sentry.captureException(error);
+    }
+  }, [errorDetails.shouldReport, error]);
 
   return (
     <Card className="m-4">

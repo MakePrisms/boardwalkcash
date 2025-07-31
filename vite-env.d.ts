@@ -9,7 +9,6 @@ interface ViteTypeOptions {
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string | undefined;
   readonly VITE_SUPABASE_ANON_KEY: string | undefined;
-  readonly SUPABASE_SERVICE_ROLE_KEY: string | undefined;
   readonly VITE_OPEN_SECRET_API_URL: string | undefined;
   readonly VITE_OPEN_SECRET_CLIENT_ID: string | undefined;
 }

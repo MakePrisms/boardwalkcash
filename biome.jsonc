@@ -34,6 +34,11 @@
           "level": "error",
           "options": {
             "hooks": [
+              {
+                "name": "useEffectNoStrictMode",
+                "closureIndex": 0,
+                "dependenciesIndex": 1
+              },
               { "name": "useUserRef", "stableResult": true },
               { "name": "useLatest", "stableResult": true }
             ]
