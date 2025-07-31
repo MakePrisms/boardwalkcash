@@ -1,15 +1,17 @@
 import { MoneyDisplay } from '~/components/money-display';
 import { Skeleton } from '~/components/ui/skeleton';
 import { useExchangeRate } from '~/hooks/use-exchange-rate';
-import type { Money } from '~/lib/money';
+import type { Currency, Money } from '~/lib/money';
 import { getDefaultUnit } from './currencies';
 
 export const MoneyWithConvertedAmount = ({
   money,
+  selectedCurrency,
   variant = 'default',
 }: {
   money: Money;
   variant?: 'default' | 'inline';
+  selectedCurrency?: Currency;
 }) => {
   const defaultFiatCurrency = 'USD';
   const convertedCurrency =
@@ -21,7 +23,9 @@ export const MoneyWithConvertedAmount = ({
   } = useExchangeRate(`${money.currency}-${convertedCurrency}`);
 
   const shouldShowConvertedAmount =
-    money.currency === 'BTC' || money.currency !== defaultFiatCurrency;
+    money.currency === 'BTC' ||
+    money.currency !== defaultFiatCurrency ||
+    selectedCurrency !== money.currency;
 
   const unit = getDefaultUnit(money.currency);
   const convertedUnit = getDefaultUnit(convertedCurrency);
