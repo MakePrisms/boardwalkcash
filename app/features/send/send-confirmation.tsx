@@ -13,6 +13,7 @@ import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
+import { type Contact, isContact } from '../contacts/contact';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import {
@@ -24,13 +25,6 @@ import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
 import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
 import { SuccessfulSendPage } from './succesful-send-page';
-
-const formatDestination = (destination: string) => {
-  if (destination && destination.length > 20) {
-    return `${destination.slice(0, 5)}...${destination.slice(-5)}`;
-  }
-  return destination;
-};
 
 const ConfirmationRow = ({
   label,
@@ -96,11 +90,13 @@ const BaseConfirmation = ({
 
 type PayBolt11ConfirmationProps = {
   /** The bolt11 invoice to pay */
-  destination: string;
+  destination: string | Contact;
   /** The account to send from */
   account: CashuAccount;
-  /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
-  destinationDisplay: string;
+  /** The payment request to pay. */
+  destinationPaymentRequest: string;
+  /** The type of the destination. */
+  destinationType: 'BOLT11_INVOICE' | 'LN_ADDRESS' | 'AGICASH_CONTACT';
   /** The quote to display in the UI. */
   quote: CashuLightningQuote;
 };
@@ -116,7 +112,8 @@ export const PayBolt11Confirmation = ({
   account,
   quote: bolt11Quote,
   destination,
-  destinationDisplay,
+  destinationPaymentRequest,
+  destinationType,
 }: PayBolt11ConfirmationProps) => {
   const { toast } = useToast();
 
@@ -154,7 +151,9 @@ export const PayBolt11Confirmation = ({
       <SuccessfulSendPage
         amountSpent={quote.amountSpent}
         account={account}
-        destination={formatDestination(destination)}
+        destination={
+          isContact(destination) ? destination.username : destination
+        }
         amountReceived={quote.amountToReceive}
         feesPaid={quote.amountSpent.subtract(quote.amountToReceive)}
       />
@@ -167,12 +166,41 @@ export const PayBolt11Confirmation = ({
   }
 
   const handleConfirm = () =>
-    initiateSend({ accountId: account.id, sendQuote: bolt11Quote });
+    initiateSend({
+      accountId: account.id,
+      sendQuote: bolt11Quote,
+      destination:
+        destinationType !== 'BOLT11_INVOICE'
+          ? destinationType === 'AGICASH_CONTACT'
+            ? (() => {
+                if (!isContact(destination)) {
+                  throw new Error(
+                    'destination must be a Contact when destinationType is AGICASH_CONTACT',
+                  );
+                }
+                return {
+                  type: destinationType,
+                  contactId: destination.id,
+                };
+              })()
+            : (() => {
+                if (isContact(destination)) {
+                  throw new Error(
+                    'destination must be a string when destinationType is LN_ADDRESS',
+                  );
+                }
+                return {
+                  type: destinationType,
+                  address: destination,
+                };
+              })()
+          : undefined,
+    });
 
   const paymentInProgress =
     ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
     isCreatingSendQuote;
-  const { description } = decodeBolt11(destination);
+  const { description } = decodeBolt11(destinationPaymentRequest);
 
   return (
     <BaseConfirmation
@@ -202,7 +230,10 @@ export const PayBolt11Confirmation = ({
           ),
         },
         { label: 'From', value: account.name },
-        { label: 'Paying', value: formatDestination(destinationDisplay) },
+        {
+          label: 'Paying',
+          value: isContact(destination) ? destination.username : destination,
+        },
       ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
