@@ -122,7 +122,7 @@ export const buildLightningAddressFormatValidator = ({
     // Lightning address format is described here https://datatracker.ietf.org/doc/html/rfc5322#section-3.4.1
 
     // Split into local part and domain
-    const [localPart, domain] = value.split('@');
+    const [localPart, domain] = value.toLowerCase().split('@');
 
     // Check if we have both parts
     if (!localPart || !domain) {
@@ -130,9 +130,9 @@ export const buildLightningAddressFormatValidator = ({
     }
 
     // Validate local part according to LUD-16
-    // Only allow lowercase letters, numbers, underscores and hyphens
+    // Only allow letters, numbers, underscores and hyphens
     if (!/^[a-z0-9_-]+$/.test(localPart)) {
-      return 'Username can only contain lowercase letters, numbers, underscores and hyphens';
+      return 'Username can only contain letters, numbers, underscores and hyphens';
     }
 
     // Validate domain
