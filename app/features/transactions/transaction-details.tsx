@@ -149,6 +149,7 @@ export function TransactionDetails({
             unit,
           }),
           paymentRequest: incompleteDetails.paymentRequest,
+          destination: incompleteDetails.destination,
         },
       );
     }

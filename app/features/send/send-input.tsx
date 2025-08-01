@@ -39,7 +39,7 @@ import {
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
 import { AddContactDrawer, ContactsList } from '../contacts';
-import type { Contact } from '../contacts/contact';
+import { type Contact, isContact } from '../contacts/contact';
 import { useContacts } from '../contacts/contact-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError, getErrorMessage } from '../shared/error';
@@ -86,7 +86,7 @@ export function SendInput() {
   const sendAmount = useSendStore((s) => s.amount);
   const sendAccount = useSendStore((s) => s.getSourceAccount());
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
-  const destinationDisplay = useSendStore((s) => s.destinationDisplay);
+  const destination = useSendStore((s) => s.destination);
   const selectDestination = useSendStore((s) => s.selectDestination);
   const clearDestination = useSendStore((s) => s.clearDestination);
   const getQuote = useSendStore((s) => s.getQuote);
@@ -218,9 +218,11 @@ export function SendInput() {
         </div>
 
         <div className="flex h-[24px] items-center justify-center gap-4">
-          {destinationDisplay && (
+          {destination && (
             <>
-              <p>{destinationDisplay}</p>
+              <p>
+                {isContact(destination) ? destination.username : destination}
+              </p>
               <X
                 onClick={clearDestination}
                 className="h-4 w-4 cursor-pointer"
