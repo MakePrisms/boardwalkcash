@@ -1,4 +1,8 @@
-import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  MintOperationError,
+  type Token,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -15,7 +19,11 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
-import { LinkWithViewTransition } from '~/lib/transitions';
+import { areMintUrlsEqual } from '~/lib/cashu';
+import {
+  LinkWithViewTransition,
+  useNavigateWithViewTransition,
+} from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
@@ -26,13 +34,14 @@ import {
   useSetDefaultAccount,
   useSetDefaultCurrency,
 } from '../user/user-hooks';
+import { useFailCashuReceiveQuote } from './cashu-receive-quote-hooks';
+import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
 import {
   useCashuTokenSourceAccountQuery,
   useCashuTokenWithClaimableProofs,
-  useReceiveCashuToken,
+  useCreateCrossAccountReceiveQuotes,
   useReceiveCashuTokenAccounts,
 } from './receive-cashu-token-hooks';
-import { SuccessfulReceivePage } from './successful-receive-page';
 
 type Props = {
   token: Token;
@@ -90,6 +99,7 @@ export default function ReceiveToken({
   preferredReceiveAccountId,
 }: Props) {
   const { toast } = useToast();
+  const navigate = useNavigateWithViewTransition();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
@@ -108,62 +118,87 @@ export default function ReceiveToken({
 
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
-  const { status, claimToken } = useReceiveCashuToken({
+  const onTransactionCreated = (transactionId: string) => {
+    navigate(`/transactions/${transactionId}?redirectTo=/`, {
+      transition: 'slideLeft',
+      applyTo: 'newView',
+    });
+  };
+
+  const { mutateAsync: createCashuTokenSwap } = useCreateCashuTokenSwap();
+  const {
+    mutateAsync: createCrossAccountReceiveQuotes,
+    data: crossAccountReceiveQuotes,
+  } = useCreateCrossAccountReceiveQuotes();
+  const { mutate: failCashuReceiveQuote } = useFailCashuReceiveQuote();
+
+  const { mutate: claimTokenMutation, status: claimTokenStatus } = useMutation({
+    mutationFn: async ({
+      token,
+      isAutoClaim,
+    }: {
+      token: Token;
+      isAutoClaim: boolean;
+    }) => {
+      const preferredAccount =
+        isAutoClaim && sourceAccount?.selectable
+          ? sourceAccount
+          : receiveAccount;
+
+      // Use the preferred account if it exists, otherwise create it
+      let account = preferredAccount;
+      if (account.id === '') {
+        account = await addAndSetReceiveAccount(preferredAccount);
+      }
+
+      const isSameAccountClaim =
+        account.currency === tokenToMoney(token).currency &&
+        areMintUrlsEqual(account.mintUrl, token.mint);
+
+      if (isSameAccountClaim) {
+        const { transactionId } = await createCashuTokenSwap({
+          token,
+          accountId: account.id,
+        });
+        onTransactionCreated(transactionId);
+      } else {
+        const { sourceWallet, cashuMeltQuote, cashuReceiveQuote } =
+          await createCrossAccountReceiveQuotes({ token, account });
+        onTransactionCreated(cashuReceiveQuote.transactionId);
+        await sourceWallet.meltProofs(cashuMeltQuote, token.proofs);
+      }
+
+      return { account, isAutoClaim };
+    },
+    onSuccess: async ({ account, isAutoClaim }) => {
+      // Only set defaults for auto claim and if the account is different from current default
+      if (isAutoClaim && account.id !== defaultAccount.id) {
+        try {
+          await setDefaultAccount(account);
+          await setDefaultCurrency(account.currency);
+        } catch (error) {
+          console.error('Error setting defaults after auto claim', {
+            cause: error,
+          });
+        }
+      }
+    },
     onError: (error) => {
+      if (error instanceof MintOperationError && crossAccountReceiveQuotes) {
+        failCashuReceiveQuote({
+          quoteId: crossAccountReceiveQuotes.cashuReceiveQuote.id,
+          version: crossAccountReceiveQuotes.cashuReceiveQuote.version,
+          reason: error.message,
+        });
+      }
+      console.error('Error claiming token', { cause: error });
       toast({
         title: 'Failed to claim token',
-        description: error.message,
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
   });
-
-  const { mutate: claimTokenMutation, isPending: isClaimingToken } =
-    useMutation({
-      mutationFn: async ({
-        token,
-        isAutoClaim,
-      }: {
-        token: Token;
-        isAutoClaim: boolean;
-      }) => {
-        const preferredAccount =
-          isAutoClaim && sourceAccount?.selectable
-            ? sourceAccount
-            : receiveAccount;
-
-        // Use the preferred account if it exists, otherwise create it
-        let account = preferredAccount;
-        if (account.id === '') {
-          account = await addAndSetReceiveAccount(preferredAccount);
-        }
-
-        await claimToken({ token, account });
-
-        return { account, isAutoClaim };
-      },
-      onSuccess: async ({ account, isAutoClaim }) => {
-        // Only set defaults for auto claim and if the account is different from current default
-        if (isAutoClaim && account.id !== defaultAccount.id) {
-          try {
-            await setDefaultAccount(account);
-            await setDefaultCurrency(account.currency);
-          } catch (error) {
-            console.error('Error setting defaults after auto claim', {
-              cause: error,
-            });
-          }
-        }
-      },
-      onError: (error) => {
-        console.error('Error claiming token', { cause: error });
-        toast({
-          title: 'Failed to claim token',
-          description: getErrorMessage(error),
-          variant: 'destructive',
-        });
-      },
-    });
 
   const handleClaim = async () => {
     if (!claimableToken) {
@@ -178,15 +213,6 @@ export default function ReceiveToken({
 
     claimTokenMutation({ token: claimableToken, isAutoClaim: true });
   }, [autoClaimToken, claimableToken, claimTokenMutation]);
-
-  if (status === 'SUCCESS') {
-    return (
-      <SuccessfulReceivePage
-        amount={tokenToMoney(claimableToken ?? token)}
-        account={receiveAccount}
-      />
-    );
-  }
 
   return (
     <>
@@ -223,7 +249,10 @@ export default function ReceiveToken({
             disabled={receiveAccount.selectable === false}
             onClick={handleClaim}
             className="w-[200px]"
-            loading={status === 'CLAIMING' || isClaimingToken}
+            // loading while the mutation is running or while waiting for navigation after mutation success
+            loading={
+              claimTokenStatus === 'pending' || claimTokenStatus === 'success'
+            }
           >
             {isReceiveAccountAdded ? 'Claim' : 'Add Mint and Claim'}
           </Button>

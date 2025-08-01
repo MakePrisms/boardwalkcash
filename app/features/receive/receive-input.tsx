@@ -5,6 +5,7 @@ import { Numpad } from '~/components/numpad';
 import {
   ClosePageButton,
   PageContent,
+  PageFooter,
   PageHeader,
   PageHeaderTitle,
 } from '~/components/page';
@@ -139,7 +140,7 @@ export default function ReceiveInput() {
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
 
-      <PageContent className="mx-auto flex flex-col items-center justify-between sm:justify-around">
+      <PageContent className="mx-auto flex flex-col items-center justify-between">
         <div className="flex h-[124px] flex-col items-center gap-2">
           <div className={shakeAnimationClass}>
             <MoneyInputDisplay
@@ -190,15 +191,16 @@ export default function ReceiveInput() {
               Continue
             </Button>
           </div>
-
-          <Numpad
-            showDecimal={maxInputDecimals > 0}
-            onButtonClick={(value) => {
-              handleNumberInput(value, startShakeAnimation);
-            }}
-          />
         </div>
       </PageContent>
+      <PageFooter className="sm:pb-14">
+        <Numpad
+          showDecimal={maxInputDecimals > 0}
+          onButtonClick={(value) => {
+            handleNumberInput(value, startShakeAnimation);
+          }}
+        />
+      </PageFooter>
     </>
   );
 }

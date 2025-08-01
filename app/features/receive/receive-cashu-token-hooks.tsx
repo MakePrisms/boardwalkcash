@@ -1,5 +1,5 @@
 import type { Token } from '@cashu/cashu-ts';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
   Account,
@@ -12,18 +12,19 @@ import {
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
+import { useGetExchangeRate } from '~/hooks/use-exchange-rate';
 import {
   areMintUrlsEqual,
   getCashuProtocolUnit,
+  getCashuUnit,
+  getCashuWallet,
   getClaimableProofs,
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
 import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
-import { useLatest } from '~/lib/use-latest';
 import type { AccountWithBadges } from '../accounts/account-selector';
-import { useTransaction } from '../transactions/transaction-hooks';
-import { useMeltTokenToCashuAccount } from './cashu-receive-quote-hooks';
-import { useCreateCashuTokenSwap } from './cashu-token-swap-hooks';
+import { useUser } from '../user/user-hooks';
+import { useReceiveCashuTokenService } from './receive-cashu-token-service';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -321,111 +322,47 @@ export function useReceiveCashuTokenAccounts(
   };
 }
 
-type ClaimStatus = 'IDLE' | 'CLAIMING' | 'SUCCESS' | 'ERROR';
-
-type UseReceiveCashuTokenProps = {
-  onError?: (error: Error) => void;
+type CreateCrossAccountReceiveQuotesProps = {
+  /** The token to claim */
+  token: Token;
+  /** The account to claim the token to */
+  account: CashuAccount;
 };
 
-export function useReceiveCashuToken({
-  onError,
-}: UseReceiveCashuTokenProps = {}) {
-  const onErrorRef = useLatest(onError);
+/**
+ * Hook for creating cross-account receive quotes for cashu tokens.
+ * Creates the necessary quotes and wallet for claiming tokens to a different mint or currency account.
+ * The actual melting of proofs should be done by the caller.
+ */
+export function useCreateCrossAccountReceiveQuotes() {
+  const userId = useUser((user) => user.id);
+  const getExchangeRate = useGetExchangeRate();
+  const receiveCashuTokenService = useReceiveCashuTokenService();
 
-  // For receiving tokens to the source account
-  const {
-    mutateAsync: createCashuTokenSwap,
-    data: swapData,
-    status: createCashuTokenSwapStatus,
-  } = useCreateCashuTokenSwap();
-
-  // For receiving tokens to a different mint by making a lightning payment
-  const {
-    mutateAsync: meltTokenToCashuAccount,
-    status: meltTokenToCashuAccountStatus,
-    data: cashuReceiveQuote,
-  } = useMeltTokenToCashuAccount();
-
-  const { data: transaction } = useTransaction({
-    transactionId: swapData?.transactionId ?? cashuReceiveQuote?.transactionId,
-  });
-
-  const claimToken = async ({
-    token,
-    account,
-  }: {
-    token: Token;
-    account: CashuAccount;
-  }) => {
-    try {
-      const isSameMintAndCurrency =
-        account.currency === tokenToMoney(token).currency &&
-        areMintUrlsEqual(account.mintUrl, token.mint);
-
-      if (isSameMintAndCurrency) {
-        await createCashuTokenSwap({ token, accountId: account.id });
-      } else {
-        await meltTokenToCashuAccount({ token, account });
-      }
-    } catch (error) {
-      console.error('Failed to claim token', error);
-
-      onErrorRef.current?.(
-        error instanceof Error ? error : new Error('An unknown error occurred'),
+  return useMutation({
+    mutationFn: async ({
+      token,
+      account,
+    }: CreateCrossAccountReceiveQuotesProps) => {
+      const tokenCurrency = tokenToMoney(token).currency;
+      const accountCurrency = account.currency;
+      const exchangeRate = await getExchangeRate(
+        `${tokenCurrency}-${accountCurrency}`,
       );
-    }
-  };
 
-  const status: ClaimStatus = (() => {
-    // Check if either mutation is currently running
-    const isMutationPending =
-      createCashuTokenSwapStatus === 'pending' ||
-      meltTokenToCashuAccountStatus === 'pending';
+      const { cashuReceiveQuote, cashuMeltQuote } =
+        await receiveCashuTokenService.createCrossAccountReceiveQuotes({
+          userId,
+          token,
+          account,
+          exchangeRate,
+        });
 
-    if (isMutationPending) {
-      return 'CLAIMING';
-    }
+      const sourceWallet = getCashuWallet(token.mint, {
+        unit: getCashuUnit(tokenCurrency),
+      });
 
-    // Check if either mutation failed
-    const hasMutationFailed =
-      createCashuTokenSwapStatus === 'error' ||
-      meltTokenToCashuAccountStatus === 'error';
-
-    if (hasMutationFailed) {
-      return 'ERROR';
-    }
-
-    // Check if mutation succeeded but we don't have transaction data yet
-    // This handles the gap between mutation completion and transaction loading
-    const hasMutationSucceeded =
-      createCashuTokenSwapStatus === 'success' ||
-      meltTokenToCashuAccountStatus === 'success';
-
-    if (hasMutationSucceeded && !transaction) {
-      return 'CLAIMING';
-    }
-
-    // Handle transaction states
-    if (transaction) {
-      switch (transaction.state) {
-        case 'DRAFT':
-        case 'PENDING':
-          return 'CLAIMING';
-        case 'COMPLETED':
-          return 'SUCCESS';
-        case 'FAILED':
-        case 'REVERSED':
-          return 'ERROR';
-        default:
-          return 'IDLE';
-      }
-    }
-
-    return 'IDLE';
-  })();
-
-  return {
-    status,
-    claimToken,
-  };
+      return { cashuReceiveQuote, cashuMeltQuote, sourceWallet };
+    },
+  });
 }

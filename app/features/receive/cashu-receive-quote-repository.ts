@@ -187,32 +187,20 @@ export class CashuReceiveQuoteRepository {
     },
     options?: Options,
   ): Promise<void> {
-    const query = this.db
-      .from('cashu_receive_quotes')
-      .update({
-        state: 'FAILED',
-        version: version + 1,
-        failure_reason: reason,
-      })
-      .match({
-        id,
-        version,
-      });
+    const query = this.db.rpc('fail_cashu_receive_quote', {
+      p_quote_id: id,
+      p_quote_version: version,
+      p_failure_reason: reason,
+    });
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
     }
 
-    const { data, error } = await query.maybeSingle();
+    const { error } = await query;
 
     if (error) {
       throw new Error('Failed to fail cashu receive quote', { cause: error });
-    }
-
-    if (!data) {
-      throw new Error(
-        `Concurrency error: Cashu receive quote was modified by another transaction. Expected version ${version}, but found different one.`,
-      );
     }
   }
 

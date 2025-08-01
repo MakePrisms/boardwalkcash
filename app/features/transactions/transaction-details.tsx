@@ -1,13 +1,13 @@
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   BanIcon,
   CheckIcon,
   ClockIcon,
+  LandmarkIcon,
   UndoIcon,
-  WalletIcon,
+  XIcon,
 } from 'lucide-react';
-import { PageContent } from '~/components/page';
+
+import { PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import {
   Card,
@@ -71,10 +71,33 @@ function formatRelativeTimestampWithTime(timestamp: string): string {
   })} at ${timeString}`;
 }
 
+const transactionIconMap = {
+  COMPLETED: <CheckIcon size={18} className="text-green-500" />,
+  REVERSED: <BanIcon size={18} className="text-red-500" />,
+  FAILED: <XIcon size={18} className="text-red-500" />,
+  PENDING: <ClockIcon size={18} className="text-yellow-500" />,
+};
+
+function getTransactionIcon(transaction: Transaction) {
+  if (transaction.state === 'DRAFT') {
+    throw new Error('Transaction is in draft state');
+  }
+  return transactionIconMap[transaction.state];
+}
+
+function getTransactionLabel(transaction: Transaction) {
+  if (transaction.state === 'REVERSED') {
+    return 'Reclaimed';
+  }
+  return transaction.state.toLowerCase();
+}
+
 export function TransactionDetails({
   transaction,
+  defaultShowOkayButton = false,
 }: {
   transaction: Transaction;
+  defaultShowOkayButton?: boolean;
 }) {
   const account = useAccount(transaction.accountId);
   const { toast } = useToast();
@@ -97,8 +120,12 @@ export function TransactionDetails({
     !['REVERSED', 'COMPLETED'].includes(transaction.state);
 
   const isReclaimInProgress = isReversing || isWaitingForStateUpdate;
+
   const shouldShowReclaimButton =
     isTransactionReversable(transaction) || isReclaimInProgress;
+  const shouldShowOkButton =
+    (didReclaimMutationSucceed && !isWaitingForStateUpdate) ||
+    (!shouldShowReclaimButton && defaultShowOkayButton);
 
   // Log transaction details with proper formatting for each type
   const { type, direction, state, details } = transaction;
@@ -196,84 +223,69 @@ export function TransactionDetails({
         amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
           unit,
         }),
-        tokenAmount: receiveSwapDetails.tokenAmount.toLocaleString({ unit }),
+        // NOTE: these should never be undefined, but there's a bug we need to fix
+        // see https://github.com/MakePrisms/boardwalkcash/pull/541
+        tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
         cashuReceiveSwapFee:
-          receiveSwapDetails.cashuReceiveSwapFee.toLocaleString({ unit }),
-        totalFees: receiveSwapDetails.totalFees.toLocaleString({ unit }),
+          receiveSwapDetails.cashuReceiveSwapFee?.toLocaleString({ unit }),
+        totalFees: receiveSwapDetails.totalFees?.toLocaleString({ unit }),
       },
     );
   }
 
   return (
-    <PageContent className="mb-8 flex w-full max-w-md flex-col items-center justify-between gap-6">
-      {/* Amount Section */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="mb-2 rounded-full bg-card p-4">
-          {transaction.reversedTransactionId ? (
-            <UndoIcon size={32} />
-          ) : transaction.direction === 'SEND' ? (
-            <ArrowUpIcon size={32} />
-          ) : (
-            <ArrowDownIcon size={32} />
-          )}
-        </div>
+    <>
+      <PageContent className="flex w-full max-w-md flex-1 flex-col items-center justify-between gap-8">
         <MoneyWithConvertedAmount money={transaction.amount} />
-      </div>
 
-      {/* Details Card */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription className="flex items-center gap-2">
-            <span>
-              {formatRelativeTimestampWithTime(transaction.createdAt)}
-            </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            {transaction.state === 'COMPLETED' ? (
-              <CheckIcon size={18} className="text-green-500" />
-            ) : transaction.state === 'REVERSED' ? (
-              <BanIcon size={18} className="text-red-500" />
-            ) : (
-              <ClockIcon size={18} className="text-yellow-500" />
-            )}
-            <span className="capitalize">
-              {transaction.state === 'REVERSED'
-                ? 'Reclaimed'
-                : transaction.state.toLowerCase()}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <WalletIcon size={18} className="text-muted-foreground" />
-            <span>{account?.name}</span>
-          </div>
-
-          {transaction.reversedTransactionId && (
-            <div className="flex flex-col gap-2 border-t pt-2">
+        {/* Details Section */}
+        <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
+          <Card className="m-4 w-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Details</CardTitle>
+              <CardDescription className="flex items-center gap-2 text-muted-foreground text-sm">
+                {formatRelativeTimestampWithTime(transaction.createdAt)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <UndoIcon size={16} />
-                <span>Received from Reclaim</span>
+                {getTransactionIcon(transaction)}
+                <span className="capitalize">
+                  {getTransactionLabel(transaction)}
+                </span>
               </div>
-              <div className="flex items-center gap-3 pl-7">
-                <LinkWithViewTransition
-                  to={`/transactions/${transaction.reversedTransactionId}`}
-                  transition="slideUp"
-                  applyTo="newView"
-                  className="text-muted-foreground text-sm underline"
-                >
-                  View original
-                </LinkWithViewTransition>
+              <div className="flex items-center gap-3">
+                <LandmarkIcon size={18} className="text-muted-foreground" />
+                <span>{account?.name}</span>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      <div className="h-[40px]">
-        {shouldShowReclaimButton && (
+              {transaction.reversedTransactionId && (
+                <div className="flex flex-col gap-2 border-t pt-2">
+                  <div className="flex items-center gap-3">
+                    <UndoIcon size={16} />
+                    <span>Received from Reclaim</span>
+                  </div>
+                  <div className="flex items-center gap-3 pl-7">
+                    <LinkWithViewTransition
+                      to={{
+                        pathname: `/transactions/${transaction.reversedTransactionId}`,
+                        search: `redirectTo=/transactions/${transaction.id}`,
+                      }}
+                      transition="slideUp"
+                      applyTo="newView"
+                      className="text-muted-foreground text-sm underline"
+                    >
+                      View original
+                    </LinkWithViewTransition>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </PageContent>
+      {shouldShowReclaimButton && (
+        <PageFooter className="pb-14">
           <Button
             className="w-[100px]"
             onClick={() => reverseTransaction({ transaction })}
@@ -281,8 +293,21 @@ export function TransactionDetails({
           >
             Reclaim
           </Button>
-        )}
-      </div>
-    </PageContent>
+        </PageFooter>
+      )}
+      {shouldShowOkButton && (
+        <PageFooter className="pb-14">
+          <Button asChild className="w-[80px]">
+            <LinkWithViewTransition
+              to="/"
+              transition="slideDown"
+              applyTo="oldView"
+            >
+              OK
+            </LinkWithViewTransition>
+          </Button>
+        </PageFooter>
+      )}
+    </>
   );
 }

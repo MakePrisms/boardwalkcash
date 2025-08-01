@@ -1,7 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import { useNavigate } from 'react-router';
-import type { To } from 'react-router';
-import type { NavigateOptions } from 'react-router';
+import type { NavigateOptions, To } from 'react-router';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 
 type Props = PropsWithChildren<{
