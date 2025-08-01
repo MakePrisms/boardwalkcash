@@ -15,6 +15,7 @@ import {
 import { Button } from '~/components/ui/button';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
+import type { Currency } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
@@ -47,7 +48,12 @@ type Props = {
 function TokenAmountDisplay({
   token,
   claimableToken,
-}: { token: Token; claimableToken: Token | null }) {
+  receiveAccountCurrency,
+}: {
+  token: Token;
+  claimableToken: Token | null;
+  receiveAccountCurrency: Currency;
+}) {
   const [_, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
 
@@ -63,7 +69,10 @@ function TokenAmountDisplay({
         });
       }}
     >
-      <MoneyWithConvertedAmount money={tokenToMoney(claimableToken ?? token)} />
+      <MoneyWithConvertedAmount
+        money={tokenToMoney(claimableToken ?? token)}
+        selectedCurrency={receiveAccountCurrency}
+      />
     </button>
   );
 }
@@ -199,7 +208,11 @@ export default function ReceiveToken({
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center">
-        <TokenAmountDisplay token={token} claimableToken={claimableToken} />
+        <TokenAmountDisplay
+          token={token}
+          claimableToken={claimableToken}
+          receiveAccountCurrency={receiveAccount.currency}
+        />
 
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           {claimableToken ? (
@@ -285,7 +298,11 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
         <PageHeaderTitle>Receive</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center">
-        <TokenAmountDisplay token={token} claimableToken={claimableToken} />
+        <TokenAmountDisplay
+          token={token}
+          claimableToken={claimableToken}
+          receiveAccountCurrency={sourceAccount.currency}
+        />
 
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           {claimableToken ? (
