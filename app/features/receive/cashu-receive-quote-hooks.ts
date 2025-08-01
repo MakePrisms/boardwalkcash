@@ -38,6 +38,7 @@ import {
   type AgicashDbCashuReceiveQuote,
   agicashDb,
 } from '../agicash-db/database';
+import { getCashuWalletWithAuth } from '../shared/cashu';
 import { useUser } from '../user/user-hooks';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -331,7 +332,7 @@ const checkMintQuote = async (
   quote: CashuReceiveQuote,
 ): Promise<MintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = getCashuWalletWithAuth(account.mintUrl, { unit: cashuUnit });
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
