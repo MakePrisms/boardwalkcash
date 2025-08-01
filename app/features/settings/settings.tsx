@@ -1,4 +1,5 @@
 import { Copy, Edit, Share, SunMoon, Users } from 'lucide-react';
+import { useLocation } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import DiscordLogo from '~/assets/discord_logo.svg';
 import GithubLogo from '~/assets/github.svg';
@@ -15,6 +16,7 @@ import { SettingsNavButton } from '~/features/settings/ui/settings-nav-button';
 import useLocationData from '~/hooks/use-location';
 import { useToast } from '~/hooks/use-toast';
 import { canShare, shareContent } from '~/lib/share';
+import { LinkWithViewTransition } from '~/lib/transitions';
 import { cn } from '~/lib/utils';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountTypeIcon } from '../accounts/account-icons';
@@ -78,6 +80,7 @@ export default function Settings() {
   const { signOut } = useAuthActions();
   const defaultAccount = useDefaultAccount();
   const username = useUser((s) => s.username);
+  const location = useLocation();
 
   const { domain } = useLocationData();
   const lightningAddress = `${username}@${domain}`;
@@ -131,22 +134,28 @@ export default function Settings() {
           Sign Out
         </Button>
         <div className="flex w-full justify-between gap-4 text-muted-foreground text-sm">
-          <a
-            href={'/terms'}
-            target="_blank"
-            rel="noopener noreferrer"
+          <LinkWithViewTransition
+            to={{
+              pathname: '/terms',
+              search: `redirectTo=${location.pathname}`,
+            }}
+            transition="slideUp"
+            applyTo="newView"
             className="underline"
           >
             Terms
-          </a>
-          <a
-            href={'/privacy'}
-            target="_blank"
-            rel="noopener noreferrer"
+          </LinkWithViewTransition>
+          <LinkWithViewTransition
+            to={{
+              pathname: '/privacy',
+              search: `redirectTo=${location.pathname}`,
+            }}
+            transition="slideUp"
+            applyTo="newView"
             className="underline"
           >
             Privacy
-          </a>
+          </LinkWithViewTransition>
         </div>
         <div className="flex w-full justify-between">
           <a
