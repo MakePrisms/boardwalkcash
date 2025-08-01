@@ -1,11 +1,11 @@
 import { useSearchParams } from 'react-router';
 import logo from '~/assets/full_logo.png';
-import termsContent from '~/assets/terms-of-use.md?raw';
+import mintRisksContent from '~/assets/mint-risks.md?raw';
 import { Markdown } from '~/components/markdown';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
-export default function TermsPage() {
+export default function MintRisksPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirectTo');
 
@@ -23,7 +23,7 @@ export default function TermsPage() {
         </LinkWithViewTransition>
       </header>
       <main>
-        <Markdown content={termsContent} />
+        <Markdown content={mintRisksContent} />
       </main>
     </ScrollArea>
   );

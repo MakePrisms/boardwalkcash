@@ -15,6 +15,6 @@ export default {
     (preset): preset is Preset => Boolean(preset),
   ),
   async prerender() {
-    return ['/terms', '/privacy'];
+    return ['/terms', '/privacy', '/mint-risks'];
   },
 } satisfies Config;

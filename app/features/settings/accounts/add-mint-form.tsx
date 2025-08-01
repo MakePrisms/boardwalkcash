@@ -1,5 +1,5 @@
 import { Controller, useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -16,6 +16,7 @@ import { useUser } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { getCashuProtocolUnit } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
+import { LinkWithViewTransition } from '~/lib/transitions';
 
 type FormValues = {
   name: string;
@@ -41,6 +42,7 @@ export function AddMintForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const defaultCurrency = useUser((u) => u.defaultCurrency);
+  const location = useLocation();
 
   const {
     register,
@@ -183,10 +185,17 @@ export function AddMintForm() {
             bitcoinmints.com
           </a>
           . Understand mint{' '}
-          {/* TODO: mint risks page doesn't exsit currently */}
-          <Link className="underline" to="/mintrisks">
+          <LinkWithViewTransition
+            className="underline"
+            to={{
+              pathname: '/mint-risks',
+              search: `redirectTo=${location.pathname}`,
+            }}
+            transition="slideUp"
+            applyTo="newView"
+          >
             risks
-          </Link>
+          </LinkWithViewTransition>
           .
         </p>
       </div>
