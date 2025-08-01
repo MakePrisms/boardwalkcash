@@ -18,7 +18,7 @@ export function SettingsNavButton({
     <LinkWithViewTransition to={to} transition="slideLeft" applyTo="newView">
       <Button
         variant={variant === 'destructive' ? 'destructive' : 'ghost'}
-        className={'flex w-full items-center justify-between pl-0'}
+        className={'flex w-full items-center justify-between'}
       >
         <div className="flex items-center gap-2">{children}</div>
         <ChevronRight />

@@ -120,7 +120,7 @@ export default function Settings() {
           Contacts
         </SettingsNavButton>
 
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full items-center justify-between pl-4">
           <div className="flex items-center gap-2">
             <SunMoon className="h-4 w-4" />
             <span className="text-sm">Theme</span>
