@@ -85,7 +85,7 @@ export function AccountSelector<T extends Account>({
             ))}
         </button>
       </DrawerTrigger>
-      <DrawerContent className="h-[90dvh] pb-14 font-primary">
+      <DrawerContent className="h-[60dvh] pb-14 font-primary">
         <div className="mx-auto flex h-full w-full max-w-sm flex-col overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Select account</DrawerTitle>
