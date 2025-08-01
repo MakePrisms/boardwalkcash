@@ -223,10 +223,12 @@ export function TransactionDetails({
         amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
           unit,
         }),
-        tokenAmount: receiveSwapDetails.tokenAmount.toLocaleString({ unit }),
+        // NOTE: these should never be undefined, but there's a bug we need to fix
+        // see https://github.com/MakePrisms/boardwalkcash/pull/541
+        tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
         cashuReceiveSwapFee:
-          receiveSwapDetails.cashuReceiveSwapFee.toLocaleString({ unit }),
-        totalFees: receiveSwapDetails.totalFees.toLocaleString({ unit }),
+          receiveSwapDetails.cashuReceiveSwapFee?.toLocaleString({ unit }),
+        totalFees: receiveSwapDetails.totalFees?.toLocaleString({ unit }),
       },
     );
   }
