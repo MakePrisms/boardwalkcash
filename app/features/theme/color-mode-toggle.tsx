@@ -46,7 +46,7 @@ export function ColorModeToggle({ className }: { className?: string }) {
             className="flex items-center gap-2"
           >
             {getIcon(mode)}
-            <span className="capitalize">{mode}</span>
+            <span className="font-primary capitalize">{mode}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
