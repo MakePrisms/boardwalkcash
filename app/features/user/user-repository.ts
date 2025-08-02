@@ -125,6 +125,10 @@ export class UserRepository {
        * The extended public key used for locking proofs and mint quotes.
        */
       cashuLockingXpub: string;
+      /**
+       * The public key used for encryption.
+       */
+      encryptionPublicKey: string;
     },
     options?: Options,
   ): Promise<User> {
@@ -151,6 +155,7 @@ export class UserRepository {
       p_email_verified: user.emailVerified,
       p_accounts: accountsToAdd,
       p_cashu_locking_xpub: user.cashuLockingXpub,
+      p_encryption_public_key: user.encryptionPublicKey,
     });
 
     if (options?.abortSignal) {
@@ -233,6 +238,7 @@ export class UserRepository {
         createdAt: dbUser.created_at,
         updatedAt: dbUser.updated_at,
         cashuLockingXpub: dbUser.cashu_locking_xpub,
+        encryptionPublicKey: dbUser.encryption_public_key,
         defaultBtcAccountId: dbUser.default_btc_account_id ?? '',
         defaultUsdAccountId: dbUser.default_usd_account_id ?? '',
         defaultCurrency: dbUser.default_currency,
@@ -251,6 +257,7 @@ export class UserRepository {
       defaultCurrency: dbUser.default_currency,
       isGuest: true,
       cashuLockingXpub: dbUser.cashu_locking_xpub,
+      encryptionPublicKey: dbUser.encryption_public_key,
     };
   }
 }
