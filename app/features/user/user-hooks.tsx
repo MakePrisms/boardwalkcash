@@ -10,6 +10,7 @@ import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
   useCashuCryptography,
 } from '../shared/cashu';
+import { useEncryptionPublicKeyHex } from '../shared/encryption';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
 import { type UpdateUser, useUserRepository } from './user-repository';
@@ -96,6 +97,7 @@ export const useUpsertUser = () => {
   const queryClient = useQueryClient();
   const userRepository = useUserRepository();
   const cashuCryptography = useCashuCryptography();
+  const encryptionPublicKey = useEncryptionPublicKeyHex();
 
   return useMutation({
     mutationKey: ['user-upsert'],
@@ -110,6 +112,7 @@ export const useUpsertUser = () => {
         emailVerified: user.email_verified,
         accounts: [...defaultAccounts],
         cashuLockingXpub,
+        encryptionPublicKey,
       });
     },
     scope: {

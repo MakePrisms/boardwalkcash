@@ -9,7 +9,7 @@ import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quot
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
 import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
-import { useEncryptionKey } from '../shared/encryption';
+import { useEncryptionPrivateKey } from '../shared/encryption';
 import { useTheme } from '../theme';
 import { type AuthUser, useHandleSessionExpiry } from '../user/auth';
 import { useUpsertUser, useUser } from '../user/user-hooks';
@@ -127,7 +127,7 @@ const useSetupWallet = (authUser: AuthUser) => {
   const setupCompleted = user !== null;
 
   // Makes sure that the encryption key is pulled from the server
-  useEncryptionKey();
+  useEncryptionPrivateKey();
 
   return setupCompleted;
 };

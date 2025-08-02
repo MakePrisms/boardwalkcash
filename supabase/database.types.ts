@@ -576,6 +576,7 @@ export type Database = {
           default_usd_account_id: string | null
           email: string | null
           email_verified: boolean
+          encryption_public_key: string
           id: string
           updated_at: string
           username: string
@@ -588,6 +589,7 @@ export type Database = {
           default_usd_account_id?: string | null
           email?: string | null
           email_verified: boolean
+          encryption_public_key: string
           id?: string
           updated_at?: string
           username: string
@@ -600,6 +602,7 @@ export type Database = {
           default_usd_account_id?: string | null
           email?: string | null
           email_verified?: boolean
+          encryption_public_key?: string
           id?: string
           updated_at?: string
           username?: string
@@ -970,6 +973,7 @@ export type Database = {
           p_email_verified: boolean
           p_accounts: Json[]
           p_cashu_locking_xpub: string
+          p_encryption_public_key: string
         }
         Returns: Json
       }

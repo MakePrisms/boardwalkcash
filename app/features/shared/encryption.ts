@@ -2,33 +2,39 @@ import { useOpenSecret } from '@opensecret/react';
 import { decode, encode } from '@stablelib/base64';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { eciesDecrypt, eciesEncrypt } from '~/lib/ecies';
 import { Money } from '~/lib/money';
 import { hexToUint8Array } from '~/lib/utils';
 
 // 10111099 is 'enc' (for encryption) in ascii
 const encryptionKeyDerivationPath = `m/10111099'/0'`;
 
-export const useEncryptionKey = () => {
+export const useEncryptionPrivateKey = () => {
   const { getPrivateKeyBytes } = useOpenSecret();
 
   const { data } = useSuspenseQuery({
-    queryKey: ['encryption-key'],
+    queryKey: ['encryption-private-key'],
     queryFn: () =>
       getPrivateKeyBytes({
         private_key_derivation_path: encryptionKeyDerivationPath,
       }).then((response) => {
-        // Convert hex string to Uint8Array
-        const keyBytes = hexToUint8Array(response.private_key);
-
-        // Import the key for AES-GCM
-        return crypto.subtle.importKey(
-          'raw',
-          keyBytes,
-          { name: 'AES-GCM' },
-          false,
-          ['encrypt', 'decrypt'],
-        );
+        return hexToUint8Array(response.private_key);
       }),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
+  return data;
+};
+
+export const useEncryptionPublicKeyHex = () => {
+  const { getPublicKey } = useOpenSecret();
+
+  const { data } = useSuspenseQuery({
+    queryKey: ['encryption-public-key'],
+    queryFn: () =>
+      getPublicKey('schnorr', {
+        private_key_derivation_path: encryptionKeyDerivationPath,
+      }).then((response) => response.public_key),
     staleTime: Number.POSITIVE_INFINITY,
   });
 
@@ -61,14 +67,80 @@ function preprocessData(obj: unknown): unknown {
   return result;
 }
 
+/**
+ * Encrypt data to a public key using ECIES
+ * @param data - Data to encrypt
+ * @param publicKeyHex - Hex string of the public key (32 or 33 bytes)
+ * @returns Base64-encoded encrypted data
+ */
+export function encryptToPublicKey<T = unknown>(
+  data: T,
+  publicKeyHex: string,
+): string {
+  const preprocessedData = preprocessData(data);
+  const serialized = JSON.stringify(preprocessedData, (_, value) => {
+    if (value === undefined) {
+      return { __type: 'undefined' };
+    }
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      return { __type: 'number', value: value.toString() };
+    }
+    return value;
+  });
+
+  const encoder = new TextEncoder();
+  const dataBytes = encoder.encode(serialized);
+  const publicKeyBytes = hexToUint8Array(publicKeyHex);
+
+  const encryptedBytes = eciesEncrypt(dataBytes, publicKeyBytes);
+  return encode(encryptedBytes);
+}
+
+/**
+ * Decrypt data with a private key using ECIES
+ * @param encryptedData - Base64-encoded encrypted data
+ * @param privateKeyBytes - 32-byte private key
+ * @returns Decrypted data
+ */
+export function decryptWithPrivateKey<T = unknown>(
+  encryptedData: string,
+  privateKeyBytes: Uint8Array,
+): T {
+  const encryptedBytes = decode(encryptedData);
+  const decryptedBytes = eciesDecrypt(encryptedBytes, privateKeyBytes);
+
+  const decoder = new TextDecoder();
+  const decryptedString = decoder.decode(decryptedBytes);
+
+  return JSON.parse(decryptedString, (_, value) => {
+    if (value && typeof value === 'object' && '__type' in value) {
+      switch (value.__type) {
+        case 'Date':
+          return new Date(value.value);
+        case 'undefined':
+          return undefined;
+        case 'number':
+          return Number(value.value); // This handles Infinity, -Infinity, NaN
+        case 'Money':
+          return new Money({
+            amount: value.amount,
+            currency: value.currency,
+          });
+      }
+    }
+    return value;
+  }) as T;
+}
+
 type Encryption = {
   /**
-   * Encrypts arbitrary data object using the user's data encryption key
+   * Encrypts arbitrary data object using ECIES to the user's data encryption public key
    * @param data - Data to be encrypted
-   * @returns A promise resolving to the encrypted base64 encoded nonce and data
+   * @returns A promise resolving to the encrypted base64 encoded ephemeral public key, nonce, and data
    *
    * @description
-   * Encrypts data with AES-256-GCM. A random nonce is generated for each encryption operation and included in the result.
+   * Encrypts data with ECIES using ChaCha20-Poly1305. A random ephemeral key is generated for each encryption operation and
+   * the ephemeral public key is included in the result.
    */
   encrypt: <T = unknown>(data: T) => Promise<string>;
   /**
@@ -77,7 +149,8 @@ type Encryption = {
    * @returns A promise resolving to the decrypted data
    *
    * @description
-   * Decrypts the data by decoding the base64 encoded string, extracting nonce and then decrypting the data with the nonce and the encryption key.
+   * Decrypts the data by decoding the base64 encoded string, extracting ephemeral public key and nonce,
+   * and then decrypting the data with the nonce and the user's encryption key using ECIES.
    */
   decrypt: <T = unknown>(data: string) => Promise<T>;
 };
@@ -86,87 +159,21 @@ type Encryption = {
  * Hook that provides the encryption functions.
  * Reference of the returned data is stable and doesn't change between renders.
  * Technical details:
- * - Encrypts data with AES-256-GCM
- * - A random nonce is generated for each encryption operation (included in the result)
- * - The encrypted data format includes the nonce and is base64-encoded
+ * - Encrypts data with ECIES using ChaCha20-Poly1305
+ * - A random ephemeral key is generated for each encryption operation
+ * - The encrypted data format is base64-encoded
  * @returns The encryption functions.
  */
 export const useEncryption = (): Encryption => {
-  const encryptionKey = useEncryptionKey();
+  const privateKey = useEncryptionPrivateKey();
+  const publicKeyHex = useEncryptionPublicKeyHex();
 
   return useMemo(() => {
     return {
-      encrypt: async <T = unknown>(data: T) => {
-        const preprocessedData = preprocessData(data);
-        const serialized = JSON.stringify(preprocessedData, (_, value) => {
-          if (value === undefined) {
-            return { __type: 'undefined' };
-          }
-          if (typeof value === 'number' && !Number.isFinite(value)) {
-            return { __type: 'number', value: value.toString() };
-          }
-          return value;
-        });
-
-        const encoder = new TextEncoder();
-        const dataBytes = encoder.encode(serialized);
-
-        // Generate random 12-byte nonce for AES-GCM
-        const nonce = crypto.getRandomValues(new Uint8Array(12));
-
-        // Encrypt the data
-        const encryptedBytes = await crypto.subtle.encrypt(
-          { name: 'AES-GCM', iv: nonce },
-          encryptionKey,
-          dataBytes,
-        );
-
-        // Combine nonce and encrypted data
-        const result = new Uint8Array(nonce.length + encryptedBytes.byteLength);
-        result.set(nonce);
-        result.set(new Uint8Array(encryptedBytes), nonce.length);
-
-        // Return base64-encoded result
-        return encode(result);
-      },
-      decrypt: async <T = unknown>(data: string) => {
-        // Decode base64 data
-        const encryptedBytes = decode(data);
-
-        // Extract nonce (first 12 bytes) and ciphertext
-        const nonceLength = 12;
-        const nonce = encryptedBytes.slice(0, nonceLength);
-        const ciphertext = encryptedBytes.slice(nonceLength);
-
-        // Decrypt the data
-        const decryptedBytes = await crypto.subtle.decrypt(
-          { name: 'AES-GCM', iv: nonce },
-          encryptionKey,
-          ciphertext,
-        );
-
-        const decoder = new TextDecoder();
-        const decryptedString = decoder.decode(decryptedBytes);
-
-        return JSON.parse(decryptedString, (_, value) => {
-          if (value && typeof value === 'object' && '__type' in value) {
-            switch (value.__type) {
-              case 'Date':
-                return new Date(value.value);
-              case 'undefined':
-                return undefined;
-              case 'number':
-                return Number(value.value); // This handles Infinity, -Infinity, NaN
-              case 'Money':
-                return new Money({
-                  amount: value.amount,
-                  currency: value.currency,
-                });
-            }
-          }
-          return value;
-        }) as T;
-      },
+      encrypt: async <T = unknown>(data: T) =>
+        encryptToPublicKey(data, publicKeyHex),
+      decrypt: async <T = unknown>(data: string) =>
+        decryptWithPrivateKey<T>(data, privateKey),
     };
-  }, [encryptionKey]);
+  }, [privateKey, publicKeyHex]);
 };

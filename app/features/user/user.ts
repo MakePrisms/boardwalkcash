@@ -10,6 +10,7 @@ type CommonUserData = {
   defaultUsdAccountId: string;
   defaultCurrency: Currency;
   cashuLockingXpub: string;
+  encryptionPublicKey: string;
 };
 
 export type FullUser = CommonUserData & {

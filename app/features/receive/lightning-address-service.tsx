@@ -10,13 +10,15 @@ import { Money } from '~/lib/money';
 import { AccountRepository } from '../accounts/account-repository';
 import type { AgicashDb } from '../agicash-db/database';
 import type { CashuCryptography } from '../shared/cashu';
+import { encryptToPublicKey } from '../shared/encryption';
 import { UserRepository } from '../user/user-repository';
 import { CashuReceiveQuoteRepository } from './cashu-receive-quote-repository';
 import { CashuReceiveQuoteService } from './cashu-receive-quote-service';
 
 const fakeCryptography: CashuCryptography = {
-  encrypt: async <T = unknown>(data: T): Promise<string> =>
-    JSON.stringify(data),
+  encrypt: async <T = unknown>(_data: T): Promise<string> => {
+    throw new Error('encrypt is not supported in this context');
+  },
   decrypt: async <T = unknown>(data: string): Promise<T> => data as T,
   getSeed: (): Promise<Uint8Array> => {
     throw new Error('getSeed is not supported in this context');
@@ -31,8 +33,8 @@ const fakeCryptography: CashuCryptography = {
 
 export class LightningAddressService {
   private baseUrl: string;
+  private db: AgicashDb;
   private userRepository: UserRepository;
-  private cashuReceiveQuoteRepository: CashuReceiveQuoteRepository;
   private accountRepository: AccountRepository;
   private minSendable: Money<'BTC'>;
   private maxSendable: Money<'BTC'>;
@@ -54,10 +56,7 @@ export class LightningAddressService {
   ) {
     this.exchangeRateService = new ExchangeRateService();
     this.userRepository = new UserRepository(db, this.cryptography);
-    this.cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
-      db,
-      this.cryptography,
-    );
+    this.db = db;
     this.accountRepository = new AccountRepository(db, this.cryptography);
     this.bypassAmountValidation = options.bypassAmountValidation ?? false;
     this.baseUrl = new URL(request.url).origin;
@@ -146,7 +145,11 @@ export class LightningAddressService {
           ...this.cryptography,
           getXpub: () => Promise.resolve(user.cashuLockingXpub),
         },
-        this.cashuReceiveQuoteRepository,
+        new CashuReceiveQuoteRepository(this.db, {
+          encrypt: async (data) =>
+            encryptToPublicKey(data, user.encryptionPublicKey),
+          decrypt: this.cryptography.decrypt,
+        }),
       );
 
       // For external lightning address requests, we only support BTC to avoid exchange rate mismatches.
@@ -204,7 +207,11 @@ export class LightningAddressService {
     receiveQuoteId: string,
   ): Promise<LNURLVerifyResult | LNURLError> {
     try {
-      const quote = await this.cashuReceiveQuoteRepository.get(receiveQuoteId);
+      const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
+        this.db,
+        this.cryptography,
+      );
+      const quote = await cashuReceiveQuoteRepository.get(receiveQuoteId);
 
       if (!quote) {
         return {
