@@ -17,7 +17,10 @@ import {
 } from '~/features/accounts/account-hooks';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
-import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
+import {
+  MoneyWithConvertedAmount,
+  getConversionCurrency,
+} from '~/features/shared/money-with-converted-amount';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
 import type { Ticker } from '~/lib/exchange-rate';
 import { Money } from '~/lib/money';
@@ -89,6 +92,9 @@ export default function Index() {
         <div className="flex h-[156px] flex-col items-center gap-4">
           <MoneyWithConvertedAmount
             money={defaultCurrency === 'BTC' ? balanceBTC : balanceUSD}
+            otherCurrency={getConversionCurrency({
+              money: defaultCurrency === 'BTC' ? balanceBTC : balanceUSD,
+            })}
           />
           {defaultCurrency === 'BTC' && <Price />}
         </div>

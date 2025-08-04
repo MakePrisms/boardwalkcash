@@ -23,7 +23,10 @@ import { useToast } from '~/hooks/use-toast';
 import { canShare, shareContent } from '~/lib/share';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { tokenToMoney } from '../shared/cashu';
-import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import {
+  MoneyWithConvertedAmount,
+  getConversionCurrency,
+} from '../shared/money-with-converted-amount';
 
 type Props = {
   token: Token;
@@ -60,7 +63,10 @@ export function ShareCashuToken({ token }: Props) {
         )}
       </PageHeader>
       <PageContent className="animate-in items-center gap-0 overflow-x-hidden overflow-y-hidden duration-300">
-        <MoneyWithConvertedAmount money={amount} />
+        <MoneyWithConvertedAmount
+          money={amount}
+          otherCurrency={getConversionCurrency({ money: amount })}
+        />
         <div className="flex w-full flex-col items-center justify-center px-4 py-4 pb-8">
           <Carousel opts={{ align: 'center', loop: true }}>
             <CarouselContent>

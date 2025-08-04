@@ -17,7 +17,10 @@ import {
   LinkWithViewTransition,
   useNavigateWithViewTransition,
 } from '~/lib/transitions';
-import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import {
+  MoneyWithConvertedAmount,
+  getConversionCurrency,
+} from '../shared/money-with-converted-amount';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
   useCashuReceiveQuote,
@@ -108,7 +111,10 @@ export default function ReceiveCashu({ amount, account }: Props) {
         <PageHeaderTitle>Receive Ecash</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
-        <MoneyWithConvertedAmount money={amount} />
+        <MoneyWithConvertedAmount
+          money={amount}
+          otherCurrency={getConversionCurrency({ money: amount })}
+        />
         <MintQuoteCarouselItem
           account={account}
           amount={amount}
