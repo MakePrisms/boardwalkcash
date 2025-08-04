@@ -50,7 +50,7 @@ type CreateTokenSwap = {
   /**
    * The amount of the fee in the unit of the token.
    */
-  receiveSwapFee: number;
+  cashuReceiveFee: number;
   /**
    * Cashu token being claimed
    */
@@ -83,7 +83,7 @@ export class CashuTokenSwapRepository {
       accountId,
       keysetId,
       inputAmount,
-      receiveSwapFee,
+      cashuReceiveFee,
       keysetCounter,
       outputAmounts,
       accountVersion,
@@ -95,16 +95,16 @@ export class CashuTokenSwapRepository {
     const unit = getDefaultUnit(amount.currency);
     const tokenHash = await getTokenHash(token);
 
-    const receiveSwapFeeMoney = new Money({
-      amount: receiveSwapFee,
+    const cashuReceiveFeeMoney = new Money({
+      amount: cashuReceiveFee,
       currency: amount.currency,
       unit: getCashuUnit(amount.currency),
     });
 
     const details: CashuReceiveSwapTransactionDetails = {
-      amountReceived: amount.subtract(receiveSwapFeeMoney),
-      cashuReceiveSwapFee: receiveSwapFeeMoney,
-      totalFees: receiveSwapFeeMoney,
+      amountReceived: amount.subtract(cashuReceiveFeeMoney),
+      cashuReceiveFee: cashuReceiveFeeMoney,
+      totalFees: cashuReceiveFeeMoney,
       tokenAmount: amount,
     };
 
@@ -125,7 +125,7 @@ export class CashuTokenSwapRepository {
       p_output_amounts: outputAmounts,
       p_input_amount: inputAmount,
       p_receive_amount: amount.toNumber(unit),
-      p_fee_amount: receiveSwapFee,
+      p_fee_amount: cashuReceiveFee,
       p_account_version: accountVersion,
       p_reversed_transaction_id: reversedTransactionId,
       p_encrypted_transaction_details: encryptedTransactionDetails,

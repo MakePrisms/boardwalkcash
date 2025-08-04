@@ -42,18 +42,18 @@ export type CashuSendSwap = {
    */
   amountRequested: Money;
   /**
-   * The requested amount to send plus the receiveSwapFee.
+   * The requested amount to send plus the cashuReceiveFee.
    * proofsToSend will sum to this amount.
    */
   amountToSend: Money;
   /**
    * The swap fee that will be incurred when the receiver claims the token.
    */
-  receiveSwapFee: Money;
+  cashuReceiveFee: Money;
   /**
    * The swap fee that will be incurred when swapping the inputProofs for the proofsToSend.
    */
-  sendSwapFee: Money;
+  cashuSendFee: Money;
   /**
    * The total amount spent. This is the sum of amountToSend and the fees.
    */

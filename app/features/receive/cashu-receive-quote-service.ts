@@ -118,6 +118,8 @@ export class CashuReceiveQuoteService {
     account,
     receiveType,
     receiveQuote,
+    tokenAmount,
+    cashuReceiveFee,
   }: {
     /**
      * The id of the user that will receive the money.
@@ -136,8 +138,16 @@ export class CashuReceiveQuoteService {
      * The receive quote to create.
      */
     receiveQuote: CashuReceiveLightningQuote;
+    /**
+     * The amount of the token to receive.
+     */
+    tokenAmount?: Money;
+    /**
+     * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
+     */
+    cashuReceiveFee?: number;
   }): Promise<CashuReceiveQuote> {
-    return this.cashuReceiveQuoteRepository.create({
+    const baseReceiveQuote = {
       accountId: account.id,
       userId,
       amount: receiveQuote.amount,
@@ -147,6 +157,25 @@ export class CashuReceiveQuoteService {
       state: receiveQuote.mintQuote.state as CashuReceiveQuote['state'],
       paymentRequest: receiveQuote.mintQuote.request,
       lockingDerivationPath: receiveQuote.fullLockingDerivationPath,
+    };
+
+    if (receiveType === 'TOKEN') {
+      if (!tokenAmount || cashuReceiveFee === undefined) {
+        throw new Error(
+          'Token amount and receive swap fee are required for token receive quotes',
+        );
+      }
+
+      return this.cashuReceiveQuoteRepository.create({
+        ...baseReceiveQuote,
+        receiveType,
+        tokenAmount,
+        cashuReceiveFee,
+      });
+    }
+
+    return this.cashuReceiveQuoteRepository.create({
+      ...baseReceiveQuote,
       receiveType,
     });
   }

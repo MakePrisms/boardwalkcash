@@ -147,7 +147,7 @@ export function TransactionDetails({
           }),
           lightningFeeReserve:
             completedDetails.lightningFeeReserve.toLocaleString({ unit }),
-          cashuSendSwapFee: completedDetails.cashuSendSwapFee.toLocaleString({
+          cashuSendFee: completedDetails.cashuSendFee.toLocaleString({
             unit,
           }),
           totalFees: completedDetails.totalFees.toLocaleString({ unit }),
@@ -172,7 +172,7 @@ export function TransactionDetails({
           }),
           lightningFeeReserve:
             incompleteDetails.lightningFeeReserve.toLocaleString({ unit }),
-          cashuSendSwapFee: incompleteDetails.cashuSendSwapFee.toLocaleString({
+          cashuSendFee: incompleteDetails.cashuSendFee.toLocaleString({
             unit,
           }),
           paymentRequest: incompleteDetails.paymentRequest,
@@ -202,14 +202,12 @@ export function TransactionDetails({
         amountToReceive: sendSwapDetails.amountToReceive.toLocaleString({
           unit,
         }),
-        cashuSendSwapFee: sendSwapDetails.cashuSendSwapFee.toLocaleString({
+        cashuSendFee: sendSwapDetails.cashuSendFee.toLocaleString({
           unit,
         }),
-        cashuReceiveSwapFee: sendSwapDetails.cashuReceiveSwapFee.toLocaleString(
-          {
-            unit,
-          },
-        ),
+        cashuReceiveFee: sendSwapDetails.cashuReceiveFee.toLocaleString({
+          unit,
+        }),
         totalFees: sendSwapDetails.totalFees.toLocaleString({ unit }),
       },
     );
@@ -226,8 +224,9 @@ export function TransactionDetails({
         // NOTE: these should never be undefined, but there's a bug we need to fix
         // see https://github.com/MakePrisms/boardwalkcash/pull/541
         tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
-        cashuReceiveSwapFee:
-          receiveSwapDetails.cashuReceiveSwapFee?.toLocaleString({ unit }),
+        cashuReceiveFee: receiveSwapDetails.cashuReceiveFee?.toLocaleString({
+          unit,
+        }),
         totalFees: receiveSwapDetails.totalFees?.toLocaleString({ unit }),
       },
     );

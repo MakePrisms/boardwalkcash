@@ -66,12 +66,20 @@ export class ReceiveCashuTokenService {
       exchangeRate,
     });
 
+    const sourceWallet = getCashuWallet(token.mint, {
+      unit: fromCashuUnit,
+    });
+    await sourceWallet.getKeys();
+    const cashuReceiveFee = sourceWallet.getFeesForProofs(token.proofs);
+
     const cashuReceiveQuote =
       await this.cashuReceiveQuoteService.createReceiveQuote({
         userId,
         account,
         receiveType: 'TOKEN',
         receiveQuote: quotes.lightningQuote,
+        cashuReceiveFee,
+        tokenAmount,
       });
 
     return {

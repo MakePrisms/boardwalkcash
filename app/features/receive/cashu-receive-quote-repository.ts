@@ -1,4 +1,5 @@
 import type { Proof } from '@cashu/cashu-ts';
+import { getCashuUnit } from '~/lib/cashu';
 import { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
@@ -9,7 +10,10 @@ import {
 } from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
-import type { CashuReceiveQuoteTransactionDetails } from '../transactions/transaction';
+import type {
+  CashuReceiveQuoteTransactionDetails,
+  CashuReceiveSwapTransactionDetails,
+} from '../transactions/transaction';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 
 type Options = {
@@ -65,7 +69,22 @@ type CreateQuote = {
    *         Used for cross-account cashu token receives where the receiver chooses to claim a token to an account different from the mint/unit the token originated from, thus requiring a lightning payment.
    */
   receiveType: CashuReceiveQuote['type'];
-};
+} & (
+  | {
+      receiveType: 'LIGHTNING';
+    }
+  | {
+      receiveType: 'TOKEN';
+      /**
+       * The amount of the token to receive.
+       */
+      tokenAmount: Money;
+      /**
+       * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
+       */
+      cashuReceiveFee: number;
+    }
+);
 
 export class CashuReceiveQuoteRepository {
   constructor(
@@ -78,7 +97,10 @@ export class CashuReceiveQuoteRepository {
    * @returns Created cashu receive quote.
    */
   async create(
-    {
+    params: CreateQuote,
+    options?: Options,
+  ): Promise<CashuReceiveQuote> {
+    const {
       userId,
       accountId,
       amount,
@@ -89,16 +111,36 @@ export class CashuReceiveQuoteRepository {
       state,
       lockingDerivationPath,
       receiveType,
-    }: CreateQuote,
-    options?: Options,
-  ): Promise<CashuReceiveQuote> {
+    } = params;
+
     const unit = getDefaultUnit(amount.currency);
 
-    const details: CashuReceiveQuoteTransactionDetails = {
-      amountReceived: amount,
-      paymentRequest,
-      description,
-    };
+    let details:
+      | CashuReceiveQuoteTransactionDetails
+      | CashuReceiveSwapTransactionDetails;
+
+    if (receiveType === 'TOKEN') {
+      const { cashuReceiveFee, tokenAmount } = params;
+
+      const cashuReceiveFeeMoney = new Money({
+        amount: cashuReceiveFee,
+        currency: amount.currency,
+        unit: getCashuUnit(amount.currency),
+      });
+
+      details = {
+        amountReceived: amount,
+        tokenAmount,
+        cashuReceiveFee: cashuReceiveFeeMoney,
+        totalFees: cashuReceiveFeeMoney,
+      } satisfies CashuReceiveSwapTransactionDetails;
+    } else {
+      details = {
+        amountReceived: amount,
+        paymentRequest,
+        description,
+      } satisfies CashuReceiveQuoteTransactionDetails;
+    }
 
     const encryptedTransactionDetails = await this.encryption.encrypt(details);
 
