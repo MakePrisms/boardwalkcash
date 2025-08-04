@@ -338,7 +338,7 @@ function SelectContactOrLud16Drawer({
         <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3 px-4 sm:px-0">
           <SearchBar
             placeholder="Username or Lightning Address"
-            onSearch={setInput}
+            onSearch={(value) => setInput(value.toLowerCase())}
           />
 
           {isLnAddressFormat && (
