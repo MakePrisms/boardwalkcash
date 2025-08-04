@@ -11,7 +11,10 @@ import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import { Separator } from '~/components/ui/separator';
 import { useToast } from '~/hooks/use-toast';
 import type { Currency } from '~/lib/money/types';
-import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
+import {
+  MoneyWithConvertedAmount,
+  getConversionCurrency,
+} from '../shared/money-with-converted-amount';
 import { useSetDefaultCurrency, useUser } from '../user/user-hooks';
 import { useBalance } from './account-hooks';
 
@@ -49,7 +52,11 @@ function CurrencyOption({ data, isSelected, onSelect }: CurrencyOptionProps) {
     >
       <div className="flex flex-col items-start gap-1">
         <span>{label}</span>
-        <MoneyWithConvertedAmount money={balance} variant="inline" />
+        <MoneyWithConvertedAmount
+          money={balance}
+          variant="inline"
+          otherCurrency={getConversionCurrency({ money: balance })}
+        />
       </div>
       <RadioGroup value={isSelected ? currency : undefined}>
         <RadioGroupItem className="text-foreground" value={currency} />

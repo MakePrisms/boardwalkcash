@@ -7,7 +7,10 @@ import {
 } from '~/features/accounts/account';
 import { useAccount } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
+import {
+  MoneyWithConvertedAmount,
+  getConversionCurrency,
+} from '~/features/shared/money-with-converted-amount';
 import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 
@@ -47,7 +50,12 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
       <div className="flex w-full flex-col gap-12 pt-4">
         <div className="flex flex-col gap-12">
           <h1 className="text-center text-2xl">{account.name}</h1>
-          <MoneyWithConvertedAmount money={getAccountBalance(account)} />
+          <MoneyWithConvertedAmount
+            money={getAccountBalance(account)}
+            otherCurrency={getConversionCurrency({
+              money: getAccountBalance(account),
+            })}
+          />
         </div>
 
         <div className="w-full space-y-8 sm:max-w-sm">
