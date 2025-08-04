@@ -30,6 +30,8 @@ import {
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { DomainError, NotFoundError } from '../shared/error';
+import type { IncompleteCashuSendQuoteTransactionDetails } from '../transactions/transaction';
+import { useGetTransaction } from '../transactions/transaction-hooks';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
@@ -150,12 +152,18 @@ export function useInitiateCashuSendQuote({
     mutationFn: async ({
       accountId,
       sendQuote,
-    }: { accountId: string; sendQuote: SendQuoteRequest }) => {
+      destinationValue,
+    }: {
+      accountId: string;
+      sendQuote: SendQuoteRequest;
+      destinationValue?: IncompleteCashuSendQuoteTransactionDetails['destination'];
+    }) => {
       const account = await getCashuAccount(accountId);
       return cashuSendQuoteService.createSendQuote({
         userId,
         account,
         sendQuote,
+        destinationValue,
       });
     },
     onSuccess: (data) => {
@@ -559,6 +567,7 @@ export function useProcessCashuSendQuoteTasks() {
   const cashuSendService = useCashuSendQuoteService();
   const unresolvedSendQuotes = useUnresolvedCashuSendQuotes();
   const getCashuAccount = useGetLatestCashuAccount();
+  const getTransaction = useGetTransaction();
 
   const { mutate: failSendQuote } = useMutation({
     mutationFn: async ({
@@ -698,8 +707,24 @@ export function useProcessCashuSendQuoteTasks() {
       }
 
       const account = await getCashuAccount(sendQuote.accountId);
+      const transaction = await getTransaction(sendQuote.transactionId);
 
-      return cashuSendService.completeSendQuote(account, sendQuote, meltQuote);
+      if (
+        transaction.type !== 'CASHU_LIGHTNING' ||
+        transaction.direction !== 'SEND' ||
+        !['DRAFT', 'PENDING'].includes(transaction.state)
+      ) {
+        throw new Error(
+          'Transaction is not a cashu lightning send that is pending or draft',
+        );
+      }
+
+      return cashuSendService.completeSendQuote(
+        account,
+        sendQuote,
+        meltQuote,
+        transaction,
+      );
     },
     retry: 3,
     throwOnError: true,

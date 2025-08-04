@@ -1,4 +1,4 @@
-import { AlertCircle, BanknoteIcon, ZapIcon } from 'lucide-react';
+import { AlertCircle, BanknoteIcon, UserIcon, ZapIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
@@ -94,10 +94,24 @@ const getTransactionDescription = (transaction: Transaction) => {
   return transaction.direction === 'RECEIVE' ? 'Received' : 'Sent';
 };
 
-const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
-  CASHU_LIGHTNING: <ZapIcon className="h-4 w-4" />,
-  CASHU_TOKEN: <BanknoteIcon className="h-4 w-4" />,
+const getTransactionTypeIcon = (transaction: Transaction) => {
+  if (transaction.type === 'CASHU_LIGHTNING') {
+    if (
+      transaction.direction === 'SEND' &&
+      transaction.details.destination?.type === 'AGICASH_CONTACT'
+    ) {
+      return <UserIcon className="h-4 w-4" />;
+    }
+    return <ZapIcon className="h-4 w-4" />;
+  }
+  if (transaction.type === 'CASHU_TOKEN') {
+    return <BanknoteIcon className="h-4 w-4" />;
+  }
+  throw new Error(
+    'Unknown transaction type, could not get transaction type icon.',
+  );
 };
+
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
     <LinkWithViewTransition
@@ -106,7 +120,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
       applyTo="newView"
       className="flex w-full items-center justify-start gap-4"
     >
-      {transactionTypeIcons[transaction.type]}
+      {getTransactionTypeIcon(transaction)}
       <div className="flex w-full flex-grow flex-col gap-0">
         <div className="flex items-center justify-between">
           <p className="text-sm">

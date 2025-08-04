@@ -11,7 +11,7 @@ export default function SendConfirmationPage() {
     getSourceAccount,
     amount: sendAmount,
     destination,
-    destinationDisplay,
+    destinationValue,
     quote,
   } = useSendStore();
   const sendAccount = getSourceAccount();
@@ -29,7 +29,7 @@ export default function SendConfirmationPage() {
     sendType === 'LN_ADDRESS' ||
     sendType === 'AGICASH_CONTACT'
   ) {
-    if (!destination || !destinationDisplay || !quote) {
+    if (!destination || !destinationValue || !quote) {
       return <Redirect to="/send" logMessage="Missing destination data" />;
     }
 
@@ -37,8 +37,9 @@ export default function SendConfirmationPage() {
       <PayBolt11Confirmation
         account={sendAccount}
         quote={quote}
+        destinationValue={destinationValue}
+        destinationType={sendType}
         destination={destination}
-        destinationDisplay={destinationDisplay}
       />
     );
   }

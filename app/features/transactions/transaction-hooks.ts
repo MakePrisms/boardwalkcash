@@ -15,15 +15,28 @@ import { useLatest } from '~/lib/use-latest';
 import { useGetLatestCashuAccount } from '../accounts/account-hooks';
 import { useCashuSendSwapRepository } from '../send/cashu-send-swap-repository';
 import { useCashuSendSwapService } from '../send/cashu-send-swap-service';
+import { NotFoundError } from '../shared/error';
 import { useUser } from '../user/user-hooks';
 import type { Transaction } from './transaction';
 import {
   type Cursor,
+  type TransactionRepository,
   useTransactionRepository,
 } from './transaction-repository';
 
 const transactionQueryKey = 'transaction';
 const allTransactionsQueryKey = 'all-transactions';
+
+const getOrThrowNotFound = async (
+  transactionRepository: TransactionRepository,
+  id: string,
+) => {
+  const transaction = await transactionRepository.get(id);
+  if (!transaction) {
+    throw new NotFoundError(`Transaction ${id} not found`);
+  }
+  return transaction;
+};
 
 export function useTransaction({
   transactionId,
@@ -37,7 +50,8 @@ export function useTransaction({
 
   return useQuery({
     queryKey: [transactionQueryKey, transactionId],
-    queryFn: () => transactionRepository.get(transactionId ?? ''),
+    queryFn: () =>
+      getOrThrowNotFound(transactionRepository, transactionId ?? ''),
     enabled,
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
@@ -52,11 +66,31 @@ export function useSuspenseTransaction(id: string) {
 
   return useSuspenseQuery({
     queryKey: [transactionQueryKey, id],
-    queryFn: () => transactionRepository.get(id),
+    queryFn: () => {
+      return getOrThrowNotFound(transactionRepository, id);
+    },
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
   });
+}
+
+/**
+ * Returns a function that can be used to get a transaction by id.
+ * The function will first try to get the transaction from the cache,
+ * if it is not found, it will fetch the transaction from the database.
+ */
+export function useGetTransaction() {
+  const queryClient = useQueryClient();
+  const transactionRepository = useTransactionRepository();
+
+  return async (transactionId: string) => {
+    return queryClient.fetchQuery({
+      queryKey: [transactionQueryKey, transactionId],
+      queryFn: () => getOrThrowNotFound(transactionRepository, transactionId),
+      staleTime: Number.POSITIVE_INFINITY,
+    });
+  };
 }
 
 const PAGE_SIZE = 25;

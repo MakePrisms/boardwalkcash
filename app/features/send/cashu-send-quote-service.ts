@@ -11,6 +11,10 @@ import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
+import type {
+  IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
+} from '../transactions/transaction';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
   type CashuSendQuoteRepository,
@@ -203,6 +207,7 @@ export class CashuSendQuoteService {
     userId,
     account,
     sendQuote,
+    destinationValue,
   }: {
     /**
      * ID of the sender.
@@ -216,6 +221,10 @@ export class CashuSendQuoteService {
      * The send quote to create.
      */
     sendQuote: SendQuoteRequest;
+    /**
+     * The destination data of the send if not directly paying a bolt11.
+     */
+    destinationValue?: IncompleteCashuSendQuoteTransactionDetails['destination'];
   }) {
     const meltQuote = sendQuote.meltQuote;
     const expiresAt = new Date(meltQuote.expiry * 1000);
@@ -294,6 +303,7 @@ export class CashuSendQuoteService {
       proofsToSend: proofs.send,
       accountVersion: account.version,
       proofsToKeep: proofs.keep,
+      destination: destinationValue,
     });
   }
 
@@ -353,6 +363,9 @@ export class CashuSendQuoteService {
     account: CashuAccount,
     sendQuote: CashuSendQuote,
     meltQuote: MeltQuoteResponse,
+    transaction: Transaction & {
+      details: IncompleteCashuSendQuoteTransactionDetails;
+    },
   ) {
     if (sendQuote.state !== 'PENDING') {
       throw new Error(
@@ -417,6 +430,7 @@ export class CashuSendQuoteService {
       amountSpent,
       accountProofs: updatedAccountProofs,
       accountVersion: account.version,
+      transaction,
     });
   }
 

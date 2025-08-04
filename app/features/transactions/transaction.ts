@@ -79,6 +79,20 @@ type BaseCashuSendQuoteTransactionDetails = {
    * The bolt11 payment request.
    */
   paymentRequest: string;
+  /**
+   * If not directly paying a bolt11, then this is defined as the destination used to fetch the payment request.
+   */
+  destination?:
+    | {
+        type: 'AGICASH_CONTACT';
+        /** The value to display to the user. eg. agicash contact name or lightning address */
+        contactId: string;
+      }
+    | {
+        type: 'LN_ADDRESS';
+        /** The lightning address */
+        address: string;
+      };
 };
 
 /**

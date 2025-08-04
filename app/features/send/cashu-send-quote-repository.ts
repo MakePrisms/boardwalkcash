@@ -11,6 +11,7 @@ import { useEncryption } from '../shared/encryption';
 import type {
   CompletedCashuSendQuoteTransactionDetails,
   IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
 } from '../transactions/transaction';
 import type { CashuSendQuote } from './cashu-send-quote';
 
@@ -88,6 +89,10 @@ type CreateSendQuote = {
    * Proofs to keep in the account after the send.
    */
   proofsToKeep: Proof[];
+  /**
+   * Destination of the send.
+   */
+  destination?: IncompleteCashuSendQuoteTransactionDetails['destination'];
 };
 
 export class CashuSendQuoteRepository {
@@ -118,6 +123,7 @@ export class CashuSendQuoteRepository {
       proofsToSend,
       accountVersion,
       proofsToKeep,
+      destination,
     }: CreateSendQuote,
     options?: Options,
   ): Promise<CashuSendQuote> {
@@ -133,6 +139,7 @@ export class CashuSendQuoteRepository {
         unit,
       }),
       paymentRequest,
+      destination,
     };
 
     const [
@@ -196,6 +203,7 @@ export class CashuSendQuoteRepository {
       amountSpent,
       accountProofs,
       accountVersion,
+      transaction,
     }: {
       /**
        * The cashu send quote to complete.
@@ -217,6 +225,12 @@ export class CashuSendQuoteRepository {
        * Version of the account as seen by the client. Used for optimistic concurrency control.
        */
       accountVersion: number;
+      /**
+       * The transaction corresponding to the send quote.
+       */
+      transaction: Transaction & {
+        details: IncompleteCashuSendQuoteTransactionDetails;
+      };
     },
     options?: Options,
   ): Promise<CashuSendQuote> {
@@ -228,15 +242,7 @@ export class CashuSendQuoteRepository {
 
     const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
       {
-        amountReserved: new Money({
-          amount: sumProofs(quote.proofs),
-          currency: quote.amountToReceive.currency,
-          unit: getDefaultUnit(quote.amountToReceive.currency),
-        }),
-        lightningFeeReserve: quote.lightningFeeReserve,
-        cashuSendSwapFee: quote.cashuFee,
-        amountToReceive: quote.amountToReceive,
-        paymentRequest: quote.paymentRequest,
+        ...transaction.details,
         preimage: paymentPreimage,
         amountSpent,
         lightningFee: actualLightningFee,
