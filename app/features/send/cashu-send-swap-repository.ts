@@ -44,11 +44,11 @@ type CreateSendSwap = {
   /**
    * The fee for the swap in the account's currency.
    */
-  sendSwapFee: Money;
+  cashuSendFee: Money;
   /**
    * The fee for the swap in the account's currency.
    */
-  receiveSwapFee: Money;
+  cashuReceiveFee: Money;
   /**
    * The proofs being spent as inputs.
    */
@@ -101,8 +101,8 @@ export class CashuSendSwapRepository {
       amountRequested,
       amountToSend,
       totalAmount,
-      sendSwapFee,
-      receiveSwapFee,
+      cashuSendFee,
+      cashuReceiveFee,
       inputProofs,
       proofsToSend,
       tokenHash,
@@ -118,10 +118,10 @@ export class CashuSendSwapRepository {
 
     const details: CashuSendSwapTransactionDetails = {
       amountSpent: totalAmount,
-      cashuSendSwapFee: sendSwapFee,
-      cashuReceiveSwapFee: receiveSwapFee,
-      totalFees: sendSwapFee.add(receiveSwapFee),
-      amountToReceive: amountToSend.subtract(receiveSwapFee),
+      cashuSendFee: cashuSendFee,
+      cashuReceiveFee: cashuReceiveFee,
+      totalFees: cashuSendFee.add(cashuReceiveFee),
+      amountToReceive: amountToSend.subtract(cashuReceiveFee),
     };
 
     const [
@@ -149,8 +149,8 @@ export class CashuSendSwapRepository {
       p_account_id: accountId,
       p_amount_requested: amountRequested.toNumber(unit),
       p_amount_to_send: amountToSend.toNumber(unit),
-      p_receive_swap_fee: receiveSwapFee.toNumber(unit),
-      p_send_swap_fee: sendSwapFee.toNumber(unit),
+      p_receive_swap_fee: cashuReceiveFee.toNumber(unit),
+      p_send_swap_fee: cashuSendFee.toNumber(unit),
       p_total_amount: totalAmount.toNumber(unit),
       p_input_proofs: encryptedInputProofs,
       p_input_amount: sumProofs(inputProofs),
@@ -375,8 +375,8 @@ export class CashuSendSwapRepository {
       amountRequested: toMoney(data.amount_requested),
       amountToSend: toMoney(data.amount_to_send),
       totalAmount: toMoney(data.total_amount),
-      receiveSwapFee: toMoney(data.receive_swap_fee),
-      sendSwapFee: toMoney(data.send_swap_fee),
+      cashuReceiveFee: toMoney(data.receive_swap_fee),
+      cashuSendFee: toMoney(data.send_swap_fee),
       inputProofs,
       inputAmount: toMoney(data.input_amount),
       currency: data.currency,

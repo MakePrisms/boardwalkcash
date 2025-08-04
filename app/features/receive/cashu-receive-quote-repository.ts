@@ -76,7 +76,7 @@ type CreateQuote = {
   /**
    * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
    */
-  receiveSwapFee?: number;
+  cashuReceiveFee?: number;
 } & (
   | {
       receiveType: 'LIGHTNING';
@@ -90,7 +90,7 @@ type CreateQuote = {
       /**
        * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
        */
-      receiveSwapFee: number;
+      cashuReceiveFee: number;
     }
 );
 
@@ -117,7 +117,7 @@ export class CashuReceiveQuoteRepository {
       lockingDerivationPath,
       receiveType,
       tokenAmount,
-      receiveSwapFee,
+      cashuReceiveFee,
     }: CreateQuote,
     options?: Options,
   ): Promise<CashuReceiveQuote> {
@@ -128,8 +128,8 @@ export class CashuReceiveQuoteRepository {
       | CashuReceiveSwapTransactionDetails;
 
     if (receiveType === 'TOKEN') {
-      const receiveSwapFeeMoney = new Money({
-        amount: receiveSwapFee,
+      const cashuReceiveFeeMoney = new Money({
+        amount: cashuReceiveFee,
         currency: amount.currency,
         unit: getCashuUnit(amount.currency),
       });
@@ -137,8 +137,8 @@ export class CashuReceiveQuoteRepository {
       details = {
         amountReceived: amount,
         tokenAmount,
-        cashuReceiveSwapFee: receiveSwapFeeMoney,
-        totalFees: receiveSwapFeeMoney,
+        cashuReceiveFee: cashuReceiveFeeMoney,
+        totalFees: cashuReceiveFeeMoney,
       } satisfies CashuReceiveSwapTransactionDetails;
     } else {
       details = {

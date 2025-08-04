@@ -70,7 +70,7 @@ export class ReceiveCashuTokenService {
       unit: fromCashuUnit,
     });
     await sourceWallet.getKeys();
-    const receiveSwapFee = sourceWallet.getFeesForProofs(token.proofs);
+    const cashuReceiveFee = sourceWallet.getFeesForProofs(token.proofs);
 
     const cashuReceiveQuote =
       await this.cashuReceiveQuoteService.createReceiveQuote({
@@ -78,7 +78,7 @@ export class ReceiveCashuTokenService {
         account,
         receiveType: 'TOKEN',
         receiveQuote: quotes.lightningQuote,
-        receiveSwapFee,
+        cashuReceiveFee,
         tokenAmount,
       });
 

@@ -15,13 +15,13 @@ export type CashuSendSwapTransactionDetails = {
   /**
    * The fee incurred when creating sendable proofs.
    */
-  cashuSendSwapFee: Money;
+  cashuSendFee: Money;
   /**
    * The fee that we include in the token for the receiver to claim exactly `amountToReceive`.
    */
-  cashuReceiveSwapFee: Money;
+  cashuReceiveFee: Money;
   /**
-   * The total fees for the transaction. Sum of cashuSendSwapFee and cashuReceiveSwapFee.
+   * The total fees for the transaction. Sum of cashuSendFee and cashuReceiveFee.
    */
   totalFees: Money;
 };
@@ -31,7 +31,7 @@ export type CashuSendSwapTransactionDetails = {
  */
 export type CashuReceiveSwapTransactionDetails = {
   /**
-   * This is the token amount minus the cashuReceiveSwapFee, and is the amount added to the account.
+   * This is the token amount minus the cashuReceiveFee, and is the amount added to the account.
    */
   amountReceived: Money;
   /**
@@ -41,9 +41,9 @@ export type CashuReceiveSwapTransactionDetails = {
   /**
    * The fee that will be incurred when swapping proofs to the account.
    */
-  cashuReceiveSwapFee: Money;
+  cashuReceiveFee: Money;
   /**
-   * The total fees for the transaction. This is the same as the `cashuReceiveSwapFee`.
+   * The total fees for the transaction. This is the same as the `cashuReceiveFee`.
    */
   totalFees: Money;
 };
@@ -74,7 +74,7 @@ type BaseCashuSendQuoteTransactionDetails = {
   /**
    * The fee incurred to spend the proofs in the cashu melt operation
    */
-  cashuSendSwapFee: Money;
+  cashuSendFee: Money;
   /**
    * The bolt11 payment request.
    */
@@ -109,7 +109,7 @@ export type CompletedCashuSendQuoteTransactionDetails =
      */
     lightningFee: Money;
     /**
-     * The actual fees for the transaction. Sum of lightningFee and cashuSendSwapFee.
+     * The actual fees for the transaction. Sum of lightningFee and cashuSendFee.
      */
     totalFees: Money;
   };

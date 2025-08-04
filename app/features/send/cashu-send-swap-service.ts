@@ -36,8 +36,8 @@ import {
 export type CashuSwapQuote = {
   amountRequested: Money;
   senderPaysFee: boolean;
-  receiveSwapFee: Money;
-  sendSwapFee: Money;
+  cashuReceiveFee: Money;
+  cashuSendFee: Money;
   totalAmount: Money;
   totalFee: Money;
   amountToSend: Money;
@@ -76,7 +76,7 @@ export class CashuSendSwapService {
     const amountNumber = amount.toNumber(cashuUnit);
     const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
 
-    const { receiveSwapFee, sendSwapFee } = await this.prepareProofsAndFee(
+    const { cashuReceiveFee, cashuSendFee } = await this.prepareProofsAndFee(
       wallet,
       account.proofs,
       amount,
@@ -92,12 +92,12 @@ export class CashuSendSwapService {
 
     return {
       amountRequested: amount,
-      amountToSend: toMoney(amountNumber + receiveSwapFee),
-      totalAmount: toMoney(amountNumber + receiveSwapFee + sendSwapFee),
-      totalFee: toMoney(receiveSwapFee + sendSwapFee),
+      amountToSend: toMoney(amountNumber + cashuReceiveFee),
+      totalAmount: toMoney(amountNumber + cashuReceiveFee + cashuSendFee),
+      totalFee: toMoney(cashuReceiveFee + cashuSendFee),
       senderPaysFee,
-      receiveSwapFee: toMoney(receiveSwapFee),
-      sendSwapFee: toMoney(sendSwapFee),
+      cashuReceiveFee: toMoney(cashuReceiveFee),
+      cashuSendFee: toMoney(cashuSendFee),
     };
   }
 
@@ -137,8 +137,8 @@ export class CashuSendSwapService {
     const {
       keep: accountProofsToKeep,
       send,
-      receiveSwapFee,
-      sendSwapFee,
+      cashuReceiveFee,
+      cashuSendFee,
     } = await this.prepareProofsAndFee(
       wallet,
       account.proofs,
@@ -146,7 +146,7 @@ export class CashuSendSwapService {
       senderPaysFee,
     );
 
-    const totalAmountToSend = amountNumber + receiveSwapFee;
+    const totalAmountToSend = amountNumber + cashuReceiveFee;
 
     let proofsToSend: Proof[] | undefined;
     let tokenHash: string | undefined;
@@ -174,7 +174,7 @@ export class CashuSendSwapService {
         keys,
       );
 
-      const amountToKeep = sumProofs(send) - totalAmountToSend - sendSwapFee;
+      const amountToKeep = sumProofs(send) - totalAmountToSend - cashuSendFee;
       const keepKeysetCounter = sendKeysetCounter + sendOutputData.length;
       keepOutputData = OutputData.createDeterministicData(
         amountToKeep,
@@ -200,9 +200,9 @@ export class CashuSendSwapService {
       accountProofs: accountProofsToKeep,
       amountRequested: amount,
       amountToSend: toMoney(totalAmountToSend),
-      sendSwapFee: toMoney(sendSwapFee),
-      receiveSwapFee: toMoney(receiveSwapFee),
-      totalAmount: toMoney(totalAmountToSend + sendSwapFee),
+      cashuSendFee: toMoney(cashuSendFee),
+      cashuReceiveFee: toMoney(cashuReceiveFee),
+      totalAmount: toMoney(totalAmountToSend + cashuSendFee),
       keysetId,
       keysetCounter: sendKeysetCounter,
       tokenHash,
@@ -243,7 +243,7 @@ export class CashuSendSwapService {
     const amountToKeep =
       sumProofs(swap.inputProofs) -
       sendAmount -
-      swap.sendSwapFee.toNumber(getCashuUnit(swap.currency));
+      swap.cashuSendFee.toNumber(getCashuUnit(swap.currency));
     const keepOutputData = OutputData.createDeterministicData(
       amountToKeep,
       seed,
@@ -330,8 +330,8 @@ export class CashuSendSwapService {
   ): Promise<{
     keep: Proof[];
     send: Proof[];
-    sendSwapFee: number;
-    receiveSwapFee: number;
+    cashuSendFee: number;
+    cashuReceiveFee: number;
   }> {
     if (includeFeesInSendAmount) {
       // If we want to do fee calculation, then the keys are required
@@ -369,8 +369,8 @@ export class CashuSendSwapService {
       return {
         keep,
         send,
-        sendSwapFee: 0,
-        receiveSwapFee: feeToSwapSelectedProofs,
+        cashuSendFee: 0,
+        cashuReceiveFee: feeToSwapSelectedProofs,
       };
     }
 
@@ -397,15 +397,15 @@ export class CashuSendSwapService {
     ));
     proofAmountSelected = sumProofs(send);
 
-    const sendSwapFee = wallet.getFeesForProofs(send);
-    const receiveSwapFee = estimatedFeeToReceive;
+    const cashuSendFee = wallet.getFeesForProofs(send);
+    const cashuReceiveFee = estimatedFeeToReceive;
 
     if (
       proofAmountSelected <
-      requestedAmountNumber + sendSwapFee + receiveSwapFee
+      requestedAmountNumber + cashuSendFee + cashuReceiveFee
     ) {
       const totalAmount = new Money({
-        amount: requestedAmountNumber + sendSwapFee + receiveSwapFee,
+        amount: requestedAmountNumber + cashuSendFee + cashuReceiveFee,
         currency: currency,
         unit: cashuUnit,
       });
@@ -417,11 +417,11 @@ export class CashuSendSwapService {
     }
 
     console.debug('fees', {
-      sendSwapFee,
-      receiveSwapFee,
+      cashuSendFee,
+      cashuReceiveFee,
     });
 
-    return { keep, send, sendSwapFee, receiveSwapFee };
+    return { keep, send, cashuSendFee, cashuReceiveFee };
   }
 
   private async swapProofs(
