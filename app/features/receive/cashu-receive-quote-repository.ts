@@ -74,7 +74,7 @@ type CreateQuote = {
    */
   tokenAmount?: Money;
   /**
-   * The fee for receiving the token in the unit of the token.
+   * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
    */
   receiveSwapFee?: number;
 } & (
@@ -84,11 +84,11 @@ type CreateQuote = {
   | {
       receiveType: 'TOKEN';
       /**
-       * The amount of the token from the cross-account receive.
+       * The amount of the token to receive.
        */
       tokenAmount: Money;
       /**
-       * The fee that will be incurred for spending the proofs as inputs to the melt operation.
+       * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
        */
       receiveSwapFee: number;
     }
