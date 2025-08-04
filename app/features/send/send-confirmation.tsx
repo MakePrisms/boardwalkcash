@@ -14,7 +14,6 @@ import { decodeBolt11 } from '~/lib/bolt11';
 import type { Money } from '~/lib/money';
 import { useNavigateWithViewTransition } from '~/lib/transitions';
 import { middleEllipsis } from '~/lib/utils';
-import { type Contact, isContact } from '../contacts/contact';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import {
@@ -25,6 +24,7 @@ import type { CashuLightningQuote } from './cashu-send-quote-service';
 import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
 import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
+import type { SendDestination } from './send-store';
 
 const ConfirmationRow = ({
   label,
@@ -89,14 +89,10 @@ const BaseConfirmation = ({
 };
 
 type PayBolt11ConfirmationProps = {
-  /** The value used to get the destination. */
-  destinationValue: string | Contact;
   /** The account to send from */
   account: CashuAccount;
   /** The destination to pay. */
-  destination: string;
-  /** The type of the destination. */
-  destinationType: 'BOLT11_INVOICE' | 'LN_ADDRESS' | 'AGICASH_CONTACT';
+  destination: SendDestination;
   /** The quote to display in the UI. */
   quote: CashuLightningQuote;
 };
@@ -111,9 +107,7 @@ type PayBolt11ConfirmationProps = {
 export const PayBolt11Confirmation = ({
   account,
   quote: bolt11Quote,
-  destinationValue,
   destination,
-  destinationType,
 }: PayBolt11ConfirmationProps) => {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
@@ -153,53 +147,28 @@ export const PayBolt11Confirmation = ({
     },
   });
 
-  /**
-   * Creates the destination value object to pass to the initiate send quote mutation.
-   * This is used to store the destination value in the transaction.
-   */
-  const getDestinationValue = () => {
-    if (destinationType === 'BOLT11_INVOICE') {
-      return undefined;
-    }
-
-    if (destinationType === 'AGICASH_CONTACT') {
-      if (!isContact(destinationValue)) {
-        throw new Error(
-          'destination must be a Contact when destinationType is AGICASH_CONTACT',
-        );
-      }
-      return {
-        type: destinationType,
-        contactId: destinationValue.id,
-      };
-    }
-
-    if (destinationType === 'LN_ADDRESS') {
-      if (isContact(destinationValue)) {
-        throw new Error(
-          'destination must be a string when destinationType is LN_ADDRESS',
-        );
-      }
-      return {
-        type: destinationType,
-        address: destinationValue,
-      };
-    }
-
-    throw new Error(`Unsupported destination type: ${destinationType}`);
-  };
-
   const handleConfirm = () =>
     initiateSend({
       accountId: account.id,
       sendQuote: bolt11Quote,
-      destinationValue: getDestinationValue(),
+      destinationValue:
+        destination.type === 'BOLT11_INVOICE'
+          ? undefined
+          : destination.type === 'AGICASH_CONTACT'
+            ? {
+                type: destination.type,
+                contactId: destination.contact.id,
+              }
+            : {
+                type: destination.type,
+                address: destination.lightningAddress,
+              },
     });
 
   const paymentInProgress =
     ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
     isCreatingSendQuote;
-  const { description } = decodeBolt11(destination);
+  const { description } = decodeBolt11(destination.bolt11);
 
   return (
     <BaseConfirmation
@@ -231,13 +200,16 @@ export const PayBolt11Confirmation = ({
         { label: 'From', value: account.name },
         {
           label: 'Paying',
-          value: isContact(destinationValue)
-            ? destinationValue.username
-            : middleEllipsis(destinationValue, {
-                maxLength: 20,
-                startLength: 6,
-                endLength: 4,
-              }),
+          value:
+            destination.type === 'AGICASH_CONTACT'
+              ? destination.contact.username
+              : destination.type === 'LN_ADDRESS'
+                ? destination.lightningAddress
+                : middleEllipsis(destination.bolt11, {
+                    maxLength: 20,
+                    startLength: 6,
+                    endLength: 4,
+                  }),
         },
       ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />

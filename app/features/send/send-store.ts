@@ -94,6 +94,23 @@ type DecodedDestination = {
   amount?: Money | null;
 };
 
+export type SendDestination = {
+  type: SendType;
+  bolt11: string;
+} & (
+  | {
+      type: 'BOLT11_INVOICE';
+    }
+  | {
+      type: 'LN_ADDRESS';
+      lightningAddress: string;
+    }
+  | {
+      type: 'AGICASH_CONTACT';
+      contact: Contact;
+    }
+);
+
 type State = {
   status: 'idle' | 'quoting';
   /**
@@ -109,14 +126,13 @@ type State = {
    */
   sendType: SendType;
   /**
-   * Stores the actual payment request. If the desination is a contact or lightning address, this will be fetched from that value.
+   * Temporary storage for original destination input before we get the bolt11
    */
-  destination: string | null;
+  destinationInput?: string | Contact;
   /**
-   * Stores the value used to get the destination.
-   * E.g. for agicash contact it's the Contact object, for ln address it's the ln address, etc.
+   * The destination of the send.
    */
-  destinationValue: string | Contact | null;
+  destination: SendDestination | null;
 } & (
   | {
       sendType: 'CASHU_TOKEN';
@@ -124,6 +140,7 @@ type State = {
        * Quote to generate a cashu token to send.
        */
       quote: CashuSwapQuote | null;
+      destination: null;
     }
   | {
       sendType: 'BOLT11_INVOICE' | 'LN_ADDRESS' | 'AGICASH_CONTACT';
@@ -198,9 +215,7 @@ export const createSendStore = ({
       accountId: initialAccount.id,
       sendType: 'CASHU_TOKEN',
       destination: null,
-      destinationValue: null,
       quote: null,
-      cashuToken: null,
 
       selectSourceAccount: (account) => set({ accountId: account.id }),
 
@@ -215,16 +230,15 @@ export const createSendStore = ({
 
       clearDestination: () =>
         set({
-          destination: null,
-          destinationValue: null,
           sendType: 'CASHU_TOKEN',
+          destinationInput: undefined,
         }),
 
       selectDestination: async (destination) => {
         if (isContact(destination)) {
           set({
             sendType: 'AGICASH_CONTACT',
-            destinationValue: destination,
+            destinationInput: destination,
           });
 
           return {
@@ -245,7 +259,7 @@ export const createSendStore = ({
 
           set({
             sendType: 'LN_ADDRESS',
-            destinationValue: destination,
+            destinationInput: destination,
           });
 
           return {
@@ -264,8 +278,11 @@ export const createSendStore = ({
 
           set({
             sendType: 'BOLT11_INVOICE',
-            destination,
-            destinationValue: destination,
+            destinationInput: destination,
+            destination: {
+              bolt11: destination,
+              type: 'BOLT11_INVOICE',
+            },
           });
 
           return {
@@ -317,10 +334,10 @@ export const createSendStore = ({
         }
 
         if (['LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
-          const destinationValue = getOrThrow('destinationValue');
-          const lnAddress = isContact(destinationValue)
-            ? destinationValue.lud16
-            : destinationValue;
+          const destinationInput = getOrThrow('destinationInput');
+          const lnAddress = isContact(destinationInput)
+            ? destinationInput.lud16
+            : destinationInput;
 
           const amountInBtc = pickAmountByCurrency(amounts, 'BTC');
           try {
@@ -329,7 +346,23 @@ export const createSendStore = ({
               amount: amountInBtc,
             });
 
-            set({ destination: bolt11 });
+            if (sendType === 'LN_ADDRESS') {
+              set({
+                destination: {
+                  bolt11,
+                  type: 'LN_ADDRESS',
+                  lightningAddress: lnAddress,
+                },
+              });
+            } else if (sendType === 'AGICASH_CONTACT') {
+              set({
+                destination: {
+                  bolt11,
+                  type: 'AGICASH_CONTACT',
+                  contact: destinationInput as Contact,
+                },
+              });
+            }
           } catch (error) {
             console.error(error);
             set({ status: 'idle' });
@@ -348,7 +381,7 @@ export const createSendStore = ({
           try {
             const quote = await createCashuSendQuote({
               account,
-              paymentRequest: destination,
+              paymentRequest: destination.bolt11,
               amount: amountToSend,
             });
             set({ quote });

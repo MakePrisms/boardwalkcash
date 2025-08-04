@@ -88,7 +88,7 @@ export function SendInput() {
   const sendAmount = useSendStore((s) => s.amount);
   const sendAccount = useSendStore((s) => s.getSourceAccount());
   const selectSourceAccount = useSendStore((s) => s.selectSourceAccount);
-  const destinationValue = useSendStore((s) => s.destinationValue);
+  const destinationInput = useSendStore((s) => s.destinationInput);
   const selectDestination = useSendStore((s) => s.selectDestination);
   const clearDestination = useSendStore((s) => s.clearDestination);
   const getQuote = useSendStore((s) => s.getQuote);
@@ -221,12 +221,12 @@ export function SendInput() {
           </div>
 
           <div className="flex h-[24px] items-center justify-center gap-4">
-            {destinationValue && (
+            {destinationInput && (
               <>
                 <p>
-                  {isContact(destinationValue)
-                    ? destinationValue.username
-                    : middleEllipsis(destinationValue, {
+                  {isContact(destinationInput)
+                    ? destinationInput.username
+                    : middleEllipsis(destinationInput, {
                         maxLength: 20,
                         startLength: 6,
                         endLength: 4,
