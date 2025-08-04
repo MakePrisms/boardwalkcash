@@ -69,14 +69,6 @@ type CreateQuote = {
    *         Used for cross-account cashu token receives where the receiver chooses to claim a token to an account different from the mint/unit the token originated from, thus requiring a lightning payment.
    */
   receiveType: CashuReceiveQuote['type'];
-  /**
-   * The amount of the token to receive.
-   */
-  tokenAmount?: Money;
-  /**
-   * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
-   */
-  cashuReceiveFee?: number;
 } & (
   | {
       receiveType: 'LIGHTNING';
@@ -105,7 +97,10 @@ export class CashuReceiveQuoteRepository {
    * @returns Created cashu receive quote.
    */
   async create(
-    {
+    params: CreateQuote,
+    options?: Options,
+  ): Promise<CashuReceiveQuote> {
+    const {
       userId,
       accountId,
       amount,
@@ -116,11 +111,8 @@ export class CashuReceiveQuoteRepository {
       state,
       lockingDerivationPath,
       receiveType,
-      tokenAmount,
-      cashuReceiveFee,
-    }: CreateQuote,
-    options?: Options,
-  ): Promise<CashuReceiveQuote> {
+    } = params;
+
     const unit = getDefaultUnit(amount.currency);
 
     let details:
@@ -128,6 +120,8 @@ export class CashuReceiveQuoteRepository {
       | CashuReceiveSwapTransactionDetails;
 
     if (receiveType === 'TOKEN') {
+      const { cashuReceiveFee, tokenAmount } = params;
+
       const cashuReceiveFeeMoney = new Money({
         amount: cashuReceiveFee,
         currency: amount.currency,
