@@ -1,11 +1,20 @@
+import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, BanknoteIcon, ZapIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { LinkWithViewTransition } from '~/lib/transitions';
+import {
+  useMarkNotificationsAsRead,
+  useUnreadNotifications,
+} from '../notifications/notification-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import type { Transaction } from './transaction';
 import { useTransactions } from './transaction-hooks';
+
+type ExtendedTransaction = Transaction & {
+  isUnread: boolean;
+};
 
 function LoadMore({
   onEndReached,
@@ -98,7 +107,12 @@ const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
   CASHU_LIGHTNING: <ZapIcon className="h-4 w-4" />,
   CASHU_TOKEN: <BanknoteIcon className="h-4 w-4" />,
 };
-function TransactionRow({ transaction }: { transaction: Transaction }) {
+
+function TransactionRow({
+  transaction,
+}: {
+  transaction: ExtendedTransaction;
+}) {
   return (
     <LinkWithViewTransition
       to={`/transactions/${transaction.id}`}
@@ -106,7 +120,12 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
       applyTo="newView"
       className="flex w-full items-center justify-start gap-4"
     >
-      {transactionTypeIcons[transaction.type]}
+      <div className="relative">
+        {transactionTypeIcons[transaction.type]}
+        {transaction.isUnread && (
+          <div className="-right-1 -top-1 absolute h-2 w-2 rounded-full bg-red-500" />
+        )}
+      </div>
       <div className="flex w-full flex-grow flex-col gap-0">
         <div className="flex items-center justify-between">
           <p className="text-sm">
@@ -132,7 +151,7 @@ function TransactionSection({
   transactions,
 }: {
   title: string;
-  transactions: Transaction[];
+  transactions: ExtendedTransaction[];
 }) {
   if (transactions.length === 0) return null;
 
@@ -149,15 +168,15 @@ function TransactionSection({
 }
 
 /** Filter transactions by status and time range */
-function usePartitionTransactions(transactions: Transaction[]) {
+function usePartitionTransactions(transactions: ExtendedTransaction[]) {
   const now = Date.now();
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-  const pendingTransactions: Transaction[] = [];
-  const todayTransactions: Transaction[] = [];
-  const thisWeekTransactions: Transaction[] = [];
-  const olderTransactions: Transaction[] = [];
+  const pendingTransactions: ExtendedTransaction[] = [];
+  const todayTransactions: ExtendedTransaction[] = [];
+  const thisWeekTransactions: ExtendedTransaction[] = [];
+  const olderTransactions: ExtendedTransaction[] = [];
 
   // Transactions are already sorted correctly from the database
   // (PENDING first, then by created_at descending)
@@ -194,15 +213,47 @@ export function TransactionList() {
     status,
   } = useTransactions();
 
+  const { data: unreadNotifications } = useUnreadNotifications({
+    type: 'PAYMENT_RECEIVED',
+  });
+
+  const markNotificationsAsRead = useMarkNotificationsAsRead();
+
+  useQuery({
+    queryKey: ['mark-notifications-as-read'],
+    queryFn: () => {
+      if (unreadNotifications.length > 0) {
+        markNotificationsAsRead.mutate({
+          notificationIds: unreadNotifications.map(
+            (notification) => notification.id,
+          ),
+        });
+      }
+      return true;
+    },
+    retry: false,
+  });
+
   const allTransactions =
     data?.pages.flatMap((page) => page.transactions) ?? [];
+
+  const unreadTransactionIds = new Set(
+    unreadNotifications.map((notification) => notification.transactionId),
+  );
+
+  const extendedTransactions = useMemo(() => {
+    return allTransactions.map((transaction) => ({
+      ...transaction,
+      isUnread: unreadTransactionIds.has(transaction.id),
+    }));
+  }, [allTransactions, unreadTransactionIds]);
 
   const {
     pendingTransactions,
     todayTransactions,
     thisWeekTransactions,
     olderTransactions,
-  } = usePartitionTransactions(allTransactions);
+  } = usePartitionTransactions(extendedTransactions);
 
   if (status === 'error') {
     return (
@@ -225,7 +276,7 @@ export function TransactionList() {
     );
   }
 
-  if (!allTransactions.length) {
+  if (!extendedTransactions.length) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
         <span className="text-muted-foreground">No transactions found</span>
