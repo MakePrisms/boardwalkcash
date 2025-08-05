@@ -29,10 +29,7 @@ import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
 import { getErrorMessage } from '../shared/error';
-import {
-  MoneyWithConvertedAmount,
-  getConversionCurrency,
-} from '../shared/money-with-converted-amount';
+import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useAuthActions } from '../user/auth';
 import {
   useSetDefaultAccount,
@@ -83,10 +80,7 @@ function TokenAmountDisplay({
     >
       <MoneyWithConvertedAmount
         money={tokenToMoney(claimableToken ?? token)}
-        otherCurrency={getConversionCurrency({
-          money: tokenToMoney(claimableToken ?? token),
-          accountCurrency: receiveAccountCurrency,
-        })}
+        otherCurrency={receiveAccountCurrency}
       />
     </button>
   );

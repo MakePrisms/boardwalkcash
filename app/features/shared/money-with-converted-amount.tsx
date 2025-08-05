@@ -4,72 +4,70 @@ import { useExchangeRate } from '~/hooks/use-exchange-rate';
 import type { Currency, Money } from '~/lib/money';
 import { getDefaultUnit } from './currencies';
 
-/**
- * Helper function to determine what currency to convert to for display.
- * Returns the other currency if conversion should be shown, undefined otherwise.
- * - Always show conversion to default fiat currency from BTC and non-default fiat.
- * - Always show conversion to account currency from non-BTC if account currency is provided.
- * - Don't show conversion for default fiat currency.
- */
-export const getConversionCurrency = ({
-  money,
-  defaultFiatCurrency = 'USD',
-  accountCurrency,
-}: {
-  money: Money;
-  defaultFiatCurrency?: Currency;
-  accountCurrency?: Currency;
-}): Currency | undefined => {
-  // If receiving to an account with different currency, show conversion to account currency
-  if (accountCurrency && accountCurrency !== money.currency) {
-    return accountCurrency;
+const defaultFiatCurrency = 'USD';
+
+const getCurrencyToConvertTo = (money: Money, otherCurrency: Currency) => {
+  if (money.currency !== otherCurrency) {
+    return otherCurrency;
   }
 
-  // Show BTC amounts in default fiat
   if (money.currency === 'BTC') {
     return defaultFiatCurrency;
   }
 
-  // Show non-default fiat amounts in BTC
   if (money.currency !== defaultFiatCurrency) {
     return 'BTC';
   }
 
-  // Don't show conversion for default fiat currency
-  return undefined;
+  return money.currency;
 };
 
+/**
+ * Displays money amount and its amount converted to the other currency.
+ * If other currency is not provided, it will default to USD if money currency is USD, and default to BTC otherwise.
+ * If money currency and other currency are equal (after default logic is applied) and value is:
+ *   a) USD - it will not display the converted amount.
+ *   b) BTC - it will display the converted amount in USD.
+ *   c) other - it will display the converted amount in BTC.
+ */
 export const MoneyWithConvertedAmount = ({
   money,
-  otherCurrency,
+  otherCurrency = money.currency === defaultFiatCurrency
+    ? defaultFiatCurrency
+    : 'BTC',
   variant = 'default',
 }: {
+  /**
+   * Money amount to display.
+   */
   money: Money;
-  variant?: 'default' | 'inline';
+  /**
+   * Currency to convert to. If not provided, it defaults to USD if money currency is USD, and BTC otherwise.
+   */
   otherCurrency?: Currency;
+  /**
+   * Variant to display the money amount and converted amount.
+   */
+  variant?: 'default' | 'inline';
 }) => {
-  const shouldShowConversion =
-    otherCurrency && otherCurrency !== money.currency;
-
+  const currencyToConvertTo = getCurrencyToConvertTo(money, otherCurrency);
   const exchangeRateQuery = useExchangeRate(
-    shouldShowConversion
-      ? `${money.currency}-${otherCurrency}`
-      : `${money.currency}-${money.currency}`,
+    `${money.currency}-${currencyToConvertTo}`,
   );
 
   const unit = getDefaultUnit(money.currency);
 
-  const conversionData = shouldShowConversion
-    ? {
-        rate: exchangeRateQuery.data,
-        error: exchangeRateQuery.error,
-        loading: exchangeRateQuery.isLoading,
-        unit: getDefaultUnit(otherCurrency),
-        convertedMoney: exchangeRateQuery.data
-          ? money.convert(otherCurrency, exchangeRateQuery.data)
-          : null,
-      }
-    : null;
+  const conversionData =
+    money.currency !== currencyToConvertTo
+      ? {
+          rate: exchangeRateQuery.data,
+          loading: exchangeRateQuery.isLoading,
+          unit: getDefaultUnit(currencyToConvertTo),
+          convertedMoney: exchangeRateQuery.data
+            ? money.convert(currencyToConvertTo, exchangeRateQuery.data)
+            : null,
+        }
+      : null;
 
   return variant === 'default' ? (
     <div className="flex min-h-[116px] flex-col items-center">
@@ -77,7 +75,7 @@ export const MoneyWithConvertedAmount = ({
       {conversionData && (
         <>
           {conversionData.loading && <Skeleton className="h-6 w-32" />}
-          {!conversionData.error && conversionData.convertedMoney && (
+          {conversionData.convertedMoney && (
             <MoneyDisplay
               money={conversionData.convertedMoney}
               unit={conversionData.unit}
@@ -95,8 +93,7 @@ export const MoneyWithConvertedAmount = ({
           {conversionData.loading && (
             <Skeleton className="ml-1 inline-block h-4 w-10" />
           )}
-          {!conversionData.error &&
-            conversionData.convertedMoney &&
+          {conversionData.convertedMoney &&
             ` (~${conversionData.convertedMoney.toLocaleString({
               unit: conversionData.unit,
             })})`}
