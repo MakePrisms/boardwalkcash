@@ -8,10 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { getAccountBalance } from '~/features/accounts/account';
 import { useAccounts } from '~/features/accounts/account-hooks';
 import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header';
-import {
-  MoneyWithConvertedAmount,
-  getConversionCurrency,
-} from '~/features/shared/money-with-converted-amount';
+import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useUser } from '~/features/user/user-hooks';
 import type { Currency } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
@@ -35,9 +32,6 @@ function CurrencyAccounts({ currency }: { currency: Currency }) {
               <MoneyWithConvertedAmount
                 money={getAccountBalance(account)}
                 variant="inline"
-                otherCurrency={getConversionCurrency({
-                  money: getAccountBalance(account),
-                })}
               />
             </div>
             {account.isDefault && (

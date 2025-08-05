@@ -10,10 +10,7 @@ import {
 } from '~/components/ui/drawer';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { cn } from '~/lib/utils';
-import {
-  MoneyWithConvertedAmount,
-  getConversionCurrency,
-} from '../shared/money-with-converted-amount';
+import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { type Account, getAccountBalance } from './account';
 import { AccountTypeIcon } from './account-icons';
 
@@ -33,11 +30,7 @@ function AccountItem({ account }: { account: AccountWithBadges }) {
       <div className="flex w-full flex-col justify-between gap-2 text-start">
         <span className="font-medium">{account.name}</span>
         <div className="flex items-center justify-between text-xs">
-          <MoneyWithConvertedAmount
-            money={balance}
-            variant="inline"
-            otherCurrency={getConversionCurrency({ money: balance })}
-          />
+          <MoneyWithConvertedAmount money={balance} variant="inline" />
           {account.badges && (
             <div className="flex gap-2">
               {account.badges.map((badge) => (

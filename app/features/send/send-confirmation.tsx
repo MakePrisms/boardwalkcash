@@ -8,10 +8,7 @@ import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import type { CashuAccount } from '~/features/accounts/account';
-import {
-  MoneyWithConvertedAmount,
-  getConversionCurrency,
-} from '~/features/shared/money-with-converted-amount';
+import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Money } from '~/lib/money';
@@ -69,10 +66,7 @@ const BaseConfirmation = ({
         <PageHeaderTitle>Confirm Payment</PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center gap-4">
-        <MoneyWithConvertedAmount
-          money={amount}
-          otherCurrency={getConversionCurrency({ money: amount })}
-        />
+        <MoneyWithConvertedAmount money={amount} />
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
           <Card className="m-4 w-full">
             <CardContent className="flex flex-col gap-6 pt-6">

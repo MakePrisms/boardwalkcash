@@ -29,10 +29,7 @@ import { LinkWithViewTransition } from '~/lib/transitions';
 import { useAccount } from '../accounts/account-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
-import {
-  MoneyWithConvertedAmount,
-  getConversionCurrency,
-} from '../shared/money-with-converted-amount';
+import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import {
   isTransactionReversable,
   useReverseTransaction,
@@ -238,10 +235,7 @@ export function TransactionDetails({
   return (
     <>
       <PageContent className="flex w-full max-w-md flex-1 flex-col items-center justify-between gap-8">
-        <MoneyWithConvertedAmount
-          money={transaction.amount}
-          otherCurrency={getConversionCurrency({ money: transaction.amount })}
-        />
+        <MoneyWithConvertedAmount money={transaction.amount} />
 
         {/* Details Section */}
         <div className="absolute top-0 right-0 bottom-0 left-0 mx-auto flex max-w-sm items-center justify-center">
