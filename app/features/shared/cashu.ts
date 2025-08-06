@@ -4,10 +4,11 @@ import { mnemonicToSeedSync } from '@scure/bip39';
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
-import { buildMintValidator } from '~/lib/cashu/mint-validation';
+import { buildMintValidator, getCashuWallet } from '~/lib/cashu';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
+import { useCashuAuthStore } from './cashu-auth';
 import { useCryptography } from './cryptography';
 import { useEncryption } from './encryption';
 
@@ -130,3 +131,28 @@ export const cashuMintValidator = buildMintValidator({
   requiredNuts: [4, 5, 7, 8, 9, 10, 11, 12, 17, 20] as const,
   requiredWebSocketCommands: ['bolt11_melt_quote', 'proof_state'] as const,
 });
+
+export function getCashuWalletWithAuth(
+  mintUrl: string,
+  options?: Omit<Parameters<typeof getCashuWallet>[1], 'unit'>,
+) {
+  return getCashuWallet(mintUrl, {
+    getClearAuthToken: async () => {
+      const token = await useCashuAuthStore
+        .getState()
+        .getClearAuthTokenWithRefresh(mintUrl);
+      if (token === null) {
+        throw new Error(
+          `Authentication required for mint ${mintUrl}. Please authenticate when prompted.`,
+        );
+      }
+      return token;
+    },
+    getAndConsumeBlindAuthToken: async () => {
+      return await useCashuAuthStore
+        .getState()
+        .getAndConsumeBlindAuthToken(mintUrl);
+    },
+    ...options,
+  });
+}

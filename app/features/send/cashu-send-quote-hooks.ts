@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
+import { getCashuUnit, sumProofs } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -28,7 +28,7 @@ import {
   type AgicashDbCashuSendQuote,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { getCashuWalletWithAuth, useCashuCryptography } from '../shared/cashu';
 import { DomainError, NotFoundError } from '../shared/error';
 import type { DestinationDetails } from '../transactions/transaction';
 import { useUser } from '../user/user-hooks';
@@ -372,7 +372,7 @@ const checkMeltQuote = async (
   quote: CashuSendQuote,
 ): Promise<MeltQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amountToReceive.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = getCashuWalletWithAuth(account.mintUrl, { unit: cashuUnit });
 
   const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);
 
