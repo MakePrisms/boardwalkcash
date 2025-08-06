@@ -131,106 +131,106 @@ export function TransactionDetails({
   const { type, direction, state, details } = transaction;
   const unit = getDefaultUnit(transaction.amount.currency);
 
-  if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
-    if (state === 'COMPLETED') {
-      const completedDetails =
-        details as CompletedCashuSendQuoteTransactionDetails;
-      console.debug(
-        `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
-        {
-          amountReserved: completedDetails.amountReserved.toLocaleString({
-            unit,
-          }),
-          totalAmount: completedDetails.amountSpent.toLocaleString({ unit }),
-          amountToReceive: completedDetails.amountToReceive.toLocaleString({
-            unit,
-          }),
-          lightningFeeReserve:
-            completedDetails.lightningFeeReserve.toLocaleString({ unit }),
-          cashuSendFee: completedDetails.cashuSendFee.toLocaleString({
-            unit,
-          }),
-          totalFees: completedDetails.totalFees.toLocaleString({ unit }),
-          lightningFee: completedDetails.lightningFee.toLocaleString({
-            unit,
-          }),
-          paymentRequest: completedDetails.paymentRequest,
-          preimage: completedDetails.preimage,
-        },
-      );
-    } else {
-      const incompleteDetails =
-        details as IncompleteCashuSendQuoteTransactionDetails;
-      console.debug(
-        `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
-        {
-          amountReserved: incompleteDetails.amountReserved.toLocaleString({
-            unit,
-          }),
-          amountToReceive: incompleteDetails.amountToReceive.toLocaleString({
-            unit,
-          }),
-          lightningFeeReserve:
-            incompleteDetails.lightningFeeReserve.toLocaleString({ unit }),
-          cashuSendFee: incompleteDetails.cashuSendFee.toLocaleString({
-            unit,
-          }),
-          paymentRequest: incompleteDetails.paymentRequest,
-        },
-      );
-    }
-  }
+  // if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
+  //   if (state === 'COMPLETED') {
+  //     const completedDetails =
+  //       details as CompletedCashuSendQuoteTransactionDetails;
+  //     console.debug(
+  //       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+  //       {
+  //         amountReserved: completedDetails.amountReserved.toLocaleString({
+  //           unit,
+  //         }),
+  //         totalAmount: completedDetails.amountSpent.toLocaleString({ unit }),
+  //         amountToReceive: completedDetails.amountToReceive.toLocaleString({
+  //           unit,
+  //         }),
+  //         lightningFeeReserve:
+  //           completedDetails.lightningFeeReserve.toLocaleString({ unit }),
+  //         cashuSendFee: completedDetails.cashuSendFee.toLocaleString({
+  //           unit,
+  //         }),
+  //         totalFees: completedDetails.totalFees.toLocaleString({ unit }),
+  //         lightningFee: completedDetails.lightningFee.toLocaleString({
+  //           unit,
+  //         }),
+  //         paymentRequest: completedDetails.paymentRequest,
+  //         preimage: completedDetails.preimage,
+  //       },
+  //     );
+  //   } else {
+  //     const incompleteDetails =
+  //       details as IncompleteCashuSendQuoteTransactionDetails;
+  //     console.debug(
+  //       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+  //       {
+  //         amountReserved: incompleteDetails.amountReserved.toLocaleString({
+  //           unit,
+  //         }),
+  //         amountToReceive: incompleteDetails.amountToReceive.toLocaleString({
+  //           unit,
+  //         }),
+  //         lightningFeeReserve:
+  //           incompleteDetails.lightningFeeReserve.toLocaleString({ unit }),
+  //         cashuSendFee: incompleteDetails.cashuSendFee.toLocaleString({
+  //           unit,
+  //         }),
+  //         paymentRequest: incompleteDetails.paymentRequest,
+  //       },
+  //     );
+  //   }
+  // }
 
-  if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
-    const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
-    console.debug(
-      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
-      {
-        amountReceived: receiveDetails.amountReceived.toLocaleString({ unit }),
-        paymentRequest: receiveDetails.paymentRequest,
-        description: receiveDetails.description,
-      },
-    );
-  }
+  // if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
+  //   const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
+  //   console.debug(
+  //     `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+  //     {
+  //       amountReceived: receiveDetails.amountReceived.toLocaleString({ unit }),
+  //       paymentRequest: receiveDetails.paymentRequest,
+  //       description: receiveDetails.description,
+  //     },
+  //   );
+  // }
 
-  if (type === 'CASHU_TOKEN' && direction === 'SEND') {
-    const sendSwapDetails = details as CashuSendSwapTransactionDetails;
-    console.debug(
-      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
-      {
-        amountSpent: sendSwapDetails.amountSpent.toLocaleString({ unit }),
-        amountToReceive: sendSwapDetails.amountToReceive.toLocaleString({
-          unit,
-        }),
-        cashuSendFee: sendSwapDetails.cashuSendFee.toLocaleString({
-          unit,
-        }),
-        cashuReceiveFee: sendSwapDetails.cashuReceiveFee.toLocaleString({
-          unit,
-        }),
-        totalFees: sendSwapDetails.totalFees.toLocaleString({ unit }),
-      },
-    );
-  }
+  // if (type === 'CASHU_TOKEN' && direction === 'SEND') {
+  //   const sendSwapDetails = details as CashuSendSwapTransactionDetails;
+  //   console.debug(
+  //     `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+  //     {
+  //       amountSpent: sendSwapDetails.amountSpent.toLocaleString({ unit }),
+  //       amountToReceive: sendSwapDetails.amountToReceive.toLocaleString({
+  //         unit,
+  //       }),
+  //       cashuSendFee: sendSwapDetails.cashuSendFee.toLocaleString({
+  //         unit,
+  //       }),
+  //       cashuReceiveFee: sendSwapDetails.cashuReceiveFee.toLocaleString({
+  //         unit,
+  //       }),
+  //       totalFees: sendSwapDetails.totalFees.toLocaleString({ unit }),
+  //     },
+  //   );
+  // }
 
-  if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
-    const receiveSwapDetails = details as CashuReceiveSwapTransactionDetails;
-    console.debug(
-      `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
-      {
-        amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
-          unit,
-        }),
-        // NOTE: these should never be undefined, but there's a bug we need to fix
-        // see https://github.com/MakePrisms/boardwalkcash/pull/541
-        tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
-        cashuReceiveFee: receiveSwapDetails.cashuReceiveFee?.toLocaleString({
-          unit,
-        }),
-        totalFees: receiveSwapDetails.totalFees?.toLocaleString({ unit }),
-      },
-    );
-  }
+  // if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
+  //   const receiveSwapDetails = details as CashuReceiveSwapTransactionDetails;
+  //   console.debug(
+  //     `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
+  //     {
+  //       amountReceived: receiveSwapDetails.amountReceived.toLocaleString({
+  //         unit,
+  //       }),
+  //       // NOTE: these should never be undefined, but there's a bug we need to fix
+  //       // see https://github.com/MakePrisms/boardwalkcash/pull/541
+  //       tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
+  //       cashuReceiveFee: receiveSwapDetails.cashuReceiveFee?.toLocaleString({
+  //         unit,
+  //       }),
+  //       totalFees: receiveSwapDetails.totalFees?.toLocaleString({ unit }),
+  //     },
+  //   );
+  // }
 
   return (
     <>

@@ -6,7 +6,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -28,6 +28,7 @@ import {
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountSelector } from '../accounts/account-selector';
 import { tokenToMoney } from '../shared/cashu';
+import { useCashuAuthStore } from '../shared/cashu-auth';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
 import { useAuthActions } from '../user/auth';
@@ -108,14 +109,21 @@ export default function ReceiveToken({
   preferredReceiveAccountId,
 }: Props) {
   const { toast } = useToast();
-  const navigate = useNavigateWithViewTransition();
+  const navigateWithViewTransition = useNavigateWithViewTransition();
+  const navigate = useNavigate();
+  const location = useLocation();
   const defaultAccount = useDefaultAccount();
   const setDefaultAccount = useSetDefaultAccount();
   const setDefaultCurrency = useSetDefaultCurrency();
-  const { claimableToken, cannotClaimReason } =
-    useCashuTokenWithClaimableProofs({
-      token,
-    });
+  const { setPendingAuthRequest } = useCashuAuthStore();
+  const {
+    claimableToken,
+    cannotClaimReason,
+    requiresAuthToSwap,
+    requiresAuthToMelt,
+  } = useCashuTokenWithClaimableProofs({
+    token,
+  });
   const {
     selectableAccounts,
     receiveAccount,
@@ -128,7 +136,7 @@ export default function ReceiveToken({
   const isReceiveAccountAdded = receiveAccount.id !== '';
 
   const onTransactionCreated = (transactionId: string) => {
-    navigate(`/transactions/${transactionId}?redirectTo=/`, {
+    navigateWithViewTransition(`/transactions/${transactionId}?redirectTo=/`, {
       transition: 'slideLeft',
       applyTo: 'newView',
     });
@@ -153,6 +161,44 @@ export default function ReceiveToken({
         isAutoClaim && sourceAccount?.selectable
           ? sourceAccount
           : receiveAccount;
+
+      // User is trying to swap this token and auth is required to do so
+      if (!requiresAuthToSwap && preferredAccount.id === sourceAccount?.id) {
+        // Set query params for when we get redirected after authentication
+        navigate(
+          {
+            ...location,
+            search: `autoClaim=true&selectedAccountId=${preferredAccount.id}`,
+          },
+          { replace: true }, // but don't reload the page
+        );
+
+        // then prompt the user to authenticate
+        setPendingAuthRequest({
+          mintUrl: token.mint,
+          message: 'Authentication is required to claim to this same mint.',
+        });
+        return;
+      }
+
+      // User is trying to melt this token and auth is required to do so
+      if (!requiresAuthToMelt && preferredAccount.id !== sourceAccount?.id) {
+        // Set query params for when we get redirected after authentication
+        navigate(
+          {
+            ...location,
+            search: `autoClaim=true&selectedAccountId=${preferredAccount.id}`,
+          },
+          { replace: true }, // but don't reload the page
+        );
+
+        // then prompt the user to authenticate
+        setPendingAuthRequest({
+          mintUrl: token.mint,
+          message: 'Authentication is required to claim to a different mint.',
+        });
+        return;
+      }
 
       // Use the preferred account if it exists, otherwise create it
       let account = preferredAccount;
@@ -179,7 +225,10 @@ export default function ReceiveToken({
 
       return { account, isAutoClaim };
     },
-    onSuccess: async ({ account, isAutoClaim }) => {
+    onSuccess: async (result) => {
+      if (!result) return; // Auth was required, no claiming happened
+
+      const { account, isAutoClaim } = result;
       // Only set defaults for auto claim and if the account is different from current default
       if (isAutoClaim && account.id !== defaultAccount.id) {
         try {
