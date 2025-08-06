@@ -70,10 +70,8 @@ const useRefreshMintAuthentication = () => {
     async (mintUrl: string) => {
       try {
         const redirectUri = `${origin}/oidc-callback`;
-        sessionStorage.setItem(
-          'oidc_return_to',
-          location.pathname + location.search + location.hash,
-        );
+        const returnTo = sessionStorage.getItem('oidc_return_to') ?? location.pathname + location.search + location.hash;
+        sessionStorage.setItem('oidc_return_to', returnTo);
 
         await startAuth(mintUrl, redirectUri);
       } catch (error) {

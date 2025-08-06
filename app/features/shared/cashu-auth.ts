@@ -208,7 +208,7 @@ export const useCashuAuthStore = create<CashuAuthStore>()(
             setPendingAuthRequest({
               mintUrl,
               message:
-                'This was set when calling getClearAuthTokenWithRefresh, can we hide it?',
+                'You need to authenticate to use this mint.',
             });
             return null;
           }
