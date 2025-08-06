@@ -31,7 +31,7 @@ const currencies = [
   { value: 'USD', label: 'USD' },
 ];
 
-const validateMint = async (
+const _validateMint = async (
   value: string,
   formValues: FormValues,
 ): Promise<string | true> => {
@@ -46,7 +46,7 @@ export function AddMintForm() {
   const navigate = useNavigate();
   const defaultCurrency = useUser((u) => u.defaultCurrency);
   const { origin } = useLocationData();
-  const { checkAuthRequired, startAuth } = useCashuAuthStore();
+  const { checkAuthRequired } = useCashuAuthStore();
   const {
     register,
     handleSubmit,
@@ -108,29 +108,33 @@ export function AddMintForm() {
   }, [searchParams, setValue, setSearchParams, addAccount, toast, navigate]);
 
   const onSubmit = async (data: FormValues) => {
+     // Encode form data in the return URL
+     const params = new URLSearchParams({
+      name: data.name,
+      currency: data.currency,
+      mintUrl: data.mintUrl,
+    });
+    const returnToUrl = `/settings/accounts/create/cashu?${params.toString()}`;
+
+    // Store return URL temporarily in sessionStorage
+    sessionStorage.setItem('oidc_return_to', returnToUrl);
+    
     try {
       // Check if mint requires NUT-21 authentication
       const authResult = await checkAuthRequired(data.mintUrl);
       console.log('authResult', authResult);
 
+      //  TODO: checkAuthRequired already starts auth, but we should be able to do it here.
       if (authResult.requiresClearAuth) {
-        // Encode form data in the return URL
-        const params = new URLSearchParams({
-          name: data.name,
-          currency: data.currency,
-          mintUrl: data.mintUrl,
-        });
-        const returnToUrl = `/settings/accounts/create/cashu?${params.toString()}`;
-
-        // Store return URL temporarily in sessionStorage
-        sessionStorage.setItem('oidc_return_to', returnToUrl);
-
-        const redirectUri = `${origin}/oidc-callback`;
+        const _redirectUri = `${origin}/oidc-callback`;
 
         // This will redirect the user to login with the mint, then to /oidc-callback, and finally back here
-        await startAuth(data.mintUrl, redirectUri);
+        // await startAuth(data.mintUrl, redirectUri);
         return;
       }
+
+      // Clear return to url if not doing oidc flow
+      sessionStorage.removeItem('oidc_return_to');
 
       // No authentication required or already authenticated
       await addAccount({
@@ -237,7 +241,7 @@ export function AddMintForm() {
           placeholder="Mint URL (https://...)"
           {...register('mintUrl', {
             required: 'Mint URL is required',
-            validate: validateMint,
+            // validate: validateMint,
           })}
         />
         {errors.mintUrl && (
