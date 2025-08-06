@@ -47,7 +47,7 @@ export function AddContactDrawer() {
           <Plus className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="h-[75dvh] pb-14 font-primary">
+      <DrawerContent className="h-[75vh] pb-14 font-primary">
         <DrawerHeader className="space-y-2">
           <DrawerTitle className="text-center">Add Contact</DrawerTitle>
         </DrawerHeader>
