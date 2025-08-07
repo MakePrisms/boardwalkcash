@@ -11,8 +11,8 @@ import {
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type {
-  CashuReceiveQuoteTransactionDetails,
-  CashuReceiveSwapTransactionDetails,
+  CashuLightningReceiveTransactionDetails,
+  CashuTokenReceiveTransactionDetails,
 } from '../transactions/transaction';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 
@@ -116,8 +116,8 @@ export class CashuReceiveQuoteRepository {
     const unit = getDefaultUnit(amount.currency);
 
     let details:
-      | CashuReceiveQuoteTransactionDetails
-      | CashuReceiveSwapTransactionDetails;
+      | CashuLightningReceiveTransactionDetails
+      | CashuTokenReceiveTransactionDetails;
 
     if (receiveType === 'TOKEN') {
       const { cashuReceiveFee, tokenAmount } = params;
@@ -133,13 +133,13 @@ export class CashuReceiveQuoteRepository {
         tokenAmount,
         cashuReceiveFee: cashuReceiveFeeMoney,
         totalFees: cashuReceiveFeeMoney,
-      } satisfies CashuReceiveSwapTransactionDetails;
+      } satisfies CashuTokenReceiveTransactionDetails;
     } else {
       details = {
         amountReceived: amount,
         paymentRequest,
         description,
-      } satisfies CashuReceiveQuoteTransactionDetails;
+      } satisfies CashuLightningReceiveTransactionDetails;
     }
 
     const encryptedTransactionDetails = await this.encryption.encrypt(details);

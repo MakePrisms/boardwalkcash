@@ -30,6 +30,7 @@ import {
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { DomainError, NotFoundError } from '../shared/error';
+import type { DestinationDetails } from '../transactions/transaction';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
@@ -150,12 +151,18 @@ export function useInitiateCashuSendQuote({
     mutationFn: async ({
       accountId,
       sendQuote,
-    }: { accountId: string; sendQuote: SendQuoteRequest }) => {
+      destinationDetails,
+    }: {
+      accountId: string;
+      sendQuote: SendQuoteRequest;
+      destinationDetails?: DestinationDetails;
+    }) => {
       const account = await getCashuAccount(accountId);
       return cashuSendQuoteService.createSendQuote({
         userId,
         account,
         sendQuote,
+        destinationDetails,
       });
     },
     onSuccess: (data) => {

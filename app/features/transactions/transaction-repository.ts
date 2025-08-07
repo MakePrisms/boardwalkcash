@@ -6,11 +6,11 @@ import {
 } from '../agicash-db/database';
 import { useEncryption } from '../shared/encryption';
 import type {
-  CashuReceiveQuoteTransactionDetails,
-  CashuReceiveSwapTransactionDetails,
-  CashuSendSwapTransactionDetails,
-  CompletedCashuSendQuoteTransactionDetails,
-  IncompleteCashuSendQuoteTransactionDetails,
+  CashuLightningReceiveTransactionDetails,
+  CashuTokenReceiveTransactionDetails,
+  CashuTokenSendTransactionDetails,
+  CompletedCashuLightningSendTransactionDetails,
+  IncompleteCashuLightningSendTransactionDetails,
   Transaction,
 } from './transaction';
 
@@ -36,11 +36,11 @@ type ListOptions = Options & {
 };
 
 type UnifiedTransactionDetails =
-  | CashuReceiveSwapTransactionDetails
-  | CashuSendSwapTransactionDetails
-  | CashuReceiveQuoteTransactionDetails
-  | IncompleteCashuSendQuoteTransactionDetails
-  | CompletedCashuSendQuoteTransactionDetails;
+  | CashuTokenReceiveTransactionDetails
+  | CashuTokenSendTransactionDetails
+  | CashuLightningReceiveTransactionDetails
+  | IncompleteCashuLightningSendTransactionDetails
+  | CompletedCashuLightningSendTransactionDetails;
 
 export class TransactionRepository {
   constructor(
@@ -141,14 +141,14 @@ export class TransactionRepository {
     if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
       if (state === 'COMPLETED') {
         const completedDetails =
-          details as CompletedCashuSendQuoteTransactionDetails;
+          details as CompletedCashuLightningSendTransactionDetails;
         return createTransaction(
           completedDetails.amountSpent,
           completedDetails,
         );
       }
       const incompleteDetails =
-        details as IncompleteCashuSendQuoteTransactionDetails;
+        details as IncompleteCashuLightningSendTransactionDetails;
       return createTransaction(
         incompleteDetails.amountReserved,
         incompleteDetails,
@@ -156,17 +156,17 @@ export class TransactionRepository {
     }
 
     if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
-      const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
+      const receiveDetails = details as CashuLightningReceiveTransactionDetails;
       return createTransaction(receiveDetails.amountReceived, receiveDetails);
     }
 
     if (type === 'CASHU_TOKEN' && direction === 'SEND') {
-      const sendDetails = details as CashuSendSwapTransactionDetails;
+      const sendDetails = details as CashuTokenSendTransactionDetails;
       return createTransaction(sendDetails.amountSpent, sendDetails);
     }
 
     if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
-      const receiveDetails = details as CashuReceiveSwapTransactionDetails;
+      const receiveDetails = details as CashuTokenReceiveTransactionDetails;
       return createTransaction(receiveDetails.amountReceived, receiveDetails);
     }
 

@@ -8,7 +8,7 @@ import {
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
-import type { CashuSendSwapTransactionDetails } from '../transactions/transaction';
+import type { CashuTokenSendTransactionDetails } from '../transactions/transaction';
 import type { CashuSendSwap } from './cashu-send-swap';
 
 type Options = {
@@ -116,7 +116,7 @@ export class CashuSendSwapRepository {
   ) {
     const unit = getDefaultUnit(amountToSend.currency);
 
-    const details: CashuSendSwapTransactionDetails = {
+    const details: CashuTokenSendTransactionDetails = {
       amountSpent: totalAmount,
       cashuSendFee: cashuSendFee,
       cashuReceiveFee: cashuReceiveFee,

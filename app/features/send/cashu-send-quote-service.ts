@@ -11,6 +11,7 @@ import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
+import type { DestinationDetails } from '../transactions/transaction';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
   type CashuSendQuoteRepository,
@@ -203,6 +204,7 @@ export class CashuSendQuoteService {
     userId,
     account,
     sendQuote,
+    destinationDetails,
   }: {
     /**
      * ID of the sender.
@@ -216,6 +218,11 @@ export class CashuSendQuoteService {
      * The send quote to create.
      */
     sendQuote: SendQuoteRequest;
+    /**
+     * The destination details of the send, like the contact ID or lightning address used to fetch the payment request.
+     * This will be undefined if the send is directly paying a bolt11.
+     */
+    destinationDetails?: DestinationDetails;
   }) {
     const meltQuote = sendQuote.meltQuote;
     const expiresAt = new Date(meltQuote.expiry * 1000);
@@ -294,6 +301,7 @@ export class CashuSendQuoteService {
       proofsToSend: proofs.send,
       accountVersion: account.version,
       proofsToKeep: proofs.keep,
+      destinationDetails,
     });
   }
 
