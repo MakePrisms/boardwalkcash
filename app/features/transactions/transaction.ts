@@ -48,6 +48,21 @@ export type CashuReceiveSwapTransactionDetails = {
   totalFees: Money;
 };
 
+/**
+ * Additional details of the transaction.
+ */
+export type CashuSendQuoteDestinationDetails =
+  | {
+      sendType: 'AGICASH_CONTACT';
+      /** The ID of the contact that the invoice was fetched from. */
+      contactId: string;
+    }
+  | {
+      sendType: 'LN_ADDRESS';
+      /** The lightning address that the invoice was fetched from. */
+      lnAddress: string;
+    };
+
 type BaseCashuSendQuoteTransactionDetails = {
   /**
    * The sum of all proofs used as inputs to the cashu melt operation
@@ -79,6 +94,12 @@ type BaseCashuSendQuoteTransactionDetails = {
    * The bolt11 payment request.
    */
   paymentRequest: string;
+  /**
+   * Additional details of the transaction.
+   *
+   * This will be undefined if the send is directly paying a bolt11.
+   */
+  destinationDetails?: CashuSendQuoteDestinationDetails;
 };
 
 /**

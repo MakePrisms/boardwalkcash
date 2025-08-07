@@ -4,14 +4,18 @@ import { Money } from '~/lib/money';
 import {
   type AgicashDb,
   type AgicashDbCashuSendQuote,
+  type AgicashDbTransaction,
   agicashDb,
 } from '../agicash-db/database';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type {
+  CashuSendQuoteDestinationDetails,
   CompletedCashuSendQuoteTransactionDetails,
   IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
 } from '../transactions/transaction';
+import { TransactionRepository } from '../transactions/transaction-repository';
 import type { CashuSendQuote } from './cashu-send-quote';
 
 type Options = {
@@ -88,12 +92,17 @@ type CreateSendQuote = {
    * Proofs to keep in the account after the send.
    */
   proofsToKeep: Proof[];
+  /**
+   * Destination details of the send. This will be undefined if the send is directly paying a bolt11.
+   */
+  destinationDetails?: CashuSendQuoteDestinationDetails;
 };
 
 export class CashuSendQuoteRepository {
   constructor(
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
+    private readonly transactionRepository: TransactionRepository,
   ) {}
 
   /**
@@ -118,6 +127,7 @@ export class CashuSendQuoteRepository {
       proofsToSend,
       accountVersion,
       proofsToKeep,
+      destinationDetails,
     }: CreateSendQuote,
     options?: Options,
   ): Promise<CashuSendQuote> {
@@ -133,6 +143,7 @@ export class CashuSendQuoteRepository {
         unit,
       }),
       paymentRequest,
+      destinationDetails,
     };
 
     const [
@@ -180,8 +191,9 @@ export class CashuSendQuoteRepository {
       });
     }
 
-    return CashuSendQuoteRepository.toSend(
+    return this.toSend(
       data.created_quote,
+      data.transaction,
       this.encryption.decrypt,
     );
   }
@@ -228,15 +240,7 @@ export class CashuSendQuoteRepository {
 
     const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
       {
-        amountReserved: new Money({
-          amount: sumProofs(quote.proofs),
-          currency: quote.amountToReceive.currency,
-          unit: getDefaultUnit(quote.amountToReceive.currency),
-        }),
-        lightningFeeReserve: quote.lightningFeeReserve,
-        cashuSendFee: quote.cashuFee,
-        amountToReceive: quote.amountToReceive,
-        paymentRequest: quote.paymentRequest,
+        ...quote.transaction.details,
         preimage: paymentPreimage,
         amountSpent,
         lightningFee: actualLightningFee,
@@ -273,8 +277,9 @@ export class CashuSendQuoteRepository {
       });
     }
 
-    return CashuSendQuoteRepository.toSend(
+    return this.toSend(
       data.updated_quote,
+      data.updated_transaction,
       this.encryption.decrypt,
     );
   }
@@ -403,7 +408,10 @@ export class CashuSendQuoteRepository {
       .from('cashu_send_quotes')
       .update({ state: 'PENDING', version: version + 1 })
       .match({ id, version })
-      .select();
+      .select(`
+        *,
+        transaction:transactions(*)
+      `);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -421,7 +429,7 @@ export class CashuSendQuoteRepository {
       );
     }
 
-    return CashuSendQuoteRepository.toSend(data, this.encryption.decrypt);
+    return this.toSend(data, data.transaction, this.encryption.decrypt);
   }
 
   /**
@@ -430,7 +438,13 @@ export class CashuSendQuoteRepository {
    * @returns The cashu send quote.
    */
   async get(id: string, options?: Options): Promise<CashuSendQuote | null> {
-    const query = this.db.from('cashu_send_quotes').select().eq('id', id);
+    const query = this.db
+      .from('cashu_send_quotes')
+      .select(`
+        *,
+        transaction:transactions(*)
+      `)
+      .eq('id', id);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -443,7 +457,7 @@ export class CashuSendQuoteRepository {
     }
 
     return data
-      ? CashuSendQuoteRepository.toSend(data, this.encryption.decrypt)
+      ? this.toSend(data, data.transaction, this.encryption.decrypt)
       : null;
   }
 
@@ -458,7 +472,10 @@ export class CashuSendQuoteRepository {
   ): Promise<CashuSendQuote[]> {
     const query = this.db
       .from('cashu_send_quotes')
-      .select()
+      .select(`
+        *,
+        transaction:transactions(*)
+      `)
       .eq('user_id', userId)
       .in('state', ['UNPAID', 'PENDING']);
 
@@ -476,20 +493,24 @@ export class CashuSendQuoteRepository {
 
     return await Promise.all(
       data.map(
-        async (data) =>
-          await CashuSendQuoteRepository.toSend(data, this.encryption.decrypt),
+        async (item) =>
+          await this.toSend(item, item.transaction, this.encryption.decrypt),
       ),
     );
   }
 
-  static async toSend(
+  async toSend(
     data: AgicashDbCashuSendQuote,
+    transactionData: AgicashDbTransaction,
     decryptData: Encryption['decrypt'],
   ): Promise<CashuSendQuote> {
     const decryptedData = {
       ...data,
       proofs: await decryptData<Proof[]>(data.proofs),
     };
+
+    const transaction =
+      await this.transactionRepository.toTransaction(transactionData);
 
     const commonData = {
       id: decryptedData.id,
@@ -538,6 +559,9 @@ export class CashuSendQuoteRepository {
           currency: decryptedData.currency,
           unit: decryptedData.unit,
         }),
+        transaction: transaction as Transaction & {
+          details: CompletedCashuSendQuoteTransactionDetails;
+        },
       };
     }
 
@@ -546,6 +570,9 @@ export class CashuSendQuoteRepository {
         ...commonData,
         state: 'FAILED',
         failureReason: decryptedData.failure_reason ?? '',
+        transaction: transaction as Transaction & {
+          details: IncompleteCashuSendQuoteTransactionDetails;
+        },
       };
     }
 
@@ -557,6 +584,9 @@ export class CashuSendQuoteRepository {
       return {
         ...commonData,
         state: decryptedData.state,
+        transaction: transaction as Transaction & {
+          details: IncompleteCashuSendQuoteTransactionDetails;
+        },
       };
     }
 
@@ -566,5 +596,13 @@ export class CashuSendQuoteRepository {
 
 export function useCashuSendQuoteRepository() {
   const encryption = useEncryption();
-  return new CashuSendQuoteRepository(agicashDb, encryption);
+  const transactionRepository = new TransactionRepository(
+    agicashDb,
+    encryption,
+  );
+  return new CashuSendQuoteRepository(
+    agicashDb,
+    encryption,
+    transactionRepository,
+  );
 }

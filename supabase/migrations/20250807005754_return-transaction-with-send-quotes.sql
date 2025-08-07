@@ -27,6 +27,7 @@ declare
     v_updated_account wallet.accounts;
     v_updated_counter integer;
     v_transaction_id uuid;
+    v_transaction wallet.transactions;
 begin
     -- calculate new counter value
     v_updated_counter := p_keyset_counter + p_number_of_change_outputs;
@@ -48,7 +49,9 @@ begin
         'PENDING',
         p_currency,
         p_encrypted_transaction_details
-    ) returning id into v_transaction_id;
+    ) returning * into v_transaction;
+
+    v_transaction_id := v_transaction.id;
 
     -- insert the new cashu send quote
     insert into wallet.cashu_send_quotes (
@@ -110,7 +113,7 @@ begin
         raise exception 'Concurrency error: Account % was modified by another transaction. Expected version %, but found different one.', v_created_quote.account_id, p_account_version;
     end if;
 
-    return (v_created_quote, v_updated_account);
+    return (v_created_quote, v_updated_account, v_transaction);
 end;
 $function$;
 
@@ -129,6 +132,7 @@ declare
     v_updated_quote wallet.cashu_send_quotes;
     v_updated_account wallet.accounts;
     v_quote wallet.cashu_send_quotes;
+    v_updated_transaction wallet.transactions;
 begin
     -- Get the quote and check if it exists and its state
     select * into v_quote
@@ -177,9 +181,10 @@ begin
     set state = 'COMPLETED',
         completed_at = now(),
         encrypted_transaction_details = p_encrypted_transaction_details
-    where id = v_quote.transaction_id;
+    where id = v_quote.transaction_id
+    returning * into v_updated_transaction;
 
-    return (v_updated_quote, v_updated_account);
+    return (v_updated_quote, v_updated_account, v_updated_transaction);
 end;
 $function$;
 
