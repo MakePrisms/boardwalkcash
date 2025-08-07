@@ -2,5 +2,6 @@
   "framework": "react-router",
   "installCommand": "bun install",
   "buildCommand": "bun run build",
-  "outputDirectory": "build"
+  "outputDirectory": "build",
+  "ignoreCommand": "bash ./tools/vercel/ignore-build.sh"
 }
