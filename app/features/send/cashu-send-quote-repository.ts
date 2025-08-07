@@ -9,9 +9,14 @@ import {
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type {
+  CashuSendQuoteDestinationDetails,
   CompletedCashuSendQuoteTransactionDetails,
   IncompleteCashuSendQuoteTransactionDetails,
 } from '../transactions/transaction';
+import {
+  type TransactionRepository,
+  useTransactionRepository,
+} from '../transactions/transaction-repository';
 import type { CashuSendQuote } from './cashu-send-quote';
 
 type Options = {
@@ -88,12 +93,17 @@ type CreateSendQuote = {
    * Proofs to keep in the account after the send.
    */
   proofsToKeep: Proof[];
+  /**
+   * Destination details of the send. This will be undefined if the send is directly paying a bolt11.
+   */
+  destinationDetails?: CashuSendQuoteDestinationDetails;
 };
 
 export class CashuSendQuoteRepository {
   constructor(
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
+    private readonly transactionRepository: TransactionRepository,
   ) {}
 
   /**
@@ -118,6 +128,7 @@ export class CashuSendQuoteRepository {
       proofsToSend,
       accountVersion,
       proofsToKeep,
+      destinationDetails,
     }: CreateSendQuote,
     options?: Options,
   ): Promise<CashuSendQuote> {
@@ -133,6 +144,7 @@ export class CashuSendQuoteRepository {
         unit,
       }),
       paymentRequest,
+      destinationDetails,
     };
 
     const [
@@ -226,17 +238,22 @@ export class CashuSendQuoteRepository {
 
     const totalFees = actualLightningFee.add(quote.cashuFee);
 
+    const transaction = await this.transactionRepository.get(
+      quote.transactionId,
+    );
+
+    if (
+      !transaction ||
+      transaction.type !== 'CASHU_LIGHTNING' ||
+      transaction.direction !== 'SEND' ||
+      transaction.state !== 'PENDING'
+    ) {
+      throw new Error('Transaction not found.');
+    }
+
     const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
       {
-        amountReserved: new Money({
-          amount: sumProofs(quote.proofs),
-          currency: quote.amountToReceive.currency,
-          unit: getDefaultUnit(quote.amountToReceive.currency),
-        }),
-        lightningFeeReserve: quote.lightningFeeReserve,
-        cashuSendFee: quote.cashuFee,
-        amountToReceive: quote.amountToReceive,
-        paymentRequest: quote.paymentRequest,
+        ...transaction.details,
         preimage: paymentPreimage,
         amountSpent,
         lightningFee: actualLightningFee,
@@ -566,5 +583,10 @@ export class CashuSendQuoteRepository {
 
 export function useCashuSendQuoteRepository() {
   const encryption = useEncryption();
-  return new CashuSendQuoteRepository(agicashDb, encryption);
+  const transactionRepository = useTransactionRepository();
+  return new CashuSendQuoteRepository(
+    agicashDb,
+    encryption,
+    transactionRepository,
+  );
 }

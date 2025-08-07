@@ -109,14 +109,9 @@ type State = {
    */
   sendType: SendType;
   /**
-   * Stores the actual payment destination.
+   * Stores the actual payment destination value. E.g. bolt11 invoice.
    */
   destination: string | null;
-  /**
-   * Stores the alias of the destination. When getting the quote, alias is used to get the actual destination.
-   * Example of this is lud 16 ln address which is just the alias for bolt 11 invoice.
-   */
-  destinationAlias: string | null;
   /**
    * Stores the value that we want to display for the destination.
    * E.g. for agicash contact it's the username, for ln address it's the ln address, etc.
@@ -129,13 +124,37 @@ type State = {
        * Quote to generate a cashu token to send.
        */
       quote: CashuSwapQuote | null;
+      destinationDetails?: null;
     }
   | {
-      sendType: 'BOLT11_INVOICE' | 'LN_ADDRESS' | 'AGICASH_CONTACT';
+      sendType: 'BOLT11_INVOICE';
       /**
        * Quote to make a lightning payment.
        */
       quote: CashuLightningQuote | null;
+      destinationDetails?: null;
+    }
+  | {
+      sendType: 'LN_ADDRESS';
+      /**
+       * Quote to make a lightning payment.
+       */
+      quote: CashuLightningQuote | null;
+      /**
+       * Stores the additional details about the destination.
+       */
+      destinationDetails: { lnAddress: string };
+    }
+  | {
+      sendType: 'AGICASH_CONTACT';
+      /**
+       * Quote to make a lightning payment.
+       */
+      quote: CashuLightningQuote | null;
+      /**
+       * Stores the additional details about the destination.
+       */
+      destinationDetails: Contact;
     }
 );
 
@@ -203,7 +222,6 @@ export const createSendStore = ({
       accountId: initialAccount.id,
       sendType: 'CASHU_TOKEN',
       destination: null,
-      destinationAlias: null,
       destinationDisplay: null,
       quote: null,
       cashuToken: null,
@@ -222,8 +240,8 @@ export const createSendStore = ({
       clearDestination: () =>
         set({
           destination: null,
-          destinationAlias: null,
           destinationDisplay: null,
+          destinationDetails: null,
           sendType: 'CASHU_TOKEN',
         }),
 
@@ -231,8 +249,8 @@ export const createSendStore = ({
         if (isContact(destination)) {
           set({
             sendType: 'AGICASH_CONTACT',
-            destinationAlias: destination.lud16,
             destinationDisplay: destination.username,
+            destinationDetails: destination,
           });
 
           return {
@@ -253,8 +271,8 @@ export const createSendStore = ({
 
           set({
             sendType: 'LN_ADDRESS',
-            destinationAlias: destination,
             destinationDisplay: destination,
+            destinationDetails: { lnAddress: destination },
           });
 
           return {
@@ -300,7 +318,7 @@ export const createSendStore = ({
 
       getQuote: async (amount, convertedAmount) => {
         const amounts = [amount, convertedAmount].filter((x) => !!x);
-        const { sendType, accountId } = get();
+        const { sendType, accountId, destinationDetails } = get();
         const account = await getLatestAccount(accountId);
         const amountToSend = pickAmountByCurrency(amounts, account.currency);
 
@@ -325,8 +343,11 @@ export const createSendStore = ({
           }
         }
 
-        if (['LN_ADDRESS', 'AGICASH_CONTACT'].includes(sendType)) {
-          const lnAddress = getOrThrow('destinationAlias');
+        if (sendType === 'LN_ADDRESS' || sendType === 'AGICASH_CONTACT') {
+          const lnAddress =
+            sendType === 'LN_ADDRESS'
+              ? destinationDetails.lnAddress
+              : destinationDetails.lud16;
 
           const amountInBtc = pickAmountByCurrency(amounts, 'BTC');
           try {

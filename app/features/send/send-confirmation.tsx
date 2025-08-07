@@ -8,7 +8,9 @@ import { PageContent } from '~/components/page';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import type { CashuAccount } from '~/features/accounts/account';
+import type { CashuLightningQuote } from '~/features/send/cashu-send-quote-service';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
+import type { CashuSendQuoteDestinationDetails } from '~/features/transactions/transaction';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Money } from '~/lib/money';
@@ -19,17 +21,9 @@ import {
   useInitiateCashuSendQuote,
   useTrackCashuSendQuote,
 } from './cashu-send-quote-hooks';
-import type { CashuLightningQuote } from './cashu-send-quote-service';
 import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
 import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
-
-const formatDestination = (destination: string) => {
-  if (destination && destination.length > 20) {
-    return `${destination.slice(0, 5)}...${destination.slice(-5)}`;
-  }
-  return destination;
-};
 
 const ConfirmationRow = ({
   label,
@@ -94,12 +88,13 @@ const BaseConfirmation = ({
 };
 
 type PayBolt11ConfirmationProps = {
-  /** The bolt11 invoice to pay */
-  destination: string;
   /** The account to send from */
   account: CashuAccount;
+  /** The bolt11 invoice to pay */
+  destination: string;
   /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
   destinationDisplay: string;
+  destinationDetails?: CashuSendQuoteDestinationDetails;
   /** The quote to display in the UI. */
   quote: CashuLightningQuote;
 };
@@ -116,6 +111,7 @@ export const PayBolt11Confirmation = ({
   quote: bolt11Quote,
   destination,
   destinationDisplay,
+  destinationDetails,
 }: PayBolt11ConfirmationProps) => {
   const { toast } = useToast();
   const navigate = useNavigateWithViewTransition();
@@ -156,12 +152,15 @@ export const PayBolt11Confirmation = ({
   });
 
   const handleConfirm = () =>
-    initiateSend({ accountId: account.id, sendQuote: bolt11Quote });
+    initiateSend({
+      accountId: account.id,
+      sendQuote: bolt11Quote,
+      destinationDetails,
+    });
 
   const paymentInProgress =
     ['LOADING', 'UNPAID', 'PENDING'].includes(quoteStatus) ||
     isCreatingSendQuote;
-
   const { description } = decodeBolt11(destination);
 
   return (
@@ -192,7 +191,7 @@ export const PayBolt11Confirmation = ({
           ),
         },
         { label: 'From', value: account.name },
-        { label: 'Paying', value: formatDestination(destinationDisplay) },
+        { label: 'Paying', value: destinationDisplay },
       ].map((row) => (
         <ConfirmationRow key={row.label} label={row.label} value={row.value} />
       ))}
