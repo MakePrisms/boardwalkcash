@@ -28,14 +28,11 @@ import {
   type AgicashDbCashuSendQuote,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
 import { DomainError, NotFoundError } from '../shared/error';
+import type { CashuSendQuoteDestinationDetails } from '../transactions/transaction';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendQuote } from './cashu-send-quote';
-import {
-  CashuSendQuoteRepository,
-  useCashuSendQuoteRepository,
-} from './cashu-send-quote-repository';
+import { useCashuSendQuoteRepository } from './cashu-send-quote-repository';
 import {
   type SendQuoteRequest,
   useCashuSendQuoteService,
@@ -150,12 +147,18 @@ export function useInitiateCashuSendQuote({
     mutationFn: async ({
       accountId,
       sendQuote,
-    }: { accountId: string; sendQuote: SendQuoteRequest }) => {
+      destinationDetails,
+    }: {
+      accountId: string;
+      sendQuote: SendQuoteRequest;
+      destinationDetails?: CashuSendQuoteDestinationDetails;
+    }) => {
       const account = await getCashuAccount(accountId);
       return cashuSendQuoteService.createSendQuote({
         userId,
         account,
         sendQuote,
+        destinationDetails,
       });
     },
     onSuccess: (data) => {
@@ -278,7 +281,7 @@ function useOnCashuSendQuoteChange({
   onCreated: (send: CashuSendQuote) => void;
   onUpdated: (send: CashuSendQuote) => void;
 }) {
-  const cashuCryptography = useCashuCryptography();
+  const cashuSendQuoteRepository = useCashuSendQuoteRepository();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const queryClient = useQueryClient();
@@ -296,17 +299,19 @@ function useOnCashuSendQuoteChange({
           payload: RealtimePostgresChangesPayload<AgicashDbCashuSendQuote>,
         ) => {
           if (payload.eventType === 'INSERT') {
-            const addedQuote = await CashuSendQuoteRepository.toSend(
-              payload.new,
-              cashuCryptography.decrypt,
+            const addedQuote = await cashuSendQuoteRepository.get(
+              payload.new.id,
             );
-            onCreatedRef.current(addedQuote);
+            if (addedQuote) {
+              onCreatedRef.current(addedQuote);
+            }
           } else if (payload.eventType === 'UPDATE') {
-            const updatedQuote = await CashuSendQuoteRepository.toSend(
-              payload.new,
-              cashuCryptography.decrypt,
+            const updatedQuote = await cashuSendQuoteRepository.get(
+              payload.new.id,
             );
-            onUpdatedRef.current(updatedQuote);
+            if (updatedQuote) {
+              onUpdatedRef.current(updatedQuote);
+            }
           }
         },
       ),

@@ -52,11 +52,13 @@ type CashuReceiveQuotePaymentResult = {
 type CreateCashuSendQuoteResult = {
   created_quote: AgicashDbCashuSendQuote;
   updated_account: AgicashDbAccount;
+  transaction: AgicashDbTransaction;
 };
 
 type UpdateCashuSendQuoteResult = {
   updated_quote: AgicashDbCashuSendQuote;
   updated_account: AgicashDbAccount;
+  updated_transaction: AgicashDbTransaction;
 };
 
 // Use when you need to fix/improve generated types

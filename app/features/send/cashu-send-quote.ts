@@ -1,5 +1,10 @@
 import type { Proof } from '@cashu/cashu-ts';
 import type { Money } from '~/lib/money';
+import type {
+  CompletedCashuSendQuoteTransactionDetails,
+  IncompleteCashuSendQuoteTransactionDetails,
+  Transaction,
+} from '../transactions/transaction';
 
 export type CashuSendQuote = {
   id: string;
@@ -90,6 +95,12 @@ export type CashuSendQuote = {
 } & (
   | {
       state: 'UNPAID' | 'PENDING' | 'EXPIRED';
+      /**
+       * The corresponding transaction.
+       */
+      transaction: Transaction & {
+        details: IncompleteCashuSendQuoteTransactionDetails;
+      };
     }
   | {
       state: 'FAILED';
@@ -97,6 +108,12 @@ export type CashuSendQuote = {
        * Reason for the failure of the send quote.
        */
       failureReason: string;
+      /**
+       * The corresponding transaction.
+       */
+      transaction: Transaction & {
+        details: IncompleteCashuSendQuoteTransactionDetails;
+      };
     }
   | {
       state: 'PAID';
@@ -110,5 +127,20 @@ export type CashuSendQuote = {
        * Currency will be the same as the currency of the account we are sending from.
        */
       amountSpent: Money;
+      /**
+       * The corresponding transaction.
+       */
+      transaction: Transaction & {
+        details: CompletedCashuSendQuoteTransactionDetails;
+      };
+    }
+  | {
+      state: 'EXPIRED';
+      /**
+       * The corresponding transaction.
+       */
+      transaction: Transaction & {
+        details: IncompleteCashuSendQuoteTransactionDetails;
+      };
     }
 );

@@ -176,6 +176,7 @@ export function TransactionDetails({
             unit,
           }),
           paymentRequest: incompleteDetails.paymentRequest,
+          destinationDetails: incompleteDetails.destinationDetails,
         },
       );
     }
@@ -215,6 +216,7 @@ export function TransactionDetails({
 
   if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
     const receiveSwapDetails = details as CashuReceiveSwapTransactionDetails;
+    const tokenUnit = getDefaultUnit(receiveSwapDetails.tokenAmount.currency);
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
@@ -223,7 +225,9 @@ export function TransactionDetails({
         }),
         // NOTE: these should never be undefined, but there's a bug we need to fix
         // see https://github.com/MakePrisms/boardwalkcash/pull/541
-        tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({ unit }),
+        tokenAmount: receiveSwapDetails.tokenAmount?.toLocaleString({
+          unit: tokenUnit,
+        }),
         cashuReceiveFee: receiveSwapDetails.cashuReceiveFee?.toLocaleString({
           unit,
         }),

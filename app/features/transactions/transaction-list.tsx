@@ -1,4 +1,4 @@
-import { AlertCircle, BanknoteIcon, ZapIcon } from 'lucide-react';
+import { AlertCircle, BanknoteIcon, UserIcon, ZapIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
@@ -94,10 +94,23 @@ const getTransactionDescription = (transaction: Transaction) => {
   return transaction.direction === 'RECEIVE' ? 'Received' : 'Sent';
 };
 
-const transactionTypeIcons: Record<Transaction['type'], React.ReactNode> = {
+const transactionTypeIconMap = {
   CASHU_LIGHTNING: <ZapIcon className="h-4 w-4" />,
   CASHU_TOKEN: <BanknoteIcon className="h-4 w-4" />,
+  AGICASH_CONTACT: <UserIcon className="h-4 w-4" />,
 };
+
+const getTransactionTypeIcon = (transaction: Transaction) => {
+  if (
+    transaction.type === 'CASHU_LIGHTNING' &&
+    transaction.direction === 'SEND' &&
+    transaction.details.destinationDetails?.sendType === 'AGICASH_CONTACT'
+  ) {
+    return transactionTypeIconMap.AGICASH_CONTACT;
+  }
+  return transactionTypeIconMap[transaction.type];
+};
+
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
     <LinkWithViewTransition
@@ -106,7 +119,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
       applyTo="newView"
       className="flex w-full items-center justify-start gap-4"
     >
-      {transactionTypeIcons[transaction.type]}
+      {getTransactionTypeIcon(transaction)}
       <div className="flex w-full flex-grow flex-col gap-0">
         <div className="flex items-center justify-between">
           <p className="text-sm">
