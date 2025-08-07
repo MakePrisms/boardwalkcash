@@ -1,14 +1,15 @@
 {
-   "functions": {
-      "src/pages/api/invoice/polling/*": {
-         "memory": 1024,
-         "maxDuration": 300
-      }
-   },
-   "crons": [
-      {
-         "path": "/api/cron/otp",
-         "schedule": "0 0 * * *"
-      }
-   ]
+	"ignoreCommand": "bash ignore-build.sh",
+	"functions": {
+		"src/pages/api/invoice/polling/*": {
+			"memory": 1024,
+			"maxDuration": 300
+		}
+	},
+	"crons": [
+		{
+			"path": "/api/cron/otp",
+			"schedule": "0 0 * * *"
+		}
+	]
 }
