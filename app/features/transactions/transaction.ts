@@ -3,7 +3,7 @@ import type { Money } from '~/lib/money';
 /**
  * Transacion details for sending cashu proofs from an account.
  */
-export type CashuSendSwapTransactionDetails = {
+export type CashuTokenSendTransactionDetails = {
   /**
    * This is the sum of `amountToReceive` and `totalFees`, and is the amount deducted from the account.
    */
@@ -29,7 +29,7 @@ export type CashuSendSwapTransactionDetails = {
 /**
  * Transacion details for receiving cashu proofs to an account.
  */
-export type CashuReceiveSwapTransactionDetails = {
+export type CashuTokenReceiveTransactionDetails = {
   /**
    * This is the token amount minus the cashuReceiveFee, and is the amount added to the account.
    */
@@ -49,9 +49,9 @@ export type CashuReceiveSwapTransactionDetails = {
 };
 
 /**
- * Additional details related to the transaction.
+ * Additional details related to the transaction destination.
  */
-export type CashuSendQuoteDestinationDetails =
+export type DestinationDetails =
   | {
       sendType: 'AGICASH_CONTACT';
       /** The ID of the contact that the invoice was fetched from. */
@@ -63,7 +63,7 @@ export type CashuSendQuoteDestinationDetails =
       lnAddress: string;
     };
 
-type BaseCashuSendQuoteTransactionDetails = {
+type BaseCashuLightningSendTransactionDetails = {
   /**
    * The sum of all proofs used as inputs to the cashu melt operation
    * converted from a number to Money in the currency of the account.
@@ -99,20 +99,20 @@ type BaseCashuSendQuoteTransactionDetails = {
    *
    * This will be undefined if the send is directly paying a bolt11.
    */
-  destinationDetails?: CashuSendQuoteDestinationDetails;
+  destinationDetails?: DestinationDetails;
 };
 
 /**
  * Transacion details for a cashu lightning send transaction that is not yet completed.
  */
-export type IncompleteCashuSendQuoteTransactionDetails =
-  BaseCashuSendQuoteTransactionDetails;
+export type IncompleteCashuLightningSendTransactionDetails =
+  BaseCashuLightningSendTransactionDetails;
 
 /**
  * Transacion details for a cashu lightning send transaction that is completed.
  */
-export type CompletedCashuSendQuoteTransactionDetails =
-  BaseCashuSendQuoteTransactionDetails & {
+export type CompletedCashuLightningSendTransactionDetails =
+  BaseCashuLightningSendTransactionDetails & {
     /**
      * This is the sum of `amountToReceive` and `totalFees`. This is the amount deducted from the account.
      */
@@ -138,7 +138,7 @@ export type CompletedCashuSendQuoteTransactionDetails =
 /**
  * Transacion details for receiving cashu lightning payments to an account.
  */
-export type CashuReceiveQuoteTransactionDetails = {
+export type CashuLightningReceiveTransactionDetails = {
   /**
    * The amount of the bolt11 payment request.
    * This amount is added to the account.
@@ -223,28 +223,28 @@ export type Transaction = {
   | {
       type: 'CASHU_TOKEN';
       direction: 'SEND';
-      details: CashuSendSwapTransactionDetails;
+      details: CashuTokenSendTransactionDetails;
     }
   | {
       type: 'CASHU_TOKEN';
       direction: 'RECEIVE';
-      details: CashuReceiveSwapTransactionDetails;
+      details: CashuTokenReceiveTransactionDetails;
     }
   | {
       type: 'CASHU_LIGHTNING';
       direction: 'SEND';
       state: 'DRAFT' | 'PENDING' | 'FAILED';
-      details: IncompleteCashuSendQuoteTransactionDetails;
+      details: IncompleteCashuLightningSendTransactionDetails;
     }
   | {
       type: 'CASHU_LIGHTNING';
       direction: 'SEND';
       state: 'COMPLETED';
-      details: CompletedCashuSendQuoteTransactionDetails;
+      details: CompletedCashuLightningSendTransactionDetails;
     }
   | {
       type: 'CASHU_LIGHTNING';
       direction: 'RECEIVE';
-      details: CashuReceiveQuoteTransactionDetails;
+      details: CashuLightningReceiveTransactionDetails;
     }
 );

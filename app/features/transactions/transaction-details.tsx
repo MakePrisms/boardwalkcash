@@ -17,11 +17,11 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 import type {
-  CashuReceiveQuoteTransactionDetails,
-  CashuReceiveSwapTransactionDetails,
-  CashuSendSwapTransactionDetails,
-  CompletedCashuSendQuoteTransactionDetails,
-  IncompleteCashuSendQuoteTransactionDetails,
+  CashuLightningReceiveTransactionDetails,
+  CashuTokenReceiveTransactionDetails,
+  CashuTokenSendTransactionDetails,
+  CompletedCashuLightningSendTransactionDetails,
+  IncompleteCashuLightningSendTransactionDetails,
   Transaction,
 } from '~/features/transactions/transaction';
 import { useToast } from '~/hooks/use-toast';
@@ -134,7 +134,7 @@ export function TransactionDetails({
   if (type === 'CASHU_LIGHTNING' && direction === 'SEND') {
     if (state === 'COMPLETED') {
       const completedDetails =
-        details as CompletedCashuSendQuoteTransactionDetails;
+        details as CompletedCashuLightningSendTransactionDetails;
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
@@ -160,7 +160,7 @@ export function TransactionDetails({
       );
     } else {
       const incompleteDetails =
-        details as IncompleteCashuSendQuoteTransactionDetails;
+        details as IncompleteCashuLightningSendTransactionDetails;
       console.debug(
         `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
         {
@@ -183,7 +183,7 @@ export function TransactionDetails({
   }
 
   if (type === 'CASHU_LIGHTNING' && direction === 'RECEIVE') {
-    const receiveDetails = details as CashuReceiveQuoteTransactionDetails;
+    const receiveDetails = details as CashuLightningReceiveTransactionDetails;
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
@@ -195,7 +195,7 @@ export function TransactionDetails({
   }
 
   if (type === 'CASHU_TOKEN' && direction === 'SEND') {
-    const sendSwapDetails = details as CashuSendSwapTransactionDetails;
+    const sendSwapDetails = details as CashuTokenSendTransactionDetails;
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,
       {
@@ -215,7 +215,7 @@ export function TransactionDetails({
   }
 
   if (type === 'CASHU_TOKEN' && direction === 'RECEIVE') {
-    const receiveSwapDetails = details as CashuReceiveSwapTransactionDetails;
+    const receiveSwapDetails = details as CashuTokenReceiveTransactionDetails;
     const tokenUnit = getDefaultUnit(receiveSwapDetails.tokenAmount.currency);
     console.debug(
       `TX ${transaction.id.slice(0, 8)} [${type}_${direction}_${state}]:`,

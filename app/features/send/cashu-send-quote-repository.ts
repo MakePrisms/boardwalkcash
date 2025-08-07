@@ -9,9 +9,9 @@ import {
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import type {
-  CashuSendQuoteDestinationDetails,
-  CompletedCashuSendQuoteTransactionDetails,
-  IncompleteCashuSendQuoteTransactionDetails,
+  CompletedCashuLightningSendTransactionDetails,
+  DestinationDetails,
+  IncompleteCashuLightningSendTransactionDetails,
 } from '../transactions/transaction';
 import {
   type TransactionRepository,
@@ -96,7 +96,7 @@ type CreateSendQuote = {
   /**
    * Destination details of the send. This will be undefined if the send is directly paying a bolt11.
    */
-  destinationDetails?: CashuSendQuoteDestinationDetails;
+  destinationDetails?: DestinationDetails;
 };
 
 export class CashuSendQuoteRepository {
@@ -134,7 +134,7 @@ export class CashuSendQuoteRepository {
   ): Promise<CashuSendQuote> {
     const unit = getDefaultUnit(amountToReceive.currency);
 
-    const details: IncompleteCashuSendQuoteTransactionDetails = {
+    const details: IncompleteCashuLightningSendTransactionDetails = {
       amountToReceive,
       cashuSendFee: cashuFee,
       lightningFeeReserve,
@@ -248,10 +248,10 @@ export class CashuSendQuoteRepository {
       transaction.direction !== 'SEND' ||
       transaction.state !== 'PENDING'
     ) {
-      throw new Error('Transaction not found.');
+      throw new Error(`Transaction not found for quote ${quote.id}.`);
     }
 
-    const updatedTransactionDetails: CompletedCashuSendQuoteTransactionDetails =
+    const updatedTransactionDetails: CompletedCashuLightningSendTransactionDetails =
       {
         ...transaction.details,
         preimage: paymentPreimage,

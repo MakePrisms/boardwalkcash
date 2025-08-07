@@ -10,7 +10,7 @@ import { Card, CardContent } from '~/components/ui/card';
 import type { CashuAccount } from '~/features/accounts/account';
 import type { CashuLightningQuote } from '~/features/send/cashu-send-quote-service';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
-import type { CashuSendQuoteDestinationDetails } from '~/features/transactions/transaction';
+import type { DestinationDetails } from '~/features/transactions/transaction';
 import { useToast } from '~/hooks/use-toast';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Money } from '~/lib/money';
@@ -94,7 +94,7 @@ type PayBolt11ConfirmationProps = {
   destination: string;
   /** The destination to display in the UI. For sends to bolt11 this will be the same as the bolt11, for ln addresses it will be the ln address. */
   destinationDisplay: string;
-  destinationDetails?: CashuSendQuoteDestinationDetails;
+  destinationDetails?: DestinationDetails;
   /** The quote to display in the UI. */
   quote: CashuLightningQuote;
 };

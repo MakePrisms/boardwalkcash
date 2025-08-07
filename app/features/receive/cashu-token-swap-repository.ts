@@ -10,7 +10,7 @@ import { getTokenHash, tokenToMoney } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { useEncryption } from '../shared/encryption';
 import { UniqueConstraintError } from '../shared/error';
-import type { CashuReceiveSwapTransactionDetails } from '../transactions/transaction';
+import type { CashuTokenReceiveTransactionDetails } from '../transactions/transaction';
 import type { CashuTokenSwap } from './cashu-token-swap';
 
 type Options = {
@@ -101,7 +101,7 @@ export class CashuTokenSwapRepository {
       unit: getCashuUnit(amount.currency),
     });
 
-    const details: CashuReceiveSwapTransactionDetails = {
+    const details: CashuTokenReceiveTransactionDetails = {
       amountReceived: amount.subtract(cashuReceiveFeeMoney),
       cashuReceiveFee: cashuReceiveFeeMoney,
       totalFees: cashuReceiveFeeMoney,

@@ -11,7 +11,7 @@ import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
-import type { CashuSendQuoteDestinationDetails } from '../transactions/transaction';
+import type { DestinationDetails } from '../transactions/transaction';
 import type { CashuSendQuote } from './cashu-send-quote';
 import {
   type CashuSendQuoteRepository,
@@ -222,7 +222,7 @@ export class CashuSendQuoteService {
      * The destination details of the send, like the contact ID or lightning address used to fetch the payment request.
      * This will be undefined if the send is directly paying a bolt11.
      */
-    destinationDetails?: CashuSendQuoteDestinationDetails;
+    destinationDetails?: DestinationDetails;
   }) {
     const meltQuote = sendQuote.meltQuote;
     const expiresAt = new Date(meltQuote.expiry * 1000);
