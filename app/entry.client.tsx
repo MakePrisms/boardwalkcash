@@ -7,37 +7,7 @@ import * as Sentry from '@sentry/react-router';
 import { StrictMode, startTransition } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
-
-/**
- * Checks if running on a local server. Returns true if built for development or if
- * host is localhost, 127.0.0.1, .local domain or a local IP address.
- */
-const isLocalServer = (): boolean => {
-  // Check environment variables first
-  if (
-    process.env.NODE_ENV === 'development' ||
-    process.env.LOCAL_DEV === 'true'
-  ) {
-    return true;
-  }
-
-  // Auto-detect local environment using browser APIs
-  const hostname = window.location.hostname;
-
-  // Check if hostname indicates local environment
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.endsWith('.local') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
-    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
-  ) {
-    return true;
-  }
-
-  return false;
-};
+import { getEnvironment, isServedLocally } from './environment';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN ?? '';
 if (!sentryDsn) {
@@ -50,8 +20,10 @@ Sentry.init({
   // https://docs.sentry.io/platforms/javascript/guides/react-router/configuration/options/#sendDefaultPii
   sendDefaultPii: false,
   integrations: [],
-  enabled: process.env.NODE_ENV === 'production' && !isLocalServer(),
-  environment: 'preview', // TODO: set proper environment
+  enabled:
+    process.env.NODE_ENV === 'production' &&
+    !isServedLocally(window.location.hostname),
+  environment: getEnvironment(),
   tunnel: '/api/logs',
 });
 
