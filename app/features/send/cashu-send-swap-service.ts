@@ -329,7 +329,7 @@ export class CashuSendSwapService {
 
     const currentAccountBalance = sumProofs(account.proofs);
     const sumProofsToKeep = sumProofs(newProofsToKeep);
-    const newAccountBalance = currentAccountBalance - sumProofsToKeep;
+    const newAccountBalance = currentAccountBalance + sumProofsToKeep;
     console.debug(
       'current account balance before completing send',
       currentAccountBalance,
