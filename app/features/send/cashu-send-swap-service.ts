@@ -261,6 +261,57 @@ export class CashuSendSwapService {
       },
     );
 
+    // validate we got back the total we just swapped
+    const totalInput = sumProofs(swap.inputProofs);
+    const totalOutputSend = sumProofs(proofsToSend);
+    const totalOutputKeep = sumProofs(newProofsToKeep);
+    const totalOutput = totalOutputSend + totalOutputKeep;
+
+    console.debug('swapForProofsToSend: Post-swap validation', {
+      swapId: swap.id,
+      totalInput,
+      totalOutputSend,
+      totalOutputKeep,
+      totalOutput,
+      inputProofsCount: swap.inputProofs.length,
+      sendProofsCount: proofsToSend.length,
+      keepProofsCount: newProofsToKeep.length,
+      expectedSendAmount: swap.amountToSend.toNumber(
+        getCashuUnit(swap.currency),
+      ),
+      expectedKeepAmount:
+        totalInput -
+        swap.amountToSend.toNumber(getCashuUnit(swap.currency)) -
+        swap.cashuSendFee.toNumber(getCashuUnit(swap.currency)),
+    });
+
+    if (totalInput !== totalOutput) {
+      console.error('swapForProofsToSend: Input/output mismatch after swap', {
+        totalInput,
+        totalOutputSend,
+        totalOutputKeep,
+        totalOutput,
+        difference: totalInput - totalOutput,
+        swap,
+        account,
+        proofsToSend,
+        newProofsToKeep,
+      });
+      throw new Error(
+        'Total input and output do not match after swapping for proofs to send',
+        {
+          cause: {
+            totalInput,
+            totalOutputSend,
+            totalOutputKeep,
+            totalOutput,
+            swap,
+            account,
+          },
+        },
+      );
+    }
+
     if (proofsToSend.length === 0) {
       console.error('No proofs to send', {
         swap,
@@ -276,7 +327,46 @@ export class CashuSendSwapService {
       unit: getCashuProtocolUnit(swap.amountToSend.currency),
     });
 
+    const currentAccountBalance = sumProofs(account.proofs);
+    const sumProofsToKeep = sumProofs(newProofsToKeep);
+    const newAccountBalance = currentAccountBalance - sumProofsToKeep;
+    console.debug(
+      'current account balance before completing send',
+      currentAccountBalance,
+    );
+    console.debug(
+      'new account balance after send should be',
+      newAccountBalance,
+    );
+
     const accountProofs = [...account.proofs, ...newProofsToKeep];
+
+    console.debug('account proofs after send', accountProofs);
+    console.debug('send data', {
+      swap,
+      account,
+      proofsToSend,
+      newProofsToKeep,
+      accountProofs,
+      tokenHash,
+      outputData: {
+        send: sendOutputData,
+        keep: keepOutputData,
+      },
+    });
+
+    if (sumProofs(accountProofs) !== newAccountBalance) {
+      throw new Error(
+        'Account balance does not match after swapping for proofs to send',
+        {
+          cause: {
+            currentAccountBalance,
+            sumProofsToKeep,
+            newAccountBalance,
+          },
+        },
+      );
+    }
 
     await this.cashuSendSwapRepository.commitProofsToSend({
       swap,
@@ -436,11 +526,77 @@ export class CashuSendSwapService {
       getCashuUnit(swap.currency),
     );
 
+    // Log detailed swap inputs
+    const totalInputAmount = sumProofs(swap.inputProofs);
+    const totalSendOutputAmount = outputData.send.reduce(
+      (sum, output) => sum + output.blindedMessage.amount,
+      0,
+    );
+    const totalKeepOutputAmount = outputData.keep.reduce(
+      (sum, output) => sum + output.blindedMessage.amount,
+      0,
+    );
+    const totalOutputAmount = totalSendOutputAmount + totalKeepOutputAmount;
+
+    console.debug('swapProofs: Starting swap operation', {
+      swapId: swap.id,
+      amountToSend,
+      totalInputAmount,
+      totalSendOutputAmount,
+      totalKeepOutputAmount,
+      totalOutputAmount,
+      inputProofsCount: swap.inputProofs.length,
+      sendOutputCount: outputData.send.length,
+      keepOutputCount: outputData.keep.length,
+      cashuSendFee: swap.cashuSendFee.toNumber(getCashuUnit(swap.currency)),
+    });
+
+    // Validate amounts before swap
+    if (totalInputAmount !== totalOutputAmount) {
+      console.error('swapProofs: Input/output amount mismatch BEFORE swap', {
+        totalInputAmount,
+        totalOutputAmount,
+        difference: totalInputAmount - totalOutputAmount,
+        swap,
+        outputData,
+      });
+      throw new Error(
+        'Input and output amounts do not match before swap operation',
+      );
+    }
+
     try {
-      return await wallet.swap(amountToSend, swap.inputProofs, {
+      const swapResult = await wallet.swap(amountToSend, swap.inputProofs, {
         outputData,
         keysetId: swap.keysetId,
       });
+
+      // Log swap result
+      const resultSendAmount = sumProofs(swapResult.send);
+      const resultKeepAmount = sumProofs(swapResult.keep);
+      const resultTotalAmount = resultSendAmount + resultKeepAmount;
+
+      console.debug('swapProofs: Swap completed successfully', {
+        swapId: swap.id,
+        resultSendAmount,
+        resultKeepAmount,
+        resultTotalAmount,
+        sendProofsCount: swapResult.send.length,
+        keepProofsCount: swapResult.keep.length,
+      });
+
+      // Validate swap result
+      if (resultTotalAmount !== totalInputAmount) {
+        console.error('swapProofs: Input/output amount mismatch AFTER swap', {
+          totalInputAmount,
+          resultTotalAmount,
+          difference: totalInputAmount - resultTotalAmount,
+          swapResult,
+        });
+        throw new Error('Swap result amounts do not match input amounts');
+      }
+
+      return swapResult;
     } catch (error) {
       if (
         error instanceof MintOperationError &&
@@ -456,6 +612,16 @@ export class CashuSendSwapService {
       ) {
         const totalOutputCount =
           outputData.send.length + outputData.keep.length;
+        console.debug(
+          'swapProofs: Restoring proofs after OUTPUT_ALREADY_SIGNED error',
+          {
+            swapId: swap.id,
+            keysetCounter: swap.keysetCounter,
+            totalOutputCount,
+            keysetId: swap.keysetId,
+          },
+        );
+
         const { proofs } = await wallet.restore(
           swap.keysetCounter,
           totalOutputCount,
@@ -464,7 +630,7 @@ export class CashuSendSwapService {
           },
         );
 
-        return {
+        const restoredResult = {
           send: proofs.filter((o) =>
             outputData.send.some((s) => uint8ArrayToHex(s.secret) === o.secret),
           ),
@@ -472,6 +638,22 @@ export class CashuSendSwapService {
             outputData.keep.some((s) => uint8ArrayToHex(s.secret) === o.secret),
           ),
         };
+
+        // Log restored result
+        const restoredSendAmount = sumProofs(restoredResult.send);
+        const restoredKeepAmount = sumProofs(restoredResult.keep);
+        const restoredTotalAmount = restoredSendAmount + restoredKeepAmount;
+
+        console.debug('swapProofs: Proofs restored successfully', {
+          swapId: swap.id,
+          restoredSendAmount,
+          restoredKeepAmount,
+          restoredTotalAmount,
+          sendProofsCount: restoredResult.send.length,
+          keepProofsCount: restoredResult.keep.length,
+        });
+
+        return restoredResult;
       }
 
       throw error;
