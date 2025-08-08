@@ -1,10 +1,6 @@
 {
   "name": "agicash",
   "private": true,
-  "sideEffects": ["./app/instrument.server.mjs"],
-  "sideEffects:comments": {
-    "./app/instrument.server.mjs": "If we don't mark this as side effect, vite will remove it from the bundle. This is needed because we are using it to instrument the server code with Sentry."
-  },
   "type": "module",
   "scripts": {
     "build": "run-p build:client build:server",
@@ -53,8 +49,7 @@
     "@react-router/node": "7.8.0",
     "@scure/bip32": "1.6.2",
     "@scure/bip39": "1.5.4",
-    "@sentry/core": "9.43.0",
-    "@sentry/react-router": "9.43.0",
+    "@sentry/react-router": "10.2.0",
     "@supabase/supabase-js": "2.54.0",
     "@tanstack/react-query": "5.76.1",
     "@tanstack/react-query-devtools": "5.76.1",
