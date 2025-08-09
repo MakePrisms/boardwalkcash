@@ -630,26 +630,26 @@ export type Database = {
     }
     Functions: {
       check_not_self_contact: {
-        Args: { owner_id: string; contact_username: string }
+        Args: { contact_username: string; owner_id: string }
         Returns: boolean
       }
       commit_proofs_to_send: {
         Args: {
-          p_swap_id: string
-          p_swap_version: number
+          p_account_proofs: Json
           p_account_version: number
           p_proofs_to_send: string
-          p_account_proofs: Json
+          p_swap_id: string
+          p_swap_version: number
           p_token_hash: string
         }
         Returns: undefined
       }
       complete_cashu_receive_quote: {
         Args: {
+          p_account_version: number
+          p_proofs: Json
           p_quote_id: string
           p_quote_version: number
-          p_proofs: Json
-          p_account_version: number
         }
         Returns: {
           account_id: string
@@ -676,13 +676,13 @@ export type Database = {
       }
       complete_cashu_send_quote: {
         Args: {
-          p_quote_id: string
-          p_quote_version: number
-          p_payment_preimage: string
-          p_amount_spent: number
           p_account_proofs: string
           p_account_version: number
+          p_amount_spent: number
           p_encrypted_transaction_details: string
+          p_payment_preimage: string
+          p_quote_id: string
+          p_quote_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
@@ -692,29 +692,29 @@ export type Database = {
       }
       complete_cashu_token_swap: {
         Args: {
+          p_account_version: number
+          p_proofs: Json
+          p_swap_version: number
           p_token_hash: string
           p_user_id: string
-          p_swap_version: number
-          p_proofs: Json
-          p_account_version: number
         }
         Returns: undefined
       }
       create_cashu_receive_quote: {
         Args: {
-          p_user_id: string
           p_account_id: string
           p_amount: number
           p_currency: string
-          p_unit: string
-          p_quote_id: string
-          p_payment_request: string
-          p_expires_at: string
-          p_state: string
-          p_locking_derivation_path: string
-          p_receive_type: string
-          p_encrypted_transaction_details: string
           p_description?: string
+          p_encrypted_transaction_details: string
+          p_expires_at: string
+          p_locking_derivation_path: string
+          p_payment_request: string
+          p_quote_id: string
+          p_receive_type: string
+          p_state: string
+          p_unit: string
+          p_user_id: string
         }
         Returns: {
           account_id: string
@@ -741,53 +741,53 @@ export type Database = {
       }
       create_cashu_send_quote: {
         Args: {
-          p_user_id: string
           p_account_id: string
-          p_currency: string
-          p_unit: string
-          p_payment_request: string
-          p_expires_at: string
+          p_account_version: number
           p_amount_requested: number
-          p_currency_requested: string
           p_amount_requested_in_msat: number
           p_amount_to_receive: number
-          p_lightning_fee_reserve: number
           p_cashu_fee: number
-          p_quote_id: string
-          p_keyset_id: string
-          p_keyset_counter: number
-          p_number_of_change_outputs: number
-          p_proofs_to_send: string
-          p_account_version: number
-          p_proofs_to_keep: string
+          p_currency: string
+          p_currency_requested: string
           p_encrypted_transaction_details: string
+          p_expires_at: string
+          p_keyset_counter: number
+          p_keyset_id: string
+          p_lightning_fee_reserve: number
+          p_number_of_change_outputs: number
+          p_payment_request: string
+          p_proofs_to_keep: string
+          p_proofs_to_send: string
+          p_quote_id: string
+          p_unit: string
+          p_user_id: string
         }
         Returns: Database["wallet"]["CompositeTypes"]["create_cashu_send_quote_result"]
       }
       create_cashu_send_swap: {
         Args: {
-          p_user_id: string
           p_account_id: string
+          p_account_proofs: string
+          p_account_version: number
           p_amount_requested: number
           p_amount_to_send: number
-          p_input_proofs: string
-          p_account_proofs: string
           p_currency: string
-          p_unit: string
-          p_state: string
-          p_account_version: number
-          p_input_amount: number
-          p_send_swap_fee: number
-          p_receive_swap_fee: number
-          p_total_amount: number
           p_encrypted_transaction_details: string
-          p_keyset_id?: string
-          p_keyset_counter?: number
-          p_updated_keyset_counter?: number
-          p_token_hash?: string
-          p_proofs_to_send?: string
-          p_send_output_amounts?: number[]
+          p_input_amount: number
+          p_input_proofs: string
           p_keep_output_amounts?: number[]
+          p_keyset_counter?: number
+          p_keyset_id?: string
+          p_proofs_to_send?: string
+          p_receive_swap_fee: number
+          p_send_output_amounts?: number[]
+          p_send_swap_fee: number
+          p_state: string
+          p_token_hash?: string
+          p_total_amount: number
+          p_unit: string
+          p_updated_keyset_counter?: number
+          p_user_id: string
         }
         Returns: {
           account_id: string
@@ -817,21 +817,21 @@ export type Database = {
       }
       create_cashu_token_swap: {
         Args: {
+          p_account_id: string
+          p_account_version: number
+          p_currency: string
+          p_encrypted_transaction_details: string
+          p_fee_amount: number
+          p_input_amount: number
+          p_keyset_counter: number
+          p_keyset_id: string
+          p_output_amounts: number[]
+          p_receive_amount: number
+          p_reversed_transaction_id?: string
           p_token_hash: string
           p_token_proofs: string
-          p_account_id: string
-          p_user_id: string
-          p_currency: string
           p_unit: string
-          p_keyset_id: string
-          p_keyset_counter: number
-          p_output_amounts: number[]
-          p_input_amount: number
-          p_receive_amount: number
-          p_fee_amount: number
-          p_account_version: number
-          p_encrypted_transaction_details: string
-          p_reversed_transaction_id?: string
+          p_user_id: string
         }
         Returns: {
           account_id: string
@@ -880,46 +880,46 @@ export type Database = {
       }
       expire_cashu_send_quote: {
         Args: {
-          p_quote_id: string
-          p_quote_version: number
           p_account_proofs: string
           p_account_version: number
+          p_quote_id: string
+          p_quote_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
       fail_cashu_receive_quote: {
         Args: {
+          p_failure_reason: string
           p_quote_id: string
           p_quote_version: number
-          p_failure_reason: string
         }
         Returns: undefined
       }
       fail_cashu_send_quote: {
         Args: {
-          p_quote_id: string
-          p_failure_reason: string
-          p_quote_version: number
           p_account_proofs: string
           p_account_version: number
+          p_failure_reason: string
+          p_quote_id: string
+          p_quote_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["update_cashu_send_quote_result"]
       }
       fail_cashu_send_swap: {
-        Args: { p_swap_id: string; p_swap_version: number; p_reason: string }
+        Args: { p_reason: string; p_swap_id: string; p_swap_version: number }
         Returns: undefined
       }
       fail_cashu_token_swap: {
         Args: {
+          p_failure_reason: string
+          p_swap_version: number
           p_token_hash: string
           p_user_id: string
-          p_swap_version: number
-          p_failure_reason: string
         }
         Returns: undefined
       }
       find_contact_candidates: {
-        Args: { partial_username: string; current_user_id: string }
+        Args: { current_user_id: string; partial_username: string }
         Returns: {
           username: string
           id: string
@@ -927,11 +927,11 @@ export type Database = {
       }
       list_transactions: {
         Args: {
-          p_user_id: string
-          p_cursor_state_sort_order?: number
           p_cursor_created_at?: string
           p_cursor_id?: string
+          p_cursor_state_sort_order?: number
           p_page_size?: number
+          p_user_id: string
         }
         Returns: {
           account_id: string
@@ -953,27 +953,27 @@ export type Database = {
       }
       process_cashu_receive_quote_payment: {
         Args: {
+          p_account_version: number
+          p_keyset_counter: number
+          p_keyset_id: string
+          p_output_amounts: number[]
           p_quote_id: string
           p_quote_version: number
-          p_keyset_id: string
-          p_keyset_counter: number
-          p_output_amounts: number[]
-          p_account_version: number
         }
         Returns: Database["wallet"]["CompositeTypes"]["cashu_receive_quote_payment_result"]
       }
       take_lead: {
-        Args: { p_user_id: string; p_client_id: string }
+        Args: { p_client_id: string; p_user_id: string }
         Returns: boolean
       }
       upsert_user_with_accounts: {
         Args: {
-          p_user_id: string
-          p_email: string
-          p_email_verified: boolean
           p_accounts: Json[]
           p_cashu_locking_xpub: string
+          p_email: string
+          p_email_verified: boolean
           p_encryption_public_key: string
+          p_user_id: string
         }
         Returns: Json
       }
