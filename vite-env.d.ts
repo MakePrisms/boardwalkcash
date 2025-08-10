@@ -14,6 +14,8 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_HOST: string | undefined;
   readonly VITE_SENTRY_PROJECT_ID: string | undefined;
   readonly VITE_SENTRY_DSN: string | undefined;
+  readonly VITE_ENVIRONMENT: string | undefined;
+  readonly VITE_LOCAL_DEV: string | undefined;
 }
 
 interface ImportMeta {
