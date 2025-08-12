@@ -1,27 +1,29 @@
+const possibleEnvironments = [
+  'local',
+  'production',
+  'alpha',
+  'next',
+  'preview',
+] as const;
+
+type Environment = (typeof possibleEnvironments)[number];
+
 /**
  * Returns the environment name based on the branch name if running on Vercel.
  * If not running on Vercel, returns 'local'.
  */
-export const getEnvironment = () => {
-  if (!process.env.VERCEL) {
-    return 'local';
+export const getEnvironment = (): Environment => {
+  const environment = import.meta.env.VITE_ENVIRONMENT;
+
+  if (!possibleEnvironments.includes(environment as Environment)) {
+    throw new Error(
+      `Invalid environment: ${environment}. Set VITE_ENVIRONMENT env var to one of: ${possibleEnvironments.join(
+        ', ',
+      )}`,
+    );
   }
 
-  const branchName = process.env.VERCEL_GIT_COMMIT_REF;
-
-  if (branchName === 'live') {
-    return 'production';
-  }
-
-  if (branchName === 'alpha') {
-    return 'alpha';
-  }
-
-  if (branchName === 'master') {
-    return 'next';
-  }
-
-  return 'preview';
+  return environment as Environment;
 };
 
 const isLocalIp = (value: string) => {
@@ -43,7 +45,7 @@ export const isServedLocally = (hostname: string, ips?: string[]): boolean => {
   // Check environment variables first
   if (
     process.env.NODE_ENV === 'development' ||
-    process.env.VITE_LOCAL_DEV === 'true'
+    import.meta.env.VITE_LOCAL_DEV === 'true'
   ) {
     return true;
   }
