@@ -5,6 +5,7 @@ import { useToast } from '~/hooks/use-toast';
 import { useTrackAccounts } from '../accounts/account-hooks';
 import { supabaseSessionStore } from '../agicash-db/supabase-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
+import { useTrackHasNotifications } from '../notifications/notification-hooks';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
@@ -88,6 +89,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
   const isLead = useTakeTaskProcessingLead();
 
   const accountsSubscription = useTrackAccounts();
+  const hasNotificationsSubscription = useTrackHasNotifications();
   const pendingCashuReceiveQuotesSubscription =
     useTrackPendingCashuReceiveQuotes();
   const pendingCashuTokenSwapsSubscription = useTrackPendingCashuTokenSwaps();
@@ -98,6 +100,7 @@ const Wallet = ({ children }: PropsWithChildren) => {
 
   if (
     accountsSubscription === 'subscribing' ||
+    hasNotificationsSubscription === 'subscribing' ||
     pendingCashuReceiveQuotesSubscription === 'subscribing' ||
     pendingCashuTokenSwapsSubscription === 'subscribing' ||
     unresolvedCashuSendQuotesSubscription === 'subscribing' ||

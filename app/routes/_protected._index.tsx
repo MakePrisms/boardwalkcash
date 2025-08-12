@@ -16,6 +16,7 @@ import {
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import { DefaultCurrencySwitcher } from '~/features/accounts/default-currency-switcher';
+import { useHasNotifications } from '~/features/notifications/notification-hooks';
 import { InstallPwaPrompt } from '~/features/pwa/install-pwa-prompt';
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useExchangeRates } from '~/hooks/use-exchange-rate';
@@ -63,6 +64,9 @@ export default function Index() {
   const balanceBTC = useBalance('BTC');
   const balanceUSD = useBalance('USD');
   const defaultCurrency = useDefaultAccount().currency;
+  const { data: hasTransactionNotifications } = useHasNotifications({
+    type: 'PAYMENT_RECEIVED',
+  });
 
   return (
     <Page>
@@ -72,8 +76,12 @@ export default function Index() {
             to="/transactions"
             transition="slideLeft"
             applyTo="newView"
+            className="relative"
           >
             <Clock className="text-muted-foreground" />
+            {hasTransactionNotifications && (
+              <div className="-right-0 -top-0 absolute h-[8px] w-[8px] rounded-full bg-green-500" />
+            )}
           </LinkWithViewTransition>
           <LinkWithViewTransition
             to="/settings"
