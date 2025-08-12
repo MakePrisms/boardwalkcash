@@ -25,6 +25,7 @@ import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import { useUser } from '../user/user-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
+import { stripProtocolFromUrl } from '~/lib/utils';
 
 type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
 
@@ -91,7 +92,7 @@ export function useCashuTokenSourceAccountQuery(
           type: 'cashu',
           mintUrl: token.mint,
           createdAt: new Date().toISOString(),
-          name: info?.name ?? token.mint.replace('https://', ''),
+          name: info?.name ?? stripProtocolFromUrl(token.mint),
           currency: tokenToMoney(token).currency,
           isTestMint,
           version: 0,
