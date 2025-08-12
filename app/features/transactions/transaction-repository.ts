@@ -1,9 +1,14 @@
 import type { Money } from '~/lib/money';
 import {
   type AgicashDb,
+  type AgicashDbNotification,
   type AgicashDbTransaction,
   agicashDb,
 } from '../agicash-db/database';
+import {
+  type NotificationRepository,
+  useNotificationRepository,
+} from '../notifications/notification-repository';
 import { useEncryption } from '../shared/encryption';
 import type {
   CashuLightningReceiveTransactionDetails,
@@ -46,10 +51,13 @@ export class TransactionRepository {
   constructor(
     private db: AgicashDb,
     private encryption: Encryption,
+    private notificationRepository: NotificationRepository,
   ) {}
-
   async get(transactionId: string, options?: Options) {
-    const query = this.db.from('transactions').select().eq('id', transactionId);
+    const query = this.db
+      .from('transactions')
+      .select('*, notifications(*)')
+      .eq('id', transactionId);
 
     if (options?.abortSignal) {
       query.abortSignal(options.abortSignal);
@@ -105,7 +113,9 @@ export class TransactionRepository {
     };
   }
 
-  async toTransaction(data: AgicashDbTransaction): Promise<Transaction> {
+  async toTransaction(
+    data: AgicashDbTransaction & { notifications: AgicashDbNotification[] },
+  ): Promise<Transaction> {
     const details = await this.encryption.decrypt<UnifiedTransactionDetails>(
       data.encrypted_transaction_details,
     );
@@ -120,6 +130,9 @@ export class TransactionRepository {
       failedAt: data.failed_at,
       reversedTransactionId: data.reversed_transaction_id,
       reversedAt: data.reversed_at,
+      notifications: (data.notifications ?? []).map((notification) =>
+        this.notificationRepository.toNotification(notification),
+      ),
     };
 
     const { state, direction, type } = data;
@@ -176,5 +189,10 @@ export class TransactionRepository {
 
 export function useTransactionRepository() {
   const encryption = useEncryption();
-  return new TransactionRepository(agicashDb, encryption);
+  const notificationRepository = useNotificationRepository();
+  return new TransactionRepository(
+    agicashDb,
+    encryption,
+    notificationRepository,
+  );
 }

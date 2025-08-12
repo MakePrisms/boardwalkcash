@@ -1,4 +1,5 @@
 import type { Money } from '~/lib/money';
+import type { Notification } from '../notifications/notification';
 
 /**
  * Transacion details for sending cashu proofs from an account.
@@ -195,6 +196,10 @@ export type Transaction = {
    * Transaction details.
    */
   details: object;
+  /**
+   * Notifications for the transaction.
+   */
+  notifications: Notification[];
   /**
    * ID of the transaction that is reversed by this transaction.
    */

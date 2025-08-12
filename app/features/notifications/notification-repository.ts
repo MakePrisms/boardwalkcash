@@ -9,64 +9,8 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
-class NotificationRepository {
+export class NotificationRepository {
   constructor(private readonly db: AgicashDb) {}
-
-  /**
-   * Lists all notifications of the given type in descending order of creation date.
-   * If no type is provided, all notifications are returned.
-   */
-  async list(
-    { userId, type }: { userId: string; type?: NotificationType },
-    options?: Options,
-  ): Promise<Notification[]> {
-    const query = this.db
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (type) {
-      query.eq('type', type);
-    }
-
-    if (options?.abortSignal) {
-      query.abortSignal(options.abortSignal);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      throw new Error('Failed to list notifications.', { cause: error });
-    }
-
-    return data.map(this.toNotification);
-  }
-
-  async getByTransactionId(
-    transactionId: string,
-    options?: Options,
-  ): Promise<Notification | null> {
-    const query = this.db
-      .from('notifications')
-      .select('*')
-      .limit(1)
-      .eq('transaction_id', transactionId);
-    if (options?.abortSignal) {
-      query.abortSignal(options.abortSignal);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      throw new Error('Failed to get notification by transaction id.', {
-        cause: error,
-      });
-    }
-
-    if (data.length === 0) {
-      return null;
-    }
-
-    return this.toNotification(data[0]);
-  }
 
   /**
    * Checks if the user has any notifications of the given type.

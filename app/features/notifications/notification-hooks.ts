@@ -14,38 +14,6 @@ import { useNotificationRepository } from './notification-repository';
 
 const notificationsQueryKey = 'notifications';
 
-/**
- * Returns a suspense query that returns all notifications of the given type.
- */
-export function useNotifications<
-  T extends NotificationType = NotificationType,
->(select: { type: T }): UseSuspenseQueryResult<Notification<T>[]> {
-  const notificationRepository = useNotificationRepository();
-  const userRef = useUserRef();
-
-  return useSuspenseQuery({
-    queryKey: [notificationsQueryKey, select.type],
-    queryFn: () =>
-      notificationRepository.list({
-        userId: userRef.current.id,
-        type: select.type,
-      }),
-    staleTime: 0,
-    refetchOnMount: 'always',
-    select: (data) =>
-      data.filter((n): n is Notification<T> => n.type === select.type),
-  });
-}
-
-export function useNotificationByTransactionId(transactionId: string) {
-  const notificationRepository = useNotificationRepository();
-
-  return useSuspenseQuery({
-    queryKey: [notificationsQueryKey, 'byTransactionId', transactionId],
-    queryFn: () => notificationRepository.getByTransactionId(transactionId),
-  });
-}
-
 export function useHasNotifications(select: {
   type: NotificationType;
 }): UseSuspenseQueryResult<boolean> {
