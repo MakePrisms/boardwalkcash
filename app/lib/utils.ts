@@ -39,3 +39,7 @@ export function isSubset<T>(subset: Set<T>, superset: Set<T>): boolean {
   }
   return true;
 }
+
+export function stripProtocolFromUrl(url: string) {
+  return url.replace(/^https?:\/\//, '');
+}

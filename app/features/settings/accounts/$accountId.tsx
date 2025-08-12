@@ -10,6 +10,7 @@ import { SettingsViewHeader } from '~/features/settings/ui/settings-view-header'
 import { MoneyWithConvertedAmount } from '~/features/shared/money-with-converted-amount';
 import { useSetDefaultAccount } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
+import { stripProtocolFromUrl } from '~/lib/utils';
 
 function AccountDetailItem({ label, value }: { label: string; value: string }) {
   return (
@@ -58,9 +59,7 @@ function CashuAccount({ account }: { account: ExtendedCashuAccount }) {
             { label: 'Type', value: account.type },
             {
               label: 'Mint',
-              value: account.mintUrl
-                .replace('https://', '')
-                .replace('http://', ''),
+              value: stripProtocolFromUrl(account.mintUrl),
             },
           ].map((detail) => (
             <AccountDetailItem key={detail.label} {...detail} />

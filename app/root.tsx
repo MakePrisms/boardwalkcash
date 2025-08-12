@@ -12,6 +12,7 @@ import {
   Links,
   type LinksFunction,
   Meta,
+  type MetaFunction,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -37,6 +38,8 @@ import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
 import { NotFoundError } from './features/shared/error';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
+import { createMeta } from './features/shared/meta';
+import { stripProtocolFromUrl } from './lib/utils';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -67,6 +70,10 @@ export const links: LinksFunction = () => [
   },
 ];
 
+export const meta: MetaFunction = () => {
+  return createMeta();
+};
+
 export async function loader({ request }: Route.LoaderArgs) {
   /** Returns user settings from cookies */
   const cookieSettings = getThemeCookies(request);
@@ -77,7 +84,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     cookieSettings: cookieSettings || null,
     userAgentString: userAgentString || '',
     origin: url.origin,
-    domain: url.origin.replace('https://', '').replace('http://', ''),
+    domain: stripProtocolFromUrl(url.origin),
   };
 }
 
