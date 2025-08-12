@@ -6,6 +6,7 @@ import {
   UndoIcon,
   XIcon,
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 import { PageContent, PageFooter } from '~/components/page';
 import { Button } from '~/components/ui/button';
@@ -27,6 +28,10 @@ import type {
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useAccount } from '../accounts/account-hooks';
+import {
+  useDeleteNotification,
+  useNotificationByTransactionId,
+} from '../notifications/notification-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
@@ -114,6 +119,15 @@ export function TransactionDetails({
       });
     },
   });
+
+  const { data: notification } = useNotificationByTransactionId(transaction.id);
+  const { mutate: deleteNotification } = useDeleteNotification();
+
+  useEffect(() => {
+    if (notification && ['COMPLETED', 'REVERSED'].includes(transaction.state)) {
+      deleteNotification({ notificationId: notification.id });
+    }
+  }, [notification, transaction.state, deleteNotification]);
 
   const isWaitingForStateUpdate =
     didReclaimMutationSucceed &&
