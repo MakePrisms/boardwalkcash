@@ -28,10 +28,7 @@ import type {
 import { useToast } from '~/hooks/use-toast';
 import { LinkWithViewTransition } from '~/lib/transitions';
 import { useAccount } from '../accounts/account-hooks';
-import {
-  useDeleteNotification,
-  useNotificationByTransactionId,
-} from '../notifications/notification-hooks';
+import { useDeleteNotification } from '../notifications/notification-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import { getErrorMessage } from '../shared/error';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
@@ -120,14 +117,19 @@ export function TransactionDetails({
     },
   });
 
-  const { data: notification } = useNotificationByTransactionId(transaction.id);
   const { mutate: deleteNotification } = useDeleteNotification();
+  const paymentReceivedNotification = transaction.notifications.find(
+    (notification) => notification.type === 'PAYMENT_RECEIVED',
+  );
 
   useEffect(() => {
-    if (notification && ['COMPLETED', 'REVERSED'].includes(transaction.state)) {
-      deleteNotification({ notificationId: notification.id });
+    if (
+      paymentReceivedNotification &&
+      ['COMPLETED', 'REVERSED'].includes(transaction.state)
+    ) {
+      deleteNotification({ notificationId: paymentReceivedNotification.id });
     }
-  }, [notification, transaction.state, deleteNotification]);
+  }, [paymentReceivedNotification, transaction.state, deleteNotification]);
 
   const isWaitingForStateUpdate =
     didReclaimMutationSucceed &&

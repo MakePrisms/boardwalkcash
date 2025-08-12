@@ -3,10 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { LinkWithViewTransition } from '~/lib/transitions';
-import {
-  useDeleteAllNotificationsByType,
-  useNotifications,
-} from '../notifications/notification-hooks';
+import { useDeleteAllNotificationsByType } from '../notifications/notification-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import type { Transaction } from './transaction';
 import { useTransactions } from './transaction-hooks';
@@ -229,9 +226,6 @@ export function TransactionList() {
     status,
   } = useTransactions();
 
-  const { data: notifications } = useNotifications({
-    type: 'PAYMENT_RECEIVED',
-  });
   const { mutate: deleteAllNotifications } = useDeleteAllNotificationsByType({
     type: 'PAYMENT_RECEIVED',
   });
@@ -245,16 +239,22 @@ export function TransactionList() {
   const allTransactions =
     data?.pages.flatMap((page) => page.transactions) ?? [];
 
-  const notificationTransactionIds = new Set(
-    notifications.map((notification) => notification.transactionId),
+  const paymentReceivedTransactionIds = new Set(
+    allTransactions
+      .filter((transaction) =>
+        transaction.notifications.some(
+          (notification) => notification.type === 'PAYMENT_RECEIVED',
+        ),
+      )
+      .map((transaction) => transaction.id),
   );
 
   const extendedTransactions = useMemo(() => {
     return allTransactions.map((transaction) => ({
       ...transaction,
-      hasNotification: notificationTransactionIds.has(transaction.id),
+      hasNotification: paymentReceivedTransactionIds.has(transaction.id),
     }));
-  }, [allTransactions, notificationTransactionIds]);
+  }, [allTransactions, paymentReceivedTransactionIds]);
 
   const {
     pendingTransactions,

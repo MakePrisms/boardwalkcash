@@ -169,8 +169,25 @@ function useOnTransactionChange({
           payload: RealtimePostgresChangesPayload<AgicashDbTransaction>,
         ) => {
           if (payload.eventType === 'UPDATE') {
+            // TODO: can we get the notification from the event object instead?
+            const { data: notifications, error } = await agicashDb
+              .from('notifications')
+              .select('*')
+              .eq('transaction_id', payload.new.id);
+            if (error) {
+              throw new Error(
+                'Failed to get notifications by transaction id.',
+                {
+                  cause: error,
+                },
+              );
+            }
+
             const updatedTransaction =
-              await transactionRepository.toTransaction(payload.new);
+              await transactionRepository.toTransaction({
+                ...payload.new,
+                notifications,
+              });
             onUpdatedRef.current(updatedTransaction);
           }
         },

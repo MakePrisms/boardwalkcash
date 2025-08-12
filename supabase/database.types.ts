@@ -972,23 +972,7 @@ export type Database = {
           p_page_size?: number
           p_user_id: string
         }
-        Returns: {
-          account_id: string
-          completed_at: string | null
-          created_at: string
-          currency: string
-          direction: string
-          encrypted_transaction_details: string
-          failed_at: string | null
-          id: string
-          pending_at: string | null
-          reversed_at: string | null
-          reversed_transaction_id: string | null
-          state: string
-          state_sort_order: number | null
-          type: string
-          user_id: string
-        }[]
+        Returns: Database["wallet"]["CompositeTypes"]["transaction_with_notifications"][]
       }
       process_cashu_receive_quote_payment: {
         Args: {
@@ -1032,6 +1016,26 @@ export type Database = {
           | Database["wallet"]["Tables"]["cashu_send_quotes"]["Row"]
           | null
         updated_account: Database["wallet"]["Tables"]["accounts"]["Row"] | null
+      }
+      transaction_with_notifications: {
+        id: string | null
+        user_id: string | null
+        direction: string | null
+        type: string | null
+        state: string | null
+        account_id: string | null
+        currency: string | null
+        created_at: string | null
+        pending_at: string | null
+        completed_at: string | null
+        failed_at: string | null
+        reversed_transaction_id: string | null
+        reversed_at: string | null
+        state_sort_order: number | null
+        encrypted_transaction_details: string | null
+        notifications:
+          | Database["wallet"]["Tables"]["notifications"]["Row"][]
+          | null
       }
       update_cashu_send_quote_result: {
         updated_quote:

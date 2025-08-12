@@ -208,7 +208,9 @@ export type Database = MergeDeep<
             p_cursor_id?: string | null;
             p_page_size?: number;
           };
-          Returns: AgicashDbTransaction[];
+          Returns: (AgicashDbTransaction & {
+            notifications: AgicashDbNotification[];
+          })[];
         };
       };
       CompositeTypes: {
