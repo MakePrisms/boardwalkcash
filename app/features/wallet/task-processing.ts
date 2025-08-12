@@ -35,7 +35,7 @@ export const useTakeTaskProcessingLead = () => {
       return taskProcessingLockRepository.takeLead(userId, clientId);
     },
     refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
   });
 
   useEffect(() => {
