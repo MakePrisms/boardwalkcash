@@ -66,6 +66,7 @@ export type Database = {
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
+          reusable_cashu_receive_quote_id: number | null
           state: string
           transaction_id: string
           type: string
@@ -88,6 +89,7 @@ export type Database = {
           output_amounts?: number[] | null
           payment_request: string
           quote_id: string
+          reusable_cashu_receive_quote_id?: number | null
           state: string
           transaction_id: string
           type: string
@@ -110,6 +112,7 @@ export type Database = {
           output_amounts?: number[] | null
           payment_request?: string
           quote_id?: string
+          reusable_cashu_receive_quote_id?: number | null
           state?: string
           transaction_id?: string
           type?: string
@@ -123,6 +126,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashu_receive_quotes_reusable_cashu_receive_quote_id_fkey"
+            columns: ["reusable_cashu_receive_quote_id"]
+            isOneToOne: false
+            referencedRelation: "reusable_cashu_receive_quotes"
             referencedColumns: ["id"]
           },
           {
@@ -465,6 +475,69 @@ export type Database = {
           },
         ]
       }
+      reusable_cashu_receive_quotes: {
+        Row: {
+          account_id: string
+          amount: number | null
+          amount_issued: number
+          amount_paid: number
+          created_at: string
+          currency: string | null
+          expires_at: string | null
+          id: number
+          locking_derivation_path: string
+          payment_request: string
+          quote_id: string
+          receive_quote_ids: string[]
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount?: number | null
+          amount_issued?: number
+          amount_paid?: number
+          created_at?: string
+          currency?: string | null
+          expires_at?: string | null
+          id?: number
+          locking_derivation_path: string
+          payment_request: string
+          quote_id: string
+          receive_quote_ids?: string[]
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number | null
+          amount_issued?: number
+          amount_paid?: number
+          created_at?: string
+          currency?: string | null
+          expires_at?: string | null
+          id?: number
+          locking_derivation_path?: string
+          payment_request?: string
+          quote_id?: string
+          receive_quote_ids?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reusable_cashu_receive_quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reusable_cashu_receive_quotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_processing_locks: {
         Row: {
           expires_at: string
@@ -666,6 +739,7 @@ export type Database = {
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
+          reusable_cashu_receive_quote_id: number | null
           state: string
           transaction_id: string
           type: string
@@ -731,6 +805,7 @@ export type Database = {
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
+          reusable_cashu_receive_quote_id: number | null
           state: string
           transaction_id: string
           type: string
@@ -853,6 +928,33 @@ export type Database = {
           version: number
         }
       }
+      create_reusable_cashu_receive_quote: {
+        Args: {
+          p_account_id: string
+          p_amount?: number
+          p_currency: string
+          p_expires_at?: string
+          p_locking_derivation_path: string
+          p_payment_request: string
+          p_quote_id: string
+          p_user_id: string
+        }
+        Returns: {
+          account_id: string
+          amount: number | null
+          amount_issued: number
+          amount_paid: number
+          created_at: string
+          currency: string | null
+          expires_at: string | null
+          id: number
+          locking_derivation_path: string
+          payment_request: string
+          quote_id: string
+          receive_quote_ids: string[]
+          user_id: string
+        }
+      }
       expire_cashu_receive_quote: {
         Args: { p_quote_id: string; p_quote_version: number }
         Returns: {
@@ -870,6 +972,7 @@ export type Database = {
           output_amounts: number[] | null
           payment_request: string
           quote_id: string
+          reusable_cashu_receive_quote_id: number | null
           state: string
           transaction_id: string
           type: string

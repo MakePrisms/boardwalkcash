@@ -71,7 +71,7 @@ type CreateQuote = {
   receiveType: CashuReceiveQuote['type'];
 } & (
   | {
-      receiveType: 'LIGHTNING';
+      receiveType: 'LIGHTNING' | 'ONCHAIN';
     }
   | {
       receiveType: 'TOKEN';
@@ -158,6 +158,7 @@ export class CashuReceiveQuoteRepository {
       p_locking_derivation_path: lockingDerivationPath,
       p_receive_type: receiveType,
       p_encrypted_transaction_details: encryptedTransactionDetails,
+      // TODO: include reusable quote id if it exists
     });
 
     if (options?.abortSignal) {

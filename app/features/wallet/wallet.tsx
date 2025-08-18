@@ -7,6 +7,7 @@ import { supabaseSessionStore } from '../agicash-db/supabase-session-store';
 import { LoadingScreen } from '../loading/LoadingScreen';
 import { useTrackPendingCashuReceiveQuotes } from '../receive/cashu-receive-quote-hooks';
 import { useTrackPendingCashuTokenSwaps } from '../receive/cashu-token-swap-hooks';
+import { useTrackActiveReusableReceiveQuotes } from '../receive/reusable-cashu-receive-quote-hooks';
 import { useTrackUnresolvedCashuSendQuotes } from '../send/cashu-send-quote-hooks';
 import { useTrackUnresolvedCashuSendSwaps } from '../send/cashu-send-swap-hooks';
 import { useTheme } from '../theme';
@@ -95,13 +96,16 @@ const Wallet = ({ children }: PropsWithChildren) => {
     useTrackUnresolvedCashuSendQuotes();
   const unresolvedCashuSendSwapsSubscription =
     useTrackUnresolvedCashuSendSwaps();
+  const activeReusableCashuReceiveQuotesSubscription =
+    useTrackActiveReusableReceiveQuotes();
 
   if (
     accountsSubscription === 'subscribing' ||
     pendingCashuReceiveQuotesSubscription === 'subscribing' ||
     pendingCashuTokenSwapsSubscription === 'subscribing' ||
     unresolvedCashuSendQuotesSubscription === 'subscribing' ||
-    unresolvedCashuSendSwapsSubscription === 'subscribing'
+    unresolvedCashuSendSwapsSubscription === 'subscribing' ||
+    activeReusableCashuReceiveQuotesSubscription === 'subscribing'
   ) {
     return <LoadingScreen />;
   }

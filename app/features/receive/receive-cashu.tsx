@@ -24,19 +24,61 @@ import {
   useCreateCashuReceiveQuote,
 } from './cashu-receive-quote-hooks';
 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from '~/components/ui/carousel';
+import { useCreateOnchainReceiveQuote } from './reusable-cashu-receive-quote-hooks';
+
 type MintQuoteProps = {
   account: CashuAccount;
-  amount: Money;
+  amount?: Money;
   onPaid: (quote: CashuReceiveQuote) => void;
   onCopy?: (paymentRequest: string) => void;
 };
+
+function OnchainQuoteCarouselItem({
+  account,
+  onCopy,
+}: {
+  account: CashuAccount;
+  onCopy?: (paymentRequest: string) => void;
+}) {
+  const {
+    mutate: createQuote,
+    data: quote,
+    status: createQuoteStatus,
+    error,
+  } = useCreateOnchainReceiveQuote();
+
+  return (
+    <CarouselItem
+      onPresented={() => {
+        createQuote({ account });
+      }}
+    >
+      <QRCode
+        value={quote?.request}
+        description="Click to copy. Send an onchain payment to this address."
+        error={error?.message}
+        isLoading={['pending', 'idle'].includes(createQuoteStatus)}
+        onClick={
+          quote?.request && onCopy ? () => onCopy(quote.request) : undefined
+        }
+      />
+    </CarouselItem>
+  );
+}
 
 function MintQuoteCarouselItem({
   account,
   amount,
   onPaid,
   onCopy,
-}: MintQuoteProps) {
+}: MintQuoteProps & {
+  amount: Money;
+}) {
   const {
     mutate: createQuote,
     data: createdQuote,
@@ -53,35 +95,42 @@ function MintQuoteCarouselItem({
 
   useEffectNoStrictMode(() => {
     if (!quote) {
-      createQuote({ account, amount });
+      createQuote({ account, amount, type: 'LIGHTNING' });
     }
   }, [quote, createQuote, amount, account]);
 
   return (
-    <QRCode
-      value={quote?.paymentRequest}
-      description="Scan with any Lightning wallet."
-      error={
-        isExpired
-          ? 'This invoice has expired. Please create a new one.'
-          : error?.message
-      }
-      isLoading={['pending', 'idle'].includes(createQuoteStatus)}
-      onClick={
-        quote?.paymentRequest && onCopy
-          ? () => onCopy(quote.paymentRequest)
-          : undefined
-      }
-    />
+    <CarouselItem>
+      <QRCode
+        value={quote?.paymentRequest}
+        description="Scan with any Lightning wallet."
+        error={
+          isExpired
+            ? 'This invoice has expired. Please create a new one.'
+            : error?.message
+        }
+        isLoading={['pending', 'idle'].includes(createQuoteStatus)}
+        onClick={
+          quote?.paymentRequest && onCopy
+            ? () => onCopy(quote.paymentRequest)
+            : undefined
+        }
+      />
+    </CarouselItem>
   );
 }
 
 type Props = {
-  amount: Money;
+  amount: Money | null;
   account: CashuAccount;
+  onchainOnly?: boolean;
 };
 
-export default function ReceiveCashu({ amount, account }: Props) {
+export default function ReceiveCashu({
+  amount,
+  account,
+  onchainOnly = false,
+}: Props) {
   const [showOk, setShowOk] = useState(false);
   const [, copyToClipboard] = useCopyToClipboard();
   const { toast } = useToast();
@@ -90,7 +139,9 @@ export default function ReceiveCashu({ amount, account }: Props) {
   const handleCopy = (paymentRequest: string) => {
     copyToClipboard(paymentRequest);
     toast({
-      title: 'Copied Lightning invoice',
+      title: onchainOnly
+        ? 'Copied Bitcoin address'
+        : 'Copied Lightning invoice',
       description: `${paymentRequest.slice(0, 5)}...${paymentRequest.slice(-5)}`,
       duration: 1000,
     });
@@ -105,21 +156,41 @@ export default function ReceiveCashu({ amount, account }: Props) {
           transition="slideDown"
           applyTo="oldView"
         />
-        <PageHeaderTitle>Receive Ecash</PageHeaderTitle>
+        <PageHeaderTitle>
+          {onchainOnly ? 'Receive Bitcoin' : 'Receive Ecash'}
+        </PageHeaderTitle>
       </PageHeader>
       <PageContent className="flex flex-col items-center overflow-x-hidden overflow-y-hidden">
-        <MoneyWithConvertedAmount money={amount} />
-        <MintQuoteCarouselItem
-          account={account}
-          amount={amount}
-          onPaid={(quote) => {
-            navigate(`/transactions/${quote.transactionId}?redirectTo=/`, {
-              transition: 'fade',
-              applyTo: 'newView',
-            });
-          }}
-          onCopy={handleCopy}
-        />
+        {amount && !onchainOnly ? (
+          <MoneyWithConvertedAmount money={amount} />
+        ) : (
+          <div className="h-[116px] w-full" />
+        )}
+        <Carousel opts={{ align: 'center', loop: true }}>
+          <CarouselContent>
+            {amount && (
+              <MintQuoteCarouselItem
+                account={account}
+                amount={amount}
+                onPaid={(quote) => {
+                  navigate(
+                    `/transactions/${quote.transactionId}?redirectTo=/`,
+                    {
+                      transition: 'fade',
+                      applyTo: 'newView',
+                    },
+                  );
+                }}
+                onCopy={handleCopy}
+              />
+            )}
+            <OnchainQuoteCarouselItem
+              account={account}
+              // onPaid={}
+              onCopy={handleCopy}
+            />
+          </CarouselContent>
+        </Carousel>
       </PageContent>
       {showOk && (
         <PageFooter className="pb-14">

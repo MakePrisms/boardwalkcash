@@ -163,6 +163,11 @@ export type Database = MergeDeep<
             state: Transaction['state'];
           };
         };
+        reusable_cashu_receive_quotes: {
+          Row: {
+            currency: Currency;
+          };
+        };
       };
       Functions: {
         upsert_user_with_accounts: {
@@ -236,3 +241,5 @@ export type AgicashDbTransaction =
 export type AgicashDbContact = Database['wallet']['Tables']['contacts']['Row'];
 export type AgicashDbCashuSendSwap =
   Database['wallet']['Tables']['cashu_send_swaps']['Row'];
+export type AgicashDbReusableCashuReceiveQuote =
+  Database['wallet']['Tables']['reusable_cashu_receive_quotes']['Row'];

@@ -1,6 +1,7 @@
 import {
   HttpResponseError,
   type MintQuoteResponse,
+  type OnchainMintQuoteResponse,
   type WebSocketSupport,
 } from '@cashu/cashu-ts';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -46,12 +47,23 @@ import {
 } from './cashu-receive-quote-repository';
 import { useCashuReceiveQuoteService } from './cashu-receive-quote-service';
 import { MintQuoteSubscriptionManager } from './mint-quote-subscription-manager';
+import type { ReusableCashuReceiveOnchainQuote } from './reusable-cashu-receive-quote-service';
 
 type CreateProps = {
   account: CashuAccount;
   amount: Money;
+  receiveQuote?: ReusableCashuReceiveOnchainQuote;
   description?: string;
-};
+  type: 'LIGHTNING' | 'ONCHAIN';
+} & (
+  | {
+      type: 'LIGHTNING';
+    }
+  | {
+      type: 'ONCHAIN';
+      receiveQuote: ReusableCashuReceiveOnchainQuote;
+    }
+);
 
 // Query that tracks the "active" cashu receive quote. Active one is the one that user created in current browser session.
 // We want to track active quote even after it is expired and completed which is why we can't use pending quotes query.
@@ -136,18 +148,40 @@ export function useCreateCashuReceiveQuote() {
     scope: {
       id: 'create-cashu-receive-quote',
     },
-    mutationFn: async ({ account, amount, description }: CreateProps) => {
-      const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
-        account,
-        amount,
-        description,
-      });
+    mutationFn: async ({
+      account,
+      amount,
+      description,
+      type,
+      receiveQuote,
+    }: CreateProps) => {
+      if (type === 'LIGHTNING') {
+        const lightningQuote = await cashuReceiveQuoteService.getLightningQuote(
+          {
+            account,
+            amount,
+            description,
+          },
+        );
+
+        return cashuReceiveQuoteService.createReceiveQuote({
+          userId,
+          account,
+          receiveType: 'LIGHTNING',
+          receiveQuote: lightningQuote,
+        });
+      }
+
+      const onchainReceiveQuote: ReusableCashuReceiveOnchainQuote = {
+        ...receiveQuote,
+        mintQuote: receiveQuote.mintQuote,
+      };
 
       return cashuReceiveQuoteService.createReceiveQuote({
         userId,
         account,
-        receiveType: 'LIGHTNING',
-        receiveQuote: lightningQuote,
+        receiveType: 'ONCHAIN',
+        receiveQuote: onchainReceiveQuote,
       });
     },
     onSuccess: (data) => {
@@ -323,15 +357,21 @@ const checkIfMintSupportsWebSocketsForMintQuotes = (
 type TrackMintQuotesWithPollingProps = {
   quotes: CashuReceiveQuote[];
   getCashuAccount: (accountId: string) => Promise<CashuAccount>;
-  onFetched: (mintQuoteResponse: MintQuoteResponse) => void;
+  onFetched: (
+    mintQuoteResponse: MintQuoteResponse | OnchainMintQuoteResponse,
+  ) => void;
 };
 
 const checkMintQuote = async (
   account: CashuAccount,
   quote: CashuReceiveQuote,
-): Promise<MintQuoteResponse> => {
+): Promise<MintQuoteResponse | OnchainMintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
   const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+
+  if (quote.type === 'ONCHAIN') {
+    return wallet.checkMintQuoteOnchain(quote.quoteId);
+  }
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
@@ -360,6 +400,7 @@ const useTrackMintQuotesWithPolling = ({
         try {
           const account = await getCashuAccount(quote.accountId);
           const mintQuoteResponse = await checkMintQuote(account, quote);
+          console.debug('Mint quote fetched', mintQuoteResponse);
 
           onFetched(mintQuoteResponse);
 
@@ -391,7 +432,9 @@ const useTrackMintQuotesWithPolling = ({
 type TrackMintQuotesWithWebSocketProps = {
   quotesByMint: Record<string, CashuReceiveQuote[]>;
   getCashuAccount: (accountId: string) => Promise<CashuAccount>;
-  onUpdate: (mintQuoteResponse: MintQuoteResponse) => void;
+  onUpdate: (
+    mintQuoteResponse: MintQuoteResponse | OnchainMintQuoteResponse,
+  ) => void;
 };
 
 /**
@@ -573,6 +616,12 @@ const usePartitionQuotesByStateCheckType = ({
         account.currency,
       );
 
+      if (quote.type === 'ONCHAIN') {
+        // TODO: check info for `onchain_mint_quote`
+        quotesToPoll.push(quote);
+        return;
+      }
+
       if (mintSupportsWebSockets) {
         const quotesForMint = quotesToSubscribeTo[account.mintUrl] ?? [];
         quotesToSubscribeTo[account.mintUrl] = quotesForMint.concat(quote);
@@ -609,8 +658,14 @@ const useOnMintQuoteStateChange = ({
   const getCashuAccount = useGetLatestCashuAccount();
 
   const processMintQuote = useCallback(
-    async (mintQuote: MintQuoteResponse) => {
+    async (mintQuote: MintQuoteResponse | OnchainMintQuoteResponse) => {
       console.debug('Mint quote updated', mintQuote);
+
+      const isOnchainMintQuote = (
+        mintQuote: MintQuoteResponse | OnchainMintQuoteResponse,
+      ): mintQuote is OnchainMintQuoteResponse => {
+        return 'amount_paid' in mintQuote && 'amount_issued' in mintQuote;
+      };
 
       const relatedReceiveQuote = pendingQuotesCache.getByMintQuoteId(
         mintQuote.quote,
@@ -625,6 +680,14 @@ const useOnMintQuoteStateChange = ({
 
       const expiresAt = new Date(relatedReceiveQuote.expiresAt);
       const now = new Date();
+
+      if (isOnchainMintQuote(mintQuote)) {
+        if (mintQuote.amount_paid > mintQuote.amount_issued) {
+          console.debug('Onchain mint quote paid');
+          onPaidRef.current(account, relatedReceiveQuote);
+        }
+        return;
+      }
 
       if (
         mintQuote.state === 'UNPAID' &&

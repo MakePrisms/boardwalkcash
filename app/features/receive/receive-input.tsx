@@ -1,5 +1,5 @@
 import { getEncodedToken } from '@cashu/cashu-ts';
-import { ArrowUpDown, Clipboard, Scan } from 'lucide-react';
+import { ArrowUpDown, Clipboard, Link, Scan } from 'lucide-react';
 import { MoneyDisplay, MoneyInputDisplay } from '~/components/money-display';
 import { Numpad } from '~/components/numpad';
 import {
@@ -133,6 +133,23 @@ export default function ReceiveInput() {
     );
   };
 
+  const handleOnchainReceive = () => {
+    if (receiveAccount.type === 'cashu') {
+      setReceiveAccount(receiveAccount);
+      // TODO: put onchian data in receive store not in query params
+      navigate('/receive/cashu?onchain=true', {
+        transition: 'slideLeft',
+        applyTo: 'newView',
+      });
+    } else {
+      toast({
+        title: 'Not implemented',
+        description: 'Choose a cashu account and try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       <PageHeader>
@@ -185,6 +202,10 @@ export default function ReceiveInput() {
               >
                 <Scan />
               </LinkWithViewTransition>
+
+              <button type="button" onClick={handleOnchainReceive}>
+                <Link />
+              </button>
             </div>
             <div /> {/* spacer */}
             <Button onClick={handleContinue} disabled={inputValue.isZero()}>
