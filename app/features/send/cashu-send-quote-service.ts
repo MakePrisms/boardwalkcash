@@ -275,7 +275,6 @@ export class CashuSendQuoteService {
       );
     }
 
-    // TODO: Confirm with Damien that we can subtract proofs fee here as well. I think we can becaue proofs fee should never have change
     const maxPotentialChangeAmount =
       proofsToSendSum - meltQuote.amount - proofsFee;
     const numberOfChangeOutputs =

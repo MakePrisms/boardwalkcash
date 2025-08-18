@@ -1,21 +1,37 @@
-import { useOpenSecret } from '@opensecret/react';
+import { requestNewVerificationCode } from '@opensecret/react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { type AuthUser, useAuthState } from '~/features/user/auth';
+import { useAuthActions, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
 import type { Account } from '../accounts/account';
-import {
-  BASE_CASHU_LOCKING_DERIVATION_PATH,
-  useCashuCryptography,
-} from '../shared/cashu';
-import { useEncryptionPublicKeyHex } from '../shared/encryption';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
-import { type UpdateUser, useUserRepository } from './user-repository';
+import {
+  type UpdateUser,
+  type UserRepository,
+  useUserRepository,
+} from './user-repository';
 
-const userQueryKey = 'user';
+export const userQueryKey = 'user';
+
+export const userQuery = <TData = User>({
+  userId,
+  userRepository,
+  select,
+}: {
+  userId: string;
+  userRepository: UserRepository;
+  select?: (data: User) => TData;
+}) => ({
+  queryKey: [userQueryKey],
+  queryFn: () => {
+    console.debug('querying user', userId);
+    return userRepository.get(userId);
+  },
+  select,
+});
 
 /**
  * This hook returns the logged in user data.
@@ -33,18 +49,16 @@ export const useUser = <TData = User>(
 
   const userRepository = useUserRepository();
 
-  const response = useSuspenseQuery({
-    queryKey: [userQueryKey],
-    queryFn: () => userRepository.get(authUser.id),
-    select,
-  });
+  const { data } = useSuspenseQuery(
+    userQuery({ userId: authUser.id, userRepository, select }),
+  );
 
-  return response.data;
+  return data;
 };
 
 const isDevelopmentMode = import.meta.env.MODE === 'development';
 
-const defaultAccounts = [
+export const defaultAccounts = [
   {
     type: 'cashu',
     currency: 'BTC',
@@ -93,38 +107,6 @@ const defaultAccounts = [
     : []),
 ] as const;
 
-export const useUpsertUser = () => {
-  const queryClient = useQueryClient();
-  const userRepository = useUserRepository();
-  const cashuCryptography = useCashuCryptography();
-  const encryptionPublicKey = useEncryptionPublicKeyHex();
-
-  return useMutation({
-    mutationKey: ['user-upsert'],
-    mutationFn: async (user: AuthUser) => {
-      const cashuLockingXpub = await cashuCryptography.getXpub(
-        BASE_CASHU_LOCKING_DERIVATION_PATH,
-      );
-
-      return userRepository.upsert({
-        id: user.id,
-        email: user.email,
-        emailVerified: user.email_verified,
-        accounts: [...defaultAccounts],
-        cashuLockingXpub,
-        encryptionPublicKey,
-      });
-    },
-    scope: {
-      id: 'user-upsert',
-    },
-    onSuccess: (user) => {
-      queryClient.setQueryData<User>([userQueryKey], user);
-    },
-    throwOnError: true,
-  });
-};
-
 export const useUserRef = () => {
   const user = useUser();
   return useLatest(user);
@@ -135,7 +117,7 @@ export const useUpgradeGuestToFullAccount = (): ((
   password: string,
 ) => Promise<void>) => {
   const userRef = useUserRef();
-  const { convertGuestToUserAccount } = useOpenSecret();
+  const { convertGuestToFullAccount } = useAuthActions();
 
   const { mutateAsync } = useMutation({
     mutationKey: ['upgrade-guest-to-full-account'],
@@ -144,7 +126,7 @@ export const useUpgradeGuestToFullAccount = (): ((
         throw new Error('User already has a full account');
       }
 
-      return convertGuestToUserAccount(
+      return convertGuestToFullAccount(
         variables.email,
         variables.password,
       ).then(() => {
@@ -164,7 +146,6 @@ export const useUpgradeGuestToFullAccount = (): ((
 
 export const useRequestNewEmailVerificationCode = (): (() => Promise<void>) => {
   const userRef = useUserRef();
-  const { requestNewVerificationCode } = useOpenSecret();
 
   const { mutateAsync } = useMutation({
     mutationKey: ['request-new-email-verification-code'],
@@ -188,10 +169,9 @@ export const useRequestNewEmailVerificationCode = (): (() => Promise<void>) => {
 
 export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
   const userRef = useUserRef();
-  const { verifyEmail, refetchUser } = useOpenSecret();
+  const { verifyEmail } = useAuthActions();
 
   const { mutateAsync } = useMutation({
-    mutationKey: ['verify-email'],
     mutationFn: (code: string) => {
       if (userRef.current.isGuest) {
         throw new Error('Cannot verify email for guest account');
@@ -200,7 +180,7 @@ export const useVerifyEmail = (): ((code: string) => Promise<void>) => {
         throw new Error('Email is already verified');
       }
 
-      return verifyEmail(code).then(refetchUser);
+      return verifyEmail(code);
     },
     scope: {
       id: 'verify-email',
@@ -217,10 +197,8 @@ const useUpdateUser = () => {
 
   return useMutation({
     mutationFn: (updates: UpdateUser) => userRepository.update(userId, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [userQueryKey],
-      });
+    onSuccess: (data) => {
+      queryClient.setQueryData([userQueryKey], data);
     },
   });
 };

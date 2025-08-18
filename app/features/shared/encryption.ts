@@ -1,4 +1,4 @@
-import { useOpenSecret } from '@opensecret/react';
+import { getPrivateKeyBytes, getPublicKey } from '@opensecret/react';
 import { decode, encode } from '@stablelib/base64';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -9,35 +9,31 @@ import { hexToUint8Array } from '~/lib/utils';
 // 10111099 is 'enc' (for encryption) in ascii
 const encryptionKeyDerivationPath = `m/10111099'/0'`;
 
+export const encryptionPrivateKeyQuery = () => ({
+  queryKey: ['encryption-private-key'],
+  queryFn: () =>
+    getPrivateKeyBytes({
+      private_key_derivation_path: encryptionKeyDerivationPath,
+    }).then((response) => hexToUint8Array(response.private_key)),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
 export const useEncryptionPrivateKey = () => {
-  const { getPrivateKeyBytes } = useOpenSecret();
-
-  const { data } = useSuspenseQuery({
-    queryKey: ['encryption-private-key'],
-    queryFn: () =>
-      getPrivateKeyBytes({
-        private_key_derivation_path: encryptionKeyDerivationPath,
-      }).then((response) => {
-        return hexToUint8Array(response.private_key);
-      }),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-
+  const { data } = useSuspenseQuery(encryptionPrivateKeyQuery());
   return data;
 };
 
+export const encryptionPublicKeyQuery = () => ({
+  queryKey: ['encryption-public-key'],
+  queryFn: () =>
+    getPublicKey('schnorr', {
+      private_key_derivation_path: encryptionKeyDerivationPath,
+    }).then((response) => response.public_key),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
 export const useEncryptionPublicKeyHex = () => {
-  const { getPublicKey } = useOpenSecret();
-
-  const { data } = useSuspenseQuery({
-    queryKey: ['encryption-public-key'],
-    queryFn: () =>
-      getPublicKey('schnorr', {
-        private_key_derivation_path: encryptionKeyDerivationPath,
-      }).then((response) => response.public_key),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
-
+  const { data } = useSuspenseQuery(encryptionPublicKeyQuery());
   return data;
 };
 
@@ -155,6 +151,18 @@ type Encryption = {
   decrypt: <T = unknown>(data: string) => Promise<T>;
 };
 
+export const getEncryption = (
+  privateKey: Uint8Array,
+  publicKeyHex: string,
+): Encryption => {
+  return {
+    encrypt: async <T = unknown>(data: T) =>
+      encryptToPublicKey(data, publicKeyHex),
+    decrypt: async <T = unknown>(data: string) =>
+      decryptWithPrivateKey<T>(data, privateKey),
+  };
+};
+
 /**
  * Hook that provides the encryption functions.
  * Reference of the returned data is stable and doesn't change between renders.
@@ -168,12 +176,8 @@ export const useEncryption = (): Encryption => {
   const privateKey = useEncryptionPrivateKey();
   const publicKeyHex = useEncryptionPublicKeyHex();
 
-  return useMemo(() => {
-    return {
-      encrypt: async <T = unknown>(data: T) =>
-        encryptToPublicKey(data, publicKeyHex),
-      decrypt: async <T = unknown>(data: string) =>
-        decryptWithPrivateKey<T>(data, privateKey),
-    };
-  }, [privateKey, publicKeyHex]);
+  return useMemo(
+    () => getEncryption(privateKey, publicKeyHex),
+    [privateKey, publicKeyHex],
+  );
 };

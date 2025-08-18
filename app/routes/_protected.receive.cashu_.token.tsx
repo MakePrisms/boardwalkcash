@@ -1,26 +1,38 @@
 import { Suspense } from 'react';
-import { useLocation, useSearchParams } from 'react-router';
+import { redirect } from 'react-router';
 import { Page } from '~/components/page';
-import { Redirect } from '~/components/redirect';
+import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { ReceiveCashuToken } from '~/features/receive';
 import { extractCashuToken } from '~/lib/cashu';
+import type { Route } from './+types/_protected.receive.cashu_.token';
 import { ReceiveCashuTokenSkeleton } from './receive-cashu-token-skeleton';
 
-export default function ProtectedReceiveCashuToken() {
-  const location = useLocation();
-  const token = extractCashuToken(location.hash);
-  const [searchParams] = useSearchParams();
-  const autoClaim = searchParams.get('autoClaim') === 'true';
-  const selectedAccountId = searchParams.get('selectedAccountId') ?? undefined;
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  // Request url doesn't include hash so we need to read it from the window location instead
+  const token = extractCashuToken(window.location.hash);
 
   if (!token) {
-    return (
-      <Redirect
-        to="/receive"
-        logMessage="No token in URL. Redirecting to receive page."
-      />
-    );
+    throw redirect('/receive');
   }
+
+  const location = new URL(request.url);
+  const selectedAccountId =
+    location.searchParams.get('selectedAccountId') ?? undefined;
+  const autoClaim = location.searchParams.get('autoClaim') === 'true';
+
+  return { token, autoClaim, selectedAccountId };
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <LoadingScreen />;
+}
+
+export default function ProtectedReceiveCashuToken({
+  loaderData,
+}: Route.ComponentProps) {
+  const { token, autoClaim, selectedAccountId } = loaderData;
 
   return (
     <Page>
