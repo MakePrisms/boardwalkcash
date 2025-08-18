@@ -11,10 +11,9 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   getCashuUnit,
-  getCashuWallet,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
-import type { CashuAccount } from '../accounts/account';
+import type { CashuAccount, ExtendedCashuAccount } from '../accounts/account';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
   type CashuCryptography,
@@ -72,7 +71,7 @@ export class CashuReceiveQuoteService {
     /**
      * The cashu account to which the money will be received.
      */
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     /**
      * The amount to receive.
      */
@@ -84,9 +83,7 @@ export class CashuReceiveQuoteService {
   }): Promise<CashuReceiveLightningQuote> {
     const cashuUnit = getCashuUnit(amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
 
     const { lockingPublicKey, fullLockingDerivationPath } =
       await this.deriveNut20LockingPublicKey();
@@ -128,7 +125,7 @@ export class CashuReceiveQuoteService {
     /**
      * The cashu account to which the money will be received.
      */
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     /**
      * Whether this is for a regular lighting invoice or
      * melting a token to this account.
@@ -208,7 +205,7 @@ export class CashuReceiveQuoteService {
    * @param quote - The cashu receive quote to complete.
    */
   async completeReceive(
-    account: CashuAccount,
+    account: ExtendedCashuAccount,
     quote: CashuReceiveQuote,
   ): Promise<void> {
     if (quote.accountId !== account.id) {
@@ -228,10 +225,7 @@ export class CashuReceiveQuoteService {
     const seed = await this.cryptography.getSeed();
     const cashuUnit = getCashuUnit(quote.amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keysetId = quote.state === 'PAID' ? quote.keysetId : undefined;
     const keys = await wallet.getKeys(keysetId);

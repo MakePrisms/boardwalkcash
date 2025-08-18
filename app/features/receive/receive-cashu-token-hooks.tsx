@@ -2,8 +2,8 @@ import type { Token } from '@cashu/cashu-ts';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
-  Account,
   CashuAccount,
+  ExtendedAccount,
   ExtendedCashuAccount,
 } from '~/features/accounts/account';
 import {
@@ -26,7 +26,7 @@ import type { AccountWithBadges } from '../accounts/account-selector';
 import { useUser } from '../user/user-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
 
-type CashuAccountWithBadges = AccountWithBadges<CashuAccount>;
+type CashuAccountWithBadges = AccountWithBadges<ExtendedCashuAccount>;
 
 type UseGetClaimableTokenProps = {
   token: Token;
@@ -98,6 +98,9 @@ export function useCashuTokenSourceAccountQuery(
           keysetCounters: {},
           proofs: [],
           isDefault: false,
+          wallet: getCashuWallet(token.mint, {
+            unit: getCashuUnit(tokenCurrency),
+          }),
         },
       };
     },
@@ -166,10 +169,10 @@ export function useCashuTokenWithClaimableProofs({
 
 const getDefaultReceiveAccount = (
   selectableAccounts: CashuAccountWithBadges[],
-  sourceAccount: CashuAccount,
+  sourceAccount: ExtendedCashuAccount,
   isCrossMintSwapDisabled: boolean,
-  defaultAccount: Account,
-): CashuAccount => {
+  defaultAccount: ExtendedAccount,
+): ExtendedCashuAccount => {
   const targetAccount =
     isCrossMintSwapDisabled || defaultAccount.type !== 'cashu'
       ? sourceAccount
@@ -192,10 +195,10 @@ const getDefaultReceiveAccount = (
 };
 
 const getBadges = (
-  account: CashuAccount,
-  allAccounts: CashuAccount[],
-  sourceAccount: CashuAccount,
-  defaultAccount: Account,
+  account: ExtendedCashuAccount,
+  allAccounts: ExtendedCashuAccount[],
+  sourceAccount: ExtendedCashuAccount,
+  defaultAccount: ExtendedAccount,
   isSourceAccountValid: boolean,
 ) => {
   const badges: string[] = [];
@@ -220,11 +223,11 @@ const getBadges = (
 };
 
 const getSelectableAccounts = (
-  sourceAccount: CashuAccount,
+  sourceAccount: ExtendedCashuAccount,
   isSourceAccountValid: boolean,
   isCrossMintSwapDisabled: boolean,
-  accounts: CashuAccount[],
-  defaultAccount: Account,
+  accounts: ExtendedCashuAccount[],
+  defaultAccount: ExtendedAccount,
 ): CashuAccountWithBadges[] => {
   const baseAccounts = isCrossMintSwapDisabled
     ? [sourceAccount]
@@ -326,7 +329,7 @@ type CreateCrossAccountReceiveQuotesProps = {
   /** The token to claim */
   token: Token;
   /** The account to claim the token to */
-  account: CashuAccount;
+  account: ExtendedCashuAccount;
 };
 
 /**

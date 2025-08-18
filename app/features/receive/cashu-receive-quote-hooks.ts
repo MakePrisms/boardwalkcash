@@ -29,7 +29,7 @@ import {
   setLongTimeout,
 } from '~/lib/timeout';
 import { useLatest } from '~/lib/use-latest';
-import type { CashuAccount } from '../accounts/account';
+import type { CashuAccount, ExtendedCashuAccount } from '../accounts/account';
 import {
   useAccountsCache,
   useGetLatestCashuAccount,
@@ -48,7 +48,7 @@ import { useCashuReceiveQuoteService } from './cashu-receive-quote-service';
 import { MintQuoteSubscriptionManager } from './mint-quote-subscription-manager';
 
 type CreateProps = {
-  account: CashuAccount;
+  account: ExtendedCashuAccount;
   amount: Money;
   description?: string;
 };

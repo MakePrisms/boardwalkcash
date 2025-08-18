@@ -89,7 +89,9 @@ export default function SingleAccount({ accountId }: { accountId: string }) {
         }}
       />
       <PageContent>
-        {account.type === 'cashu' && <CashuAccount account={account} />}
+        {account.type === 'cashu' && (
+          <CashuAccount account={account as ExtendedCashuAccount} />
+        )}
       </PageContent>
     </>
   );

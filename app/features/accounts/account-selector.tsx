@@ -11,15 +11,16 @@ import {
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { cn } from '~/lib/utils';
 import { MoneyWithConvertedAmount } from '../shared/money-with-converted-amount';
-import { type Account, getAccountBalance } from './account';
+import { type ExtendedAccount, getAccountBalance } from './account';
 import { AccountTypeIcon } from './account-icons';
 
-export type AccountWithBadges<T extends Account = Account> = T & {
-  /** Text to display as a badge in the account selector */
-  badges?: string[];
-  /** Whether the account is selectable */
-  selectable?: boolean;
-};
+export type AccountWithBadges<T extends ExtendedAccount = ExtendedAccount> =
+  T & {
+    /** Text to display as a badge in the account selector */
+    badges?: string[];
+    /** Whether the account is selectable */
+    selectable?: boolean;
+  };
 
 function AccountItem({ account }: { account: AccountWithBadges }) {
   const balance = getAccountBalance(account);
@@ -49,14 +50,14 @@ function AccountItem({ account }: { account: AccountWithBadges }) {
   );
 }
 
-type AccountSelectorProps<T extends Account> = {
+type AccountSelectorProps<T extends ExtendedAccount> = {
   accounts: AccountWithBadges<T>[];
   selectedAccount: AccountWithBadges<T>;
   onSelect?: (account: T) => void;
   disabled?: boolean;
 };
 
-export function AccountSelector<T extends Account>({
+export function AccountSelector<T extends ExtendedAccount>({
   accounts,
   onSelect,
   selectedAccount,

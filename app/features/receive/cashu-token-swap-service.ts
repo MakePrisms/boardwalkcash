@@ -8,12 +8,10 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   areMintUrlsEqual,
-  getCashuUnit,
-  getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
 import { sum } from '~/lib/utils';
-import type { CashuAccount } from '../accounts/account';
+import type { ExtendedCashuAccount } from '../accounts/account';
 import {
   type CashuCryptography,
   tokenToMoney,
@@ -39,7 +37,7 @@ export class CashuTokenSwapService {
   }: {
     userId: string;
     token: Token;
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     reversedTransactionId?: string;
   }) {
     if (!areMintUrlsEqual(account.mintUrl, token.mint)) {
@@ -52,13 +50,8 @@ export class CashuTokenSwapService {
       throw new Error('Cannot swap a token to a different currency.');
     }
 
-    const cashuUnit = getCashuUnit(amount.currency);
     const seed = await this.cryptography.getSeed();
-
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
@@ -93,7 +86,7 @@ export class CashuTokenSwapService {
     return tokenSwap;
   }
 
-  async completeSwap(account: CashuAccount, tokenSwap: CashuTokenSwap) {
+  async completeSwap(account: ExtendedCashuAccount, tokenSwap: CashuTokenSwap) {
     if (tokenSwap.state === 'COMPLETED') {
       return;
     }
@@ -102,13 +95,9 @@ export class CashuTokenSwapService {
       throw new Error('Token swap is not pending');
     }
 
-    const cashuUnit = getCashuUnit(tokenSwap.amount.currency);
     const seed = await this.cryptography.getSeed();
 
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const { keysetId, keysetCounter } = tokenSwap;
     const amountToReceive = sum(tokenSwap.outputAmounts);

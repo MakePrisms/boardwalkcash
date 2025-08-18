@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import type { DistributedOmit } from 'type-fest';
-import { checkIsTestMint } from '~/lib/cashu';
+import { checkIsTestMint, getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
@@ -27,6 +27,35 @@ import { AccountRepository, useAccountRepository } from './account-repository';
 
 const accountsQueryKey = 'accounts';
 const accountVersionsQueryKey = 'account-versions';
+
+/**
+ * Hook that provides the wallet preloading function.
+ * @returns Function to preload a wallet for a given mint URL and currency.
+ */
+function useGetPreloadedWallet() {
+  const queryClient = useQueryClient();
+  const cashuCryptography = useCashuCryptography();
+
+  return useCallback(
+    async (mintUrl: string, currency: Currency) => {
+      return queryClient.fetchQuery({
+        queryKey: ['wallet', mintUrl, currency],
+        queryFn: async () => {
+          const seed = await cashuCryptography.getSeed();
+          const wallet = getCashuWallet(mintUrl, {
+            unit: getCashuUnit(currency),
+            bip39seed: seed,
+          });
+          await wallet.loadMint();
+          return wallet;
+        },
+        staleTime: Number.POSITIVE_INFINITY,
+        retry: 3,
+      });
+    },
+    [queryClient, cashuCryptography],
+  );
+}
 
 /**
  * Cache that stores the latest known version of each account.
@@ -283,38 +312,56 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
 }): UseSuspenseQueryResult<ExtendedAccount<T>[]> {
   const user = useUser();
   const accountRepository = useAccountRepository();
+  const getPreloadedWallet = useGetPreloadedWallet();
 
   return useSuspenseQuery({
     queryKey: [accountsQueryKey],
-    queryFn: () => accountRepository.getAll(user.id),
+    queryFn: async () => {
+      const data = await accountRepository.getAll(user.id);
+
+      // Preload wallets for cashu accounts
+      const dataWithWallets = await Promise.all(
+        data.map(async (x) =>
+          x.type === 'cashu'
+            ? {
+                ...x,
+                wallet: await getPreloadedWallet(x.mintUrl, x.currency),
+              }
+            : x,
+        ),
+      );
+
+      return dataWithWallets;
+    },
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
     select: (data) => {
-      const extendedData = data
-        .map((x) => ({
-          ...x,
-          isDefault: isDefaultAccount(user, x),
-        }))
-        .sort((_, b) => (b.isDefault ? 1 : -1)); // Sort the default account to the top
+      const extendedData = data.map((x) => ({
+        ...x,
+        isDefault: isDefaultAccount(user, x),
+      }));
+
+      // Sort the default account to the top
+      const sortedData = extendedData.sort((_, b) => (b.isDefault ? 1 : -1));
 
       if (!select) {
-        return extendedData as ExtendedAccount<T>[];
+        return sortedData as unknown as ExtendedAccount<T>[];
       }
 
-      const filteredData = extendedData.filter(
-        (account): account is ExtendedAccount<T> => {
-          if (select.currency && account.currency !== select.currency) {
-            return false;
-          }
-          if (select.type && account.type !== select.type) {
-            return false;
-          }
-          return true;
-        },
-      );
+      // Apply filtering based on select parameters
+      const filteredData = sortedData.filter((account) => {
+        // Type narrowing through discriminated union pattern
+        if (select.currency && account.currency !== select.currency) {
+          return false;
+        }
+        if (select.type && account.type !== select.type) {
+          return false;
+        }
+        return true;
+      });
 
-      return filteredData;
+      return filteredData as unknown as ExtendedAccount<T>[];
     },
   });
 }
@@ -328,7 +375,6 @@ export function useAccounts<T extends AccountType = AccountType>(select?: {
 export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
   id: string,
 ) {
-  const user = useUser();
   const { data: accounts } = useAccounts();
   const account = accounts.find((x) => x.id === id);
 
@@ -336,7 +382,7 @@ export function useAccount<T extends ExtendedAccount = ExtendedAccount>(
     throw new Error(`Account with id ${id} not found`);
   }
 
-  return { ...account, isDefault: isDefaultAccount(user, account) } as T;
+  return account as T;
 }
 
 type AccountTypeMap = {
@@ -353,12 +399,14 @@ type AccountTypeMap = {
  */
 export function useGetLatestAccount<T extends keyof AccountTypeMap>(
   type: T,
-): (id: string) => Promise<AccountTypeMap[T]>;
+): (id: string) => Promise<ExtendedAccount<T>>;
 export function useGetLatestAccount(
   type?: undefined,
-): (id: string) => Promise<Account>;
+): (id: string) => Promise<ExtendedAccount>;
 export function useGetLatestAccount(type?: keyof AccountTypeMap) {
   const accountsCache = useAccountsCache();
+  const getPreloadedWallet = useGetPreloadedWallet();
+  const user = useUser();
 
   return useCallback(
     async (id: string) => {
@@ -369,9 +417,24 @@ export function useGetLatestAccount(type?: keyof AccountTypeMap) {
       if (type && account.type !== type) {
         throw new Error(`Account with id: ${id} is not of type: ${type}`);
       }
-      return account;
+
+      const extendedAccount = {
+        ...account,
+        isDefault: isDefaultAccount(user, account),
+      };
+
+      // For cashu accounts, attach the preloaded wallet
+      if (account.type === 'cashu') {
+        const wallet = await getPreloadedWallet(
+          account.mintUrl,
+          account.currency,
+        );
+        return { ...extendedAccount, wallet };
+      }
+
+      return extendedAccount;
     },
-    [accountsCache, type],
+    [accountsCache, type, getPreloadedWallet, user],
   );
 }
 

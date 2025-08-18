@@ -5,7 +5,7 @@ import {
   useState,
 } from 'react';
 import { useStore } from 'zustand';
-import type { Account } from '~/features/accounts/account';
+import type { ExtendedAccount } from '~/features/accounts/account';
 import {
   useAccountsCache,
   useGetLatestAccount,
@@ -19,7 +19,7 @@ const SendContext = createContext<SendStore | null>(null);
 
 type Props = PropsWithChildren<{
   /** Usually the user's default account. This sets the initial account to send from. */
-  initialAccount: Account;
+  initialAccount: ExtendedAccount;
 }>;
 
 export const SendProvider = ({ initialAccount, children }: Props) => {

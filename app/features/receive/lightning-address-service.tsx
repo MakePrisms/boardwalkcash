@@ -1,4 +1,4 @@
-import { getCashuWallet } from '~/lib/cashu';
+import { getCashuUnit, getCashuWallet } from '~/lib/cashu';
 import { ExchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 import type {
   LNURLError,
@@ -7,6 +7,7 @@ import type {
   LNURLVerifyResult,
 } from '~/lib/lnurl/types';
 import { Money } from '~/lib/money';
+import type { ExtendedCashuAccount } from '../accounts/account';
 import { AccountRepository } from '../accounts/account-repository';
 import type { AgicashDb } from '../agicash-db/database';
 import type { CashuCryptography } from '../shared/cashu';
@@ -172,14 +173,26 @@ export class LightningAddressService {
         amountToReceive = amount.convert(account.currency, rate) as Money;
       }
 
+      const wallet = getCashuWallet(account.mintUrl, {
+        unit: getCashuUnit(account.currency),
+      });
+
       const lightningQuote = await cashuReceiveQuoteService.getLightningQuote({
-        account,
+        account: {
+          ...account,
+          isDefault: true,
+          wallet,
+        } as ExtendedCashuAccount,
         amount: amountToReceive,
       });
 
       const quote = await cashuReceiveQuoteService.createReceiveQuote({
         userId,
-        account,
+        account: {
+          ...account,
+          isDefault: true,
+          wallet,
+        } as ExtendedCashuAccount,
         receiveType: 'LIGHTNING',
         receiveQuote: lightningQuote,
       });

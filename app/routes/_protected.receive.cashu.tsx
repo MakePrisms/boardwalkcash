@@ -1,5 +1,6 @@
 import { Page } from '~/components/page';
 import { Redirect } from '~/components/redirect';
+import type { ExtendedCashuAccount } from '~/features/accounts/account';
 import { useAccount } from '~/features/accounts/account-hooks';
 import ReceiveCashu from '~/features/receive/receive-cashu';
 import { useReceiveStore } from '~/features/receive/receive-provider';
@@ -16,7 +17,10 @@ export default function ReceiveCashuPage() {
 
   return (
     <Page>
-      <ReceiveCashu amount={receiveAmount} account={receiveAccount} />
+      <ReceiveCashu
+        amount={receiveAmount}
+        account={receiveAccount as ExtendedCashuAccount}
+      />
     </Page>
   );
 }

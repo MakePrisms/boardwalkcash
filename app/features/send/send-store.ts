@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import type { Account, CashuAccount } from '~/features/accounts/account';
+import type {
+  Account,
+  ExtendedAccount,
+  ExtendedCashuAccount,
+} from '~/features/accounts/account';
 import { type DecodedBolt11, parseBolt11Invoice } from '~/lib/bolt11';
 import { parseCashuPaymentRequest } from '~/lib/cashu';
 import {
@@ -177,15 +181,15 @@ type Actions = {
 export type SendState = State & Actions;
 
 type CreateSendStoreProps = {
-  initialAccount: Account;
+  initialAccount: ExtendedAccount;
   accountsCache: AccountsCache;
-  getLatestAccount: (accountId: string) => Promise<Account>;
+  getLatestAccount: (accountId: string) => Promise<ExtendedAccount>;
   getInvoiceFromLud16: (params: {
     lud16: string;
     amount: Money<'BTC'>;
   }) => Promise<string>;
   createCashuSendQuote: (params: {
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     paymentRequest: string;
     amount: Money<Currency>;
   }) => Promise<CashuLightningQuote>;
@@ -374,7 +378,7 @@ export const createSendStore = ({
 
           try {
             const quote = await createCashuSendQuote({
-              account,
+              account: account as ExtendedCashuAccount,
               paymentRequest: destination,
               amount: amountToSend,
             });

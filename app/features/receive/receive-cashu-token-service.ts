@@ -5,7 +5,7 @@ import type {
 } from '@cashu/cashu-ts';
 import { getCashuUnit, getCashuWallet, getWalletCurrency } from '~/lib/cashu';
 import { Money } from '~/lib/money';
-import type { CashuAccount } from '../accounts/account';
+import type { ExtendedCashuAccount } from '../accounts/account';
 import { tokenToMoney } from '../shared/cashu';
 import type { CashuReceiveQuote } from './cashu-receive-quote';
 import {
@@ -40,7 +40,7 @@ export class ReceiveCashuTokenService {
   }: {
     userId: string;
     token: Token;
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     exchangeRate: string;
   }): Promise<{
     cashuReceiveQuote: CashuReceiveQuote;
@@ -98,7 +98,7 @@ export class ReceiveCashuTokenService {
     exchangeRate,
   }: {
     token: Token;
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     targetAmount: Money;
     exchangeRate: string;
   }): Promise<
@@ -108,17 +108,12 @@ export class ReceiveCashuTokenService {
   > {
     const tokenAmount = tokenToMoney(token);
     const fromCashuUnit = getCashuUnit(tokenAmount.currency);
-    const toCashuUnit = getCashuUnit(account.currency);
 
     const sourceWallet = getCashuWallet(token.mint, {
       unit: fromCashuUnit,
     });
-    const destinationWallet = getCashuWallet(account.mintUrl, {
-      unit: toCashuUnit,
-    });
-
     const sourceCurrency = getWalletCurrency(sourceWallet);
-    const destinationCurrency = getWalletCurrency(destinationWallet);
+    const destinationCurrency = account.currency;
 
     let attempts = 0;
     let amountToMelt = targetAmount;

@@ -9,7 +9,7 @@ import {
 } from '~/components/page';
 import { QRCode } from '~/components/qr-code';
 import { Button } from '~/components/ui/button';
-import type { CashuAccount } from '~/features/accounts/account';
+import type { ExtendedCashuAccount } from '~/features/accounts/account';
 import { useEffectNoStrictMode } from '~/hooks/use-effect-no-strict-mode';
 import { useToast } from '~/hooks/use-toast';
 import type { Money } from '~/lib/money';
@@ -25,7 +25,7 @@ import {
 } from './cashu-receive-quote-hooks';
 
 type MintQuoteProps = {
-  account: CashuAccount;
+  account: ExtendedCashuAccount;
   amount: Money;
   onPaid: (quote: CashuReceiveQuote) => void;
   onCopy?: (paymentRequest: string) => void;
@@ -78,7 +78,7 @@ function MintQuoteCarouselItem({
 
 type Props = {
   amount: Money;
-  account: CashuAccount;
+  account: ExtendedCashuAccount;
 };
 
 export default function ReceiveCashu({ amount, account }: Props) {

@@ -18,7 +18,7 @@ import {
   setLongTimeout,
 } from '~/lib/timeout';
 import { useLatest } from '~/lib/use-latest';
-import type { CashuAccount } from '../accounts/account';
+import type { CashuAccount, ExtendedCashuAccount } from '../accounts/account';
 import {
   useAccount,
   useAccountsCache,
@@ -120,7 +120,7 @@ export function useCreateCashuSendQuote() {
       paymentRequest,
       exchangeRate,
     }: {
-      account: CashuAccount;
+      account: ExtendedCashuAccount;
       paymentRequest: string;
       amount?: Money;
       exchangeRate?: Big;

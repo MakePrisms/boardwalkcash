@@ -5,9 +5,9 @@ import {
 } from '@cashu/cashu-ts';
 import type { Big } from 'big.js';
 import { parseBolt11Invoice } from '~/lib/bolt11';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
+import { getCashuUnit, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
-import type { CashuAccount } from '../accounts/account';
+import type { ExtendedCashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
@@ -22,7 +22,7 @@ export type GetCashuLightningQuoteOptions = {
   /**
    * The account to send the money from.
    */
-  account: CashuAccount;
+  account: ExtendedCashuAccount;
   /**
    * Bolt 11 lightning invoice to pay.
    */
@@ -140,9 +140,7 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
     await wallet.getKeys();
 
     const meltQuote = await wallet.createMeltQuote(paymentRequest);
@@ -213,7 +211,7 @@ export class CashuSendQuoteService {
     /**
      * The account to send the money from.
      */
-    account: CashuAccount;
+    account: ExtendedCashuAccount;
     /**
      * The send quote to create.
      */
@@ -233,9 +231,7 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
     const keys = await wallet.getKeys();
     const keysetId = keys.id;
 
@@ -309,7 +305,7 @@ export class CashuSendQuoteService {
    * Initiates the send for the quote.
    */
   async initiateSend(
-    account: CashuAccount,
+    account: ExtendedCashuAccount,
     sendQuote: CashuSendQuote,
     meltQuote: MeltQuoteResponse,
   ) {
@@ -325,12 +321,7 @@ export class CashuSendQuoteService {
       throw new Error(`Send is not unpaid. Current state: ${sendQuote.state}`);
     }
 
-    const cashuUnit = getCashuUnit(account.currency);
-    const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     return wallet.meltProofs(meltQuote, sendQuote.proofs, {
       keysetId: sendQuote.keysetId,
@@ -358,7 +349,7 @@ export class CashuSendQuoteService {
    * Completes the send quote after successful payment.
    */
   async completeSendQuote(
-    account: CashuAccount,
+    account: ExtendedCashuAccount,
     sendQuote: CashuSendQuote,
     meltQuote: MeltQuoteResponse,
   ) {
@@ -388,10 +379,7 @@ export class CashuSendQuoteService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     // We are creating output data here in the same way that cashu-ts does in the meltProofs function.
     // This is needed because we need the deterministic output data to be able to convert the change signatures to proofs.
@@ -432,7 +420,7 @@ export class CashuSendQuoteService {
    * Failes the send quote after failed payment.
    */
   async failSendQuote(
-    account: CashuAccount,
+    account: ExtendedCashuAccount,
     quote: CashuSendQuote,
     reason: string,
   ) {
@@ -462,7 +450,7 @@ export class CashuSendQuoteService {
    * It also updates the account proofs to return the unspent proofs that were reserved for the send.
    */
   async expireSendQuote(
-    account: CashuAccount,
+    account: ExtendedCashuAccount,
     quote: CashuSendQuote,
   ): Promise<void> {
     if (quote.state === 'EXPIRED') {
