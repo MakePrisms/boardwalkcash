@@ -356,7 +356,6 @@ export class CashuReceiveQuoteRepository {
   ): Promise<void> {
     const encryptedProofs = await this.encryption.encrypt(proofs);
 
-    // TODO: The function should also create the related history item.
     const query = this.db.rpc('complete_cashu_receive_quote', {
       p_quote_id: quoteId,
       p_quote_version: quoteVersion,

@@ -13,7 +13,7 @@ import { type Currency, Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import { useLatest } from '~/lib/use-latest';
 import { type AgicashDbAccount, agicashDb } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { useEncryption } from '../shared/encryption';
 import type { User } from '../user/user';
 import { useUser } from '../user/user-hooks';
 import {
@@ -25,7 +25,7 @@ import {
 } from './account';
 import { AccountRepository, useAccountRepository } from './account-repository';
 
-const accountsQueryKey = 'accounts';
+export const accountsQueryKey = 'accounts';
 const accountVersionsQueryKey = 'account-versions';
 
 /**
@@ -221,7 +221,7 @@ function useOnAccountChange({
   onCreated: (account: Account) => void;
   onUpdated: (account: Account) => void;
 }) {
-  const cashuCryptography = useCashuCryptography();
+  const encryption = useEncryption();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const accountCache = useAccountsCache();
@@ -240,7 +240,7 @@ function useOnAccountChange({
           if (payload.eventType === 'INSERT') {
             const addedAccount = await AccountRepository.toAccount(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
             onCreatedRef.current(addedAccount);
           } else if (payload.eventType === 'UPDATE') {
@@ -250,14 +250,14 @@ function useOnAccountChange({
 
             const updatedAccount = await AccountRepository.toAccount(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
 
             onUpdatedRef.current(updatedAccount);
           }
         },
       ),
-    onReconnected: () => {
+    onConnected: () => {
       // Invalidate the accounts query so that the accounts are re-fetched and the cache is updated.
       // This is needed to get any data that might have been updated while the re-connection was in progress.
       queryClient.invalidateQueries({ queryKey: [accountsQueryKey] });

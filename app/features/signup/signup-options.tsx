@@ -23,7 +23,9 @@ export function SignupOptions({ onSelect }: Props) {
       setSubmitting(option);
       await onSelect(option);
     } finally {
-      setSubmitting(null);
+      // Intentionally do not clear submitting here. Let unmount on navigation clear it.
+      // If we clear it here, the button loading stops before new page is displayed. Not sure
+      // why but possibly something with concurrent mode, suspense and react router.
     }
   };
 

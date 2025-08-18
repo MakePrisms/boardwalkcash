@@ -131,7 +131,7 @@ export class UserRepository {
       encryptionPublicKey: string;
     },
     options?: Options,
-  ): Promise<User> {
+  ): Promise<{ user: User; accounts: Account[] }> {
     const accountsToAdd = await Promise.all(
       user.accounts.map(async (account) => ({
         name: account.name,
@@ -169,7 +169,14 @@ export class UserRepository {
     }
 
     const { accounts, ...upsertedUser } = data;
-    return this.toUser(upsertedUser);
+    return {
+      user: this.toUser(upsertedUser),
+      accounts: await Promise.all(
+        accounts.map((a) =>
+          AccountRepository.toAccount(a, this.encryption.decrypt),
+        ),
+      ),
+    };
   }
 
   async getByUsername(

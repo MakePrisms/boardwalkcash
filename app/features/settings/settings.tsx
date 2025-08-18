@@ -1,4 +1,5 @@
 import { Copy, Edit, Share, SunMoon, Users } from 'lucide-react';
+import { useState } from 'react';
 import { useLocation } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import DiscordLogo from '~/assets/discord_logo.svg';
@@ -81,6 +82,7 @@ export default function Settings() {
   const defaultAccount = useDefaultAccount();
   const username = useUser((s) => s.username);
   const location = useLocation();
+  const [loading, setLoading] = useState(false);
 
   const { domain } = useLocationData();
   const lightningAddress = `${username}@${domain}`;
@@ -90,6 +92,12 @@ export default function Settings() {
       text: `Pay me to my Agicash Lightning Address at ${lightningAddress}`,
     };
     await shareContent(data);
+  };
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    await signOut({ redirectTo: '/signup' });
+    setLoading(false);
   };
 
   return (
@@ -130,7 +138,11 @@ export default function Settings() {
       </PageContent>
 
       <PageFooter className="mx-auto flex w-36 flex-col gap-6 pb-10">
-        <Button className="mx-auto w-full" onClick={signOut}>
+        <Button
+          className="mx-auto w-full"
+          onClick={handleSignOut}
+          loading={loading}
+        >
           Sign Out
         </Button>
         <div className="flex w-full justify-between gap-4 text-muted-foreground text-sm">

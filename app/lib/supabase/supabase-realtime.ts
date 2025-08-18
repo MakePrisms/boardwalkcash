@@ -13,9 +13,9 @@ interface Options {
    */
   channelFactory: () => RealtimeChannel;
   /**
-   * A callback that is called when the channel is reconnected. Use if you need to refresh the data to catch up with the latest changes.
+   * A callback that is called when the channel is initally connected or reconnected. Use if you need to refresh the data to catch up with the latest changes.
    */
-  onReconnected?: () => void;
+  onConnected?: () => void;
 }
 
 /**
@@ -85,13 +85,13 @@ const maxRetries = 3;
  */
 export function useSupabaseRealtimeSubscription({
   channelFactory,
-  onReconnected,
+  onConnected,
 }: Options) {
   const [state, setState] = useState<SubscriptionState>({
     status: 'subscribing',
   });
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const onReconnectedRef = useLatest(onReconnected);
+  const onConnectedRef = useLatest(onConnected);
   const channelFactoryRef = useLatest(channelFactory);
   const retryCountRef = useRef(0);
 
@@ -103,21 +103,15 @@ export function useSupabaseRealtimeSubscription({
   const setupSystemMessageListener = useCallback((channel: RealtimeChannel) => {
     channel.on(REALTIME_LISTEN_TYPES.SYSTEM, {}, (payload) => {
       if (payload.extension === 'postgres_changes' && payload.status === 'ok') {
-        console.debug('System postgres_changes ok message received', {
+        onConnectedRef.current?.();
+
+        setState({ status: 'subscribed' });
+        retryCountRef.current = 0; // Reset retries on success
+
+        console.debug('Channel connected', {
           time: new Date().toISOString(),
           topic: channel.topic,
         });
-        setState((curr) => {
-          if (curr.status !== 'subscribing') {
-            onReconnectedRef.current?.();
-            console.debug('Channel reconnected', {
-              time: new Date().toISOString(),
-              topic: channel.topic,
-            });
-          }
-          return { status: 'subscribed' };
-        });
-        retryCountRef.current = 0; // Reset retries on success
       }
     });
   }, []);

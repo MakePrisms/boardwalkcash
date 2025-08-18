@@ -264,7 +264,7 @@ function useOnCashuReceiveQuoteChange({
           }
         },
       ),
-    onReconnected: () => {
+    onConnected: () => {
       // Invalidate the pending cashu receive quotes query so that the quotes are re-fetched and the cache is updated.
       // This is needed to get any data that might have been updated while the re-connection was in progress.
       queryClient.invalidateQueries({

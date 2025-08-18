@@ -1,15 +1,17 @@
 import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  getPrivateKey as getMnemonic,
+  getPrivateKeyBytes,
+} from '@opensecret/react';
 import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { create } from 'zustand';
 import { sumProofs } from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
-import { useCryptography } from './cryptography';
-import { useEncryption } from './encryption';
 
 // Cashu-specific derivation path with hardnened indexes to derive public keys for
 // locking mint quotes and proofs. 129372 is UTF-8 for 🥜 (see NUT-13) and the other
@@ -44,30 +46,57 @@ export function tokenToMoney(token: Token): Money {
   });
 }
 
-export type CashuCryptography = Pick<
-  ReturnType<typeof useEncryption>,
-  'encrypt' | 'decrypt'
-> & {
+export type CashuCryptography = {
   getSeed: () => Promise<Uint8Array>;
   getXpub: (derivationPath?: string) => Promise<string>;
   getPrivateKey: (derivationPath?: string) => Promise<string>;
 };
 
-type CashuSeedStore = {
-  seedPromise: ReturnType<
-    ReturnType<typeof useCashuCryptography>['getSeed']
-  > | null;
-  setSeedPromise: (
-    promise: ReturnType<ReturnType<typeof useCashuCryptography>['getSeed']>,
-  ) => void;
-  clear: () => void;
-};
+const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
 
-export const cashuSeedStore = create<CashuSeedStore>((set) => ({
-  seedPromise: null,
-  setSeedPromise: (promise) => set({ seedPromise: promise }),
-  clear: () => set({ seedPromise: null }),
-}));
+const seedQuery = () => ({
+  queryKey: ['cashu-seed'],
+  queryFn: async () => {
+    const response = await getMnemonic({
+      seed_phrase_derivation_path: seedDerivationPath,
+    });
+    return mnemonicToSeedSync(response.mnemonic);
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+export const xpubQuery = ({
+  queryClient,
+  derivationPath,
+}: { queryClient: QueryClient; derivationPath?: string }) => ({
+  queryKey: ['cashu-xpub', derivationPath],
+  queryFn: async () => {
+    console.log('calling cashu-xpub queryFn');
+    const seed = await queryClient.fetchQuery(seedQuery());
+    const hdKey = HDKey.fromMasterSeed(seed);
+
+    if (derivationPath) {
+      const childKey = hdKey.derive(derivationPath);
+      return childKey.publicExtendedKey;
+    }
+
+    return hdKey.publicExtendedKey;
+  },
+});
+
+const privateKeyQuery = ({
+  derivationPath,
+}: { derivationPath?: string } = {}) => ({
+  queryKey: ['cashu-private-key', derivationPath],
+  queryFn: async () => {
+    const response = await getPrivateKeyBytes({
+      seed_phrase_derivation_path: seedDerivationPath,
+      private_key_derivation_path: derivationPath,
+    });
+    return response.private_key;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+});
 
 /**
  * Hook that provides the Cashu cryptography functions.
@@ -75,49 +104,19 @@ export const cashuSeedStore = create<CashuSeedStore>((set) => ({
  * @returns The Cashu cryptography functions.
  */
 export function useCashuCryptography(): CashuCryptography {
-  const { encrypt, decrypt } = useEncryption();
-  const crypto = useCryptography();
+  const queryClient = useQueryClient();
 
   return useMemo(() => {
-    const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
+    const getSeed = () => queryClient.fetchQuery(seedQuery());
 
-    const getSeed = async () => {
-      const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
-      if (seedPromise) return seedPromise;
+    const getXpub = (derivationPath?: string) =>
+      queryClient.fetchQuery(xpubQuery({ queryClient, derivationPath }));
 
-      const promise = crypto
-        .getMnemonic({
-          seed_phrase_derivation_path: seedDerivationPath,
-        })
-        .then((response) => mnemonicToSeedSync(response.mnemonic));
+    const getPrivateKey = (derivationPath?: string) =>
+      queryClient.fetchQuery(privateKeyQuery({ derivationPath }));
 
-      setSeedPromise(promise);
-      return promise;
-    };
-
-    const getXpub = async (derivationPath?: string) => {
-      const seed = await getSeed();
-      const hdKey = HDKey.fromMasterSeed(seed);
-
-      if (derivationPath) {
-        const childKey = hdKey.derive(derivationPath);
-        return childKey.publicExtendedKey;
-      }
-
-      return hdKey.publicExtendedKey;
-    };
-
-    const getPrivateKey = async (derivationPath?: string) => {
-      return crypto
-        .getPrivateKeyBytes({
-          seed_phrase_derivation_path: seedDerivationPath,
-          private_key_derivation_path: derivationPath,
-        })
-        .then((response) => response.private_key);
-    };
-
-    return { getSeed, getPrivateKey, encrypt, decrypt, getXpub };
-  }, [crypto, encrypt, decrypt]);
+    return { getSeed, getPrivateKey, getXpub };
+  }, [queryClient]);
 }
 
 export function getTokenHash(token: Token | string): Promise<string> {

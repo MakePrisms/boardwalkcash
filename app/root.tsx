@@ -1,13 +1,8 @@
-import { OpenSecretProvider } from '@opensecret/react';
 import * as Sentry from '@sentry/react-router';
-import {
-  HydrationBoundary,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { HydrationBoundary, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Analytics } from '@vercel/analytics/react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import {
   Links,
   type LinksFunction,
@@ -35,8 +30,10 @@ import { getThemeCookies } from '~/features/theme/theme-cookies.server';
 import { transitionStyles, useViewTransitionEffect } from '~/lib/transitions';
 import stylesheet from '~/tailwind.css?url';
 import type { Route } from './+types/root';
+import { LoadingScreen } from './features/loading/LoadingScreen';
 import { NotFoundError } from './features/shared/error';
 import { useDehydratedState } from './hooks/use-dehydrated-state';
+import { getQueryClient } from './query-client';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
@@ -126,30 +123,17 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-const openSecretApiUrl = import.meta.env.VITE_OPEN_SECRET_API_URL ?? '';
-if (!openSecretApiUrl) {
-  throw new Error('VITE_OPEN_SECRET_API_URL is not set');
-}
-
-const openSecretClientId = import.meta.env.VITE_OPEN_SECRET_CLIENT_ID ?? '';
-if (!openSecretClientId) {
-  throw new Error('VITE_OPEN_SECRET_CLIENT_ID is not set');
-}
-
 export default function App() {
-  const [queryClient] = useState(() => new QueryClient());
+  const queryClient = getQueryClient();
   const dehydratedState = useDehydratedState();
   useViewTransitionEffect();
 
   return (
     <QueryClientProvider client={queryClient}>
       <HydrationBoundary state={dehydratedState}>
-        <OpenSecretProvider
-          apiUrl={openSecretApiUrl}
-          clientId={openSecretClientId}
-        >
+        <Suspense fallback={<LoadingScreen />}>
           <Outlet />
-        </OpenSecretProvider>
+        </Suspense>
         <ReactQueryDevtools initialIsOpen={false} />
       </HydrationBoundary>
     </QueryClientProvider>
@@ -227,6 +211,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   useEffect(() => {
     if (errorDetails.shouldReport) {
       Sentry.captureException(error);
+      console.error(error);
     }
   }, [errorDetails.shouldReport, error]);
 
@@ -243,3 +228,29 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     </Card>
   );
 }
+
+const timingMiddleware: Route.unstable_ClientMiddlewareFunction = async (
+  { request },
+  next,
+) => {
+  const start = performance.now();
+
+  await next();
+
+  const end = performance.now();
+  const duration = end - start;
+
+  console.debug(
+    `Client navigation to ${request.url} took ${duration.toFixed(2)}ms`,
+    {
+      time: new Date().toISOString(),
+      start,
+      end,
+      duration,
+      location: request.url,
+    },
+  );
+};
+
+export const unstable_clientMiddleware: Route.unstable_ClientMiddlewareFunction[] =
+  [timingMiddleware];
