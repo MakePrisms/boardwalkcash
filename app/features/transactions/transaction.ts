@@ -170,7 +170,7 @@ export type Transaction = {
   /**
    * Type of the transaction.
    */
-  type: 'CASHU_LIGHTNING' | 'CASHU_TOKEN';
+  type: 'CASHU_LIGHTNING' | 'CASHU_TOKEN' | 'CASHU_ONCHAIN';
   /**
    * State of the transaction.
    * Transaction states are:
@@ -245,6 +245,12 @@ export type Transaction = {
   | {
       type: 'CASHU_LIGHTNING';
       direction: 'RECEIVE';
+      details: CashuLightningReceiveTransactionDetails;
+    }
+  | {
+      type: 'CASHU_ONCHAIN';
+      direction: 'RECEIVE';
+      // TODO: onchain details
       details: CashuLightningReceiveTransactionDetails;
     }
 );

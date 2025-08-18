@@ -170,6 +170,11 @@ export class TransactionRepository {
       return createTransaction(receiveDetails.amountReceived, receiveDetails);
     }
 
+    if (type === 'CASHU_ONCHAIN' && direction === 'RECEIVE') {
+      const receiveDetails = details as CashuTokenReceiveTransactionDetails;
+      return createTransaction(receiveDetails.amountReceived, receiveDetails);
+    }
+
     throw new Error('Invalid transaction data', { cause: data });
   }
 }

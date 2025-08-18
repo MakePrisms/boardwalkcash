@@ -13,7 +13,7 @@ import {
   getCashuUnit,
   getCashuWallet,
 } from '~/lib/cashu';
-import type { Money } from '~/lib/money';
+import { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
@@ -26,6 +26,7 @@ import {
   type CashuReceiveQuoteRepository,
   useCashuReceiveQuoteRepository,
 } from './cashu-receive-quote-repository';
+import type { ReusableCashuReceiveOnchainQuote } from './reusable-cashu-receive-quote-service';
 
 export type CashuReceiveLightningQuote = {
   /**
@@ -113,6 +114,8 @@ export class CashuReceiveQuoteService {
    * Creates a new cashu receive quote used for receiving via a bolt11 payment request.
    * @returns The created cashu receive quote with the bolt11 invoice to pay.
    */
+  // TODO: make new method for creating onchain receive quotes instead of putting it all in this one
+  // ie. createOnchainReceiveQuote
   async createReceiveQuote({
     userId,
     account,
@@ -133,11 +136,11 @@ export class CashuReceiveQuoteService {
      * Whether this is for a regular lighting invoice or
      * melting a token to this account.
      */
-    receiveType: 'LIGHTNING' | 'TOKEN';
+    receiveType: 'LIGHTNING' | 'TOKEN' | 'ONCHAIN';
     /**
      * The receive quote to create.
      */
-    receiveQuote: CashuReceiveLightningQuote;
+    receiveQuote: CashuReceiveLightningQuote | ReusableCashuReceiveOnchainQuote;
     /**
      * The amount of the token to receive.
      */
@@ -146,7 +149,48 @@ export class CashuReceiveQuoteService {
      * The fee in the unit of the token that will be incurred for spending the proofs as inputs to the melt operation.
      */
     cashuReceiveFee?: number;
-  }): Promise<CashuReceiveQuote> {
+  } & (
+    | {
+        receiveType: 'LIGHTNING';
+        receiveQuote: CashuReceiveLightningQuote;
+      }
+    | {
+        receiveType: 'TOKEN';
+        receiveQuote: CashuReceiveLightningQuote;
+      }
+    | {
+        receiveType: 'ONCHAIN';
+        receiveQuote: ReusableCashuReceiveOnchainQuote;
+        cashuReceiveFee?: never;
+        tokenAmount?: never;
+      }
+  )): Promise<CashuReceiveQuote> {
+    if (receiveType === 'ONCHAIN') {
+      if (!receiveQuote.mintQuote.amount) {
+        throw new Error('Amount is required for onchain receive quotes');
+      }
+
+      const expiresAt = receiveQuote.mintQuote.expiry
+        ? new Date(receiveQuote.mintQuote.expiry * 1000).toISOString()
+        : new Date(0).toISOString();
+
+      return this.cashuReceiveQuoteRepository.create({
+        accountId: account.id,
+        userId,
+        amount: new Money({
+          currency: account.currency,
+          amount: receiveQuote.mintQuote.amount,
+          unit: getCashuUnit(account.currency),
+        }),
+        quoteId: receiveQuote.mintQuote.quote,
+        expiresAt,
+        state: 'UNPAID', // TODO: consider starting in PAID state and add output data to the quote in a single request
+        paymentRequest: receiveQuote.mintQuote.request,
+        lockingDerivationPath: receiveQuote.fullLockingDerivationPath,
+        receiveType: 'ONCHAIN',
+      });
+    }
+
     const baseReceiveQuote = {
       accountId: account.id,
       userId,
@@ -298,6 +342,30 @@ export class CashuReceiveQuoteService {
       const unlockingKey = await this.cryptography.getPrivateKey(
         quote.lockingDerivationPath,
       );
+
+      if (quote.type === 'ONCHAIN') {
+        // TODO: can we make the 2nd param just quote ID or partial quote object?
+        return await wallet.mintProofsOnchain(
+          amount,
+          {
+            quote: quote.quoteId,
+            request: quote.paymentRequest,
+            expiry: Math.floor(new Date(quote.expiresAt).getTime() / 1000),
+            amount,
+            unit: wallet.unit,
+            next_confirmation_height: 0,
+            pubkey: unlockingKey,
+            amount_paid: amount,
+            amount_issued: amount,
+            amount_unconfirmed: 0,
+          },
+          unlockingKey,
+          {
+            keysetId: quote.keysetId,
+            outputData,
+          },
+        );
+      }
 
       const proofs = await wallet.mintProofs(
         amount,

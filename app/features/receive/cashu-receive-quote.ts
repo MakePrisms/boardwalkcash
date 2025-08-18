@@ -36,8 +36,9 @@ export type CashuReceiveQuote = {
    * LIGHTNING - The money is received via Lightning.
    * TOKEN - The money is received as cashu token. Those proofs are then used to mint tokens for the receiver's account via Lightning.
    *         Used for cross-account cashu token receives where the receiver chooses to claim a token to an account different from the mint/unit the token originated from, thus requiring a lightning payment.
+   * ONCHAIN - The money is received via onchain.
    */
-  type: 'LIGHTNING' | 'TOKEN';
+  type: 'LIGHTNING' | 'TOKEN' | 'ONCHAIN';
   /**
    * State of the cashu receive quote.
    */
