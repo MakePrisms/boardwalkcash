@@ -22,7 +22,6 @@ import {
   useTrackCashuSendQuote,
 } from './cashu-send-quote-hooks';
 import { useCreateCashuSendSwap } from './cashu-send-swap-hooks';
-import { useTrackCashuSendSwap } from './cashu-send-swap-hooks';
 import type { CashuSwapQuote } from './cashu-send-swap-service';
 
 const ConfirmationRow = ({
@@ -225,33 +224,22 @@ export const CreateCashuTokenConfirmation = ({
   const navigate = useNavigateWithViewTransition();
   const { toast } = useToast();
 
-  const {
-    data: createSwapData,
-    mutate: createCashuSendSwap,
-    isPending: isCreatingSwap,
-  } = useCreateCashuSendSwap({
-    onError: (error) => {
-      console.error('Error creating cashu send swap', { cause: error });
-      toast({
-        title: 'Error',
-        description: 'Failed to create cashu send swap. Please try again.',
-      });
-    },
-  });
-
-  const { status } = useTrackCashuSendSwap({
-    id: createSwapData?.id,
-    onPending: (swap) => {
-      console.log('swap pending', { swap });
-      navigate(`/send/share/${swap.id}`, {
-        transition: 'slideUp',
-        applyTo: 'newView',
-      });
-    },
-  });
-
-  const swapInProgress =
-    ['LOADING', 'DRAFT', 'PENDING'].includes(status) || isCreatingSwap;
+  const { mutate: createCashuSendSwap, status: createSwapStatus } =
+    useCreateCashuSendSwap({
+      onSuccess: (swap) => {
+        navigate(`/send/share/${swap.id}`, {
+          transition: 'slideUp',
+          applyTo: 'newView',
+        });
+      },
+      onError: (error) => {
+        console.error('Error creating cashu send swap', { cause: error });
+        toast({
+          title: 'Error',
+          description: 'Failed to create cashu send swap. Please try again.',
+        });
+      },
+    });
 
   return (
     <BaseConfirmation
@@ -262,7 +250,9 @@ export const CreateCashuTokenConfirmation = ({
           amount: quote.amountRequested,
         })
       }
-      loading={swapInProgress}
+      // there is a delay between the swap being created and navigating to the share page
+      // so we show a loading state while the mutation is pending, then wait for navigation after mutation is complete
+      loading={['pending', 'success'].includes(createSwapStatus)}
     >
       {[
         {
