@@ -15,7 +15,6 @@ import {
   sumProofs,
 } from '~/lib/cashu';
 import { Money } from '~/lib/money';
-import { uint8ArrayToHex } from '~/lib/utils';
 import {
   type CashuTokenSwapService,
   useCashuTokenSwapService,
@@ -464,12 +463,17 @@ export class CashuSendSwapService {
           },
         );
 
+        const textDecoder = new TextDecoder();
         return {
           send: proofs.filter((o) =>
-            outputData.send.some((s) => uint8ArrayToHex(s.secret) === o.secret),
+            outputData.send.some(
+              (s) => textDecoder.decode(s.secret) === o.secret,
+            ),
           ),
           keep: proofs.filter((o) =>
-            outputData.keep.some((s) => uint8ArrayToHex(s.secret) === o.secret),
+            outputData.keep.some(
+              (s) => textDecoder.decode(s.secret) === o.secret,
+            ),
           ),
         };
       }
