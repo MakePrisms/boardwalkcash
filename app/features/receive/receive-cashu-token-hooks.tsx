@@ -98,6 +98,9 @@ export function useCashuTokenSourceAccountQuery(
           keysetCounters: {},
           proofs: [],
           isDefault: false,
+          wallet: getCashuWallet(token.mint, {
+            unit: getCashuUnit(tokenCurrency),
+          }),
         },
       };
     },

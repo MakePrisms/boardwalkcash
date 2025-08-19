@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  type ExtendedCashuWallet,
   type MintInfo,
   areMintUrlsEqual,
   getCashuUnit,
@@ -331,7 +332,7 @@ const checkMintQuote = async (
   quote: CashuReceiveQuote,
 ): Promise<MintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = account.wallet;
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
@@ -512,27 +513,37 @@ const usePartitionQuotesByStateCheckType = ({
     [accountsCache],
   );
 
-  const mintUrls = useMemo(() => {
+  const walletsByMintUrl = useMemo(() => {
     const distinctAccountIds = [...new Set(quotes.map((q) => q.accountId))];
     const accounts = distinctAccountIds.map(getCashuAccount);
-    return [...new Set(accounts.map((x) => x.mintUrl))];
+
+    const mintUrlToWallet = new Map<string, ExtendedCashuWallet>();
+    accounts.forEach((account) => {
+      if (!mintUrlToWallet.has(account.mintUrl)) {
+        // We only need one wallet instance per mint url.
+        mintUrlToWallet.set(account.mintUrl, account.wallet);
+      }
+    });
+
+    return mintUrlToWallet;
   }, [quotes, getCashuAccount]);
 
   const mintInfoMap = useQueries({
-    queries: mintUrls.map((mintUrl) => ({
-      queryKey: ['mint-info', mintUrl],
-      queryFn: async () => {
-        const wallet = getCashuWallet(mintUrl);
-        const mintInfo = await wallet.getMintInfo();
-        return { mintUrl, mintInfo };
-      },
-      initialData: {
-        mintUrl,
-        mintInfo: null,
-      },
-      initialDataUpdatedAt: Date.now() - (mintInfoStaleTimeInMs + 1000),
-      staleTime: mintInfoStaleTimeInMs,
-    })),
+    queries: Array.from(walletsByMintUrl.entries()).map(
+      ([mintUrl, wallet]) => ({
+        queryKey: ['mint-info', mintUrl],
+        queryFn: async () => {
+          const mintInfo = await wallet.lazyGetMintInfo();
+          return { mintUrl, mintInfo };
+        },
+        initialData: {
+          mintUrl,
+          mintInfo: null,
+        },
+        initialDataUpdatedAt: Date.now() - (mintInfoStaleTimeInMs + 1000),
+        staleTime: mintInfoStaleTimeInMs,
+      }),
+    ),
     combine: combineMintInfoQueryResults,
   });
 

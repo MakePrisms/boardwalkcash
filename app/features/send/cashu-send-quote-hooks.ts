@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
+import { sumProofs } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -371,8 +371,7 @@ const checkMeltQuote = async (
   account: CashuAccount,
   quote: CashuSendQuote,
 ): Promise<MeltQuoteResponse> => {
-  const cashuUnit = getCashuUnit(quote.amountToReceive.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = account.wallet;
 
   const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);
 

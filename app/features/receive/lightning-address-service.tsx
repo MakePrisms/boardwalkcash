@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query';
 import { getCashuWallet } from '~/lib/cashu';
 import { ExchangeRateService } from '~/lib/exchange-rate/exchange-rate-service';
 import type {
@@ -55,9 +56,20 @@ export class LightningAddressService {
     } = {},
   ) {
     this.exchangeRateService = new ExchangeRateService();
-    this.userRepository = new UserRepository(db, this.cryptography);
     this.db = db;
-    this.accountRepository = new AccountRepository(db, this.cryptography);
+    this.accountRepository = new AccountRepository(
+      db,
+      {
+        encrypt: this.cryptography.encrypt,
+        decrypt: this.cryptography.decrypt,
+      },
+      new QueryClient(),
+    );
+    this.userRepository = new UserRepository(
+      db,
+      this.cryptography,
+      this.accountRepository,
+    );
     this.bypassAmountValidation = options.bypassAmountValidation ?? false;
     this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
@@ -145,11 +157,15 @@ export class LightningAddressService {
           ...this.cryptography,
           getXpub: () => Promise.resolve(user.cashuLockingXpub),
         },
-        new CashuReceiveQuoteRepository(this.db, {
-          encrypt: async (data) =>
-            encryptToPublicKey(data, user.encryptionPublicKey),
-          decrypt: this.cryptography.decrypt,
-        }),
+        new CashuReceiveQuoteRepository(
+          this.db,
+          {
+            encrypt: async (data) =>
+              encryptToPublicKey(data, user.encryptionPublicKey),
+            decrypt: this.cryptography.decrypt,
+          },
+          this.accountRepository,
+        ),
       );
 
       // For external lightning address requests, we only support BTC to avoid exchange rate mismatches.
@@ -210,6 +226,7 @@ export class LightningAddressService {
       const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
         this.db,
         this.cryptography,
+        this.accountRepository,
       );
       const quote = await cashuReceiveQuoteRepository.get(receiveQuoteId);
 
