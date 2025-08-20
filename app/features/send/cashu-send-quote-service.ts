@@ -8,7 +8,11 @@ import { parseBolt11Invoice } from '~/lib/bolt11';
 import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
-import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
+import {
+  type CashuCryptography,
+  getCashuWalletWithAuth,
+  useCashuCryptography,
+} from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import type { DestinationDetails } from '../transactions/transaction';
@@ -140,7 +144,7 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
     });
     await wallet.getKeys();
@@ -327,7 +331,7 @@ export class CashuSendQuoteService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
+    const wallet = getCashuWalletWithAuth(account.mintUrl, {
       unit: cashuUnit,
       bip39seed: seed,
     });
