@@ -54,6 +54,39 @@ or run the certificate script directly by executing `generate-ssl-cert`.
 `master` is the main branch. When working on a feature, branch of `master` and when ready make a PR back to `master`.
 Try to make feature branches short-lived and concise (avoid implementing multiple features in one PR).
 
+### Running a local CDK mint
+
+Start the mint in background using devenv:
+
+```bash
+devenv processes up -d
+```
+
+Or you can simply run `cdk-mintd` from your devenv shell. 
+
+Either of these methods will create a new directory called `.cdk-mintd` in the root of this project and clone the repository specified by the `CDK_REPO` env variable in [devenv.nix](devenv.nix). After the specified repository is cloned, the script will build and run cdk-mintd on http://localhost:8085. You can configure cdk by modifying the [cdk-mint.config.toml](tools/devenv/cdk/cdk-mint.config.toml)
+
+Once the mint is running and you are in your devenv shell, you can tail the mint's logs with `cdk-logs`.
+
+#### Keycloak
+
+Keycloak is the auth provider that we use when auth is enabled in the mint's config. If auth is enabled, then the `cdk-mintd` script will also use docker compose to start keycloak on http://localhost:8080. Keycloak will be initialized with the data found [here](https://github.com/cashubtc/cdk/tree/main/misc/keycloak/keycloak-export), and then any changes made in the keycloak UI will be persisted in the docker volume.
+
+###### Admin login
+
+To log in to the admin interface the username is `admin` and password is `admin`
+
+###### Creating a new user
+
+Once you are logged into the Keycloak UI, make sure you are in the "cdk-test-realm", then navigate to "Users" and "Add user". Once you create a user go to "Credentials" and set a password. Now you can authenticate with the mint using these credentials.
+
+###### Access settings
+
+You will need to specify the URL of your wallet in "Clients" -> "cashu-client" -> "Access settings". Set the "Valid redirect URIs" to the OIDC callback endpoint of the wallet and "Web origins" to the base URL of your wallet. For example, if your wallet runs on localhost:3000 you would set something like:
+- "Valid redirect URIs": http://localhost:3000/oidc-callback
+- "Web origins": http://localhost:3000
+
+
 ### Updating development environment
 
 To update devenv packages run `devenv update`. When updating `bun`, make sure to update the `engines` version in 
