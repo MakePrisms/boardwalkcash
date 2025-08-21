@@ -12,6 +12,7 @@ import {
   signUpGuest as osSignUpGuest,
   verifyEmail as osVerifyEmail,
 } from '@opensecret/react';
+import { decodeURLSafe, encodeURLSafe } from '@stablelib/base64';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { jwtDecode } from 'jwt-decode';
 import { useCallback } from 'react';
@@ -20,6 +21,7 @@ import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
 import { computeSHA256 } from '~/lib/sha256';
 import { guestAccountStorage } from './guest-account-storage';
+import { oauthLoginSessionStorage } from './oauth-login-session-storage';
 
 export type AuthUser = UserResponse['user'];
 
@@ -204,7 +206,25 @@ export const useAuthActions = (): AuthActions => {
 
   const initiateGoogleAuth = useCallback(async () => {
     const response = await osInitiateGoogleAuth('');
-    return { authUrl: response.auth_url };
+
+    const authLocation = new URL(response.auth_url);
+    const stateParam = authLocation.searchParams.get('state');
+    const state = stateParam
+      ? JSON.parse(new TextDecoder().decode(decodeURLSafe(stateParam)))
+      : {};
+
+    const oauthLoginSession = oauthLoginSessionStorage.create({
+      search: location.search,
+      hash: location.hash,
+    });
+    state.sessionId = oauthLoginSession.sessionId;
+
+    const stateEncoded = encodeURLSafe(
+      new TextEncoder().encode(JSON.stringify(state)),
+    );
+    authLocation.searchParams.set('state', stateEncoded);
+
+    return { authUrl: authLocation.href };
   }, []);
 
   const signUpGuest = useCallback(async () => {

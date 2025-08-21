@@ -1,8 +1,10 @@
 import { handleGoogleCallback } from '@opensecret/react';
+import { decodeURLSafe } from '@stablelib/base64';
 import { redirect } from 'react-router';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import { getErrorMessage } from '~/features/shared/error';
 import { authStateQueryKey } from '~/features/user/auth';
+import { oauthLoginSessionStorage } from '~/features/user/oauth-login-session-storage';
 import { toast } from '~/hooks/use-toast';
 import { getQueryClient } from '~/query-client';
 import type { Route } from './+types/_auth.oauth.$provider';
@@ -67,7 +69,25 @@ export async function clientLoader({
     refetchType: 'all',
   });
 
-  throw redirect('/');
+  const stateValue = JSON.parse(new TextDecoder().decode(decodeURLSafe(state)));
+  const oauthLoginSession = oauthLoginSessionStorage.get(
+    stateValue.sessionId ?? '',
+  );
+
+  if (!oauthLoginSession) {
+    throw redirect('/');
+  }
+
+  const searchParams = new URLSearchParams(oauthLoginSession.search);
+  const redirectTo = searchParams.get('redirectTo') ?? '/';
+  searchParams.delete('redirectTo');
+  const url = `${redirectTo}${searchParams.toString()}${oauthLoginSession.hash}`;
+
+  oauthLoginSessionStorage.remove(oauthLoginSession.sessionId);
+
+  // I need to set the hash here manually, otherwise I can't read it from the react router middleware that handles the redirect
+  window.history.replaceState(null, '', oauthLoginSession.hash);
+  throw redirect(url);
 }
 
 clientLoader.hydrate = true as const;
