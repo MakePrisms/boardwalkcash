@@ -368,7 +368,11 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
             </Button>
 
             <LinkWithViewTransition
-              to={`/login?redirectTo=receive-cashu-token#${encodedToken}`}
+              to={{
+                pathname: '/login',
+                search: 'redirectTo=/receive/cashu/token',
+                hash: encodedToken,
+              }}
               transition="slideUp"
               applyTo="newView"
             >
