@@ -33,6 +33,7 @@ export default defineConfig((config) => ({
 
         defaultHandler(warning);
       },
+      input: config.isSsrBuild ? './app/server.ts' : undefined,
     },
   },
 }));
