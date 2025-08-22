@@ -27,7 +27,7 @@ app.use(
   createRequestHandler({
     build: () => import('virtual:react-router/server-build'),
     getLoadContext() {
-      return new unstable_RouterContextProvider(new Map());
+      return new unstable_RouterContextProvider();
     },
   }),
 );
@@ -39,3 +39,5 @@ if (process.env.NODE_ENV === 'production') {
     console.log(`App listening on http://localhost:${PORT}`);
   });
 }
+
+export default app;
