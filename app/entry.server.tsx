@@ -3,7 +3,10 @@ import { PassThrough } from 'node:stream';
 
 import { createReadableStreamFromReadable } from '@react-router/node';
 import * as Sentry from '@sentry/react-router';
-import { wrapSentryHandleRequest } from '@sentry/react-router';
+import {
+  getMetaTagTransformer,
+  wrapSentryHandleRequest,
+} from '@sentry/react-router';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
 import { renderToPipeableStream, renderToString } from 'react-dom/server';
@@ -35,14 +38,35 @@ function handleRequest(
           <ServerRouter context={routerContext} url={request.url} />,
         );
 
-        responseHeaders.set('Content-Type', 'text/html');
+        // Apply Sentry meta tag transformation to the HTML string
+        const body = new PassThrough();
+        const transformer = getMetaTagTransformer(body);
 
-        resolve(
-          new Response(html, {
-            headers: responseHeaders,
-            status: responseStatusCode,
-          }),
-        );
+        let transformedHtml = '';
+
+        // Collect transformed output
+        transformer.on('data', (chunk) => {
+          transformedHtml += chunk.toString();
+        });
+
+        // Handle completion
+        transformer.on('end', () => {
+          responseHeaders.set('Content-Type', 'text/html');
+          resolve(
+            new Response(transformedHtml, {
+              headers: responseHeaders,
+              status: responseStatusCode,
+            }),
+          );
+        });
+
+        transformer.on('error', (error) => {
+          reject(error);
+        });
+
+        // Write the HTML and end the stream
+        transformer.write(html);
+        transformer.end();
       } catch (error) {
         reject(error);
       }
@@ -71,8 +95,8 @@ function handleRequest(
           responseHeaders.set('Content-Type', 'text/html');
 
           try {
-            // Direct pipe to avoid transformer issues in serverless environment
-            pipe(body);
+            // Use Sentry meta tag transformer for proper Sentry integration
+            pipe(getMetaTagTransformer(body));
 
             const stream = createReadableStreamFromReadable(body);
 
