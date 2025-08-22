@@ -9,6 +9,7 @@ import {
   agicashDb,
 } from '../agicash-db/database';
 import { useCashuCryptography } from '../shared/cashu';
+import { cashuAuthStore } from '../shared/cashu-mint-authentication';
 import type { Account } from './account';
 
 type CashuAccountInput = DistributedOmit<
@@ -187,12 +188,26 @@ export class AccountRepository {
 
   private async getPreloadedWallet(mintUrl: string, currency: Currency) {
     const seed = await this.cryptography.getSeed?.();
+
+    const getClearAuthToken = async () => {
+      const token = await cashuAuthStore
+        .getState()
+        .getClearAuthTokenWithRefresh(mintUrl);
+      if (!token) {
+        throw new Error(`No clear auth token available for mint ${mintUrl}`);
+      }
+      return token;
+    };
+
     return this.queryClient.fetchQuery({
       queryKey: ['preloaded-wallet', mintUrl, currency],
       queryFn: async () => {
         const wallet = getCashuWallet(mintUrl, {
           unit: getCashuUnit(currency),
           bip39seed: seed ?? undefined,
+          getClearAuthToken,
+          getBlindAuthToken: () =>
+            cashuAuthStore.getState().getAndConsumeBlindAuthToken(mintUrl),
         });
         await wallet.loadMint();
         return wallet;

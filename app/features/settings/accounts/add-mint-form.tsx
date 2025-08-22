@@ -12,9 +12,10 @@ import {
 } from '~/components/ui/select';
 import { useAddCashuAccount } from '~/features/accounts/account-hooks';
 import { cashuMintValidator } from '~/features/shared/cashu';
+import { cashuAuthStore } from '~/features/shared/cashu-mint-authentication';
 import { useUser } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
-import { getCashuProtocolUnit } from '~/lib/cashu';
+import { getCashuProtocolUnit, getMintInfo } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import { LinkWithViewTransition } from '~/lib/transitions';
 
@@ -43,6 +44,7 @@ export function AddMintForm() {
   const navigate = useNavigate();
   const defaultCurrency = useUser((u) => u.defaultCurrency);
   const location = useLocation();
+  const { startOidcFlow, sessions: clearAuthSessions } = cashuAuthStore();
 
   const {
     register,
@@ -57,6 +59,19 @@ export function AddMintForm() {
   });
 
   const onSubmit = async (data: FormValues) => {
+    const mintInfo = await getMintInfo(data.mintUrl);
+    if (mintInfo.isSupported(21)) {
+      if (!clearAuthSessions[data.mintUrl]) {
+        startOidcFlow(data.mintUrl);
+        return;
+      }
+
+      toast({
+        title: 'Clear',
+        description: 'Clear authentication is already enabled for this mint',
+      });
+    }
+
     try {
       await addAccount({
         name: data.name,

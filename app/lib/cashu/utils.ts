@@ -188,13 +188,21 @@ export const getCashuWallet = (
     'unit'
   > & {
     unit?: CurrencyUnit;
+    getBlindAuthToken?: () => Promise<string>;
+    getClearAuthToken?: () => Promise<string>;
   } = {},
 ) => {
-  const { unit, ...rest } = options;
+  const { unit, getClearAuthToken, getBlindAuthToken, ...rest } = options;
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
   const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
+  const mint = new CashuMint(
+    mintUrl,
+    undefined,
+    getBlindAuthToken,
+    getClearAuthToken,
+  );
+  return new ExtendedCashuWallet(mint, {
     ...rest,
     unit: cashuUnit,
   });

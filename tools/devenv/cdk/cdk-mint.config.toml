@@ -49,14 +49,14 @@ min_delay_time = 1
 max_delay_time = 3
 
 [auth]
-auth_enabled = false
+auth_enabled = true
 openid_discovery = "http://127.0.0.1:8080/realms/cdk-test-realm/.well-known/openid-configuration"
 openid_client_id = "cashu-client"
 mint_max_bat=50
 
 # Authentication settings for endpoints
 # Options: "clear", "blind", "none" (none = disabled)
-mint = "blind"
+mint = "clear"
 get_mint_quote = "none"  
 check_mint_quote = "none"
 

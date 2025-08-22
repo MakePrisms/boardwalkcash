@@ -644,8 +644,8 @@ const useOnMintQuoteStateChange = ({
       ) {
         onExpiredRef.current(relatedReceiveQuote);
       } else if (
-        mintQuote.state === 'PAID' &&
-        relatedReceiveQuote.state !== 'PAID'
+        mintQuote.state === 'PAID'
+        // relatedReceiveQuote.state !== 'PAID'
       ) {
         onPaidRef.current(account, relatedReceiveQuote);
       } else if (
