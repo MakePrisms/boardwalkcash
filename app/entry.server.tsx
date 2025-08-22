@@ -46,21 +46,34 @@ function handleRequest(
       {
         [readyOption]() {
           shellRendered = true;
+          // Clear the timeout since we're now ready
+          clearTimeout(timeoutId);
+
           const body = new PassThrough();
-          const stream = createReadableStreamFromReadable(body);
 
           responseHeaders.set('Content-Type', 'text/html');
 
-          resolve(
-            new Response(stream, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            }),
-          );
+          try {
+            // Set up the pipe before creating the stream to avoid race conditions
+            pipe(getMetaTagTransformer(body));
 
-          pipe(getMetaTagTransformer(body));
+            const stream = createReadableStreamFromReadable(body);
+
+            resolve(
+              new Response(stream, {
+                headers: responseHeaders,
+                status: responseStatusCode,
+              }),
+            );
+          } catch (error) {
+            console.error('Error setting up stream:', error);
+            // Clean up the body stream if there's an error
+            body.destroy();
+            reject(error);
+          }
         },
         onShellError(error: unknown) {
+          clearTimeout(timeoutId);
           reject(error);
         },
         onError(error: unknown) {
@@ -78,7 +91,12 @@ function handleRequest(
 
     // Abort the rendering stream after the `streamTimeout` so it has time to
     // flush down the rejected boundaries
-    setTimeout(abort, streamTimeout + 1000);
+    const timeoutId = setTimeout(() => {
+      if (!shellRendered) {
+        console.warn('Rendering timed out, aborting stream');
+      }
+      abort();
+    }, streamTimeout + 1000);
   });
 }
 
