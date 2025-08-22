@@ -9,7 +9,7 @@ import {
 } from '@sentry/react-router';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
-import { renderToPipeableStream, renderToString } from 'react-dom/server';
+import { renderToPipeableStream } from 'react-dom/server';
 import type {
   EntryContext,
   unstable_RouterContextProvider,
@@ -28,52 +28,8 @@ function handleRequest(
   loadContext: unstable_RouterContextProvider,
 ) {
   return new Promise((resolve, reject) => {
-    const userAgent = request.headers.get('user-agent');
-    const isVercel = process.env.VERCEL || process.env.VERCEL_URL;
-
-    // Use non-streaming approach in serverless environments to avoid pipe issues
-    if (isVercel) {
-      try {
-        const html = renderToString(
-          <ServerRouter context={routerContext} url={request.url} />,
-        );
-
-        // Apply Sentry meta tag transformation to the HTML string
-        const body = new PassThrough();
-        const transformer = getMetaTagTransformer(body);
-
-        let transformedHtml = '';
-
-        // Collect transformed output
-        transformer.on('data', (chunk) => {
-          transformedHtml += chunk.toString();
-        });
-
-        // Handle completion
-        transformer.on('end', () => {
-          responseHeaders.set('Content-Type', 'text/html');
-          resolve(
-            new Response(transformedHtml, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            }),
-          );
-        });
-
-        transformer.on('error', (error) => {
-          reject(error);
-        });
-
-        // Write the HTML and end the stream
-        transformer.write(html);
-        transformer.end();
-      } catch (error) {
-        reject(error);
-      }
-      return;
-    }
-
     let shellRendered = false;
+    const userAgent = request.headers.get('user-agent');
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
@@ -87,31 +43,22 @@ function handleRequest(
       {
         [readyOption]() {
           shellRendered = true;
-          // Clear the timeout since we're now ready
           clearTimeout(timeoutId);
 
           const body = new PassThrough();
 
           responseHeaders.set('Content-Type', 'text/html');
 
-          try {
-            // Use Sentry meta tag transformer for proper Sentry integration
-            pipe(getMetaTagTransformer(body));
+          pipe(getMetaTagTransformer(body));
 
-            const stream = createReadableStreamFromReadable(body);
+          const stream = createReadableStreamFromReadable(body);
 
-            resolve(
-              new Response(stream, {
-                headers: responseHeaders,
-                status: responseStatusCode,
-              }),
-            );
-          } catch (error) {
-            console.error('Error setting up stream:', error);
-            // Clean up the body stream if there's an error
-            body.destroy();
-            reject(error);
-          }
+          resolve(
+            new Response(stream, {
+              headers: responseHeaders,
+              status: responseStatusCode,
+            }),
+          );
         },
         onShellError(error: unknown) {
           clearTimeout(timeoutId);

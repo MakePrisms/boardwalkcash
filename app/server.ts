@@ -5,39 +5,46 @@ import morgan from 'morgan';
 import 'react-router';
 import { unstable_RouterContextProvider } from 'react-router';
 
-export const app = express();
-app.use(compression());
-app.disable('x-powered-by');
+// Only use Express server when not in Vercel environment
+// Vercel handles server-side rendering through its own serverless functions
+const isVercel = process.env.VERCEL || process.env.VERCEL_URL;
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(
-    '/assets',
-    express.static('build/client/assets', { immutable: true, maxAge: '1y' }),
-  );
-  app.use(express.static('build/client', { maxAge: '1h' }));
-}
+export const app = isVercel ? null : express();
 
-app.use(morgan('tiny'));
+if (!isVercel && app) {
+  app.use(compression());
+  app.disable('x-powered-by');
 
-app.use('/api/hello', (_, res) => {
-  res.send('Hello World from express server');
-});
+  if (process.env.NODE_ENV === 'production') {
+    app.use(
+      '/assets',
+      express.static('build/client/assets', { immutable: true, maxAge: '1y' }),
+    );
+    app.use(express.static('build/client', { maxAge: '1h' }));
+  }
 
-app.use(
-  createRequestHandler({
-    build: () => import('virtual:react-router/server-build'),
-    getLoadContext() {
-      return new unstable_RouterContextProvider();
-    },
-  }),
-);
+  app.use(morgan('tiny'));
 
-if (process.env.NODE_ENV === 'production') {
-  console.log('Starting production server');
-  const PORT = Number.parseInt(process.env.PORT || '3000');
-  app.listen(PORT, () => {
-    console.log(`App listening on http://localhost:${PORT}`);
+  app.use('/api/hello', (_, res) => {
+    res.send('Hello World from express server');
   });
+
+  app.use(
+    createRequestHandler({
+      build: () => import('virtual:react-router/server-build'),
+      getLoadContext() {
+        return new unstable_RouterContextProvider();
+      },
+    }),
+  );
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Starting production server');
+    const PORT = Number.parseInt(process.env.PORT || '3000');
+    app.listen(PORT, () => {
+      console.log(`App listening on http://localhost:${PORT}`);
+    });
+  }
 }
 
 export default app;
