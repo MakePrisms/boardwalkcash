@@ -3,13 +3,10 @@ import { PassThrough } from 'node:stream';
 
 import { createReadableStreamFromReadable } from '@react-router/node';
 import * as Sentry from '@sentry/react-router';
-import {
-  getMetaTagTransformer,
-  wrapSentryHandleRequest,
-} from '@sentry/react-router';
+import { wrapSentryHandleRequest } from '@sentry/react-router';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
-import { renderToPipeableStream } from 'react-dom/server';
+import { renderToPipeableStream, renderToString } from 'react-dom/server';
 import type {
   EntryContext,
   unstable_RouterContextProvider,
@@ -28,11 +25,31 @@ function handleRequest(
   loadContext: unstable_RouterContextProvider,
 ) {
   return new Promise((resolve, reject) => {
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    console.log('HERE, HERE I AM IN CUSTOM entry.server.tsx!!!!!!!!!!');
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    let shellRendered = false;
     const userAgent = request.headers.get('user-agent');
+    const isVercel = process.env.VERCEL || process.env.VERCEL_URL;
+
+    // Use non-streaming approach in serverless environments to avoid pipe issues
+    if (isVercel) {
+      try {
+        const html = renderToString(
+          <ServerRouter context={routerContext} url={request.url} />,
+        );
+
+        responseHeaders.set('Content-Type', 'text/html');
+
+        resolve(
+          new Response(html, {
+            headers: responseHeaders,
+            status: responseStatusCode,
+          }),
+        );
+      } catch (error) {
+        reject(error);
+      }
+      return;
+    }
+
+    let shellRendered = false;
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
@@ -54,8 +71,8 @@ function handleRequest(
           responseHeaders.set('Content-Type', 'text/html');
 
           try {
-            // Set up the pipe before creating the stream to avoid race conditions
-            pipe(getMetaTagTransformer(body));
+            // Direct pipe to avoid transformer issues in serverless environment
+            pipe(body);
 
             const stream = createReadableStreamFromReadable(body);
 
