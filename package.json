@@ -60,6 +60,7 @@
     "deepmerge": "4.3.1",
     "embla-carousel-react": "8.5.2",
     "express": "5.1.0",
+    "hono": "4.9.4",
     "isbot": "5.1.28",
     "jwt-decode": "4.0.0",
     "ky": "1.7.4",
