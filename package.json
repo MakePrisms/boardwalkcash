@@ -109,7 +109,7 @@
     "ws": "8.18.2"
   },
   "engines": {
-    "bun": "1.2.19",
+    "bun": "1.2.20",
     "node": "22.x"
   },
   "engines:comments": {
