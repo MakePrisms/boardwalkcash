@@ -1,9 +1,10 @@
 # Agicash
 
-This app is using [React Router](https://reactrouter.com/home) framework, but it is hosted on a custom [Express](https://expressjs.com/) server.
+This app is using [Remix](https://remix.run/docs) framework, but it is hosted on a custom [Express](https://expressjs.com/) server. However, currently Express
+server is only used when running locally. When deployed to Vercel, Express server is not used.
 
-For auth, keys and encryption the app is using Open Secret platform. Non auth data is stored to Postgres
-database hosted on Supabase. All sensitve data is encrypted using keys from the Open Secret platform before storing to Postgres database.
+For auth and storing sensitive data the app is using Open Secret platform. The rest of the data is stored to Postgres
+database hosted on Supabase. 
 
 ## Getting started
 

@@ -28,6 +28,5 @@ export default {
   },
   future: {
     unstable_middleware: true,
-    // unstable_splitRouteModules: 'enforce', TODO: add this later
   },
 } satisfies Config;
