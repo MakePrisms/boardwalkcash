@@ -15,7 +15,7 @@ import {
 import { decodeURLSafe, encodeURLSafe } from '@stablelib/base64';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { jwtDecode } from 'jwt-decode';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useRevalidator } from 'react-router';
 import { useLongTimeout } from '~/hooks/use-long-timeout';
 import { generateRandomPassword } from '~/lib/password-generator';
@@ -280,6 +280,18 @@ export const useAuthActions = (): AuthActions => {
     verifyEmail,
     convertGuestToFullAccount,
   };
+};
+
+export const useSignOut = () => {
+  const { signOut } = useAuthActions();
+  const [loading, setLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    await signOut({ redirectTo: '/signup' });
+    setLoading(false);
+  };
+  return { isSigningOut: loading, signOut: handleSignOut };
 };
 
 type OpenSecretJwt = {

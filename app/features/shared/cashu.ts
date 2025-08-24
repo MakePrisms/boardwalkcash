@@ -71,7 +71,6 @@ export const xpubQuery = ({
 }: { queryClient: QueryClient; derivationPath?: string }) => ({
   queryKey: ['cashu-xpub', derivationPath],
   queryFn: async () => {
-    console.log('calling cashu-xpub queryFn');
     const seed = await queryClient.fetchQuery(seedQuery());
     const hdKey = HDKey.fromMasterSeed(seed);
 
@@ -82,6 +81,7 @@ export const xpubQuery = ({
 
     return hdKey.publicExtendedKey;
   },
+  staleTime: Number.POSITIVE_INFINITY,
 });
 
 const privateKeyQuery = ({

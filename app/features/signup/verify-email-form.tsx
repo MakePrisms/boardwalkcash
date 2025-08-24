@@ -10,7 +10,7 @@ import {
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { useRequestEmailVerificationCode } from '~/features/signup/verify-email';
-import { useAuthActions } from '~/features/user/auth';
+import { useSignOut } from '~/features/user/auth';
 import type { FullUser } from '~/features/user/user';
 import { useToast } from '~/hooks/use-toast';
 import { useVerifyEmail } from '../user/user-hooks';
@@ -19,7 +19,7 @@ type FormValues = { code: string };
 type Props = { user: FullUser };
 
 export function VerifyEmailForm({ user }: Props) {
-  const { signOut } = useAuthActions();
+  const { isSigningOut, signOut } = useSignOut();
   const verifyEmail = useVerifyEmail();
   const { toast } = useToast();
   const { requestingEmailVerificationCode, requestEmailVerificationCode } =
@@ -97,9 +97,8 @@ export function VerifyEmailForm({ user }: Props) {
             type="button"
             className="w-full"
             variant="outline"
-            onClick={() => {
-              signOut({ redirectTo: '/signup' });
-            }}
+            onClick={signOut}
+            loading={isSigningOut}
           >
             Log Out
           </Button>
