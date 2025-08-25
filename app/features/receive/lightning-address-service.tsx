@@ -10,16 +10,19 @@ import { Money } from '~/lib/money';
 import { AccountRepository } from '../accounts/account-repository';
 import type { AgicashDb } from '../agicash-db/database';
 import type { CashuCryptography } from '../shared/cashu';
-import { encryptToPublicKey } from '../shared/encryption';
+import { encryptToPublicKey, type useEncryption } from '../shared/encryption';
 import { UserRepository } from '../user/user-repository';
 import { CashuReceiveQuoteRepository } from './cashu-receive-quote-repository';
 import { CashuReceiveQuoteService } from './cashu-receive-quote-service';
 
-const fakeCryptography: CashuCryptography = {
+const fakeEncryption = {
   encrypt: async <T = unknown>(_data: T): Promise<string> => {
     throw new Error('encrypt is not supported in this context');
   },
   decrypt: async <T = unknown>(data: string): Promise<T> => data as T,
+};
+
+const fakeCryptography: CashuCryptography = {
   getSeed: (): Promise<Uint8Array> => {
     throw new Error('getSeed is not supported in this context');
   },
@@ -39,6 +42,7 @@ export class LightningAddressService {
   private minSendable: Money<'BTC'>;
   private maxSendable: Money<'BTC'>;
   private cryptography: CashuCryptography = fakeCryptography;
+  private encryption: ReturnType<typeof useEncryption> = fakeEncryption;
   private exchangeRateService: ExchangeRateService;
   /**
    * A client can flag that they will not validate the invoice amount.
@@ -55,9 +59,9 @@ export class LightningAddressService {
     } = {},
   ) {
     this.exchangeRateService = new ExchangeRateService();
-    this.userRepository = new UserRepository(db, this.cryptography);
+    this.userRepository = new UserRepository(db, this.encryption);
     this.db = db;
-    this.accountRepository = new AccountRepository(db, this.cryptography);
+    this.accountRepository = new AccountRepository(db, this.encryption);
     this.bypassAmountValidation = options.bypassAmountValidation ?? false;
     this.baseUrl = new URL(request.url).origin;
     this.minSendable = new Money({
@@ -148,7 +152,7 @@ export class LightningAddressService {
         new CashuReceiveQuoteRepository(this.db, {
           encrypt: async (data) =>
             encryptToPublicKey(data, user.encryptionPublicKey),
-          decrypt: this.cryptography.decrypt,
+          decrypt: this.encryption.decrypt,
         }),
       );
 
@@ -209,7 +213,7 @@ export class LightningAddressService {
     try {
       const cashuReceiveQuoteRepository = new CashuReceiveQuoteRepository(
         this.db,
-        this.cryptography,
+        this.encryption,
       );
       const quote = await cashuReceiveQuoteRepository.get(receiveQuoteId);
 

@@ -1,3 +1,4 @@
+import { configure } from '@opensecret/react';
 /**
  * By default, React Router  will handle hydrating your app on the client for you.
  * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx react-router reveal` ✨
@@ -8,6 +9,21 @@ import { StrictMode, startTransition } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
 import { getEnvironment, isServedLocally } from './environment';
+
+const openSecretApiUrl = import.meta.env.VITE_OPEN_SECRET_API_URL ?? '';
+if (!openSecretApiUrl) {
+  throw new Error('VITE_OPEN_SECRET_API_URL is not set');
+}
+
+const openSecretClientId = import.meta.env.VITE_OPEN_SECRET_CLIENT_ID ?? '';
+if (!openSecretClientId) {
+  throw new Error('VITE_OPEN_SECRET_CLIENT_ID is not set');
+}
+
+configure({
+  apiUrl: openSecretApiUrl,
+  clientId: openSecretClientId,
+});
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN ?? '';
 if (!sentryDsn) {

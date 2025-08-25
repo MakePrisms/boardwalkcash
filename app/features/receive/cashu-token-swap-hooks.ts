@@ -15,7 +15,7 @@ import {
   type AgicashDbCashuTokenSwap,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { useEncryption } from '../shared/encryption';
 import { useUser } from '../user/user-hooks';
 import type { CashuTokenSwap } from './cashu-token-swap';
 import {
@@ -176,7 +176,7 @@ function useOnCashuTokenSwapChange({
   onCreated: (swap: CashuTokenSwap) => void;
   onUpdated: (swap: CashuTokenSwap) => void;
 }) {
-  const cashuCryptography = useCashuCryptography();
+  const encryption = useEncryption();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const queryClient = useQueryClient();
@@ -196,19 +196,19 @@ function useOnCashuTokenSwapChange({
           if (payload.eventType === 'INSERT') {
             const swap = await CashuTokenSwapRepository.toTokenSwap(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
             onCreatedRef.current(swap);
           } else if (payload.eventType === 'UPDATE') {
             const swap = await CashuTokenSwapRepository.toTokenSwap(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
             onUpdatedRef.current(swap);
           }
         },
       ),
-    onReconnected: () => {
+    onConnected: () => {
       // Invalidate the pending cashu token swaps query so that the swaps are re-fetched and the cache is updated.
       // This is needed to get any data that might have been updated while the re-connection was in progress.
       queryClient.invalidateQueries({

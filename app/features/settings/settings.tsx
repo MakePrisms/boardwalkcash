@@ -21,7 +21,7 @@ import { cn } from '~/lib/utils';
 import { useDefaultAccount } from '../accounts/account-hooks';
 import { AccountTypeIcon } from '../accounts/account-icons';
 import { ColorModeToggle } from '../theme/color-mode-toggle';
-import { useAuthActions } from '../user/auth';
+import { useSignOut } from '../user/auth';
 import { useUser } from '../user/user-hooks';
 
 function LnAddressDisplay({
@@ -77,7 +77,7 @@ function LnAddressDisplay({
 }
 
 export default function Settings() {
-  const { signOut } = useAuthActions();
+  const { isSigningOut, signOut } = useSignOut();
   const defaultAccount = useDefaultAccount();
   const username = useUser((s) => s.username);
   const location = useLocation();
@@ -130,7 +130,11 @@ export default function Settings() {
       </PageContent>
 
       <PageFooter className="mx-auto flex w-36 flex-col gap-6 pb-10">
-        <Button className="mx-auto w-full" onClick={signOut}>
+        <Button
+          className="mx-auto w-full"
+          onClick={signOut}
+          loading={isSigningOut}
+        >
           Sign Out
         </Button>
         <div className="flex w-full justify-between gap-4 text-muted-foreground text-sm">
