@@ -12,11 +12,7 @@ import {
 } from '~/lib/cashu';
 import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
-import {
-  type CashuCryptography,
-  tokenToMoney,
-  useCashuCryptography,
-} from '../shared/cashu';
+import { tokenToMoney } from '../shared/cashu';
 import type { CashuTokenSwap } from './cashu-token-swap';
 import {
   type CashuTokenSwapRepository,
@@ -24,10 +20,7 @@ import {
 } from './cashu-token-swap-repository';
 
 export class CashuTokenSwapService {
-  constructor(
-    private readonly cryptography: CashuCryptography,
-    private readonly tokenSwapRepository: CashuTokenSwapRepository,
-  ) {}
+  constructor(private readonly tokenSwapRepository: CashuTokenSwapRepository) {}
 
   async create({
     userId,
@@ -50,8 +43,10 @@ export class CashuTokenSwapService {
       throw new Error('Cannot swap a token to a different currency.');
     }
 
-    const seed = await this.cryptography.getSeed();
     const wallet = account.wallet;
+    if (!wallet.seed) {
+      throw new Error('Wallet must be initialized with a seed');
+    }
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
@@ -64,7 +59,7 @@ export class CashuTokenSwapService {
 
     const outputData = OutputData.createDeterministicData(
       amountToReceive,
-      seed,
+      wallet.seed,
       counter,
       keys,
     );
@@ -95,15 +90,17 @@ export class CashuTokenSwapService {
       throw new Error('Token swap is not pending');
     }
 
-    const seed = await this.cryptography.getSeed();
     const wallet = account.wallet;
+    if (!wallet.seed) {
+      throw new Error('Wallet must be initialized with a seed');
+    }
 
     const { keysetId, keysetCounter } = tokenSwap;
     const amountToReceive = sum(tokenSwap.outputAmounts);
 
     const outputData = OutputData.createDeterministicData(
       amountToReceive,
-      seed,
+      wallet.seed,
       keysetCounter,
       await wallet.getKeys(keysetId),
       tokenSwap.outputAmounts,
@@ -187,7 +184,6 @@ export class CashuTokenSwapService {
 }
 
 export function useCashuTokenSwapService() {
-  const cryptography = useCashuCryptography();
   const tokenSwapRepository = useCashuTokenSwapRepository();
-  return new CashuTokenSwapService(cryptography, tokenSwapRepository);
+  return new CashuTokenSwapService(tokenSwapRepository);
 }
