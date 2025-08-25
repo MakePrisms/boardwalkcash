@@ -1,11 +1,20 @@
 import { AlertCircle, BanknoteIcon, UserIcon, ZapIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Card } from '~/components/ui/card';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { LinkWithViewTransition } from '~/lib/transitions';
+import {
+  useDeleteAllNotificationsByType,
+  useNotifications,
+} from '../notifications/notification-hooks';
 import { getDefaultUnit } from '../shared/currencies';
 import type { Transaction } from './transaction';
 import { useTransactions } from './transaction-hooks';
+
+type ExtendedTransaction = Transaction & {
+  /** True if the transaction has an associated notification. False otherwise. */
+  hasNotification: boolean;
+};
 
 function LoadMore({
   onEndReached,
@@ -111,7 +120,11 @@ const getTransactionTypeIcon = (transaction: Transaction) => {
   return transactionTypeIconMap[transaction.type];
 };
 
-function TransactionRow({ transaction }: { transaction: Transaction }) {
+function TransactionRow({
+  transaction,
+}: {
+  transaction: ExtendedTransaction;
+}) {
   return (
     <LinkWithViewTransition
       to={`/transactions/${transaction.id}`}
@@ -128,9 +141,18 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
               unit: getDefaultUnit(transaction.amount.currency),
             })}
           </p>
-          <span className="text-muted-foreground text-xs">
-            {formatRelativeTime(new Date(transaction.createdAt).getTime())}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="w-12 text-right">
+              <span className="text-muted-foreground text-xs">
+                {formatRelativeTime(new Date(transaction.createdAt).getTime())}
+              </span>
+            </div>
+            <div className="flex h-4 w-2 items-center justify-center">
+              {transaction.hasNotification && (
+                <div className="h-[6px] w-[6px] rounded-full bg-green-500" />
+              )}
+            </div>
+          </div>
         </div>
         <p className="text-muted-foreground text-xs">
           {getTransactionDescription(transaction)}
@@ -145,7 +167,7 @@ function TransactionSection({
   transactions,
 }: {
   title: string;
-  transactions: Transaction[];
+  transactions: ExtendedTransaction[];
 }) {
   if (transactions.length === 0) return null;
 
@@ -162,15 +184,15 @@ function TransactionSection({
 }
 
 /** Filter transactions by status and time range */
-function usePartitionTransactions(transactions: Transaction[]) {
+function usePartitionTransactions(transactions: ExtendedTransaction[]) {
   const now = Date.now();
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-  const pendingTransactions: Transaction[] = [];
-  const todayTransactions: Transaction[] = [];
-  const thisWeekTransactions: Transaction[] = [];
-  const olderTransactions: Transaction[] = [];
+  const pendingTransactions: ExtendedTransaction[] = [];
+  const todayTransactions: ExtendedTransaction[] = [];
+  const thisWeekTransactions: ExtendedTransaction[] = [];
+  const olderTransactions: ExtendedTransaction[] = [];
 
   // Transactions are already sorted correctly from the database
   // (PENDING first, then by created_at descending)
@@ -207,15 +229,39 @@ export function TransactionList() {
     status,
   } = useTransactions();
 
+  const { data: notifications } = useNotifications({
+    type: 'PAYMENT_RECEIVED',
+  });
+  const { mutate: deleteAllNotifications } = useDeleteAllNotificationsByType({
+    type: 'PAYMENT_RECEIVED',
+  });
+
+  // If there are any notifications, delete them all on mount.
+  // We consider notifactions to be "read" as soon as the user opens the transaction list.
+  useEffect(() => {
+    deleteAllNotifications();
+  }, [deleteAllNotifications]);
+
   const allTransactions =
     data?.pages.flatMap((page) => page.transactions) ?? [];
+
+  const notificationTransactionIds = new Set(
+    notifications.map((notification) => notification.transactionId),
+  );
+
+  const extendedTransactions = useMemo(() => {
+    return allTransactions.map((transaction) => ({
+      ...transaction,
+      hasNotification: notificationTransactionIds.has(transaction.id),
+    }));
+  }, [allTransactions, notificationTransactionIds]);
 
   const {
     pendingTransactions,
     todayTransactions,
     thisWeekTransactions,
     olderTransactions,
-  } = usePartitionTransactions(allTransactions);
+  } = usePartitionTransactions(extendedTransactions);
 
   if (status === 'error') {
     return (
@@ -238,7 +284,7 @@ export function TransactionList() {
     );
   }
 
-  if (!allTransactions.length) {
+  if (!extendedTransactions.length) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
         <span className="text-muted-foreground">No transactions found</span>
