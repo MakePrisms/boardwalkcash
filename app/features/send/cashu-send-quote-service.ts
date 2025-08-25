@@ -8,7 +8,6 @@ import { parseBolt11Invoice } from '~/lib/bolt11';
 import { getCashuUnit, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
-import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import type { DestinationDetails } from '../transactions/transaction';
@@ -88,10 +87,7 @@ export type SendQuoteRequest = {
 };
 
 export class CashuSendQuoteService {
-  constructor(
-    private readonly cryptography: CashuCryptography,
-    private readonly cashuSendRepository: CashuSendQuoteRepository,
-  ) {}
+  constructor(private readonly cashuSendRepository: CashuSendQuoteRepository) {}
 
   async getLightningQuote({
     account,
@@ -377,8 +373,10 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const seed = await this.cryptography.getSeed();
     const wallet = account.wallet;
+    if (!wallet.seed) {
+      throw new Error('Wallet must be initialized with a seed');
+    }
 
     // We are creating output data here in the same way that cashu-ts does in the meltProofs function.
     // This is needed because we need the deterministic output data to be able to convert the change signatures to proofs.
@@ -390,7 +388,7 @@ export class CashuSendQuoteService {
       : [];
     const outputData = OutputData.createDeterministicData(
       amounts.length,
-      seed,
+      wallet.seed,
       sendQuote.keysetCounter,
       keys,
       amounts,
@@ -480,7 +478,6 @@ export class CashuSendQuoteService {
 }
 
 export function useCashuSendQuoteService() {
-  const cryptography = useCashuCryptography();
   const cashuSendQuoteRepository = useCashuSendQuoteRepository();
-  return new CashuSendQuoteService(cryptography, cashuSendQuoteRepository);
+  return new CashuSendQuoteService(cashuSendQuoteRepository);
 }

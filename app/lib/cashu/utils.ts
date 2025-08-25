@@ -82,6 +82,16 @@ export const getWalletCurrency = (wallet: CashuWallet) => {
  * We will remove this if cashu-ts ever updates selectProofsToSend not to return send proofs that are less than the amount.
  */
 export class ExtendedCashuWallet extends CashuWallet {
+  public readonly seed: Uint8Array | undefined;
+
+  constructor(
+    mint: CashuMint,
+    options: ConstructorParameters<typeof CashuWallet>[1],
+  ) {
+    super(mint, options);
+    this.seed = options?.bip39seed;
+  }
+
   /**
    * Override selectProofsToSend to allow postprocessing of the result.
    * @param proofs - The available proofs to select from
