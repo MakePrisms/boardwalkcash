@@ -5,7 +5,7 @@ import {
 } from '@cashu/cashu-ts';
 import type { Big } from 'big.js';
 import { parseBolt11Invoice } from '~/lib/bolt11';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
+import { getCashuUnit, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
 import { type CashuCryptography, useCashuCryptography } from '../shared/cashu';
@@ -140,9 +140,7 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
     await wallet.getKeys();
 
     const meltQuote = await wallet.createMeltQuote(paymentRequest);
@@ -233,9 +231,7 @@ export class CashuSendQuoteService {
     }
 
     const cashuUnit = getCashuUnit(account.currency);
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
     const keys = await wallet.getKeys();
     const keysetId = keys.id;
 
@@ -324,12 +320,7 @@ export class CashuSendQuoteService {
       throw new Error(`Send is not unpaid. Current state: ${sendQuote.state}`);
     }
 
-    const cashuUnit = getCashuUnit(account.currency);
-    const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     return wallet.meltProofs(meltQuote, sendQuote.proofs, {
       keysetId: sendQuote.keysetId,
@@ -387,10 +378,7 @@ export class CashuSendQuoteService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     // We are creating output data here in the same way that cashu-ts does in the meltProofs function.
     // This is needed because we need the deterministic output data to be able to convert the change signatures to proofs.
