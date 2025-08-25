@@ -21,25 +21,12 @@ import {
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
-type CashuAccountInput = DistributedOmit<
-  Extract<Account, { type: 'cashu' }>,
+type AccountInput<T extends Account> = DistributedOmit<
+  T,
   'id' | 'createdAt' | 'version' | 'wallet'
 > & {
   userId: string;
 };
-
-type NwcAccountInput = DistributedOmit<
-  Extract<Account, { type: 'nwc' }>,
-  'id' | 'createdAt' | 'version'
-> & {
-  userId: string;
-};
-
-type AccountInput<T extends Account> = T extends { type: 'cashu' }
-  ? CashuAccountInput
-  : T extends { type: 'nwc' }
-    ? NwcAccountInput
-    : never;
 
 type Options = {
   abortSignal?: AbortSignal;
