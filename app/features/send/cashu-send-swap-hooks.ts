@@ -117,8 +117,12 @@ export function useGetCashuSendSwapQuote() {
 }
 
 export function useCreateCashuSendSwap({
+  onSuccess,
   onError,
-}: { onError: (error: Error) => void }) {
+}: {
+  onSuccess: (swap: CashuSendSwap) => void;
+  onError: (error: Error) => void;
+}) {
   const cashuSendSwapService = useCashuSendSwapService();
   const userId = useUser((user) => user.id);
   const getLatestCashuAccount = useGetLatestCashuAccount();
@@ -144,6 +148,7 @@ export function useCreateCashuSendSwap({
     },
     onSuccess: (swap) => {
       cashuSendSwapCache.add(swap);
+      onSuccess(swap);
     },
     onError: onError,
   });
