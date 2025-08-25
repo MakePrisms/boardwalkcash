@@ -1,5 +1,9 @@
 import type { Token } from '@cashu/cashu-ts';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { useState } from 'react';
 import type {
   Account,
@@ -11,7 +15,11 @@ import {
   useAddCashuAccount,
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
-import { cashuMintValidator, tokenToMoney } from '~/features/shared/cashu';
+import {
+  cashuMintValidator,
+  mintInfoQuery,
+  tokenToMoney,
+} from '~/features/shared/cashu';
 import { useGetExchangeRate } from '~/hooks/use-exchange-rate';
 import {
   areMintUrlsEqual,
@@ -21,7 +29,7 @@ import {
   getClaimableProofs,
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
-import { checkIsTestMint, getMintInfo } from '~/lib/cashu';
+import { checkIsTestMint } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import { useUser } from '../user/user-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
@@ -54,6 +62,7 @@ export function useCashuTokenSourceAccountQuery(
   existingAccount?: ExtendedCashuAccount,
 ) {
   const tokenCurrency = tokenToMoney(token).currency;
+  const queryClient = useQueryClient();
 
   return useSuspenseQuery({
     queryKey: [
@@ -74,7 +83,7 @@ export function useCashuTokenSourceAccountQuery(
       }
 
       const [info, isTestMint] = await Promise.all([
-        getMintInfo(token.mint),
+        queryClient.ensureQueryData(mintInfoQuery(token.mint)),
         checkIsTestMint(token.mint),
       ]);
 
@@ -98,6 +107,10 @@ export function useCashuTokenSourceAccountQuery(
           keysetCounters: {},
           proofs: [],
           isDefault: false,
+          wallet: getCashuWallet(token.mint, {
+            unit: getCashuUnit(tokenCurrency),
+            mintInfo: info,
+          }),
         },
       };
     },

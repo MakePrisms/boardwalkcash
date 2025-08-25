@@ -1,4 +1,4 @@
-import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import { CashuMint, type Token, getEncodedToken } from '@cashu/cashu-ts';
 import {
   getPrivateKey as getMnemonic,
   getPrivateKeyBytes,
@@ -7,7 +7,7 @@ import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { sumProofs } from '~/lib/cashu';
+import { getMintInfo, sumProofs } from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
@@ -128,4 +128,42 @@ export function getTokenHash(token: Token | string): Promise<string> {
 export const cashuMintValidator = buildMintValidator({
   requiredNuts: [4, 5, 7, 8, 9, 10, 11, 12, 17, 20] as const,
   requiredWebSocketCommands: ['bolt11_melt_quote', 'proof_state'] as const,
+});
+
+/**
+ * Get the mint info.
+ *
+ * @param mintUrl
+ * @returns The mint info.
+ */
+export const mintInfoQuery = (mintUrl: string) => ({
+  queryKey: ['mint-info', mintUrl],
+  queryFn: async () => getMintInfo(mintUrl),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+/**
+ * Get the mints keysets in no specific order.
+ *
+ * @param mintUrl
+ * @returns All the mints past and current keysets.
+ */
+export const allMintKeysetsQuery = (mintUrl: string) => ({
+  queryKey: ['all-mint-keysets', mintUrl],
+  queryFn: async () => CashuMint.getKeySets(mintUrl),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+/**
+ * Get the mints public keys.
+ *
+ * @param mintUrl
+ * @param keysetId Optional param to get the keys for a specific keyset. If not specified, the
+ *   keys from all active keysets are fetched.
+ * @returns An object with an array of the fetched keysets.
+ */
+export const mintKeysQuery = (mintUrl: string, keysetId?: string) => ({
+  queryKey: ['mint-keys', mintUrl, keysetId],
+  queryFn: async () => CashuMint.getKeys(mintUrl, keysetId),
+  staleTime: Number.POSITIVE_INFINITY,
 });

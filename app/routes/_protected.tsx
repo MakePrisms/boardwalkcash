@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, redirect } from 'react-router';
 import { accountsQueryKey } from '~/features/accounts/account-hooks';
+import { AccountRepository } from '~/features/accounts/account-repository';
 import { agicashDb } from '~/features/agicash-db/database';
 import { supabaseSessionTokenQuery } from '~/features/agicash-db/supabase-session';
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
@@ -63,7 +64,16 @@ const ensureUserData = async (
         ),
       ]);
     const encryption = getEncryption(encryptionPrivateKey, encryptionPublicKey);
-    const userRepository = new UserRepository(agicashDb, encryption);
+    const accountRepository = new AccountRepository(
+      agicashDb,
+      encryption,
+      queryClient,
+    );
+    const userRepository = new UserRepository(
+      agicashDb,
+      encryption,
+      accountRepository,
+    );
 
     const { user: upsertedUser, accounts } = await userRepository.upsert({
       id: authUser.id,

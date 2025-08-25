@@ -1,5 +1,5 @@
 import type { Proof } from '@cashu/cashu-ts';
-import { getCashuUnit, sumProofs } from '~/lib/cashu';
+import { type ExtendedCashuWallet, getCashuUnit, sumProofs } from '~/lib/cashu';
 import { type Currency, Money } from '~/lib/money';
 
 export type AccountType = 'cashu' | 'nwc';
@@ -29,10 +29,12 @@ export type Account = {
        * Amounts are denominated in the cashu units (e.g. sats for BTC accounts, cents for USD accounts).
        */
       proofs: Proof[];
+      wallet: ExtendedCashuWallet;
     }
   | {
       type: 'nwc';
       nwcUrl: string;
+      wallet: never;
     }
 );
 
