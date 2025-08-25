@@ -1,10 +1,15 @@
 import { requestNewVerificationCode } from '@opensecret/react';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  type QueryClient,
+  useMutation,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useAuthActions, useAuthState } from '~/features/user/auth';
 import type { Currency } from '~/lib/money';
 import { useLatest } from '~/lib/use-latest';
+import { getQueryClient } from '~/query-client';
 import type { Account } from '../accounts/account';
 import { guestAccountStorage } from './guest-account-storage';
 import type { User } from './user';
@@ -14,7 +19,21 @@ import {
   useUserRepository,
 } from './user-repository';
 
-export const userQueryKey = 'user';
+const userQueryKey = 'user';
+
+export const getUserFromCache = (
+  queryClient: QueryClient = getQueryClient(),
+) => {
+  return queryClient.getQueryData<User>([userQueryKey]) ?? null;
+};
+
+export const getUserFromCacheOrThrow = () => {
+  const user = getUserFromCache();
+  if (!user) {
+    throw new Error('User not found');
+  }
+  return user;
+};
 
 export const userQuery = <TData = User>({
   userId,

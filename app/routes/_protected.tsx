@@ -17,8 +17,8 @@ import { type AuthUser, authQuery, useAuthState } from '~/features/user/auth';
 import type { User } from '~/features/user/user';
 import {
   defaultAccounts,
+  getUserFromCache,
   userQuery,
-  userQueryKey,
 } from '~/features/user/user-hooks';
 import { UserRepository } from '~/features/user/user-repository';
 import { Wallet } from '~/features/wallet/wallet';
@@ -44,7 +44,7 @@ const ensureUserData = async (
   queryClient: QueryClient,
   authUser: AuthUser,
 ): Promise<User> => {
-  let user = queryClient.getQueryData<User>([userQueryKey]);
+  let user = getUserFromCache(queryClient);
 
   if (!user) {
     queryClient.prefetchQuery(supabaseSessionTokenQuery());
