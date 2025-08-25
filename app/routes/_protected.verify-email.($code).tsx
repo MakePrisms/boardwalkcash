@@ -12,6 +12,7 @@ import type { Route } from './+types/_protected.verify-email.($code)';
 
 export const unstable_clientMiddleware: Route.unstable_ClientMiddlewareFunction[] =
   [verifyEmailRouteGuard];
+
 export async function clientLoader({
   request,
   context,
