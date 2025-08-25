@@ -11,7 +11,6 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   getCashuUnit,
-  getCashuWallet,
 } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
@@ -84,9 +83,7 @@ export class CashuReceiveQuoteService {
   }): Promise<CashuReceiveLightningQuote> {
     const cashuUnit = getCashuUnit(amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-    });
+    const wallet = account.wallet;
 
     const { lockingPublicKey, fullLockingDerivationPath } =
       await this.deriveNut20LockingPublicKey();
@@ -228,10 +225,7 @@ export class CashuReceiveQuoteService {
     const seed = await this.cryptography.getSeed();
     const cashuUnit = getCashuUnit(quote.amount.currency);
 
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keysetId = quote.state === 'PAID' ? quote.keysetId : undefined;
     const keys = await wallet.getKeys(keysetId);

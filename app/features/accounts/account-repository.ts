@@ -1,34 +1,65 @@
 import type { Proof } from '@cashu/cashu-ts';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import type { DistributedOmit } from 'type-fest';
+import {
+  getCashuProtocolUnit,
+  getCashuUnit,
+  getCashuWallet,
+} from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import {
   type AgicashDb,
   type AgicashDbAccount,
   agicashDb,
 } from '../agicash-db/database';
+import {
+  allMintKeysetsQuery,
+  mintInfoQuery,
+  mintKeysQuery,
+  useCashuCryptography,
+} from '../shared/cashu';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
-type AccountInput<T extends Account> = DistributedOmit<
-  T,
+type CashuAccountInput = DistributedOmit<
+  Extract<Account, { type: 'cashu' }>,
+  'id' | 'createdAt' | 'version' | 'wallet'
+> & {
+  userId: string;
+};
+
+type NwcAccountInput = DistributedOmit<
+  Extract<Account, { type: 'nwc' }>,
   'id' | 'createdAt' | 'version'
 > & {
   userId: string;
 };
 
+type AccountInput<T extends Account> = T extends { type: 'cashu' }
+  ? CashuAccountInput
+  : T extends { type: 'nwc' }
+    ? NwcAccountInput
+    : never;
+
 type Options = {
   abortSignal?: AbortSignal;
 };
 
-type Encryption = {
+type Cryptography = {
   encrypt: <T = unknown>(data: T) => Promise<string>;
   decrypt: <T = unknown>(data: string) => Promise<T>;
+  /**
+   * An optional method to get the bip39 seed for a cashu account.
+   * If not provided, cashu wallets will be created without a seed.
+   */
+  getSeed?: () => Promise<Uint8Array>;
 };
 
 export class AccountRepository {
   constructor(
     private readonly db: AgicashDb,
-    private readonly encryption: Encryption,
+    private readonly cryptography: Cryptography,
+    private readonly queryClient: QueryClient,
   ) {}
 
   /**
@@ -49,7 +80,7 @@ export class AccountRepository {
       throw new Error('Failed to get account', { cause: error });
     }
 
-    return AccountRepository.toAccount(data, this.encryption.decrypt);
+    return this.toAccount(data);
   }
 
   /**
@@ -70,9 +101,7 @@ export class AccountRepository {
       throw new Error('Failed to get accounts', { cause: error });
     }
 
-    return Promise.all(
-      data.map((x) => AccountRepository.toAccount(x, this.encryption.decrypt)),
-    );
+    return Promise.all(data.map((x) => this.toAccount(x)));
   }
 
   /**
@@ -94,7 +123,7 @@ export class AccountRepository {
               mint_url: accountInput.mintUrl,
               is_test_mint: accountInput.isTestMint,
               keyset_counters: accountInput.keysetCounters,
-              proofs: await this.encryption.encrypt(accountInput.proofs),
+              proofs: await this.cryptography.encrypt(accountInput.proofs),
             }
           : { nwc_url: accountInput.nwcUrl },
       user_id: accountInput.userId,
@@ -117,12 +146,11 @@ export class AccountRepository {
       throw new Error(message, { cause: error });
     }
 
-    return AccountRepository.toAccount<T>(data, this.encryption.decrypt);
+    return this.toAccount<T>(data);
   }
 
-  static async toAccount<T extends Account = Account>(
+  async toAccount<T extends Account = Account>(
     data: AgicashDbAccount,
-    decryptData: Encryption['decrypt'],
   ): Promise<T> {
     const commonData = {
       id: data.id,
@@ -139,13 +167,20 @@ export class AccountRepository {
         keyset_counters: Record<string, number>;
         proofs: string;
       };
+
+      const wallet = await this.getPreloadedWallet(
+        details.mint_url,
+        data.currency,
+      );
+
       return {
         ...commonData,
         type: 'cashu',
         mintUrl: details.mint_url,
         isTestMint: details.is_test_mint,
         keysetCounters: details.keyset_counters,
-        proofs: await decryptData<Proof[]>(details.proofs),
+        proofs: await this.cryptography.decrypt<Proof[]>(details.proofs),
+        wallet,
       } as T;
     }
 
@@ -160,9 +195,61 @@ export class AccountRepository {
 
     throw new Error('Invalid account type');
   }
+
+  private async getPreloadedWallet(mintUrl: string, currency: Currency) {
+    const seed = await this.cryptography.getSeed?.();
+
+    const [mintInfo, allMintKeysets, mintActiveKeys] = await Promise.all([
+      this.queryClient.ensureQueryData(mintInfoQuery(mintUrl)),
+      this.queryClient.ensureQueryData(allMintKeysetsQuery(mintUrl)),
+      this.queryClient.ensureQueryData(mintKeysQuery(mintUrl)),
+    ]);
+
+    const unitKeysets = allMintKeysets.keysets.filter(
+      (ks) => ks.unit === getCashuProtocolUnit(currency),
+    );
+    const activeKeyset = unitKeysets.find((ks) => ks.active);
+
+    if (!activeKeyset) {
+      throw new Error(`No active keyset found for ${currency} on ${mintUrl}`);
+    }
+
+    const activeKeysForUnit = mintActiveKeys.keysets.find(
+      (ks) => ks.id === activeKeyset.id,
+    );
+
+    if (!activeKeysForUnit) {
+      throw new Error(
+        `Got active keyset ${activeKeyset.id} from ${mintUrl} but could not find keys for it`,
+      );
+    }
+
+    const wallet = getCashuWallet(mintUrl, {
+      unit: getCashuUnit(currency),
+      bip39seed: seed ?? undefined,
+      mintInfo,
+      keys: activeKeysForUnit,
+      keysets: unitKeysets,
+    });
+
+    // The constructor does not set the keysetId, so we need to set it manually
+    wallet.keysetId = activeKeyset.id;
+
+    return wallet;
+  }
 }
 
 export function useAccountRepository() {
+  const cryptography = useCashuCryptography();
   const encryption = useEncryption();
-  return new AccountRepository(agicashDb, encryption);
+  const queryClient = useQueryClient();
+  return new AccountRepository(
+    agicashDb,
+    {
+      encrypt: encryption.encrypt,
+      decrypt: encryption.decrypt,
+      getSeed: cryptography.getSeed,
+    },
+    queryClient,
+  );
 }

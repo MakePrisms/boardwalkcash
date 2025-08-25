@@ -7,7 +7,6 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   type Query,
   type QueryClient,
-  type UseQueryResult,
   useMutation,
   useQueries,
   useQuery,
@@ -331,7 +330,7 @@ const checkMintQuote = async (
   quote: CashuReceiveQuote,
 ): Promise<MintQuoteResponse> => {
   const cashuUnit = getCashuUnit(quote.amount.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = account.wallet;
 
   const partialMintQuoteResponse = await wallet.checkMintQuote(quote.quoteId);
 
@@ -475,25 +474,6 @@ const useTrackMintQuotesWithWebSocket = ({
   }, [quotesByMint, getMintQuote, onUpdate]);
 };
 
-type MintInfoQueryResult = UseQueryResult<
-  {
-    mintUrl: string;
-    mintInfo: MintInfo;
-  },
-  Error
->;
-
-const combineMintInfoQueryResults = (results: MintInfoQueryResult[]) => {
-  return results.reduce((acc, curr) => {
-    if (curr.data) {
-      acc.set(curr.data.mintUrl, curr);
-    }
-    return acc;
-  }, new Map<string, MintInfoQueryResult>());
-};
-
-const mintInfoStaleTimeInMs = 30 * 60 * 1000;
-
 const usePartitionQuotesByStateCheckType = ({
   quotes,
   accountsCache,
@@ -512,60 +492,13 @@ const usePartitionQuotesByStateCheckType = ({
     [accountsCache],
   );
 
-  const mintUrls = useMemo(() => {
-    const distinctAccountIds = [...new Set(quotes.map((q) => q.accountId))];
-    const accounts = distinctAccountIds.map(getCashuAccount);
-    return [...new Set(accounts.map((x) => x.mintUrl))];
-  }, [quotes, getCashuAccount]);
-
-  const mintInfoMap = useQueries({
-    queries: mintUrls.map((mintUrl) => ({
-      queryKey: ['mint-info', mintUrl],
-      queryFn: async () => {
-        const wallet = getCashuWallet(mintUrl);
-        const mintInfo = await wallet.getMintInfo();
-        return { mintUrl, mintInfo };
-      },
-      initialData: {
-        mintUrl,
-        mintInfo: null,
-      },
-      initialDataUpdatedAt: Date.now() - (mintInfoStaleTimeInMs + 1000),
-      staleTime: mintInfoStaleTimeInMs,
-    })),
-    combine: combineMintInfoQueryResults,
-  });
-
   return useMemo(() => {
     const quotesToSubscribeTo: Record<string, CashuReceiveQuote[]> = {};
     const quotesToPoll: CashuReceiveQuote[] = [];
 
     quotes.forEach((quote) => {
       const account = getCashuAccount(quote.accountId);
-      const mintInfoQueryResult = mintInfoMap.get(account.mintUrl);
-      if (
-        !mintInfoQueryResult ||
-        mintInfoQueryResult.isPending ||
-        !mintInfoQueryResult.data?.mintInfo
-      ) {
-        // Mint info query result is not available yet or pending so this quote is not partitioned yet.
-        // When the query result is available, this will be re-run and the quote will be partitioned.
-        return;
-      }
-
-      if (mintInfoQueryResult.isError) {
-        console.warn(
-          `Fetching mint info failed for ${account.mintUrl}. Will fallback to polling.`,
-          {
-            accountId: account.id,
-            error: mintInfoQueryResult.error,
-          },
-        );
-        quotesToPoll.push(quote);
-        return;
-      }
-
-      const mintInfo = mintInfoQueryResult.data.mintInfo;
+      const mintInfo = account.wallet.mintInfo;
 
       const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
         account.mintUrl,
@@ -582,7 +515,7 @@ const usePartitionQuotesByStateCheckType = ({
     });
 
     return { quotesToSubscribeTo, quotesToPoll };
-  }, [mintInfoMap, quotes, getCashuAccount]);
+  }, [quotes, getCashuAccount]);
 };
 
 type OnMintQuoteStateChangeProps = {

@@ -11,7 +11,6 @@ import {
   amountsFromOutputData,
   getCashuProtocolUnit,
   getCashuUnit,
-  getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
 import { Money } from '~/lib/money';
@@ -73,7 +72,7 @@ export class CashuSendSwapService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const amountNumber = amount.toNumber(cashuUnit);
-    const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+    const wallet = account.wallet;
 
     const { cashuReceiveFee, cashuSendFee } = await this.prepareProofsAndFee(
       wallet,
@@ -128,10 +127,7 @@ export class CashuSendSwapService {
     const amountNumber = amount.toNumber(cashuUnit);
 
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const {
       keep: accountProofsToKeep,
@@ -224,10 +220,7 @@ export class CashuSendSwapService {
     }
 
     const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: getCashuUnit(swap.amountToSend.currency),
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keys = await wallet.getKeys(swap.keysetId);
     const sendAmount = swap.amountToSend.toNumber(getCashuUnit(swap.currency));
