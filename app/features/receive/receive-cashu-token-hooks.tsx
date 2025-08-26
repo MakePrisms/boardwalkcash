@@ -171,6 +171,10 @@ export function useCashuTokenWithClaimableProofs({
         cashuPubKey ? [cashuPubKey] : [],
       );
 
+      // TODO: to determine if we can claim the token, we will need to check the auth requirements.
+      // Check if the swapping, or any melt operations require auth
+      // Then when receiving the token we will need to redirect the user to login to the mint if they don't have an auth session
+
       return claimableProofs
         ? {
             claimableToken: { ...token, proofs: claimableProofs },
