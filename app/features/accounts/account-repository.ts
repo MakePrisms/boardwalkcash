@@ -16,7 +16,7 @@ import {
   allMintKeysetsQuery,
   mintInfoQuery,
   mintKeysQuery,
-  useCashuCryptography,
+  seedQuery,
 } from '../shared/cashu';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
@@ -32,20 +32,15 @@ type Options = {
   abortSignal?: AbortSignal;
 };
 
-type Cryptography = {
+type Encryption = {
   encrypt: <T = unknown>(data: T) => Promise<string>;
   decrypt: <T = unknown>(data: string) => Promise<T>;
-  /**
-   * An optional method to get the bip39 seed for a cashu account.
-   * If not provided, cashu wallets will be created without a seed.
-   */
-  getSeed?: () => Promise<Uint8Array>;
 };
 
 export class AccountRepository {
   constructor(
     private readonly db: AgicashDb,
-    private readonly cryptography: Cryptography,
+    private readonly encryption: Encryption,
     private readonly queryClient: QueryClient,
   ) {}
 
@@ -110,7 +105,7 @@ export class AccountRepository {
               mint_url: accountInput.mintUrl,
               is_test_mint: accountInput.isTestMint,
               keyset_counters: accountInput.keysetCounters,
-              proofs: await this.cryptography.encrypt(accountInput.proofs),
+              proofs: await this.encryption.encrypt(accountInput.proofs),
             }
           : { nwc_url: accountInput.nwcUrl },
       user_id: accountInput.userId,
@@ -166,7 +161,7 @@ export class AccountRepository {
         mintUrl: details.mint_url,
         isTestMint: details.is_test_mint,
         keysetCounters: details.keyset_counters,
-        proofs: await this.cryptography.decrypt<Proof[]>(details.proofs),
+        proofs: await this.encryption.decrypt<Proof[]>(details.proofs),
         wallet,
       } as T;
     }
@@ -184,7 +179,7 @@ export class AccountRepository {
   }
 
   private async getPreloadedWallet(mintUrl: string, currency: Currency) {
-    const seed = await this.cryptography.getSeed?.();
+    const seed = await this.queryClient.fetchQuery(seedQuery());
 
     const [mintInfo, allMintKeysets, mintActiveKeys] = await Promise.all([
       this.queryClient.fetchQuery(mintInfoQuery(mintUrl)),
@@ -227,7 +222,6 @@ export class AccountRepository {
 }
 
 export function useAccountRepository() {
-  const cryptography = useCashuCryptography();
   const encryption = useEncryption();
   const queryClient = useQueryClient();
   return new AccountRepository(
@@ -235,7 +229,6 @@ export function useAccountRepository() {
     {
       encrypt: encryption.encrypt,
       decrypt: encryption.decrypt,
-      getSeed: cryptography.getSeed,
     },
     queryClient,
   );

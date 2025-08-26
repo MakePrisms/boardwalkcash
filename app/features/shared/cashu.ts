@@ -54,7 +54,7 @@ export type CashuCryptography = {
 
 const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
 
-const seedQuery = () => ({
+export const seedQuery = () => ({
   queryKey: ['cashu-seed'],
   queryFn: async () => {
     const response = await getMnemonic({
