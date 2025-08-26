@@ -122,9 +122,6 @@ export class CashuSendSwapService {
     const amountNumber = amount.toNumber(cashuUnit);
 
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     const {
       keep: accountProofsToKeep,
@@ -217,9 +214,6 @@ export class CashuSendSwapService {
     }
 
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     const keys = await wallet.getKeys(swap.keysetId);
     const sendAmount = swap.amountToSend.toNumber(getCashuUnit(swap.currency));

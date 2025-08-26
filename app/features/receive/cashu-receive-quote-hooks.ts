@@ -13,13 +13,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  type MintInfo,
-  areMintUrlsEqual,
-  getCashuUnit,
-  getCashuWallet,
-  getWalletCurrency,
-} from '~/lib/cashu';
+import { areMintUrlsEqual, getCashuUnit } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -296,23 +290,24 @@ const mintsToExcludeFromWebSockets = [
 ];
 
 const checkIfMintSupportsWebSocketsForMintQuotes = (
-  mintUrl: string,
-  mintInfo: MintInfo,
+  account: CashuAccount,
   currency: string,
 ): boolean => {
-  if (mintsToExcludeFromWebSockets.some((x) => areMintUrlsEqual(x, mintUrl))) {
+  if (
+    mintsToExcludeFromWebSockets.some((x) =>
+      areMintUrlsEqual(x, account.mintUrl),
+    )
+  ) {
     return false;
   }
-  const wallet = getCashuWallet(mintUrl);
-  const walletCurrency = getWalletCurrency(wallet);
-  const nut17Info = mintInfo.isSupported(17);
+  const nut17Info = account.wallet.mintInfo.isSupported(17);
   const params = nut17Info.params ?? [];
   const supportsWebSocketsForMintQuotes =
     nut17Info.supported &&
     params.some(
       (support: WebSocketSupport) =>
         support.method === 'bolt11' &&
-        walletCurrency === currency &&
+        account.currency === currency &&
         support.commands.includes('bolt11_mint_quote'),
     );
 
@@ -498,11 +493,9 @@ const usePartitionQuotesByStateCheckType = ({
 
     quotes.forEach((quote) => {
       const account = getCashuAccount(quote.accountId);
-      const mintInfo = account.wallet.mintInfo;
 
       const mintSupportsWebSockets = checkIfMintSupportsWebSocketsForMintQuotes(
-        account.mintUrl,
-        mintInfo,
+        account,
         account.currency,
       );
 

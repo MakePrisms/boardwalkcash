@@ -374,9 +374,6 @@ export class CashuSendQuoteService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     // We are creating output data here in the same way that cashu-ts does in the meltProofs function.
     // This is needed because we need the deterministic output data to be able to convert the change signatures to proofs.

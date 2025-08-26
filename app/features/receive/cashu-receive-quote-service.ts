@@ -225,9 +225,6 @@ export class CashuReceiveQuoteService {
     const cashuUnit = getCashuUnit(quote.amount.currency);
 
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     const keysetId = quote.state === 'PAID' ? quote.keysetId : undefined;
     const keys = await wallet.getKeys(keysetId);

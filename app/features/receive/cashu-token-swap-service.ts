@@ -44,9 +44,6 @@ export class CashuTokenSwapService {
     }
 
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
@@ -91,9 +88,6 @@ export class CashuTokenSwapService {
     }
 
     const wallet = account.wallet;
-    if (!wallet.seed) {
-      throw new Error('Wallet must be initialized with a seed');
-    }
 
     const { keysetId, keysetCounter } = tokenSwap;
     const amountToReceive = sum(tokenSwap.outputAmounts);

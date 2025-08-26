@@ -4,7 +4,7 @@ import type { DistributedOmit } from 'type-fest';
 import {
   getCashuProtocolUnit,
   getCashuUnit,
-  getCashuWallet,
+  getExtendedCashuWallet,
 } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import {
@@ -208,7 +208,7 @@ export class AccountRepository {
       );
     }
 
-    const wallet = getCashuWallet(mintUrl, {
+    const wallet = getExtendedCashuWallet(mintUrl, {
       unit: getCashuUnit(currency),
       bip39seed: seed ?? undefined,
       mintInfo,

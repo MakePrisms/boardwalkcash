@@ -20,6 +20,7 @@ import {
   cashuMintValidator,
   isTestMintQuery,
   mintInfoQuery,
+  seedQuery,
   tokenToMoney,
 } from '~/features/shared/cashu';
 import { useGetExchangeRate } from '~/hooks/use-exchange-rate';
@@ -29,6 +30,7 @@ import {
   getCashuUnit,
   getCashuWallet,
   getClaimableProofs,
+  getExtendedCashuWallet,
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
@@ -83,10 +85,11 @@ export function useCashuTokenSourceAccountQuery(
         };
       }
 
-      const [info, keysets, isTestMint] = await Promise.all([
+      const [info, keysets, isTestMint, seed] = await Promise.all([
         queryClient.fetchQuery(mintInfoQuery(token.mint)),
         queryClient.fetchQuery(allMintKeysetsQuery(token.mint)),
         queryClient.fetchQuery(isTestMintQuery(token.mint)),
+        queryClient.fetchQuery(seedQuery()),
       ]);
 
       const validationResult = cashuMintValidator(
@@ -110,9 +113,10 @@ export function useCashuTokenSourceAccountQuery(
           keysetCounters: {},
           proofs: [],
           isDefault: false,
-          wallet: getCashuWallet(token.mint, {
+          wallet: getExtendedCashuWallet(token.mint, {
             unit: getCashuUnit(tokenCurrency),
             mintInfo: info,
+            bip39seed: seed,
           }),
         },
       };
