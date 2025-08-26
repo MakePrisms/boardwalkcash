@@ -16,7 +16,9 @@ import {
   useDefaultAccount,
 } from '~/features/accounts/account-hooks';
 import {
+  allMintKeysetsQuery,
   cashuMintValidator,
+  isTestMintQuery,
   mintInfoQuery,
   tokenToMoney,
 } from '~/features/shared/cashu';
@@ -29,7 +31,6 @@ import {
   getClaimableProofs,
   getUnspentProofsFromToken,
 } from '~/lib/cashu';
-import { checkIsTestMint } from '~/lib/cashu';
 import type { AccountWithBadges } from '../accounts/account-selector';
 import { useUser } from '../user/user-hooks';
 import { useReceiveCashuTokenService } from './receive-cashu-token-service';
@@ -82,15 +83,17 @@ export function useCashuTokenSourceAccountQuery(
         };
       }
 
-      const [info, isTestMint] = await Promise.all([
+      const [info, keysets, isTestMint] = await Promise.all([
         queryClient.fetchQuery(mintInfoQuery(token.mint)),
-        checkIsTestMint(token.mint),
+        queryClient.fetchQuery(allMintKeysetsQuery(token.mint)),
+        queryClient.fetchQuery(isTestMintQuery(token.mint)),
       ]);
 
-      const validationResult = await cashuMintValidator(
+      const validationResult = cashuMintValidator(
         token.mint,
         getCashuProtocolUnit(tokenCurrency),
         info,
+        keysets.keysets,
       );
 
       return {

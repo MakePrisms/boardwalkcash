@@ -7,7 +7,7 @@ import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { getMintInfo, sumProofs } from '~/lib/cashu';
+import { checkIsTestMint, getMintInfo, sumProofs } from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
@@ -166,4 +166,10 @@ export const mintKeysQuery = (mintUrl: string, keysetId?: string) => ({
   queryKey: ['mint-keys', mintUrl, keysetId],
   queryFn: async () => CashuMint.getKeys(mintUrl, keysetId),
   staleTime: 1000 * 60 * 60, // 1 hour
+});
+
+export const isTestMintQuery = (mintUrl: string) => ({
+  queryKey: ['is-test-mint', mintUrl],
+  queryFn: async () => checkIsTestMint(mintUrl),
+  staleTime: Number.POSITIVE_INFINITY,
 });
