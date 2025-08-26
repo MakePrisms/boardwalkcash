@@ -3,7 +3,7 @@
 { 
   # CDK repository configuration
   env.CDK_REPO = "https://github.com/cashubtc/cdk.git";
-  env.CDK_REF = "aa624d3afd739a82aa31dfde2632480934004fc2";  # Can be branch, tag, or commit hash
+  env.CDK_REF = "a4aaef705ed1f0cda1f2fe970b4600d203ffd29b";  # Can be branch, tag, or commit hash
 
   # https://devenv.sh/packages/
   packages = [ 

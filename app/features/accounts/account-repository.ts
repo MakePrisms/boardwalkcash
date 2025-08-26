@@ -18,6 +18,7 @@ import {
   mintKeysQuery,
   seedQuery,
 } from '../shared/cashu';
+import { cashuAuthStore } from '../shared/cashu-mint-authentication';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
@@ -208,12 +209,25 @@ export class AccountRepository {
       );
     }
 
+    const getClearAuthToken = async () => {
+      const token = await cashuAuthStore
+        .getState()
+        .getClearAuthTokenWithRefresh(mintUrl);
+      if (!token) {
+        throw new Error(`No clear auth token available for mint ${mintUrl}`);
+      }
+      return token;
+    };
+
     const wallet = getExtendedCashuWallet(mintUrl, {
       unit: getCashuUnit(currency),
       bip39seed: seed ?? undefined,
       mintInfo,
       keys: activeKeysForUnit,
       keysets: unitKeysets,
+      getClearAuthToken,
+      getBlindAuthToken: async () =>
+        cashuAuthStore.getState().getAndConsumeBlindAuthToken(mintUrl),
     });
 
     // The constructor does not set the keysetId, so we need to set it manually

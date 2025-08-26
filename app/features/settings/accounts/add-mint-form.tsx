@@ -17,6 +17,7 @@ import {
   cashuMintValidator,
   mintInfoQuery,
 } from '~/features/shared/cashu';
+import { cashuAuthStore } from '~/features/shared/cashu-mint-authentication';
 import { useUser } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { getCashuProtocolUnit } from '~/lib/cashu';
@@ -54,6 +55,7 @@ export function AddMintForm() {
   const defaultCurrency = useUser((u) => u.defaultCurrency);
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { startOidcFlow, sessions: clearAuthSessions } = cashuAuthStore();
 
   const {
     register,
@@ -68,6 +70,16 @@ export function AddMintForm() {
   });
 
   const onSubmit = async (data: FormValues) => {
+    const mintInfo = await queryClient.fetchQuery(mintInfoQuery(data.mintUrl));
+    if (mintInfo.isSupported(21)) {
+      if (!clearAuthSessions[data.mintUrl]) {
+        // TODO: we should prompt the user before starting the oidc flow
+        // TODO: we should also maintain the form values so when we redirect back to here we can auto-submit the form
+        startOidcFlow(data.mintUrl);
+        return;
+      }
+    }
+
     try {
       await addAccount({
         name: data.name,

@@ -44,6 +44,10 @@ function MintQuoteCarouselItem({
     error,
   } = useCreateCashuReceiveQuote();
 
+  // TODO: we should not allow the user to create a quote if any minting endpoints require auth.
+  // For example, if creating a quote does not require auth, but minting does, we should not allow the user to create a quote
+  // because then they will pay the quote but be unable to mint.
+
   const { quote, status: quotePaymentStatus } = useCashuReceiveQuote({
     quoteId: createdQuote?.id,
     onPaid: onPaid,
