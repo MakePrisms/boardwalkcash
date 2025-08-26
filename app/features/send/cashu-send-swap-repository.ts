@@ -6,8 +6,8 @@ import {
   type AgicashDbCashuSendSwap,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
+import { useEncryption } from '../shared/encryption';
 import type { CashuTokenSendTransactionDetails } from '../transactions/transaction';
 import type { CashuSendSwap } from './cashu-send-swap';
 
@@ -450,6 +450,6 @@ export class CashuSendSwapRepository {
 }
 
 export function useCashuSendSwapRepository() {
-  const encryption = useCashuCryptography();
+  const encryption = useEncryption();
   return new CashuSendSwapRepository(agicashDb, encryption);
 }

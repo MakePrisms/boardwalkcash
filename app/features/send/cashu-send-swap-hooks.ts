@@ -18,7 +18,7 @@ import {
   useGetLatestCashuAccount,
 } from '../accounts/account-hooks';
 import { type AgicashDbCashuSendSwap, agicashDb } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { useEncryption } from '../shared/encryption';
 import { NotFoundError } from '../shared/error';
 import { useUser } from '../user/user-hooks';
 import type { CashuSendSwap, PendingCashuSendSwap } from './cashu-send-swap';
@@ -117,8 +117,12 @@ export function useGetCashuSendSwapQuote() {
 }
 
 export function useCreateCashuSendSwap({
+  onSuccess,
   onError,
-}: { onError: (error: Error) => void }) {
+}: {
+  onSuccess: (swap: CashuSendSwap) => void;
+  onError: (error: Error) => void;
+}) {
   const cashuSendSwapService = useCashuSendSwapService();
   const userId = useUser((user) => user.id);
   const getLatestCashuAccount = useGetLatestCashuAccount();
@@ -144,6 +148,7 @@ export function useCreateCashuSendSwap({
     },
     onSuccess: (swap) => {
       cashuSendSwapCache.add(swap);
+      onSuccess(swap);
     },
     onError: onError,
   });
@@ -156,7 +161,7 @@ function useOnCashuSendSwapChange({
   onCreated: (swap: CashuSendSwap) => void;
   onUpdated: (swap: CashuSendSwap) => void;
 }) {
-  const encryption = useCashuCryptography();
+  const encryption = useEncryption();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const queryClient = useQueryClient();
@@ -186,7 +191,7 @@ function useOnCashuSendSwapChange({
             }
           },
         ),
-    onReconnected: () => {
+    onConnected: () => {
       // Invalidate the unresolved cashu send swap query so that the swaps are re-fetched and the cache is updated.
       // This is needed to get any data that might have been updated while the re-connection was in progress.
       queryClient.invalidateQueries({

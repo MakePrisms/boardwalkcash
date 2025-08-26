@@ -1,15 +1,32 @@
-import { type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  CashuMint,
+  type MintActiveKeys,
+  type MintAllKeysets,
+  type Token,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
+import {
+  getPrivateKey as getMnemonic,
+  getPrivateKeyBytes,
+} from '@opensecret/react';
 import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
+import {
+  type FetchQueryOptions,
+  type QueryClient,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { create } from 'zustand';
-import { sumProofs } from '~/lib/cashu';
+import {
+  type MintInfo,
+  checkIsTestMint,
+  getCashuWallet,
+  sumProofs,
+} from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
 import { getSeedPhraseDerivationPath } from '../accounts/account-cryptography';
-import { useCryptography } from './cryptography';
-import { useEncryption } from './encryption';
 
 // Cashu-specific derivation path with hardnened indexes to derive public keys for
 // locking mint quotes and proofs. 129372 is UTF-8 for 🥜 (see NUT-13) and the other
@@ -44,30 +61,57 @@ export function tokenToMoney(token: Token): Money {
   });
 }
 
-export type CashuCryptography = Pick<
-  ReturnType<typeof useEncryption>,
-  'encrypt' | 'decrypt'
-> & {
+export type CashuCryptography = {
   getSeed: () => Promise<Uint8Array>;
   getXpub: (derivationPath?: string) => Promise<string>;
   getPrivateKey: (derivationPath?: string) => Promise<string>;
 };
 
-type CashuSeedStore = {
-  seedPromise: ReturnType<
-    ReturnType<typeof useCashuCryptography>['getSeed']
-  > | null;
-  setSeedPromise: (
-    promise: ReturnType<ReturnType<typeof useCashuCryptography>['getSeed']>,
-  ) => void;
-  clear: () => void;
-};
+const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
 
-export const cashuSeedStore = create<CashuSeedStore>((set) => ({
-  seedPromise: null,
-  setSeedPromise: (promise) => set({ seedPromise: promise }),
-  clear: () => set({ seedPromise: null }),
-}));
+export const seedQuery = () => ({
+  queryKey: ['cashu-seed'],
+  queryFn: async () => {
+    const response = await getMnemonic({
+      seed_phrase_derivation_path: seedDerivationPath,
+    });
+    return mnemonicToSeedSync(response.mnemonic);
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+export const xpubQuery = ({
+  queryClient,
+  derivationPath,
+}: { queryClient: QueryClient; derivationPath?: string }) => ({
+  queryKey: ['cashu-xpub', derivationPath],
+  queryFn: async () => {
+    const seed = await queryClient.fetchQuery(seedQuery());
+    const hdKey = HDKey.fromMasterSeed(seed);
+
+    if (derivationPath) {
+      const childKey = hdKey.derive(derivationPath);
+      return childKey.publicExtendedKey;
+    }
+
+    return hdKey.publicExtendedKey;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const privateKeyQuery = ({
+  derivationPath,
+}: { derivationPath?: string } = {}) => ({
+  queryKey: ['cashu-private-key', derivationPath],
+  queryFn: async () => {
+    const response = await getPrivateKeyBytes({
+      seed_phrase_derivation_path: seedDerivationPath,
+      private_key_derivation_path: derivationPath,
+    });
+    return response.private_key;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+});
 
 /**
  * Hook that provides the Cashu cryptography functions.
@@ -75,49 +119,19 @@ export const cashuSeedStore = create<CashuSeedStore>((set) => ({
  * @returns The Cashu cryptography functions.
  */
 export function useCashuCryptography(): CashuCryptography {
-  const { encrypt, decrypt } = useEncryption();
-  const crypto = useCryptography();
+  const queryClient = useQueryClient();
 
   return useMemo(() => {
-    const seedDerivationPath = getSeedPhraseDerivationPath('cashu', 12);
+    const getSeed = () => queryClient.fetchQuery(seedQuery());
 
-    const getSeed = async () => {
-      const { seedPromise, setSeedPromise } = cashuSeedStore.getState();
-      if (seedPromise) return seedPromise;
+    const getXpub = (derivationPath?: string) =>
+      queryClient.fetchQuery(xpubQuery({ queryClient, derivationPath }));
 
-      const promise = crypto
-        .getMnemonic({
-          seed_phrase_derivation_path: seedDerivationPath,
-        })
-        .then((response) => mnemonicToSeedSync(response.mnemonic));
+    const getPrivateKey = (derivationPath?: string) =>
+      queryClient.fetchQuery(privateKeyQuery({ derivationPath }));
 
-      setSeedPromise(promise);
-      return promise;
-    };
-
-    const getXpub = async (derivationPath?: string) => {
-      const seed = await getSeed();
-      const hdKey = HDKey.fromMasterSeed(seed);
-
-      if (derivationPath) {
-        const childKey = hdKey.derive(derivationPath);
-        return childKey.publicExtendedKey;
-      }
-
-      return hdKey.publicExtendedKey;
-    };
-
-    const getPrivateKey = async (derivationPath?: string) => {
-      return crypto
-        .getPrivateKeyBytes({
-          seed_phrase_derivation_path: seedDerivationPath,
-          private_key_derivation_path: derivationPath,
-        })
-        .then((response) => response.private_key);
-    };
-
-    return { getSeed, getPrivateKey, encrypt, decrypt, getXpub };
-  }, [crypto, encrypt, decrypt]);
+    return { getSeed, getPrivateKey, getXpub };
+  }, [queryClient]);
 }
 
 export function getTokenHash(token: Token | string): Promise<string> {
@@ -129,4 +143,61 @@ export function getTokenHash(token: Token | string): Promise<string> {
 export const cashuMintValidator = buildMintValidator({
   requiredNuts: [4, 5, 7, 8, 9, 10, 11, 12, 17, 20] as const,
   requiredWebSocketCommands: ['bolt11_melt_quote', 'proof_state'] as const,
+});
+
+/**
+ * Get the mint info.
+ *
+ * @param mintUrl
+ * @returns The mint info.
+ */
+export const mintInfoQuery = (
+  mintUrl: string,
+): FetchQueryOptions<MintInfo> => ({
+  queryKey: ['mint-info', mintUrl],
+  queryFn: async () => getCashuWallet(mintUrl).getMintInfo(),
+  staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
+});
+
+/**
+ * Get the mints keysets in no specific order.
+ *
+ * @param mintUrl
+ * @returns All the mints past and current keysets.
+ */
+export const allMintKeysetsQuery = (
+  mintUrl: string,
+): FetchQueryOptions<MintAllKeysets> => ({
+  queryKey: ['all-mint-keysets', mintUrl],
+  queryFn: async () => CashuMint.getKeySets(mintUrl),
+  staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
+});
+
+/**
+ * Get the mints public keys.
+ *
+ * @param mintUrl
+ * @param keysetId Optional param to get the keys for a specific keyset. If not specified, the
+ *   keys from all active keysets are fetched.
+ * @returns An object with an array of the fetched keysets.
+ */
+export const mintKeysQuery = (
+  mintUrl: string,
+  keysetId?: string,
+): FetchQueryOptions<MintActiveKeys> => ({
+  queryKey: ['mint-keys', mintUrl, keysetId],
+  queryFn: async () => CashuMint.getKeys(mintUrl, keysetId),
+  staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
+});
+
+export const isTestMintQuery = (
+  mintUrl: string,
+): FetchQueryOptions<boolean> => ({
+  queryKey: ['is-test-mint', mintUrl],
+  queryFn: async () => checkIsTestMint(mintUrl),
+  staleTime: Number.POSITIVE_INFINITY,
+  retry: 3,
 });

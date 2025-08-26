@@ -66,9 +66,7 @@ export class ReceiveCashuTokenService {
       exchangeRate,
     });
 
-    const sourceWallet = getCashuWallet(token.mint, {
-      unit: fromCashuUnit,
-    });
+    const sourceWallet = account.wallet;
     await sourceWallet.getKeys();
     const cashuReceiveFee = sourceWallet.getFeesForProofs(token.proofs);
 
@@ -108,17 +106,13 @@ export class ReceiveCashuTokenService {
   > {
     const tokenAmount = tokenToMoney(token);
     const fromCashuUnit = getCashuUnit(tokenAmount.currency);
-    const toCashuUnit = getCashuUnit(account.currency);
 
     const sourceWallet = getCashuWallet(token.mint, {
       unit: fromCashuUnit,
     });
-    const destinationWallet = getCashuWallet(account.mintUrl, {
-      unit: toCashuUnit,
-    });
 
     const sourceCurrency = getWalletCurrency(sourceWallet);
-    const destinationCurrency = getWalletCurrency(destinationWallet);
+    const destinationCurrency = account.currency;
 
     let attempts = 0;
     let amountToMelt = targetAmount;

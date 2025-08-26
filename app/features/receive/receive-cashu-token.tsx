@@ -6,7 +6,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import {
   ClosePageButton,
@@ -287,6 +287,7 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
     useCashuTokenWithClaimableProofs({
       token,
     });
+  const location = useLocation();
 
   const encodedToken = getEncodedToken(claimableToken ?? token);
 
@@ -299,11 +300,19 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
     try {
       // Modify the URL before signing up because as soon as the user is logged in,
       // they will be redirected to the protected receive cashu token page
-      navigate(
-        { hash: encodedToken, search: 'autoClaim=true' },
-        { replace: true },
-      );
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.set('autoClaim', true.toString());
+      const newSearch = `?${searchParams.toString()}`;
       await signUpGuest();
+      await navigate({
+        pathname: '/receive/cashu/token',
+        hash: encodedToken,
+        search: newSearch,
+      });
+      // We are not setting signingUpGuest to false here because the navigation
+      // will trigger a new render and the component will unmount. If we would
+      // set it to false here, the component would show clickable button for a brief moment
+      // before the navigation is complete (awaiting navigate to complete is not enough for some reason).
     } catch (error) {
       console.error('Error signing up guest', { cause: error });
       toast({
@@ -311,7 +320,6 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
         description: 'Please try again or contact support',
         variant: 'destructive',
       });
-    } finally {
       setSigningUpGuest(false);
     }
   };
@@ -360,7 +368,11 @@ export function PublicReceiveCashuToken({ token }: { token: Token }) {
             </Button>
 
             <LinkWithViewTransition
-              to={`/login?redirectTo=receive-cashu-token#${encodedToken}`}
+              to={{
+                pathname: '/login',
+                search: 'redirectTo=/receive/cashu/token',
+                hash: encodedToken,
+              }}
               transition="slideUp"
               applyTo="newView"
             >

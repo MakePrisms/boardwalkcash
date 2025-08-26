@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import type Big from 'big.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCashuUnit, getCashuWallet, sumProofs } from '~/lib/cashu';
+import { sumProofs } from '~/lib/cashu';
 import type { Money } from '~/lib/money';
 import { useSupabaseRealtimeSubscription } from '~/lib/supabase/supabase-realtime';
 import {
@@ -28,7 +28,7 @@ import {
   type AgicashDbCashuSendQuote,
   agicashDb,
 } from '../agicash-db/database';
-import { useCashuCryptography } from '../shared/cashu';
+import { useEncryption } from '../shared/encryption';
 import { DomainError, NotFoundError } from '../shared/error';
 import type { DestinationDetails } from '../transactions/transaction';
 import { useUser } from '../user/user-hooks';
@@ -285,7 +285,7 @@ function useOnCashuSendQuoteChange({
   onCreated: (send: CashuSendQuote) => void;
   onUpdated: (send: CashuSendQuote) => void;
 }) {
-  const cashuCryptography = useCashuCryptography();
+  const encryption = useEncryption();
   const onCreatedRef = useLatest(onCreated);
   const onUpdatedRef = useLatest(onUpdated);
   const queryClient = useQueryClient();
@@ -305,19 +305,19 @@ function useOnCashuSendQuoteChange({
           if (payload.eventType === 'INSERT') {
             const addedQuote = await CashuSendQuoteRepository.toSend(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
             onCreatedRef.current(addedQuote);
           } else if (payload.eventType === 'UPDATE') {
             const updatedQuote = await CashuSendQuoteRepository.toSend(
               payload.new,
-              cashuCryptography.decrypt,
+              encryption.decrypt,
             );
             onUpdatedRef.current(updatedQuote);
           }
         },
       ),
-    onReconnected: () => {
+    onConnected: () => {
       // Invalidate the unresolved cashu send quote query so that the quote is re-fetched and the cache is updated.
       // This is needed to get any data that might have been updated while the re-connection was in progress.
       queryClient.invalidateQueries({
@@ -371,8 +371,7 @@ const checkMeltQuote = async (
   account: CashuAccount,
   quote: CashuSendQuote,
 ): Promise<MeltQuoteResponse> => {
-  const cashuUnit = getCashuUnit(quote.amountToReceive.currency);
-  const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+  const wallet = account.wallet;
 
   const partialMeltQuoteResponse = await wallet.checkMeltQuote(quote.quoteId);
 

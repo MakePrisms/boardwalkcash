@@ -1,17 +1,29 @@
 import type { Proof } from '@cashu/cashu-ts';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import type { DistributedOmit } from 'type-fest';
+import {
+  getCashuProtocolUnit,
+  getCashuUnit,
+  getCashuWallet,
+} from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import {
   type AgicashDb,
   type AgicashDbAccount,
   agicashDb,
 } from '../agicash-db/database';
+import {
+  allMintKeysetsQuery,
+  mintInfoQuery,
+  mintKeysQuery,
+  useCashuCryptography,
+} from '../shared/cashu';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
 
 type AccountInput<T extends Account> = DistributedOmit<
   T,
-  'id' | 'createdAt' | 'version'
+  'id' | 'createdAt' | 'version' | 'wallet'
 > & {
   userId: string;
 };
@@ -29,6 +41,8 @@ export class AccountRepository {
   constructor(
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
+    private readonly queryClient: QueryClient,
+    private readonly getCashuWalletSeed?: () => Promise<Uint8Array>,
   ) {}
 
   /**
@@ -49,7 +63,7 @@ export class AccountRepository {
       throw new Error('Failed to get account', { cause: error });
     }
 
-    return AccountRepository.toAccount(data, this.encryption.decrypt);
+    return this.toAccount(data);
   }
 
   /**
@@ -70,9 +84,7 @@ export class AccountRepository {
       throw new Error('Failed to get accounts', { cause: error });
     }
 
-    return Promise.all(
-      data.map((x) => AccountRepository.toAccount(x, this.encryption.decrypt)),
-    );
+    return Promise.all(data.map((x) => this.toAccount(x)));
   }
 
   /**
@@ -117,12 +129,11 @@ export class AccountRepository {
       throw new Error(message, { cause: error });
     }
 
-    return AccountRepository.toAccount<T>(data, this.encryption.decrypt);
+    return this.toAccount<T>(data);
   }
 
-  static async toAccount<T extends Account = Account>(
+  async toAccount<T extends Account = Account>(
     data: AgicashDbAccount,
-    decryptData: Encryption['decrypt'],
   ): Promise<T> {
     const commonData = {
       id: data.id,
@@ -139,13 +150,20 @@ export class AccountRepository {
         keyset_counters: Record<string, number>;
         proofs: string;
       };
+
+      const wallet = await this.getPreloadedWallet(
+        details.mint_url,
+        data.currency,
+      );
+
       return {
         ...commonData,
         type: 'cashu',
         mintUrl: details.mint_url,
         isTestMint: details.is_test_mint,
         keysetCounters: details.keyset_counters,
-        proofs: await decryptData<Proof[]>(details.proofs),
+        proofs: await this.encryption.decrypt<Proof[]>(details.proofs),
+        wallet,
       } as T;
     }
 
@@ -160,9 +178,63 @@ export class AccountRepository {
 
     throw new Error('Invalid account type');
   }
+
+  private async getPreloadedWallet(mintUrl: string, currency: Currency) {
+    const seed = await this.getCashuWalletSeed?.();
+
+    // TODO: handle fetching errors. If the mint is unreachable these will throw,
+    // and the error will bubble up to the user and brick the app.
+    const [mintInfo, allMintKeysets, mintActiveKeys] = await Promise.all([
+      this.queryClient.fetchQuery(mintInfoQuery(mintUrl)),
+      this.queryClient.fetchQuery(allMintKeysetsQuery(mintUrl)),
+      this.queryClient.fetchQuery(mintKeysQuery(mintUrl)),
+    ]);
+
+    const unitKeysets = allMintKeysets.keysets.filter(
+      (ks) => ks.unit === getCashuProtocolUnit(currency),
+    );
+    const activeKeyset = unitKeysets.find((ks) => ks.active);
+
+    if (!activeKeyset) {
+      throw new Error(`No active keyset found for ${currency} on ${mintUrl}`);
+    }
+
+    const activeKeysForUnit = mintActiveKeys.keysets.find(
+      (ks) => ks.id === activeKeyset.id,
+    );
+
+    if (!activeKeysForUnit) {
+      throw new Error(
+        `Got active keyset ${activeKeyset.id} from ${mintUrl} but could not find keys for it`,
+      );
+    }
+
+    const wallet = getCashuWallet(mintUrl, {
+      unit: getCashuUnit(currency),
+      bip39seed: seed ?? undefined,
+      mintInfo,
+      keys: activeKeysForUnit,
+      keysets: unitKeysets,
+    });
+
+    // The constructor does not set the keysetId, so we need to set it manually
+    wallet.keysetId = activeKeyset.id;
+
+    return wallet;
+  }
 }
 
 export function useAccountRepository() {
   const encryption = useEncryption();
-  return new AccountRepository(agicashDb, encryption);
+  const queryClient = useQueryClient();
+  const { getSeed: getCashuWalletSeed } = useCashuCryptography();
+  return new AccountRepository(
+    agicashDb,
+    {
+      encrypt: encryption.encrypt,
+      decrypt: encryption.decrypt,
+    },
+    queryClient,
+    getCashuWalletSeed,
+  );
 }

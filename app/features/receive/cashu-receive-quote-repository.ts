@@ -2,7 +2,10 @@ import type { Proof } from '@cashu/cashu-ts';
 import { getCashuUnit } from '~/lib/cashu';
 import { Money } from '~/lib/money';
 import type { CashuAccount } from '../accounts/account';
-import { AccountRepository } from '../accounts/account-repository';
+import {
+  type AccountRepository,
+  useAccountRepository,
+} from '../accounts/account-repository';
 import {
   type AgicashDb,
   type AgicashDbCashuReceiveQuote,
@@ -90,6 +93,7 @@ export class CashuReceiveQuoteRepository {
   constructor(
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
+    private readonly accountRepository: AccountRepository,
   ) {}
 
   /**
@@ -313,9 +317,8 @@ export class CashuReceiveQuoteRepository {
     const updatedQuote = CashuReceiveQuoteRepository.toQuote(
       data.updated_quote,
     );
-    const updatedAccount = await AccountRepository.toAccount(
+    const updatedAccount = await this.accountRepository.toAccount(
       data.updated_account,
-      this.encryption.decrypt,
     );
 
     return {
@@ -356,7 +359,6 @@ export class CashuReceiveQuoteRepository {
   ): Promise<void> {
     const encryptedProofs = await this.encryption.encrypt(proofs);
 
-    // TODO: The function should also create the related history item.
     const query = this.db.rpc('complete_cashu_receive_quote', {
       p_quote_id: quoteId,
       p_quote_version: quoteVersion,
@@ -478,5 +480,10 @@ export class CashuReceiveQuoteRepository {
 
 export function useCashuReceiveQuoteRepository() {
   const encryption = useEncryption();
-  return new CashuReceiveQuoteRepository(agicashDb, encryption);
+  const accountRepository = useAccountRepository();
+  return new CashuReceiveQuoteRepository(
+    agicashDb,
+    encryption,
+    accountRepository,
+  );
 }

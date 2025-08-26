@@ -5,7 +5,7 @@ import type { Currency, CurrencyUnit } from '~/lib/money';
 import type { AccountType } from '../accounts/account';
 import type { CashuSendSwap } from '../send/cashu-send-swap';
 import type { Transaction } from '../transactions/transaction';
-import { supabaseSessionStore } from './supabase-session-store';
+import { getSupabaseSessionToken } from './supabase-session';
 
 const isLocalServer = (hostname: string) => {
   return (
@@ -215,7 +215,7 @@ export type Database = MergeDeep<
 >;
 
 export const agicashDb = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  accessToken: () => supabaseSessionStore.getState().getJwtWithRefresh(),
+  accessToken: getSupabaseSessionToken,
   db: {
     schema: 'wallet',
   },
