@@ -4,7 +4,7 @@ import type { DistributedOmit } from 'type-fest';
 import {
   getCashuProtocolUnit,
   getCashuUnit,
-  getExtendedCashuWallet,
+  getCashuWallet,
 } from '~/lib/cashu';
 import type { Currency } from '~/lib/money';
 import {
@@ -16,7 +16,7 @@ import {
   allMintKeysetsQuery,
   mintInfoQuery,
   mintKeysQuery,
-  seedQuery,
+  useCashuCryptography,
 } from '../shared/cashu';
 import { useEncryption } from '../shared/encryption';
 import type { Account } from './account';
@@ -42,6 +42,7 @@ export class AccountRepository {
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
     private readonly queryClient: QueryClient,
+    private readonly getCashuWalletSeed?: () => Promise<Uint8Array>,
   ) {}
 
   /**
@@ -179,7 +180,7 @@ export class AccountRepository {
   }
 
   private async getPreloadedWallet(mintUrl: string, currency: Currency) {
-    const seed = await this.queryClient.fetchQuery(seedQuery());
+    const seed = await this.getCashuWalletSeed?.();
 
     // TODO: handle fetching errors. If the mint is unreachable these will throw,
     // and the error will bubble up to the user and brick the app.
@@ -208,7 +209,7 @@ export class AccountRepository {
       );
     }
 
-    const wallet = getExtendedCashuWallet(mintUrl, {
+    const wallet = getCashuWallet(mintUrl, {
       unit: getCashuUnit(currency),
       bip39seed: seed ?? undefined,
       mintInfo,
@@ -226,6 +227,7 @@ export class AccountRepository {
 export function useAccountRepository() {
   const encryption = useEncryption();
   const queryClient = useQueryClient();
+  const { getSeed: getCashuWalletSeed } = useCashuCryptography();
   return new AccountRepository(
     agicashDb,
     {
@@ -233,5 +235,6 @@ export function useAccountRepository() {
       decrypt: encryption.decrypt,
     },
     queryClient,
+    getCashuWalletSeed,
   );
 }

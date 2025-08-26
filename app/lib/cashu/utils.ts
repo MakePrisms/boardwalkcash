@@ -82,16 +82,21 @@ export const getWalletCurrency = (wallet: CashuWallet) => {
  * We will remove this if cashu-ts ever updates selectProofsToSend not to return send proofs that are less than the amount.
  */
 export class ExtendedCashuWallet extends CashuWallet {
-  public readonly seed: Uint8Array;
+  private _bip39Seed: Uint8Array | undefined;
 
   constructor(
     mint: CashuMint,
-    options: ConstructorParameters<typeof CashuWallet>[1] & {
-      bip39seed: Uint8Array;
-    },
+    options: ConstructorParameters<typeof CashuWallet>[1],
   ) {
     super(mint, options);
-    this.seed = options.bip39seed;
+    this._bip39Seed = options?.bip39seed;
+  }
+
+  get seed() {
+    if (!this._bip39Seed) {
+      throw new Error('Seed not set');
+    }
+    return this._bip39Seed;
   }
 
   /**
@@ -193,27 +198,6 @@ export class ExtendedCashuWallet extends CashuWallet {
   }
 }
 
-export const getExtendedCashuWallet = (
-  mintUrl: string,
-  options: DistributedOmit<
-    ConstructorParameters<typeof CashuWallet>[1],
-    'unit'
-  > & {
-    unit?: CurrencyUnit;
-    bip39seed: Uint8Array;
-  },
-) => {
-  const { unit, ...rest } = options;
-  // Cashu calls the unit 'usd' even though the amount is in cents.
-  // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
-  const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
-    ...rest,
-    unit: cashuUnit,
-    bip39seed: options.bip39seed,
-  });
-};
-
 export const getCashuWallet = (
   mintUrl: string,
   options: DistributedOmit<
@@ -227,7 +211,7 @@ export const getCashuWallet = (
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
   const cashuUnit = options.unit === 'cent' ? 'usd' : options.unit;
-  return new CashuWallet(new CashuMint(mintUrl), {
+  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
     ...rest,
     unit: cashuUnit,
   });
