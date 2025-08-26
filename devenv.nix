@@ -1,8 +1,9 @@
 { pkgs, lib, config, inputs, ... }:
 
-{
-  # https://devenv.sh/basics/
-  env.GREET = "devenv";
+{ 
+  # CDK repository configuration
+  env.CDK_REPO = "https://github.com/cashubtc/cdk.git";
+  env.CDK_REF = "aa624d3afd739a82aa31dfde2632480934004fc2";  # Can be branch, tag, or commit hash
 
   # https://devenv.sh/packages/
   packages = [ 
@@ -16,26 +17,35 @@
   ];
 
   # https://devenv.sh/languages/
-  # languages.rust.enable = true;
+  languages.rust.enable = true;
 
   # https://devenv.sh/processes/
-  # processes.cargo-watch.exec = "cargo-watch";
+  processes.cdk-mint.exec = ''
+    cdk-mint
+  '';
 
   # https://devenv.sh/services/
   # services.postgres.enable = true;
 
   # https://devenv.sh/scripts/
-  scripts.hello.exec = ''
-    echo Hello from $GREET
-  '';
   scripts.webstorm.exec = "$DEVENV_ROOT/tools/devenv/webstorm.sh $@";
   scripts.generate-ssl-cert.exec = "$DEVENV_ROOT/tools/devenv/generate-ssl-cert.sh";
+  scripts.cdk-mint.exec = "$DEVENV_ROOT/tools/devenv/cdk/cdk-mint.sh";
+  scripts.cdk-logs.exec = "$DEVENV_ROOT/tools/devenv/cdk/cdk-logs.sh $@";
 
   enterShell = ''
-    hello
     git --version
     echo Bun version: $(bun --version)
     generate-ssl-cert
+    
+    echo ""
+    echo "Local CDK Mint:"
+    echo "🔧 $CDK_REPO (ref: $CDK_REF)"
+    echo "📝 Mint logs: 'cdk-logs'"
+    echo "🚀 Start CDK mint: 'devenv processes up' (or 'devenv processes up -d' for background)"
+    echo "   This will start cdk-mintd and Keycloak if auth is enabled in config"
+    echo "Configure cdk by changing $DEVENV_ROOT/tools/devenv/cdk/cdk-mint.config.toml"
+    echo ""
   '';
 
   # https://devenv.sh/tasks/
@@ -51,19 +61,19 @@
   '';
 
   # https://devenv.sh/pre-commit-hooks/
-  pre-commit.hooks.generate-db-types = {
+  git-hooks.hooks.generate-db-types = {
     enable = true;
     name = "Generate database types from local db";
     entry = "bun run db:generate-types";
   };
   
-  pre-commit.hooks.typecheck = {
+  git-hooks.hooks.typecheck = {
     enable = true;
     entry = "bun run typecheck";
     pass_filenames = false;
   };
   
-  pre-commit.hooks.biome = {
+  git-hooks.hooks.biome = {
     enable = true;
     entry = "bun run fix:staged";
   };

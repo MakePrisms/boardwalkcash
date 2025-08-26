@@ -33,3 +33,6 @@ node_modules
 
 # Local SSL certificates
 /certs/
+
+# CDK mint data directory
+/.cdk-mint/
