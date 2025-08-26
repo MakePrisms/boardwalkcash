@@ -1,5 +1,6 @@
 import {
   CashuMint,
+  CashuWallet,
   type MintActiveKeys,
   type MintAllKeysets,
   type Token,
@@ -17,12 +18,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import {
-  type MintInfo,
-  checkIsTestMint,
-  getMintInfo,
-  sumProofs,
-} from '~/lib/cashu';
+import { type MintInfo, checkIsTestMint, sumProofs } from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
@@ -155,7 +151,7 @@ export const mintInfoQuery = (
   mintUrl: string,
 ): FetchQueryOptions<MintInfo> => ({
   queryKey: ['mint-info', mintUrl],
-  queryFn: async () => getMintInfo(mintUrl),
+  queryFn: async () => new CashuWallet(new CashuMint(mintUrl)).getMintInfo(),
   staleTime: 1000 * 60 * 60, // 1 hour
   retry: 3,
 });
