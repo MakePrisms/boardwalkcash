@@ -1,4 +1,4 @@
-import { Copy, Edit, Share, SunMoon, Users } from 'lucide-react';
+import { Copy, Edit, Share, Users } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { useCopyToClipboard } from 'usehooks-ts';
 import DiscordLogo from '~/assets/discord_logo.svg';
@@ -71,7 +71,7 @@ function LnAddressDisplay({
         <span>{username}</span>
         <span className="text-muted-foreground/50">@{domain}</span>
       </div>
-      <Copy className="mr-4 ml-2 h-4 w-4 shrink-0" />
+      <Copy className="ml-2 h-4 w-4 shrink-0" />
     </button>
   );
 }
@@ -97,7 +97,7 @@ export default function Settings() {
       <PageHeader>
         <ClosePageButton to="/" transition="slideRight" applyTo="oldView" />
         {canShare() && (
-          <button type="button" onClick={handleShare} className="px-6">
+          <button type="button" onClick={handleShare} className="px-1">
             <Share />
           </button>
         )}
@@ -119,14 +119,6 @@ export default function Settings() {
           <Users />
           Contacts
         </SettingsNavButton>
-
-        <div className="flex w-full items-center justify-between pl-4">
-          <div className="flex items-center gap-2">
-            <SunMoon className="h-4 w-4" />
-            <span className="text-sm">Theme</span>
-          </div>
-          <ColorModeToggle className="mr-1" />
-        </div>
       </PageContent>
 
       <PageFooter className="mx-auto flex w-36 flex-col gap-6 pb-10">
@@ -137,7 +129,10 @@ export default function Settings() {
         >
           Sign Out
         </Button>
-        <div className="flex w-full justify-between gap-4 text-muted-foreground text-sm">
+
+        <ColorModeToggle />
+
+        <div className="flex w-full justify-between text-muted-foreground text-sm">
           <LinkWithViewTransition
             to={{
               pathname: '/terms',
@@ -149,6 +144,7 @@ export default function Settings() {
           >
             Terms
           </LinkWithViewTransition>
+          <span>&</span>
           <LinkWithViewTransition
             to={{
               pathname: '/privacy',
