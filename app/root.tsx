@@ -82,10 +82,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
   const { origin } = loaderData || {};
 
-  if (!origin) {
-    throw new Error('Origin not loaded');
-  }
-
   const title = 'Agicash';
   const description = 'The easiest way to send and receive cash.';
   const image = '/icon-192x192.png';
