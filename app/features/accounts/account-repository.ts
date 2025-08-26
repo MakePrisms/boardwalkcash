@@ -181,6 +181,8 @@ export class AccountRepository {
   private async getPreloadedWallet(mintUrl: string, currency: Currency) {
     const seed = await this.queryClient.fetchQuery(seedQuery());
 
+    // TODO: handle fetching errors. If the mint is unreachable these will throw,
+    // and the error will bubble up to the user and brick the app.
     const [mintInfo, allMintKeysets, mintActiveKeys] = await Promise.all([
       this.queryClient.fetchQuery(mintInfoQuery(mintUrl)),
       this.queryClient.fetchQuery(allMintKeysetsQuery(mintUrl)),

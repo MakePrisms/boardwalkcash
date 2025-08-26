@@ -1,13 +1,28 @@
-import { CashuMint, type Token, getEncodedToken } from '@cashu/cashu-ts';
+import {
+  CashuMint,
+  type MintActiveKeys,
+  type MintAllKeysets,
+  type Token,
+  getEncodedToken,
+} from '@cashu/cashu-ts';
 import {
   getPrivateKey as getMnemonic,
   getPrivateKeyBytes,
 } from '@opensecret/react';
 import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
-import { type QueryClient, useQueryClient } from '@tanstack/react-query';
+import {
+  type FetchQueryOptions,
+  type QueryClient,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { checkIsTestMint, getMintInfo, sumProofs } from '~/lib/cashu';
+import {
+  type MintInfo,
+  checkIsTestMint,
+  getMintInfo,
+  sumProofs,
+} from '~/lib/cashu';
 import { buildMintValidator } from '~/lib/cashu/mint-validation';
 import { type Currency, type CurrencyUnit, Money } from '~/lib/money';
 import { computeSHA256 } from '~/lib/sha256';
@@ -136,10 +151,13 @@ export const cashuMintValidator = buildMintValidator({
  * @param mintUrl
  * @returns The mint info.
  */
-export const mintInfoQuery = (mintUrl: string) => ({
+export const mintInfoQuery = (
+  mintUrl: string,
+): FetchQueryOptions<MintInfo> => ({
   queryKey: ['mint-info', mintUrl],
   queryFn: async () => getMintInfo(mintUrl),
   staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
 });
 
 /**
@@ -148,10 +166,13 @@ export const mintInfoQuery = (mintUrl: string) => ({
  * @param mintUrl
  * @returns All the mints past and current keysets.
  */
-export const allMintKeysetsQuery = (mintUrl: string) => ({
+export const allMintKeysetsQuery = (
+  mintUrl: string,
+): FetchQueryOptions<MintAllKeysets> => ({
   queryKey: ['all-mint-keysets', mintUrl],
   queryFn: async () => CashuMint.getKeySets(mintUrl),
   staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
 });
 
 /**
@@ -162,14 +183,21 @@ export const allMintKeysetsQuery = (mintUrl: string) => ({
  *   keys from all active keysets are fetched.
  * @returns An object with an array of the fetched keysets.
  */
-export const mintKeysQuery = (mintUrl: string, keysetId?: string) => ({
+export const mintKeysQuery = (
+  mintUrl: string,
+  keysetId?: string,
+): FetchQueryOptions<MintActiveKeys> => ({
   queryKey: ['mint-keys', mintUrl, keysetId],
   queryFn: async () => CashuMint.getKeys(mintUrl, keysetId),
   staleTime: 1000 * 60 * 60, // 1 hour
+  retry: 3,
 });
 
-export const isTestMintQuery = (mintUrl: string) => ({
+export const isTestMintQuery = (
+  mintUrl: string,
+): FetchQueryOptions<boolean> => ({
   queryKey: ['is-test-mint', mintUrl],
   queryFn: async () => checkIsTestMint(mintUrl),
   staleTime: Number.POSITIVE_INFINITY,
+  retry: 3,
 });
