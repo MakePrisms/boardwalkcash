@@ -139,7 +139,7 @@ export const cashuMintValidator = buildMintValidator({
 export const mintInfoQuery = (mintUrl: string) => ({
   queryKey: ['mint-info', mintUrl],
   queryFn: async () => getMintInfo(mintUrl),
-  staleTime: Number.POSITIVE_INFINITY,
+  staleTime: 1000 * 60 * 60, // 1 hour
 });
 
 /**
@@ -151,7 +151,7 @@ export const mintInfoQuery = (mintUrl: string) => ({
 export const allMintKeysetsQuery = (mintUrl: string) => ({
   queryKey: ['all-mint-keysets', mintUrl],
   queryFn: async () => CashuMint.getKeySets(mintUrl),
-  staleTime: Number.POSITIVE_INFINITY,
+  staleTime: 1000 * 60 * 60, // 1 hour
 });
 
 /**
@@ -165,5 +165,5 @@ export const allMintKeysetsQuery = (mintUrl: string) => ({
 export const mintKeysQuery = (mintUrl: string, keysetId?: string) => ({
   queryKey: ['mint-keys', mintUrl, keysetId],
   queryFn: async () => CashuMint.getKeys(mintUrl, keysetId),
-  staleTime: Number.POSITIVE_INFINITY,
+  staleTime: 1000 * 60 * 60, // 1 hour
 });

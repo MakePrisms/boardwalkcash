@@ -187,9 +187,9 @@ export class AccountRepository {
     const seed = await this.cryptography.getSeed?.();
 
     const [mintInfo, allMintKeysets, mintActiveKeys] = await Promise.all([
-      this.queryClient.ensureQueryData(mintInfoQuery(mintUrl)),
-      this.queryClient.ensureQueryData(allMintKeysetsQuery(mintUrl)),
-      this.queryClient.ensureQueryData(mintKeysQuery(mintUrl)),
+      this.queryClient.fetchQuery(mintInfoQuery(mintUrl)),
+      this.queryClient.fetchQuery(allMintKeysetsQuery(mintUrl)),
+      this.queryClient.fetchQuery(mintKeysQuery(mintUrl)),
     ]);
 
     const unitKeysets = allMintKeysets.keysets.filter(

@@ -83,7 +83,7 @@ export function useCashuTokenSourceAccountQuery(
       }
 
       const [info, isTestMint] = await Promise.all([
-        queryClient.ensureQueryData(mintInfoQuery(token.mint)),
+        queryClient.fetchQuery(mintInfoQuery(token.mint)),
         checkIsTestMint(token.mint),
       ]);
 
