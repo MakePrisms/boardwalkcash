@@ -1,7 +1,10 @@
 import type { DistributedOmit } from 'type-fest';
 import type { Currency } from '~/lib/money';
 import type { Account } from '../accounts/account';
-import { AccountRepository } from '../accounts/account-repository';
+import {
+  type AccountRepository,
+  useAccountRepository,
+} from '../accounts/account-repository';
 import {
   type AgicashDb,
   type AgicashDbUser,
@@ -31,6 +34,7 @@ export class UserRepository {
   constructor(
     private readonly db: AgicashDb,
     private readonly encryption: Encryption,
+    private readonly accountRepository: AccountRepository,
   ) {}
 
   /**
@@ -119,7 +123,7 @@ export class UserRepository {
        */
       accounts: DistributedOmit<
         Account,
-        'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters'
+        'id' | 'createdAt' | 'version' | 'proofs' | 'keysetCounters' | 'wallet'
       >[];
       /**
        * The extended public key used for locking proofs and mint quotes.
@@ -172,9 +176,7 @@ export class UserRepository {
     return {
       user: this.toUser(upsertedUser),
       accounts: await Promise.all(
-        accounts.map((a) =>
-          AccountRepository.toAccount(a, this.encryption.decrypt),
-        ),
+        accounts.map((a) => this.accountRepository.toAccount(a)),
       ),
     };
   }
@@ -232,7 +234,7 @@ export class UserRepository {
       throw new Error('No default account found for user');
     }
 
-    return AccountRepository.toAccount(account, this.encryption.decrypt);
+    return this.accountRepository.toAccount(account);
   }
 
   private toUser(dbUser: AgicashDbUser): User {
@@ -271,5 +273,6 @@ export class UserRepository {
 
 export function useUserRepository() {
   const encryption = useEncryption();
-  return new UserRepository(agicashDb, encryption);
+  const accountRepository = useAccountRepository();
+  return new UserRepository(agicashDb, encryption, accountRepository);
 }

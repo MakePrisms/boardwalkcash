@@ -11,7 +11,6 @@ import {
   amountsFromOutputData,
   getCashuProtocolUnit,
   getCashuUnit,
-  getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
 import { Money } from '~/lib/money';
@@ -19,11 +18,7 @@ import {
   type CashuTokenSwapService,
   useCashuTokenSwapService,
 } from '../receive/cashu-token-swap-service';
-import {
-  type CashuCryptography,
-  getTokenHash,
-  useCashuCryptography,
-} from '../shared/cashu';
+import { getTokenHash } from '../shared/cashu';
 import { getDefaultUnit } from '../shared/currencies';
 import { DomainError } from '../shared/error';
 import type { CashuSendSwap } from './cashu-send-swap';
@@ -45,7 +40,6 @@ export type CashuSwapQuote = {
 export class CashuSendSwapService {
   constructor(
     private readonly cashuSendSwapRepository: CashuSendSwapRepository,
-    private readonly cryptography: CashuCryptography,
     private readonly cashuTokenSwapService: CashuTokenSwapService,
   ) {}
 
@@ -73,7 +67,7 @@ export class CashuSendSwapService {
 
     const cashuUnit = getCashuUnit(account.currency);
     const amountNumber = amount.toNumber(cashuUnit);
-    const wallet = getCashuWallet(account.mintUrl, { unit: cashuUnit });
+    const wallet = account.wallet;
 
     const { cashuReceiveFee, cashuSendFee } = await this.prepareProofsAndFee(
       wallet,
@@ -127,11 +121,7 @@ export class CashuSendSwapService {
     const cashuUnit = getCashuUnit(account.currency);
     const amountNumber = amount.toNumber(cashuUnit);
 
-    const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const {
       keep: accountProofsToKeep,
@@ -168,7 +158,7 @@ export class CashuSendSwapService {
       sendKeysetCounter = account.keysetCounters[keysetId] ?? 0;
       sendOutputData = OutputData.createDeterministicData(
         totalAmountToSend,
-        seed,
+        wallet.seed,
         sendKeysetCounter,
         keys,
       );
@@ -177,7 +167,7 @@ export class CashuSendSwapService {
       const keepKeysetCounter = sendKeysetCounter + sendOutputData.length;
       keepOutputData = OutputData.createDeterministicData(
         amountToKeep,
-        seed,
+        wallet.seed,
         keepKeysetCounter,
         keys,
       );
@@ -223,17 +213,13 @@ export class CashuSendSwapService {
       throw new Error('Swap does not belong to account');
     }
 
-    const seed = await this.cryptography.getSeed();
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: getCashuUnit(swap.amountToSend.currency),
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keys = await wallet.getKeys(swap.keysetId);
     const sendAmount = swap.amountToSend.toNumber(getCashuUnit(swap.currency));
     const sendOutputData = OutputData.createDeterministicData(
       sendAmount,
-      seed,
+      wallet.seed,
       swap.keysetCounter,
       keys,
       swap.outputAmounts.send,
@@ -245,7 +231,7 @@ export class CashuSendSwapService {
       swap.cashuSendFee.toNumber(getCashuUnit(swap.currency));
     const keepOutputData = OutputData.createDeterministicData(
       amountToKeep,
-      seed,
+      wallet.seed,
       swap.keysetCounter + sendOutputData.length,
       keys,
       swap.outputAmounts.keep,
@@ -485,11 +471,9 @@ export class CashuSendSwapService {
 
 export function useCashuSendSwapService() {
   const cashuSendSwapRepository = useCashuSendSwapRepository();
-  const cryptography = useCashuCryptography();
   const cashuTokenSwapService = useCashuTokenSwapService();
   return new CashuSendSwapService(
     cashuSendSwapRepository,
-    cryptography,
     cashuTokenSwapService,
   );
 }

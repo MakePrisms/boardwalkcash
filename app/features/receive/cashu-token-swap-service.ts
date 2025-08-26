@@ -8,17 +8,11 @@ import {
   CashuErrorCodes,
   amountsFromOutputData,
   areMintUrlsEqual,
-  getCashuUnit,
-  getCashuWallet,
   sumProofs,
 } from '~/lib/cashu';
 import { sum } from '~/lib/utils';
 import type { CashuAccount } from '../accounts/account';
-import {
-  type CashuCryptography,
-  tokenToMoney,
-  useCashuCryptography,
-} from '../shared/cashu';
+import { tokenToMoney } from '../shared/cashu';
 import type { CashuTokenSwap } from './cashu-token-swap';
 import {
   type CashuTokenSwapRepository,
@@ -26,10 +20,7 @@ import {
 } from './cashu-token-swap-repository';
 
 export class CashuTokenSwapService {
-  constructor(
-    private readonly cryptography: CashuCryptography,
-    private readonly tokenSwapRepository: CashuTokenSwapRepository,
-  ) {}
+  constructor(private readonly tokenSwapRepository: CashuTokenSwapRepository) {}
 
   async create({
     userId,
@@ -52,13 +43,7 @@ export class CashuTokenSwapService {
       throw new Error('Cannot swap a token to a different currency.');
     }
 
-    const cashuUnit = getCashuUnit(amount.currency);
-    const seed = await this.cryptography.getSeed();
-
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const keys = await wallet.getKeys();
     const counter = account.keysetCounters[wallet.keysetId] ?? 0;
@@ -71,7 +56,7 @@ export class CashuTokenSwapService {
 
     const outputData = OutputData.createDeterministicData(
       amountToReceive,
-      seed,
+      wallet.seed,
       counter,
       keys,
     );
@@ -102,20 +87,14 @@ export class CashuTokenSwapService {
       throw new Error('Token swap is not pending');
     }
 
-    const cashuUnit = getCashuUnit(tokenSwap.amount.currency);
-    const seed = await this.cryptography.getSeed();
-
-    const wallet = getCashuWallet(account.mintUrl, {
-      unit: cashuUnit,
-      bip39seed: seed,
-    });
+    const wallet = account.wallet;
 
     const { keysetId, keysetCounter } = tokenSwap;
     const amountToReceive = sum(tokenSwap.outputAmounts);
 
     const outputData = OutputData.createDeterministicData(
       amountToReceive,
-      seed,
+      wallet.seed,
       keysetCounter,
       await wallet.getKeys(keysetId),
       tokenSwap.outputAmounts,
@@ -199,7 +178,6 @@ export class CashuTokenSwapService {
 }
 
 export function useCashuTokenSwapService() {
-  const cryptography = useCashuCryptography();
   const tokenSwapRepository = useCashuTokenSwapRepository();
-  return new CashuTokenSwapService(cryptography, tokenSwapRepository);
+  return new CashuTokenSwapService(tokenSwapRepository);
 }

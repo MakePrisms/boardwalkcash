@@ -1,3 +1,4 @@
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
@@ -11,7 +12,11 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 import { useAddCashuAccount } from '~/features/accounts/account-hooks';
-import { cashuMintValidator } from '~/features/shared/cashu';
+import {
+  allMintKeysetsQuery,
+  cashuMintValidator,
+  mintInfoQuery,
+} from '~/features/shared/cashu';
 import { useUser } from '~/features/user/user-hooks';
 import { useToast } from '~/hooks/use-toast';
 import { getCashuProtocolUnit } from '~/lib/cashu';
@@ -32,9 +37,14 @@ const currencies = [
 const validateMint = async (
   value: string,
   formValues: FormValues,
+  queryClient: QueryClient,
 ): Promise<string | true> => {
   const unit = getCashuProtocolUnit(formValues.currency);
-  return cashuMintValidator(value, unit);
+  const [mintInfo, keysets] = await Promise.all([
+    queryClient.fetchQuery(mintInfoQuery(value)),
+    queryClient.fetchQuery(allMintKeysetsQuery(value)),
+  ]);
+  return cashuMintValidator(value, unit, mintInfo, keysets.keysets);
 };
 
 export function AddMintForm() {
@@ -43,6 +53,7 @@ export function AddMintForm() {
   const navigate = useNavigate();
   const defaultCurrency = useUser((u) => u.defaultCurrency);
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -161,7 +172,7 @@ export function AddMintForm() {
           placeholder="Mint URL (https://...)"
           {...register('mintUrl', {
             required: 'Mint URL is required',
-            validate: validateMint,
+            validate: (value) => validateMint(value, getValues(), queryClient),
           })}
         />
         {errors.mintUrl && (

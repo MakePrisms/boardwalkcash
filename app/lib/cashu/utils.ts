@@ -10,7 +10,7 @@ import type { DistributedOmit } from 'type-fest';
 import { decodeBolt11 } from '~/lib/bolt11';
 import type { Currency, CurrencyUnit } from '../money';
 import { sumProofs } from './proof';
-import type { CashuProtocolUnit, MintInfo } from './types';
+import type { CashuProtocolUnit } from './types';
 
 const knownTestMints = [
   'https://testnut.cashu.space',
@@ -82,6 +82,18 @@ export const getWalletCurrency = (wallet: CashuWallet) => {
  * We will remove this if cashu-ts ever updates selectProofsToSend not to return send proofs that are less than the amount.
  */
 export class ExtendedCashuWallet extends CashuWallet {
+  public readonly seed: Uint8Array;
+
+  constructor(
+    mint: CashuMint,
+    options: ConstructorParameters<typeof CashuWallet>[1] & {
+      bip39seed: Uint8Array;
+    },
+  ) {
+    super(mint, options);
+    this.seed = options.bip39seed;
+  }
+
   /**
    * Override selectProofsToSend to allow postprocessing of the result.
    * @param proofs - The available proofs to select from
@@ -181,6 +193,27 @@ export class ExtendedCashuWallet extends CashuWallet {
   }
 }
 
+export const getExtendedCashuWallet = (
+  mintUrl: string,
+  options: DistributedOmit<
+    ConstructorParameters<typeof CashuWallet>[1],
+    'unit'
+  > & {
+    unit?: CurrencyUnit;
+    bip39seed: Uint8Array;
+  },
+) => {
+  const { unit, ...rest } = options;
+  // Cashu calls the unit 'usd' even though the amount is in cents.
+  // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
+  const cashuUnit = unit === 'cent' ? 'usd' : unit;
+  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
+    ...rest,
+    unit: cashuUnit,
+    bip39seed: options.bip39seed,
+  });
+};
+
 export const getCashuWallet = (
   mintUrl: string,
   options: DistributedOmit<
@@ -193,8 +226,8 @@ export const getCashuWallet = (
   const { unit, ...rest } = options;
   // Cashu calls the unit 'usd' even though the amount is in cents.
   // To avoid this confusion we use 'cent' everywhere and then here we switch the value to 'usd' before creating the Cashu wallet.
-  const cashuUnit = unit === 'cent' ? 'usd' : unit;
-  return new ExtendedCashuWallet(new CashuMint(mintUrl), {
+  const cashuUnit = options.unit === 'cent' ? 'usd' : options.unit;
+  return new CashuWallet(new CashuMint(mintUrl), {
     ...rest,
     unit: cashuUnit,
   });
@@ -221,10 +254,6 @@ export const checkIsTestMint = async (mintUrl: string): Promise<boolean> => {
   const { request: bolt11 } = await wallet.createMintQuote(1);
   const { network } = decodeBolt11(bolt11);
   return network !== 'bitcoin';
-};
-
-export const getMintInfo = async (mintUrl: string): Promise<MintInfo> => {
-  return getCashuWallet(mintUrl).getMintInfo();
 };
 
 export const getKeysets = async (
