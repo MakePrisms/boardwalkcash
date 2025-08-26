@@ -7,6 +7,7 @@ import {
   Links,
   type LinksFunction,
   Meta,
+  type MetaFunction,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -74,9 +75,65 @@ export async function loader({ request }: Route.LoaderArgs) {
     cookieSettings: cookieSettings || null,
     userAgentString: userAgentString || '',
     origin: url.origin,
-    domain: url.origin.replace('https://', '').replace('http://', ''),
+    domain: url.host,
   };
 }
+
+export const meta: MetaFunction<typeof loader> = ({ loaderData }) => {
+  const { origin } = loaderData || {};
+
+  if (!origin) {
+    throw new Error('Origin not loaded');
+  }
+
+  const title = 'Agicash';
+  const description = 'The easiest way to send and receive cash.';
+  const image = '/icon-192x192.png';
+  const imageWidth = '192';
+  const imageHeight = '192';
+  const imageType = 'image/png';
+  const imageAlt = 'Agicash logo';
+  const ogSiteName = 'Agicash';
+
+  return [
+    // Basic meta tags
+    { title },
+    { name: 'description', content: description },
+    {
+      name: 'keywords',
+      content:
+        'bitcoin, lightning, cashu, ecash, digital cash, wallet, agicash',
+    },
+
+    // Open Graph meta tags
+    { property: 'og:title', content: title },
+    { property: 'og:description', content: description },
+    { property: 'og:image', content: image },
+    { property: 'og:image:alt', content: imageAlt },
+    {
+      property: 'og:image:width',
+      content: imageWidth,
+    },
+    {
+      property: 'og:image:height',
+      content: imageHeight,
+    },
+    {
+      property: 'og:image:type',
+      content: imageType,
+    },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: origin },
+    { property: 'og:site_name', content: ogSiteName },
+
+    // Twitter Card meta tags
+    { name: 'twitter:card=', content: 'summary_large_image' },
+    { name: 'twitter:title', content: title },
+    { name: 'twitter:description', content: description },
+    { name: 'twitter:image', content: image },
+    { name: 'twitter:image:alt', content: imageAlt },
+  ];
+};
 
 // prevent loader from being revalidated
 export function shouldRevalidate() {
