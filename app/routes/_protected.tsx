@@ -7,6 +7,7 @@ import { supabaseSessionTokenQuery } from '~/features/agicash-db/supabase-sessio
 import { LoadingScreen } from '~/features/loading/LoadingScreen';
 import {
   BASE_CASHU_LOCKING_DERIVATION_PATH,
+  seedQuery,
   xpubQuery,
 } from '~/features/shared/cashu';
 import {
@@ -64,10 +65,12 @@ const ensureUserData = async (
         ),
       ]);
     const encryption = getEncryption(encryptionPrivateKey, encryptionPublicKey);
+    const getCashuWalletSeed = () => queryClient.fetchQuery(seedQuery());
     const accountRepository = new AccountRepository(
       agicashDb,
       encryption,
       queryClient,
+      getCashuWalletSeed,
     );
     const userRepository = new UserRepository(
       agicashDb,
