@@ -330,7 +330,7 @@ function SelectContactOrLud16Drawer({
           <AtSign />
         </button>
       </DrawerTrigger>
-      <DrawerContent className="h-[75vh] pb-14 font-primary">
+      <DrawerContent className="h-[90dvh] pb-14 font-primary sm:h-[75vh]">
         <DrawerHeader className="flex items-center justify-between">
           <DrawerTitle>Send to User</DrawerTitle>
           <AddContactDrawer />
