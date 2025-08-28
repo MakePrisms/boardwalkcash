@@ -921,8 +921,8 @@ export type Database = {
       find_contact_candidates: {
         Args: { current_user_id: string; partial_username: string }
         Returns: {
-          username: string
           id: string
+          username: string
         }[]
       }
       list_transactions: {
